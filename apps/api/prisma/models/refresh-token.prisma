@@ -1,0 +1,12 @@
+model RefreshToken {
+  id        String      @id @db.Uuid
+  sessionId String      @db.Uuid
+  digest    String      @unique @db.Char(64)
+  expiresAt DateTime    @db.Timestamptz(3)
+  usedAt    DateTime?   @db.Timestamptz(3)
+  createdAt DateTime    @default(now()) @db.Timestamptz(3)
+  session   AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([expiresAt])
+}

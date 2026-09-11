@@ -1,0 +1,9 @@
+**/dist/**
+**/coverage/**
+**/generated/**
+**/node_modules/**
+**/.expo/**
+expo-env.d.ts
+playwright-report/**
+pnpm-lock.yaml
+test-results/**

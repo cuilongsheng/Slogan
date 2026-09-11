@@ -1,0 +1,1969 @@
+components:
+  schemas:
+    CreateRoomDto:
+      properties:
+        capacity:
+          maximum: 6
+          minimum: 2
+          type: number
+        cefrLevel:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        password:
+          pattern: ^\d{4}$
+          type: string
+          writeOnly: true
+        topic:
+          maxLength: 120
+          minLength: 2
+          type: string
+      required:
+        - topic
+        - cefrLevel
+        - capacity
+      type: object
+    ErrorResponseDto:
+      properties:
+        code:
+          example: VALIDATION_FAILED
+          type: string
+        details:
+          type: object
+        message:
+          example: Request validation failed
+          type: string
+        requestId:
+          example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+          type: string
+      required:
+        - code
+        - message
+      type: object
+    JoinRoomDto:
+      properties:
+        password:
+          pattern: ^\d{4}$
+          type: string
+          writeOnly: true
+        rulesAccepted:
+          description: Whether the current room rules were actively accepted
+          type: boolean
+      required:
+        - rulesAccepted
+      type: object
+    MeResponseDto:
+      properties:
+        onboardingState:
+          enum:
+            - PROFILE_REQUIRED
+            - AGE_RESTRICTED
+            - ELIGIBLE
+          type: string
+        profile:
+          allOf:
+            - properties:
+                avatarUrl:
+                  format: uri
+                  maxLength: 2048
+                  type: string
+                birthMonth:
+                  maximum: 12
+                  minimum: 1
+                  type: number
+                birthYear:
+                  maximum: 2100
+                  minimum: 1900
+                  type: number
+                cefrLevel:
+                  enum:
+                    - A1
+                    - A2
+                    - B1
+                    - B2
+                    - C1
+                    - C2
+                  type: string
+                city:
+                  maxLength: 100
+                  type: string
+                completedAt:
+                  format: date-time
+                  type: string
+                displayName:
+                  maxLength: 40
+                  minLength: 2
+                  type: string
+                genderCode:
+                  enum:
+                    - female
+                    - male
+                    - non_binary
+                    - self_described
+                    - prefer_not_to_say
+                  type: string
+                interestCodes:
+                  items:
+                    type: string
+                  maxItems: 10
+                  minItems: 1
+                  type: array
+                nationalityCode:
+                  description: ISO 3166-1 alpha-2 code
+                  example: CN
+                  type: string
+              required:
+                - avatarUrl
+                - displayName
+                - genderCode
+                - interestCodes
+                - cefrLevel
+                - birthYear
+                - birthMonth
+                - completedAt
+              type: object
+          nullable: true
+          type: object
+        userId:
+          format: uuid
+          type: string
+      required:
+        - userId
+        - onboardingState
+        - profile
+      type: object
+    OAuthExchangeDto:
+      properties:
+        authorizationCode:
+          maxLength: 4096
+          minLength: 1
+          type: string
+        codeVerifier:
+          maxLength: 128
+          minLength: 43
+          type: string
+        deviceName:
+          maxLength: 120
+          type: string
+        redirectUri:
+          example: slogan://oauth/google
+          type: string
+      required:
+        - authorizationCode
+        - redirectUri
+      type: object
+    OAuthExchangeResponseDto:
+      properties:
+        created:
+          type: boolean
+        onboardingState:
+          enum:
+            - PROFILE_REQUIRED
+            - AGE_RESTRICTED
+            - ELIGIBLE
+          type: string
+        suggestedProfile:
+          properties:
+            avatarUrl:
+              type: string
+            displayName:
+              type: string
+          type: object
+        tokens:
+          properties:
+            accessToken:
+              type: string
+            accessTokenExpiresInSeconds:
+              example: 900
+              type: number
+            refreshToken:
+              type: string
+            refreshTokenExpiresAt:
+              format: date-time
+              type: string
+          required:
+            - accessToken
+            - accessTokenExpiresInSeconds
+            - refreshToken
+            - refreshTokenExpiresAt
+          type: object
+        userId:
+          format: uuid
+          type: string
+      required:
+        - userId
+        - created
+        - onboardingState
+        - tokens
+      type: object
+    ProfileDto:
+      properties:
+        avatarUrl:
+          format: uri
+          maxLength: 2048
+          type: string
+        birthMonth:
+          maximum: 12
+          minimum: 1
+          type: number
+        birthYear:
+          maximum: 2100
+          minimum: 1900
+          type: number
+        cefrLevel:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        city:
+          maxLength: 100
+          type: string
+        completedAt:
+          format: date-time
+          type: string
+        displayName:
+          maxLength: 40
+          minLength: 2
+          type: string
+        genderCode:
+          enum:
+            - female
+            - male
+            - non_binary
+            - self_described
+            - prefer_not_to_say
+          type: string
+        interestCodes:
+          items:
+            type: string
+          maxItems: 10
+          minItems: 1
+          type: array
+        nationalityCode:
+          description: ISO 3166-1 alpha-2 code
+          example: CN
+          type: string
+      required:
+        - avatarUrl
+        - displayName
+        - genderCode
+        - interestCodes
+        - cefrLevel
+        - birthYear
+        - birthMonth
+        - completedAt
+      type: object
+    PutProfileDto:
+      properties:
+        avatarUrl:
+          format: uri
+          maxLength: 2048
+          type: string
+        birthMonth:
+          maximum: 12
+          minimum: 1
+          type: number
+        birthYear:
+          maximum: 2100
+          minimum: 1900
+          type: number
+        cefrLevel:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        city:
+          maxLength: 100
+          type: string
+        displayName:
+          maxLength: 40
+          minLength: 2
+          type: string
+        genderCode:
+          enum:
+            - female
+            - male
+            - non_binary
+            - self_described
+            - prefer_not_to_say
+          type: string
+        interestCodes:
+          items:
+            type: string
+          maxItems: 10
+          minItems: 1
+          type: array
+        nationalityCode:
+          description: ISO 3166-1 alpha-2 code
+          example: CN
+          type: string
+      required:
+        - avatarUrl
+        - displayName
+        - genderCode
+        - interestCodes
+        - cefrLevel
+        - birthYear
+        - birthMonth
+      type: object
+    RefreshTokenDto:
+      properties:
+        refreshToken:
+          maxLength: 200
+          minLength: 40
+          type: string
+      required:
+        - refreshToken
+      type: object
+    RoomDetailDto:
+      properties:
+        capacity:
+          maximum: 6
+          minimum: 2
+          type: number
+        cefrLevel:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        currentMembership:
+          allOf:
+            - properties:
+                id:
+                  format: uuid
+                  type: string
+                joinOrder:
+                  minimum: 1
+                  type: number
+                joinedAt:
+                  format: date-time
+                  type: string
+                role:
+                  enum:
+                    - HOST
+                    - MEMBER
+                  type: string
+                rulesAcceptedAt:
+                  format: date-time
+                  type: string
+                rulesVersion:
+                  type: string
+                userId:
+                  format: uuid
+                  type: string
+              required:
+                - id
+                - userId
+                - role
+                - joinOrder
+                - rulesVersion
+                - rulesAcceptedAt
+                - joinedAt
+              type: object
+          nullable: true
+          type: object
+        endsAt:
+          format: date-time
+          type: string
+        hostDisplayName:
+          type: string
+        hostUserId:
+          format: uuid
+          type: string
+        id:
+          format: uuid
+          type: string
+        memberCount:
+          minimum: 1
+          type: number
+        passwordProtected:
+          type: boolean
+        startedAt:
+          format: date-time
+          type: string
+        topic:
+          type: string
+      required:
+        - id
+        - hostUserId
+        - hostDisplayName
+        - topic
+        - cefrLevel
+        - capacity
+        - memberCount
+        - passwordProtected
+        - startedAt
+        - endsAt
+        - currentMembership
+      type: object
+    RoomDto:
+      properties:
+        capacity:
+          maximum: 6
+          minimum: 2
+          type: number
+        cefrLevel:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        endsAt:
+          format: date-time
+          type: string
+        hostDisplayName:
+          type: string
+        hostUserId:
+          format: uuid
+          type: string
+        id:
+          format: uuid
+          type: string
+        memberCount:
+          minimum: 1
+          type: number
+        passwordProtected:
+          type: boolean
+        startedAt:
+          format: date-time
+          type: string
+        topic:
+          type: string
+      required:
+        - id
+        - hostUserId
+        - hostDisplayName
+        - topic
+        - cefrLevel
+        - capacity
+        - memberCount
+        - passwordProtected
+        - startedAt
+        - endsAt
+      type: object
+    RoomListDto:
+      properties:
+        items:
+          items:
+            properties:
+              capacity:
+                maximum: 6
+                minimum: 2
+                type: number
+              cefrLevel:
+                enum:
+                  - A1
+                  - A2
+                  - B1
+                  - B2
+                  - C1
+                  - C2
+                type: string
+              endsAt:
+                format: date-time
+                type: string
+              hostDisplayName:
+                type: string
+              hostUserId:
+                format: uuid
+                type: string
+              id:
+                format: uuid
+                type: string
+              memberCount:
+                minimum: 1
+                type: number
+              passwordProtected:
+                type: boolean
+              startedAt:
+                format: date-time
+                type: string
+              topic:
+                type: string
+            required:
+              - id
+              - hostUserId
+              - hostDisplayName
+              - topic
+              - cefrLevel
+              - capacity
+              - memberCount
+              - passwordProtected
+              - startedAt
+              - endsAt
+            type: object
+          type: array
+        nextCursor:
+          description: Opaque cursor for the next page
+          nullable: true
+          type: string
+      required:
+        - items
+        - nextCursor
+      type: object
+    RoomMembershipDto:
+      properties:
+        id:
+          format: uuid
+          type: string
+        joinOrder:
+          minimum: 1
+          type: number
+        joinedAt:
+          format: date-time
+          type: string
+        role:
+          enum:
+            - HOST
+            - MEMBER
+          type: string
+        rulesAcceptedAt:
+          format: date-time
+          type: string
+        rulesVersion:
+          type: string
+        userId:
+          format: uuid
+          type: string
+      required:
+        - id
+        - userId
+        - role
+        - joinOrder
+        - rulesVersion
+        - rulesAcceptedAt
+        - joinedAt
+      type: object
+    SuggestedProfileDto:
+      properties:
+        avatarUrl:
+          type: string
+        displayName:
+          type: string
+      type: object
+    TokenPairDto:
+      properties:
+        accessToken:
+          type: string
+        accessTokenExpiresInSeconds:
+          example: 900
+          type: number
+        refreshToken:
+          type: string
+        refreshTokenExpiresAt:
+          format: date-time
+          type: string
+      required:
+        - accessToken
+        - accessTokenExpiresInSeconds
+        - refreshToken
+        - refreshTokenExpiresAt
+      type: object
+  securitySchemes:
+    bearer:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+info:
+  contact: {}
+  description: Backend control-plane API for the adult English voice-room product.
+  title: Slogan Voice Room API
+  version: 0.0.1
+openapi: 3.0.0
+paths:
+  /v1/auth/logout:
+    post:
+      operationId: AuthController_logout
+      parameters: []
+      responses:
+        "204":
+          description: ""
+        "401":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      security:
+        - bearer: []
+      tags:
+        - auth
+  /v1/auth/oauth/{provider}/exchange:
+    post:
+      operationId: AuthController_exchange
+      parameters:
+        - in: path
+          name: provider
+          required: true
+          schema:
+            enum:
+              - google
+              - wechat
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                authorizationCode:
+                  maxLength: 4096
+                  minLength: 1
+                  type: string
+                codeVerifier:
+                  maxLength: 128
+                  minLength: 43
+                  type: string
+                deviceName:
+                  maxLength: 120
+                  type: string
+                redirectUri:
+                  example: slogan://oauth/google
+                  type: string
+              required:
+                - authorizationCode
+                - redirectUri
+              type: object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  created:
+                    type: boolean
+                  onboardingState:
+                    enum:
+                      - PROFILE_REQUIRED
+                      - AGE_RESTRICTED
+                      - ELIGIBLE
+                    type: string
+                  suggestedProfile:
+                    properties:
+                      avatarUrl:
+                        type: string
+                      displayName:
+                        type: string
+                    type: object
+                  tokens:
+                    properties:
+                      accessToken:
+                        type: string
+                      accessTokenExpiresInSeconds:
+                        example: 900
+                        type: number
+                      refreshToken:
+                        type: string
+                      refreshTokenExpiresAt:
+                        format: date-time
+                        type: string
+                    required:
+                      - accessToken
+                      - accessTokenExpiresInSeconds
+                      - refreshToken
+                      - refreshTokenExpiresAt
+                    type: object
+                  userId:
+                    format: uuid
+                    type: string
+                required:
+                  - userId
+                  - created
+                  - onboardingState
+                  - tokens
+                type: object
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "429":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "503":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "504":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      tags:
+        - auth
+  /v1/auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                refreshToken:
+                  maxLength: 200
+                  minLength: 40
+                  type: string
+              required:
+                - refreshToken
+              type: object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  accessToken:
+                    type: string
+                  accessTokenExpiresInSeconds:
+                    example: 900
+                    type: number
+                  refreshToken:
+                    type: string
+                  refreshTokenExpiresAt:
+                    format: date-time
+                    type: string
+                required:
+                  - accessToken
+                  - accessTokenExpiresInSeconds
+                  - refreshToken
+                  - refreshTokenExpiresAt
+                type: object
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "401":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "429":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      tags:
+        - auth
+  /v1/me:
+    get:
+      operationId: MeController_getMe
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  onboardingState:
+                    enum:
+                      - PROFILE_REQUIRED
+                      - AGE_RESTRICTED
+                      - ELIGIBLE
+                    type: string
+                  profile:
+                    allOf:
+                      - properties:
+                          avatarUrl:
+                            format: uri
+                            maxLength: 2048
+                            type: string
+                          birthMonth:
+                            maximum: 12
+                            minimum: 1
+                            type: number
+                          birthYear:
+                            maximum: 2100
+                            minimum: 1900
+                            type: number
+                          cefrLevel:
+                            enum:
+                              - A1
+                              - A2
+                              - B1
+                              - B2
+                              - C1
+                              - C2
+                            type: string
+                          city:
+                            maxLength: 100
+                            type: string
+                          completedAt:
+                            format: date-time
+                            type: string
+                          displayName:
+                            maxLength: 40
+                            minLength: 2
+                            type: string
+                          genderCode:
+                            enum:
+                              - female
+                              - male
+                              - non_binary
+                              - self_described
+                              - prefer_not_to_say
+                            type: string
+                          interestCodes:
+                            items:
+                              type: string
+                            maxItems: 10
+                            minItems: 1
+                            type: array
+                          nationalityCode:
+                            description: ISO 3166-1 alpha-2 code
+                            example: CN
+                            type: string
+                        required:
+                          - avatarUrl
+                          - displayName
+                          - genderCode
+                          - interestCodes
+                          - cefrLevel
+                          - birthYear
+                          - birthMonth
+                          - completedAt
+                        type: object
+                    nullable: true
+                    type: object
+                  userId:
+                    format: uuid
+                    type: string
+                required:
+                  - userId
+                  - onboardingState
+                  - profile
+                type: object
+          description: ""
+        "401":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      security:
+        - bearer: []
+      tags:
+        - me
+  /v1/me/profile:
+    put:
+      operationId: MeController_putProfile
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                avatarUrl:
+                  format: uri
+                  maxLength: 2048
+                  type: string
+                birthMonth:
+                  maximum: 12
+                  minimum: 1
+                  type: number
+                birthYear:
+                  maximum: 2100
+                  minimum: 1900
+                  type: number
+                cefrLevel:
+                  enum:
+                    - A1
+                    - A2
+                    - B1
+                    - B2
+                    - C1
+                    - C2
+                  type: string
+                city:
+                  maxLength: 100
+                  type: string
+                displayName:
+                  maxLength: 40
+                  minLength: 2
+                  type: string
+                genderCode:
+                  enum:
+                    - female
+                    - male
+                    - non_binary
+                    - self_described
+                    - prefer_not_to_say
+                  type: string
+                interestCodes:
+                  items:
+                    type: string
+                  maxItems: 10
+                  minItems: 1
+                  type: array
+                nationalityCode:
+                  description: ISO 3166-1 alpha-2 code
+                  example: CN
+                  type: string
+              required:
+                - avatarUrl
+                - displayName
+                - genderCode
+                - interestCodes
+                - cefrLevel
+                - birthYear
+                - birthMonth
+              type: object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  onboardingState:
+                    enum:
+                      - PROFILE_REQUIRED
+                      - AGE_RESTRICTED
+                      - ELIGIBLE
+                    type: string
+                  profile:
+                    allOf:
+                      - properties:
+                          avatarUrl:
+                            format: uri
+                            maxLength: 2048
+                            type: string
+                          birthMonth:
+                            maximum: 12
+                            minimum: 1
+                            type: number
+                          birthYear:
+                            maximum: 2100
+                            minimum: 1900
+                            type: number
+                          cefrLevel:
+                            enum:
+                              - A1
+                              - A2
+                              - B1
+                              - B2
+                              - C1
+                              - C2
+                            type: string
+                          city:
+                            maxLength: 100
+                            type: string
+                          completedAt:
+                            format: date-time
+                            type: string
+                          displayName:
+                            maxLength: 40
+                            minLength: 2
+                            type: string
+                          genderCode:
+                            enum:
+                              - female
+                              - male
+                              - non_binary
+                              - self_described
+                              - prefer_not_to_say
+                            type: string
+                          interestCodes:
+                            items:
+                              type: string
+                            maxItems: 10
+                            minItems: 1
+                            type: array
+                          nationalityCode:
+                            description: ISO 3166-1 alpha-2 code
+                            example: CN
+                            type: string
+                        required:
+                          - avatarUrl
+                          - displayName
+                          - genderCode
+                          - interestCodes
+                          - cefrLevel
+                          - birthYear
+                          - birthMonth
+                          - completedAt
+                        type: object
+                    nullable: true
+                    type: object
+                  userId:
+                    format: uuid
+                    type: string
+                required:
+                  - userId
+                  - onboardingState
+                  - profile
+                type: object
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "401":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      security:
+        - bearer: []
+      tags:
+        - me
+  /v1/rooms:
+    get:
+      operationId: RoomsController_list
+      parameters:
+        - description: Opaque pagination cursor
+          in: query
+          name: cursor
+          required: false
+          schema:
+            maxLength: 500
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            default: 20
+            maximum: 50
+            minimum: 1
+            type: number
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  items:
+                    items:
+                      properties:
+                        capacity:
+                          maximum: 6
+                          minimum: 2
+                          type: number
+                        cefrLevel:
+                          enum:
+                            - A1
+                            - A2
+                            - B1
+                            - B2
+                            - C1
+                            - C2
+                          type: string
+                        endsAt:
+                          format: date-time
+                          type: string
+                        hostDisplayName:
+                          type: string
+                        hostUserId:
+                          format: uuid
+                          type: string
+                        id:
+                          format: uuid
+                          type: string
+                        memberCount:
+                          minimum: 1
+                          type: number
+                        passwordProtected:
+                          type: boolean
+                        startedAt:
+                          format: date-time
+                          type: string
+                        topic:
+                          type: string
+                      required:
+                        - id
+                        - hostUserId
+                        - hostDisplayName
+                        - topic
+                        - cefrLevel
+                        - capacity
+                        - memberCount
+                        - passwordProtected
+                        - startedAt
+                        - endsAt
+                      type: object
+                    type: array
+                  nextCursor:
+                    description: Opaque cursor for the next page
+                    nullable: true
+                    type: string
+                required:
+                  - items
+                  - nextCursor
+                type: object
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "401":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "403":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      security:
+        - bearer: []
+      tags:
+        - rooms
+    post:
+      operationId: RoomsController_create
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                capacity:
+                  maximum: 6
+                  minimum: 2
+                  type: number
+                cefrLevel:
+                  enum:
+                    - A1
+                    - A2
+                    - B1
+                    - B2
+                    - C1
+                    - C2
+                  type: string
+                password:
+                  pattern: ^\d{4}$
+                  type: string
+                  writeOnly: true
+                topic:
+                  maxLength: 120
+                  minLength: 2
+                  type: string
+              required:
+                - topic
+                - cefrLevel
+                - capacity
+              type: object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                properties:
+                  capacity:
+                    maximum: 6
+                    minimum: 2
+                    type: number
+                  cefrLevel:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
+                  currentMembership:
+                    allOf:
+                      - properties:
+                          id:
+                            format: uuid
+                            type: string
+                          joinOrder:
+                            minimum: 1
+                            type: number
+                          joinedAt:
+                            format: date-time
+                            type: string
+                          role:
+                            enum:
+                              - HOST
+                              - MEMBER
+                            type: string
+                          rulesAcceptedAt:
+                            format: date-time
+                            type: string
+                          rulesVersion:
+                            type: string
+                          userId:
+                            format: uuid
+                            type: string
+                        required:
+                          - id
+                          - userId
+                          - role
+                          - joinOrder
+                          - rulesVersion
+                          - rulesAcceptedAt
+                          - joinedAt
+                        type: object
+                    nullable: true
+                    type: object
+                  endsAt:
+                    format: date-time
+                    type: string
+                  hostDisplayName:
+                    type: string
+                  hostUserId:
+                    format: uuid
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  memberCount:
+                    minimum: 1
+                    type: number
+                  passwordProtected:
+                    type: boolean
+                  startedAt:
+                    format: date-time
+                    type: string
+                  topic:
+                    type: string
+                required:
+                  - id
+                  - hostUserId
+                  - hostDisplayName
+                  - topic
+                  - cefrLevel
+                  - capacity
+                  - memberCount
+                  - passwordProtected
+                  - startedAt
+                  - endsAt
+                  - currentMembership
+                type: object
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "401":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "403":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      security:
+        - bearer: []
+      tags:
+        - rooms
+  /v1/rooms/{roomId}:
+    get:
+      operationId: RoomsController_detail
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  capacity:
+                    maximum: 6
+                    minimum: 2
+                    type: number
+                  cefrLevel:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
+                  currentMembership:
+                    allOf:
+                      - properties:
+                          id:
+                            format: uuid
+                            type: string
+                          joinOrder:
+                            minimum: 1
+                            type: number
+                          joinedAt:
+                            format: date-time
+                            type: string
+                          role:
+                            enum:
+                              - HOST
+                              - MEMBER
+                            type: string
+                          rulesAcceptedAt:
+                            format: date-time
+                            type: string
+                          rulesVersion:
+                            type: string
+                          userId:
+                            format: uuid
+                            type: string
+                        required:
+                          - id
+                          - userId
+                          - role
+                          - joinOrder
+                          - rulesVersion
+                          - rulesAcceptedAt
+                          - joinedAt
+                        type: object
+                    nullable: true
+                    type: object
+                  endsAt:
+                    format: date-time
+                    type: string
+                  hostDisplayName:
+                    type: string
+                  hostUserId:
+                    format: uuid
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  memberCount:
+                    minimum: 1
+                    type: number
+                  passwordProtected:
+                    type: boolean
+                  startedAt:
+                    format: date-time
+                    type: string
+                  topic:
+                    type: string
+                required:
+                  - id
+                  - hostUserId
+                  - hostDisplayName
+                  - topic
+                  - cefrLevel
+                  - capacity
+                  - memberCount
+                  - passwordProtected
+                  - startedAt
+                  - endsAt
+                  - currentMembership
+                type: object
+          description: ""
+        "401":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "403":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "404":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "409":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      security:
+        - bearer: []
+      tags:
+        - rooms
+  /v1/rooms/{roomId}/memberships:
+    post:
+      operationId: RoomsController_join
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                password:
+                  pattern: ^\d{4}$
+                  type: string
+                  writeOnly: true
+                rulesAccepted:
+                  description: Whether the current room rules were actively accepted
+                  type: boolean
+              required:
+                - rulesAccepted
+              type: object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                properties:
+                  capacity:
+                    maximum: 6
+                    minimum: 2
+                    type: number
+                  cefrLevel:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
+                  currentMembership:
+                    allOf:
+                      - properties:
+                          id:
+                            format: uuid
+                            type: string
+                          joinOrder:
+                            minimum: 1
+                            type: number
+                          joinedAt:
+                            format: date-time
+                            type: string
+                          role:
+                            enum:
+                              - HOST
+                              - MEMBER
+                            type: string
+                          rulesAcceptedAt:
+                            format: date-time
+                            type: string
+                          rulesVersion:
+                            type: string
+                          userId:
+                            format: uuid
+                            type: string
+                        required:
+                          - id
+                          - userId
+                          - role
+                          - joinOrder
+                          - rulesVersion
+                          - rulesAcceptedAt
+                          - joinedAt
+                        type: object
+                    nullable: true
+                    type: object
+                  endsAt:
+                    format: date-time
+                    type: string
+                  hostDisplayName:
+                    type: string
+                  hostUserId:
+                    format: uuid
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  memberCount:
+                    minimum: 1
+                    type: number
+                  passwordProtected:
+                    type: boolean
+                  startedAt:
+                    format: date-time
+                    type: string
+                  topic:
+                    type: string
+                required:
+                  - id
+                  - hostUserId
+                  - hostDisplayName
+                  - topic
+                  - cefrLevel
+                  - capacity
+                  - memberCount
+                  - passwordProtected
+                  - startedAt
+                  - endsAt
+                  - currentMembership
+                type: object
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "401":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "403":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "404":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+        "409":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ""
+      security:
+        - bearer: []
+      tags:
+        - rooms
+servers: []
+tags: []

@@ -1,0 +1,19 @@
+model Room {
+  id             String           @id @db.Uuid
+  hostUserId     String           @db.Uuid
+  topic          String           @db.VarChar(120)
+  cefrLevel      CefrLevel
+  capacity       Int
+  passwordDigest String?          @db.Char(64)
+  status         RoomStatus       @default(OPEN)
+  startedAt      DateTime         @db.Timestamptz(3)
+  endsAt         DateTime         @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @db.Timestamptz(3)
+  host           User             @relation("RoomHost", fields: [hostUserId], references: [id], onDelete: Restrict)
+  memberships    RoomMembership[]
+
+  @@index([status, startedAt, id])
+  @@index([status, endsAt])
+  @@index([hostUserId])
+}

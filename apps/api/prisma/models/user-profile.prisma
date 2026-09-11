@@ -1,0 +1,16 @@
+model UserProfile {
+  userId          String    @id @db.Uuid
+  avatarUrl       String    @db.VarChar(2048)
+  displayName     String    @db.VarChar(40)
+  genderCode      String    @db.VarChar(40)
+  nationalityCode String?   @db.VarChar(2)
+  city            String?   @db.VarChar(100)
+  interestCodes   String[]
+  cefrLevel       CefrLevel
+  birthYear       Int
+  birthMonth      Int
+  completedAt     DateTime  @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

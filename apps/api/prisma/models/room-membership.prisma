@@ -1,0 +1,17 @@
+model RoomMembership {
+  id              String             @id @db.Uuid
+  roomId          String             @db.Uuid
+  userId          String             @db.Uuid
+  role            RoomMembershipRole
+  joinOrder       Int
+  rulesVersion    String             @db.VarChar(64)
+  rulesAcceptedAt DateTime           @db.Timestamptz(3)
+  joinedAt        DateTime           @db.Timestamptz(3)
+  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
+  room            Room               @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([roomId, userId])
+  @@unique([roomId, joinOrder])
+  @@index([userId])
+}
