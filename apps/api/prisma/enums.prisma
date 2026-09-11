@@ -1,0 +1,29 @@
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  DELETED
+}
+
+enum OAuthProvider {
+  GOOGLE
+  WECHAT
+}
+
+enum CefrLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum RoomStatus {
+  OPEN
+  ENDED
+}
+
+enum RoomMembershipRole {
+  HOST
+  MEMBER
+}

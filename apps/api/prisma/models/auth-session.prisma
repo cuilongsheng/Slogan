@@ -1,0 +1,15 @@
+model AuthSession {
+  id            String         @id @db.Uuid
+  userId        String         @db.Uuid
+  deviceName    String?        @db.VarChar(120)
+  expiresAt     DateTime       @db.Timestamptz(3)
+  lastRotatedAt DateTime       @default(now()) @db.Timestamptz(3)
+  revokedAt     DateTime?      @db.Timestamptz(3)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@index([expiresAt])
+}

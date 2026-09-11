@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Slogan Bootstrap",
+    "slug": "slogan-mobile",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "scheme": "slogan",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

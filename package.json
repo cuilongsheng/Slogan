@@ -1,0 +1,39 @@
+{
+  "name": "slogan",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=24.21.0 <25",
+    "pnpm": "12.3.4"
+  },
+  "scripts": {
+    "dev:admin": "pnpm --filter @slogan/admin dev",
+    "dev:mobile": "pnpm --filter @slogan/mobile start",
+    "dev:api": "pnpm --filter @slogan/api dev",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,js,cjs,json,css,html,yml,yaml}\" \"packages/**/*.{ts,tsx,js,json}\" \"tests/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"package.json\" \"*.config.{mjs,cjs,ts}\" \"pnpm-workspace.yaml\" \"tsconfig.base.json\" \"docs/architecture/toolchain.md\" \"docs/development.md\" \"docs/acceptance/*.md\" \"rules/{admin,mobile,backend}.md\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,cjs,json,css,html,yml,yaml}\" \"packages/**/*.{ts,tsx,js,json}\" \"tests/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"package.json\" \"*.config.{mjs,cjs,ts}\" \"pnpm-workspace.yaml\" \"tsconfig.base.json\" \"docs/architecture/toolchain.md\" \"docs/development.md\" \"docs/acceptance/*.md\" \"rules/{admin,mobile,backend}.md\"",
+    "lint": "eslint apps packages tests scripts playwright.config.ts eslint.config.mjs --max-warnings=0",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "deps:check": "node scripts/audit-workspaces.mjs && depcruise apps packages --config dependency-cruiser.config.cjs",
+    "test": "pnpm -r --if-present run test",
+    "test:e2e": "playwright test",
+    "build": "pnpm -r --if-present run build",
+    "verify:api": "pnpm --filter @slogan/api db:test:up && pnpm --filter @slogan/api verify",
+    "verify": "pnpm format:check && pnpm deps:check && pnpm lint && pnpm typecheck && pnpm --filter @slogan/api db:test:up && pnpm test && pnpm build && pnpm test:e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.3",
+    "dependency-cruiser": "18.2.0",
+    "eslint": "10.10.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.6",
+    "globals": "17.12.0",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0"
+  }
+}

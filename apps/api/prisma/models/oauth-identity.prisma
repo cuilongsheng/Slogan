@@ -1,0 +1,13 @@
+model OAuthIdentity {
+  id        String        @id @db.Uuid
+  provider  OAuthProvider
+  issuer    String        @db.VarChar(255)
+  subject   String        @db.VarChar(255)
+  userId    String        @db.Uuid
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime      @updatedAt @db.Timestamptz(3)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([issuer, subject])
+  @@index([userId])
+}

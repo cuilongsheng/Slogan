@@ -1,0 +1,35 @@
+schema: spec-driven
+
+context: |
+  Language: zh
+  All artifacts must be written in zh.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  Project: host-led English voice rooms for adults.
+  Delivery lifecycle is project-level; a change enters only the stages it actually impacts.
+  openspec/specs/ is the current product requirements source of truth. docs/init/PRD_V1.md is a frozen historical baseline.
+  Figma owns visuals. OpenAPI is the sole API contract once created. Tests/CI are verification evidence, not the only acceptance authority.
+
+rules:
+  proposal:
+    - List only the delivery lifecycle stages the change actually impacts; do not add N/A stages.
+    - Separate confirmed scope, non-goals, roadmap items, and unresolved decisions.
+  specs:
+    - Do not promote recommendations, roadmap items, or unresolved decisions to MUST or SHALL.
+    - Write observable behavior and acceptance scenarios, not framework or folder details.
+  design:
+    - For API changes, record whether API-first or NestJS code-first generated OpenAPI is used and keep one contract only.
+    - Record relevant visual, runtime, device, migration, and rollback evidence requirements.
+  tasks:
+    - Include an observable verification method in every task.
+    - Prefer the smallest relevant verification in implementation tasks, and add one final task for the full affected-scope suite instead of repeating the full suite throughout the change.
+
+operations:
+  apply:
+    guidance:
+      - Do not expand implementation beyond approved change artifacts.
+      - Use tests and runtime checks proportional to the affected behavior.
+      - During implementation, use the smallest relevant checks. Run full affected-scope verification after all implementation tasks are complete, and repeat it only if failure, later edits, or CI, merge, release, or explicit acceptance requirements invalidate the prior evidence.
+  archive:
+    guidance:
+      - Require implementation completion and applicable verification and acceptance evidence.
+      - Do not require production deployment; release state is tracked independently.
