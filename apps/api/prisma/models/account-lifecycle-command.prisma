@@ -1,0 +1,14 @@
+model AccountLifecycleCommand {
+  id              String                        @id @db.Uuid
+  userId          String                        @db.Uuid
+  action          AccountLifecycleAction
+  status          AccountLifecycleCommandStatus @default(COMPLETED)
+  clientRequestId String                        @db.Uuid
+  payloadHash     String                        @db.Char(64)
+  deletedAt       DateTime                      @db.Timestamptz(3)
+  createdAt       DateTime                      @default(now()) @db.Timestamptz(3)
+  user            User                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, clientRequestId])
+  @@index([status, createdAt])
+}

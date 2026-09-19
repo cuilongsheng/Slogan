@@ -11,26 +11,41 @@ export class StructuredLogger implements LoggerService {
   });
 
   log(message: unknown, context?: string): void {
-    this.logger.info({ context }, this.toMessage(message));
+    this.logger.info(
+      this.fields(message, context),
+      typeof message === 'string' ? message : undefined,
+    );
   }
 
   error(message: unknown, trace?: string, context?: string): void {
-    this.logger.error({ context, trace }, this.toMessage(message));
+    this.logger.error(
+      { ...this.fields(message, context), trace },
+      typeof message === 'string' ? message : undefined,
+    );
   }
 
   warn(message: unknown, context?: string): void {
-    this.logger.warn({ context }, this.toMessage(message));
+    this.logger.warn(
+      this.fields(message, context),
+      typeof message === 'string' ? message : undefined,
+    );
   }
 
   debug(message: unknown, context?: string): void {
-    this.logger.debug({ context }, this.toMessage(message));
+    this.logger.debug(
+      this.fields(message, context),
+      typeof message === 'string' ? message : undefined,
+    );
   }
 
   verbose(message: unknown, context?: string): void {
-    this.logger.trace({ context }, this.toMessage(message));
+    this.logger.trace(
+      this.fields(message, context),
+      typeof message === 'string' ? message : undefined,
+    );
   }
 
-  private toMessage(message: unknown): string {
-    return typeof message === 'string' ? message : JSON.stringify(message);
+  private fields(message: unknown, context?: string): Record<string, unknown> {
+    return typeof message === 'object' && message !== null ? { ...message, context } : { context };
   }
 }

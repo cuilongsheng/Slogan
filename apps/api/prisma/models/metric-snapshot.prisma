@@ -1,0 +1,24 @@
+model MetricSnapshot {
+  id                String               @id @default(uuid()) @db.Uuid
+  runId             String               @db.Uuid
+  metricKey         String               @db.VarChar(64)
+  grain             MetricGrain
+  windowStart       DateTime             @db.Timestamptz(3)
+  windowEnd         DateTime             @db.Timestamptz(3)
+  dimensionKey      String               @db.VarChar(256)
+  dimensions        Json
+  definitionVersion String               @db.VarChar(64)
+  status            MetricSnapshotStatus
+  value             Decimal?             @db.Decimal(24, 6)
+  numerator         BigInt?
+  denominator       BigInt?
+  sampleSize        Int
+  reasonCode        String?              @db.VarChar(64)
+  dataThroughAt     DateTime             @db.Timestamptz(3)
+  generatedAt       DateTime             @default(now()) @db.Timestamptz(3)
+  run               MetricComputationRun @relation(fields: [runId], references: [id], onDelete: Restrict)
+
+  @@unique([metricKey, grain, windowStart, windowEnd, dimensionKey, definitionVersion])
+  @@index([metricKey, grain, windowStart, id])
+  @@index([generatedAt, id])
+}

@@ -1,0 +1,15 @@
+model PhoneIdentity {
+  id                 String   @id @db.Uuid
+  userId             String   @unique @db.Uuid
+  phoneLookupVersion String   @db.VarChar(32)
+  phoneLookupHash    String   @db.Char(64)
+  countryCallingCode String   @db.VarChar(4)
+  lastTwo            String   @db.Char(2)
+  verifiedAt         DateTime @db.Timestamptz(3)
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([phoneLookupVersion, phoneLookupHash])
+  @@index([userId])
+}

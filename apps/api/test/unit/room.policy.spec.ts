@@ -28,6 +28,9 @@ describe('RoomPolicy', () => {
       capacity: 4,
       startedAt: now,
       endsAt: new Date('2026-09-11T12:00:00.000Z'),
+      visibility: 'PUBLIC',
+      sensitiveSpeechDetectionEnabled: false,
+      postRoomKeywordsEnabled: false,
     });
   });
 
@@ -89,5 +92,47 @@ describe('RoomPolicy', () => {
 
   it('uses RoomError for stable domain failures', () => {
     expect(() => policy.assertOpen('ENDED', now, now)).toThrow(RoomError);
+  });
+
+  it('normalizes discovery filters and binds exact CEFR to a case-insensitive topic', () => {
+    expect(policy.normalizeDiscovery({ cefrLevel: 'B1', topic: '  Backend TALK  ' })).toEqual({
+      cefrLevel: 'B1',
+      topic: 'backend talk',
+    });
+    expect(() => policy.normalizeDiscovery({ topic: '   ' })).toThrow(
+      expect.objectContaining({ code: 'VALIDATION_FAILED' }),
+    );
+    expect(() => policy.normalizeDiscovery({ cefrLevel: 'Z9' })).toThrow(
+      expect.objectContaining({ code: 'VALIDATION_FAILED' }),
+    );
+  });
+
+  it('allows only the current host to extend an open room up to three times', () => {
+    const valid = {
+      hostUserId: 'host',
+      actorUserId: 'host',
+      status: 'OPEN' as const,
+      endsAt: new Date(now.getTime() + 60_000),
+      now,
+      extensionCount: 2,
+      additionalMinutes: 60,
+    };
+    expect(() => policy.assertCanExtend(valid)).not.toThrow();
+    expect(() => policy.assertCanExtend({ ...valid, actorUserId: 'member' })).toThrow(
+      expect.objectContaining({ code: 'ROOM_HOST_REQUIRED' }),
+    );
+    expect(() => policy.assertCanExtend({ ...valid, status: 'SCHEDULED' })).toThrow(
+      expect.objectContaining({ code: 'ROOM_EXTENSION_NOT_AVAILABLE' }),
+    );
+    expect(() => policy.assertCanExtend({ ...valid, endsAt: now })).toThrow(
+      expect.objectContaining({ code: 'ROOM_EXTENSION_NOT_AVAILABLE' }),
+    );
+    expect(() => policy.assertCanExtend({ ...valid, extensionCount: 3 })).toThrow(
+      expect.objectContaining({ code: 'ROOM_EXTENSION_LIMIT' }),
+    );
+    for (const additionalMinutes of [0, 61, 1.5])
+      expect(() => policy.assertCanExtend({ ...valid, additionalMinutes })).toThrow(
+        expect.objectContaining({ code: 'ROOM_CONFIGURATION_INVALID' }),
+      );
   });
 });

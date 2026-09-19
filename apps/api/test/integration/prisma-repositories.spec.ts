@@ -30,9 +30,13 @@ describe('Prisma identity, session and profile repositories', () => {
 
   beforeEach(async () => {
     await prisma.roomMembership.deleteMany();
+    await prisma.roomEvent.deleteMany({ where: { reportId: { not: null } } });
+    await prisma.report.deleteMany();
     await prisma.room.deleteMany();
     await prisma.refreshToken.deleteMany();
     await prisma.authSession.deleteMany();
+    await prisma.accountLifecycleCommand.deleteMany();
+    await prisma.phoneIdentity.deleteMany();
     await prisma.userProfile.deleteMany();
     await prisma.oAuthIdentity.deleteMany();
     await prisma.user.deleteMany();
@@ -62,6 +66,8 @@ describe('Prisma identity, session and profile repositories', () => {
         'AuthSession',
         'RefreshToken',
         'UserProfile',
+        'PhoneIdentity',
+        'AccountLifecycleCommand',
       ]),
     );
     expect(constraints.map(({ constraint_name }) => constraint_name)).toEqual(
@@ -73,6 +79,9 @@ describe('Prisma identity, session and profile repositories', () => {
       ]),
     );
     expect(indexes.map(({ indexname }) => indexname)).toContain('OAuthIdentity_issuer_subject_key');
+    expect(indexes.map(({ indexname }) => indexname)).toContain(
+      'PhoneIdentity_phoneLookupVersion_phoneLookupHash_key',
+    );
   });
 
   it('converges concurrent identity creation on one user', async () => {
@@ -102,6 +111,64 @@ describe('Prisma identity, session and profile repositories', () => {
 
     expect(await prisma.authSession.count()).toBe(1);
     expect(await prisma.refreshToken.count()).toBe(1);
+  });
+
+  it('converges phone registration and rejects cross-account identity linking', async () => {
+    const phone = {
+      lookupVersion: 'v1',
+      lookupHash: '9'.repeat(64),
+      countryCallingCode: '86',
+      lastTwo: '00',
+      region: 'CN',
+    };
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () => auth.findOrCreatePhoneUser(phone, now)),
+    );
+    expect(new Set(results.map((result) => result.userId)).size).toBe(1);
+    expect(await prisma.phoneIdentity.count()).toBe(1);
+    expect(await prisma.user.count()).toBe(1);
+
+    const other = randomUUID();
+    await prisma.user.create({ data: { id: other, createdAt: now, updatedAt: now } });
+    await expect(auth.linkPhoneIdentity(other, phone, now)).rejects.toMatchObject({
+      code: 'AUTH_IDENTITY_ALREADY_BOUND',
+    });
+    const oauth = {
+      provider: 'GOOGLE' as const,
+      issuer: 'https://accounts.google.com',
+      subject: 'already-owned',
+    };
+    await auth.linkOAuthIdentity(results[0]!.userId, oauth, now);
+    await expect(auth.linkOAuthIdentity(other, oauth, now)).rejects.toMatchObject({
+      code: 'AUTH_IDENTITY_ALREADY_BOUND',
+    });
+    expect(await auth.listLoginMethods(results[0]!.userId)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'PHONE', mask: '+86••00' }),
+        expect.objectContaining({ type: 'GOOGLE' }),
+      ]),
+    );
+  });
+
+  it('refuses OAuth, phone and new sessions for disabled or deleted identities', async () => {
+    const identity = {
+      provider: 'GOOGLE' as const,
+      issuer: 'https://accounts.google.com',
+      subject: 'disabled-subject',
+    };
+    const account = await auth.findOrCreateUser(identity, now);
+    await prisma.user.update({ where: { id: account.userId }, data: { status: 'DISABLED' } });
+    await expect(auth.findOrCreateUser(identity, now)).rejects.toMatchObject({
+      code: 'AUTH_ACCOUNT_UNAVAILABLE',
+    });
+    await expect(
+      auth.createSession({
+        userId: account.userId,
+        digest: 'e'.repeat(64),
+        expiresAt: new Date(now.getTime() + 3600_000),
+        now,
+      }),
+    ).rejects.toMatchObject({ code: 'AUTH_ACCOUNT_UNAVAILABLE' });
   });
 
   it('allows one refresh rotation and revokes the session on concurrent replay', async () => {

@@ -1,0 +1,15 @@
+model RoomReservation {
+  id          String            @id @default(uuid()) @db.Uuid
+  roomId      String            @db.Uuid
+  userId      String            @db.Uuid
+  status      ReservationStatus @default(BOOKED)
+  version     Int               @default(1)
+  bookedAt    DateTime          @default(now()) @db.Timestamptz(3)
+  cancelledAt DateTime?         @db.Timestamptz(3)
+  consumedAt  DateTime?         @db.Timestamptz(3)
+  room        Room              @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([roomId, userId])
+  @@index([roomId, status])
+}

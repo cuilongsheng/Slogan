@@ -1,0 +1,28 @@
+model SafetyRestriction {
+  id               String                  @id @default(uuid()) @db.Uuid
+  caseId           String                  @unique @db.Uuid
+  userId           String                  @db.Uuid
+  kind             SafetyRestrictionKind
+  severity         SafetySeverity
+  status           SafetyRestrictionStatus @default(ACTIVE)
+  reason           String                  @db.VarChar(500)
+  decidedByUserId  String                  @db.Uuid
+  startsAt         DateTime                @db.Timestamptz(3)
+  endsAt           DateTime?               @db.Timestamptz(3)
+  appealDeadlineAt DateTime?               @db.Timestamptz(3)
+  liftedAt         DateTime?               @db.Timestamptz(3)
+  liftedByUserId   String?                 @db.Uuid
+  liftReason       String?                 @db.VarChar(500)
+  expiredAt        DateTime?               @db.Timestamptz(3)
+  version          Int                     @default(1)
+  createdAt        DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime                @updatedAt @db.Timestamptz(3)
+  safetyCase       SafetyCase              @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  user             User                    @relation("SafetyRestrictionTarget", fields: [userId], references: [id], onDelete: Restrict)
+  decidedBy        User                    @relation("SafetyRestrictionDecider", fields: [decidedByUserId], references: [id], onDelete: Restrict)
+  liftedBy         User?                   @relation("SafetyRestrictionLifter", fields: [liftedByUserId], references: [id], onDelete: Restrict)
+  appeal           SafetyAppeal?
+
+  @@index([userId, status, endsAt, id])
+  @@index([status, endsAt, id])
+}

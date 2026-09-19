@@ -1,0 +1,15 @@
+model SafetyCommand {
+  id              String   @id @default(uuid()) @db.Uuid
+  actorUserId     String   @db.Uuid
+  clientRequestId String   @db.Uuid
+  action          String   @db.VarChar(64)
+  requestHash     String   @db.Char(64)
+  resourceType    String   @db.VarChar(64)
+  resourceId      String   @db.Uuid
+  result          Json
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  actor           User     @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@unique([actorUserId, clientRequestId])
+  @@index([resourceType, resourceId, createdAt])
+}

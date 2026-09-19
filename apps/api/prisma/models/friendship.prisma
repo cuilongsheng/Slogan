@@ -1,0 +1,16 @@
+model Friendship {
+  id            String    @id @db.Uuid
+  userLowId     String    @db.Uuid
+  userHighId    String    @db.Uuid
+  endedAt       DateTime? @db.Timestamptz(3)
+  endedByUserId String?   @db.Uuid
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+  userLow       User      @relation("FriendshipLow", fields: [userLowId], references: [id], onDelete: Restrict)
+  userHigh      User      @relation("FriendshipHigh", fields: [userHighId], references: [id], onDelete: Restrict)
+  endedBy       User?     @relation("FriendshipEndedBy", fields: [endedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([userLowId, userHighId])
+  @@index([userLowId, endedAt, createdAt, id])
+  @@index([userHighId, endedAt, createdAt, id])
+}

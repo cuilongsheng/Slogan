@@ -1,0 +1,17 @@
+model AiUsageLedger {
+  id            String              @id @db.Uuid
+  requestId     String              @db.Uuid
+  userId        String              @db.Uuid
+  kind          AiUsageKind
+  quotaDate     DateTime            @db.Date
+  reservedUnits Int
+  actualUnits   Int                 @default(0)
+  createdAt     DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime            @updatedAt @db.Timestamptz(3)
+  request       AiExpressionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user          User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([requestId, kind])
+  @@index([userId, quotaDate, kind])
+  @@index([quotaDate, kind])
+}

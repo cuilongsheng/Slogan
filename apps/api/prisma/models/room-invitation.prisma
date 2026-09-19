@@ -1,0 +1,17 @@
+model RoomInvitation {
+  id            String               @id @db.Uuid
+  roomId        String               @db.Uuid
+  inviterUserId String               @db.Uuid
+  inviteeUserId String               @db.Uuid
+  status        RoomInvitationStatus @default(PENDING)
+  resolvedAt    DateTime?            @db.Timestamptz(3)
+  createdAt     DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @db.Timestamptz(3)
+  room          Room                 @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  inviter       User                 @relation("RoomInvitationSender", fields: [inviterUserId], references: [id], onDelete: Restrict)
+  invitee       User                 @relation("RoomInvitationRecipient", fields: [inviteeUserId], references: [id], onDelete: Restrict)
+
+  @@index([inviteeUserId, status, createdAt, id])
+  @@index([roomId, status])
+  @@index([inviterUserId, inviteeUserId, status])
+}

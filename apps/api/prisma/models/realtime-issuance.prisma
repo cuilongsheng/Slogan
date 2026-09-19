@@ -1,0 +1,8 @@
+model RealtimeIssuance {
+  id             String           @id @db.Uuid
+  identity       String           @db.Uuid
+  expiresAt      DateTime         @db.Timestamptz(3)
+  identityRecord RealtimeIdentity @relation(fields: [identity], references: [identity], onDelete: Cascade)
+
+  @@index([identity, expiresAt])
+}

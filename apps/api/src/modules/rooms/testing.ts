@@ -10,3 +10,8 @@ export {
   ListRoomsQueryDto,
   RoomIdParamsDto,
 } from './presentation/dto/room.dto.js';
+
+export { AppointmentsService } from './application/services/appointments.service.js';
+export { roomLifecycle } from './domain/policies/room-lifecycle.js';
+export { RoomNotePolicy } from './domain/policies/room-note.policy.js';
+export { RoomHistoryService } from './application/services/room-history.service.js';

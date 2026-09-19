@@ -1,11 +1,47 @@
 model User {
-  id              String           @id @db.Uuid
-  status          UserStatus       @default(ACTIVE)
-  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
-  identities      OAuthIdentity[]
-  sessions        AuthSession[]
-  profile         UserProfile?
-  hostedRooms     Room[]           @relation("RoomHost")
-  roomMemberships RoomMembership[]
+  roomReservations          RoomReservation[]
+  roomNotes                 RoomNote[]
+  id                        String                          @id @db.Uuid
+  status                    UserStatus                      @default(ACTIVE)
+  deletedAt                 DateTime?                       @db.Timestamptz(3)
+  createdAt                 DateTime                        @default(now()) @db.Timestamptz(3)
+  updatedAt                 DateTime                        @updatedAt @db.Timestamptz(3)
+  identities                OAuthIdentity[]
+  phoneIdentity             PhoneIdentity?
+  accountLifecycleCommands  AccountLifecycleCommand[]
+  sessions                  AuthSession[]
+  profile                   UserProfile?
+  hostedRooms               Room[]                          @relation("RoomHost")
+  roomMemberships           RoomMembership[]
+  backofficeRoles           BackofficeRoleAssignment[]      @relation("BackofficeRoleOwner")
+  rolesGranted              BackofficeRoleAssignment[]      @relation("BackofficeRoleGrantor")
+  rolesRevoked              BackofficeRoleAssignment[]      @relation("BackofficeRoleRevoker")
+  backofficeEvents          BackofficeAuditEvent[]          @relation("BackofficeAuditActor")
+  safetyCasesReceived       SafetyCase[]                    @relation("SafetyCaseTarget")
+  safetyCasesAssigned       SafetyCase[]                    @relation("SafetyCaseAssignee")
+  safetyCaseSnapshots       SafetyCaseParticipantSnapshot[]
+  safetyActivities          SafetyCaseActivity[]            @relation("SafetyActivityActor")
+  safetyRestrictions        SafetyRestriction[]             @relation("SafetyRestrictionTarget")
+  safetyRestrictionsDecided SafetyRestriction[]             @relation("SafetyRestrictionDecider")
+  safetyRestrictionsLifted  SafetyRestriction[]             @relation("SafetyRestrictionLifter")
+  safetyAppeals             SafetyAppeal[]                  @relation("SafetyAppealOwner")
+  safetyAppealsDecided      SafetyAppeal[]                  @relation("SafetyAppealDecider")
+  safetyCommands            SafetyCommand[]
+  roomTimeExtensions        RoomTimeExtension[]             @relation("RoomTimeExtensionActor")
+  friendRequestsSent        FriendRequest[]                 @relation("FriendRequestSender")
+  friendRequestsReceived    FriendRequest[]                 @relation("FriendRequestRecipient")
+  friendshipsLow            Friendship[]                    @relation("FriendshipLow")
+  friendshipsHigh           Friendship[]                    @relation("FriendshipHigh")
+  friendshipsEnded          Friendship[]                    @relation("FriendshipEndedBy")
+  blocksCreated             UserBlock[]                     @relation("UserBlockCreator")
+  blocksReceived            UserBlock[]                     @relation("UserBlockTarget")
+  socialCommands            SocialCommand[]
+  roomInvitationsSent       RoomInvitation[]                @relation("RoomInvitationSender")
+  roomInvitationsReceived   RoomInvitation[]                @relation("RoomInvitationRecipient")
+  aiExpressionRequests      AiExpressionRequest[]
+  aiUsageEntries            AiUsageLedger[]
+  speechConsentEvents       SpeechProcessingConsentEvent[]
+  roomSpeechRiskEvents      RoomSpeechRiskEvent[]
+  vocabularyItems           VocabularyItem[]
+  vocabularyCommands        VocabularyCommand[]
 }

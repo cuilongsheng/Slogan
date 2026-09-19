@@ -1,5 +1,8 @@
 import {
   ROOM_CEFR_LEVELS,
+  ROOM_VISIBILITIES,
+  type RoomDiscoveryFilter,
+  type RoomStatus,
   type CreateRoomInput,
   type ValidatedRoomCreation,
 } from '../entities/room.js';
@@ -28,7 +31,8 @@ export class RoomPolicy {
       !Number.isInteger(input.capacity) ||
       input.capacity < 2 ||
       input.capacity > 6 ||
-      (input.password !== undefined && !/^\d{4}$/.test(input.password))
+      (input.password !== undefined && !/^\d{4}$/.test(input.password)) ||
+      (input.visibility !== undefined && !ROOM_VISIBILITIES.includes(input.visibility))
     ) {
       throw new RoomError('ROOM_CONFIGURATION_INVALID', 'Room configuration is invalid');
     }
@@ -38,17 +42,58 @@ export class RoomPolicy {
       capacity: input.capacity,
       startedAt: now,
       endsAt: new Date(now.getTime() + TWO_HOURS_MS),
+      visibility: input.visibility ?? 'PUBLIC',
+      sensitiveSpeechDetectionEnabled: input.sensitiveSpeechDetectionEnabled ?? false,
+      postRoomKeywordsEnabled: input.postRoomKeywordsEnabled ?? false,
     };
   }
 
-  assertOpen(status: 'OPEN' | 'ENDED', endsAt: Date, now: Date): void {
+  normalizeDiscovery(input: { cefrLevel?: string; topic?: string }): RoomDiscoveryFilter {
+    if (
+      input.cefrLevel !== undefined &&
+      !ROOM_CEFR_LEVELS.some((level) => level === input.cefrLevel)
+    )
+      throw new RoomError('VALIDATION_FAILED', 'Room discovery filter is invalid');
+    const topic = input.topic?.trim() ?? null;
+    if (input.topic !== undefined && (!topic || topic.length > 120))
+      throw new RoomError('VALIDATION_FAILED', 'Room discovery filter is invalid');
+    return {
+      cefrLevel: (input.cefrLevel as RoomDiscoveryFilter['cefrLevel']) ?? null,
+      topic: topic?.toLocaleLowerCase('en-US') ?? null,
+    };
+  }
+
+  assertCanExtend(input: {
+    hostUserId: string;
+    actorUserId: string;
+    status: RoomStatus;
+    endsAt: Date;
+    now: Date;
+    extensionCount: number;
+    additionalMinutes: number;
+  }): void {
+    if (input.hostUserId !== input.actorUserId)
+      throw new RoomError('ROOM_HOST_REQUIRED', 'Current host permission is required');
+    if (input.status !== 'OPEN' || input.endsAt <= input.now)
+      throw new RoomError('ROOM_EXTENSION_NOT_AVAILABLE', 'Room cannot be extended');
+    if (
+      !Number.isInteger(input.additionalMinutes) ||
+      input.additionalMinutes < 1 ||
+      input.additionalMinutes > 60
+    )
+      throw new RoomError('ROOM_CONFIGURATION_INVALID', 'Extension minutes are invalid');
+    if (input.extensionCount >= 3)
+      throw new RoomError('ROOM_EXTENSION_LIMIT', 'Room extension limit reached');
+  }
+
+  assertOpen(status: RoomStatus, endsAt: Date, now: Date): void {
     if (status !== 'OPEN' || endsAt <= now) {
       throw new RoomError('ROOM_ENDED', 'The room has ended');
     }
   }
 
   assertCanJoin(input: {
-    status: 'OPEN' | 'ENDED';
+    status: RoomStatus;
     endsAt: Date;
     now: Date;
     rulesAccepted: boolean;

@@ -1,0 +1,17 @@
+model FriendRequest {
+  id              String              @id @db.Uuid
+  requesterUserId String              @db.Uuid
+  recipientUserId String              @db.Uuid
+  userLowId       String              @db.Uuid
+  userHighId      String              @db.Uuid
+  status          FriendRequestStatus @default(PENDING)
+  resolvedAt      DateTime?           @db.Timestamptz(3)
+  createdAt       DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime            @updatedAt @db.Timestamptz(3)
+  requester       User                @relation("FriendRequestSender", fields: [requesterUserId], references: [id], onDelete: Restrict)
+  recipient       User                @relation("FriendRequestRecipient", fields: [recipientUserId], references: [id], onDelete: Restrict)
+
+  @@index([recipientUserId, status, createdAt, id])
+  @@index([requesterUserId, status, createdAt, id])
+  @@index([userLowId, userHighId, status])
+}

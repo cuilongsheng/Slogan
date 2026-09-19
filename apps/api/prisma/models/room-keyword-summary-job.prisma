@@ -1,0 +1,18 @@
+model RoomKeywordSummaryJob {
+  id            String                      @id @default(uuid()) @db.Uuid
+  summaryId     String                      @unique @db.Uuid
+  status        RoomKeywordSummaryJobStatus @default(PENDING)
+  attempts      Int                         @default(0)
+  nextAttemptAt DateTime                    @default(now()) @db.Timestamptz(3)
+  deadlineAt    DateTime                    @db.Timestamptz(3)
+  leaseId       String?                     @db.Uuid
+  lockedUntil   DateTime?                   @db.Timestamptz(3)
+  completedAt   DateTime?                   @db.Timestamptz(3)
+  lastError     String?                     @db.VarChar(64)
+  createdAt     DateTime                    @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime                    @updatedAt @db.Timestamptz(3)
+  summary       RoomKeywordSummary          @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt, id])
+  @@index([status, lockedUntil, id])
+}

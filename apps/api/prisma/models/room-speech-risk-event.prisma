@@ -1,0 +1,20 @@
+model RoomSpeechRiskEvent {
+  id              String                    @id @db.Uuid
+  roomId          String                    @db.Uuid
+  subjectUserId   String                    @db.Uuid
+  category        RoomSpeechRiskCategory
+  severity        RoomSpeechRiskSeverity
+  ruleSetVersion  String                    @db.VarChar(64)
+  correlationHash String                    @db.Char(64)
+  firstOccurredAt DateTime                  @db.Timestamptz(3)
+  lastOccurredAt  DateTime                  @db.Timestamptz(3)
+  occurrenceCount Int                       @default(1)
+  createdAt       DateTime                  @default(now()) @db.Timestamptz(3)
+  room            Room                      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  subject         User                      @relation(fields: [subjectUserId], references: [id], onDelete: Restrict)
+  deliveries      RoomSpeechAlertDelivery[]
+
+  @@unique([roomId, subjectUserId, category, ruleSetVersion, correlationHash])
+  @@index([roomId, lastOccurredAt, id])
+  @@index([subjectUserId, lastOccurredAt])
+}

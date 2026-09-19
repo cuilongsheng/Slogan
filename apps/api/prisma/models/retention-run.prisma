@@ -1,0 +1,29 @@
+model RetentionRun {
+  id              String                 @id @default(uuid()) @db.Uuid
+  policyId        String                 @db.Uuid
+  dryRunId        String                 @unique @db.Uuid
+  actorUserId     String                 @db.Uuid
+  clientRequestId String                 @db.Uuid
+  payloadHash     String                 @db.Char(64)
+  status          RetentionRunStatus     @default(PENDING)
+  generation      Int                    @default(0)
+  leaseId         String?                @db.Uuid
+  lockedUntil     DateTime?              @db.Timestamptz(3)
+  cursorAt        DateTime?              @db.Timestamptz(3)
+  cursorId        String?                @db.VarChar(128)
+  scannedCount    Int                    @default(0)
+  deletedCount    Int                    @default(0)
+  skippedCount    Int                    @default(0)
+  failedCount     Int                    @default(0)
+  errorCode       String?                @db.VarChar(64)
+  startedAt       DateTime?              @db.Timestamptz(3)
+  completedAt     DateTime?              @db.Timestamptz(3)
+  createdAt       DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime               @updatedAt @db.Timestamptz(3)
+  policy          RetentionPolicyVersion @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  dryRun          RetentionDryRun        @relation(fields: [dryRunId], references: [id], onDelete: Restrict)
+  batches         RetentionRunBatch[]
+
+  @@unique([actorUserId, clientRequestId])
+  @@index([status, lockedUntil, createdAt])
+}

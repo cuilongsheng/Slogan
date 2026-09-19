@@ -1,6 +1,9 @@
 export { AuthError } from './domain/errors/auth.error.js';
 export { AuthService } from './application/services/auth.service.js';
 export { SessionService } from './application/services/session.service.js';
+export { PhoneAuthService } from './application/services/phone-auth.service.js';
+export { PHONE_CHALLENGE_STORE } from './domain/ports/phone-challenge.store.js';
+export type { PhoneChallengeStore } from './domain/ports/phone-challenge.store.js';
 export { AUTH_REPOSITORY } from './domain/ports/auth.repository.js';
 export type { AuthRepository, RotateRefreshResult } from './domain/ports/auth.repository.js';
 export { OAUTH_PROVIDER_REGISTRY } from './domain/ports/oauth-provider.port.js';
@@ -10,3 +13,7 @@ export type {
   OAuthProviderName,
   ProviderIdentity,
 } from './domain/entities/provider-identity.js';
+export type { LoginMethodView, PhoneFingerprint } from './domain/entities/phone-auth.js';
+export { PhonePolicy } from './domain/policies/phone.policy.js';
+export { SMS_PROVIDER } from './domain/ports/sms-provider.port.js';
+export type { SmsProvider } from './domain/ports/sms-provider.port.js';

@@ -1,0 +1,30 @@
+model OperationalIncident {
+  id               String                      @id @default(uuid()) @db.Uuid
+  fingerprint      String                      @db.Char(64)
+  occurrence       Int
+  component        String                      @db.VarChar(64)
+  category         String                      @db.VarChar(64)
+  severity         OperationalIncidentSeverity
+  scopeType        String                      @db.VarChar(64)
+  scopeKey         String                      @db.VarChar(128)
+  ruleVersion      String                      @db.VarChar(64)
+  reasonCode       String                      @db.VarChar(64)
+  status           OperationalIncidentStatus   @default(OPEN)
+  observationCount Int                         @default(1)
+  firstObservedAt  DateTime                    @db.Timestamptz(3)
+  lastObservedAt   DateTime                    @db.Timestamptz(3)
+  acknowledgedAt   DateTime?                   @db.Timestamptz(3)
+  acknowledgedBy   String?                     @db.Uuid
+  acknowledgeReason String?                    @db.VarChar(500)
+  resolvedAt       DateTime?                   @db.Timestamptz(3)
+  resolvedBy       String?                     @db.Uuid
+  resolutionReason String?                     @db.VarChar(500)
+  createdAt        DateTime                    @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime                    @updatedAt @db.Timestamptz(3)
+  observations     OperationalIncidentObservation[]
+  deliveries       OperationalAlertDelivery[]
+
+  @@unique([fingerprint, occurrence])
+  @@index([fingerprint, status])
+  @@index([status, severity, lastObservedAt, id])
+}

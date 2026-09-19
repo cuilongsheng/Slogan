@@ -1,0 +1,15 @@
+model RoomKeywordSummaryItem {
+  id              String              @id @default(uuid()) @db.Uuid
+  summaryId       String              @db.Uuid
+  kind            RoomKeywordItemKind
+  displayText     String              @db.VarChar(120)
+  normalizedText  String              @db.VarChar(120)
+  rank            Int
+  createdAt       DateTime            @default(now()) @db.Timestamptz(3)
+  summary         RoomKeywordSummary  @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  vocabularyItems VocabularyItem[]
+
+  @@unique([summaryId, kind, normalizedText])
+  @@unique([summaryId, rank])
+  @@index([summaryId, rank, id])
+}

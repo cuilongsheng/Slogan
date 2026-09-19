@@ -19,11 +19,353 @@ enum CefrLevel {
 }
 
 enum RoomStatus {
+  SCHEDULED
+  CANCELLED
   OPEN
+  ENDING
   ENDED
 }
 
 enum RoomMembershipRole {
   HOST
   MEMBER
+}
+
+enum RealtimePresence {
+  DISCONNECTED
+  CONNECTED
+}
+
+enum MembershipLifecycle {
+  ACTIVE
+  LEFT
+  REMOVED
+  INVITED
+}
+
+enum RealtimeCommandType {
+  HOST_TIMEOUT
+  REVOKE_IDENTITY
+  DELETE_ROOM
+  SYNC_ROOM_TIME
+}
+
+enum RealtimeCommandStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ReportCategory {
+  HARASSMENT_ABUSE
+  HATE_DISCRIMINATION
+  SEXUAL_CONTENT
+  SPAM_ADVERTISING
+  OTHER
+}
+
+enum RoomKind {
+  INSTANT
+  APPOINTMENT
+}
+
+enum RoomVisibility {
+  PUBLIC
+  LINK_ONLY
+}
+
+enum ReservationStatus {
+  BOOKED
+  CANCELLED
+  CONSUMED
+  EXPIRED
+}
+
+enum BackofficeRole {
+  PLATFORM_ADMIN
+  SAFETY_OFFICER
+  OPERATIONS_ANALYST
+  AUDITOR
+}
+
+enum BackofficeAuditActorType {
+  USER
+  SYSTEM_BOOTSTRAP
+  SYSTEM_JOB
+}
+
+enum BackofficeAuditResult {
+  SUCCEEDED
+  REJECTED
+}
+
+enum SafetyCaseStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum SafetySeverity {
+  GENERAL
+  SERIOUS
+  HIGH_RISK
+}
+
+enum SafetyDecisionType {
+  NO_ACTION
+  TEMPORARY_RESTRICTION
+  PERMANENT_DISABLE
+  DISMISSED
+}
+
+enum SafetyCaseActivityType {
+  CREATED
+  UNASSIGNED
+  ASSIGNED
+  REASSIGNED
+  CLAIMED
+  REVIEW_STARTED
+  RESOLVED
+  DISMISSED
+  RESTRICTION_EXPIRED
+  RESTRICTION_LIFTED
+  APPEAL_SUBMITTED
+  APPEAL_UPHELD
+  APPEAL_LIFTED
+}
+
+enum SafetyActivityActorType {
+  USER
+  SYSTEM_JOB
+}
+
+enum SafetyRestrictionKind {
+  TEMPORARY
+  PERMANENT
+}
+
+enum SafetyRestrictionStatus {
+  ACTIVE
+  EXPIRED
+  LIFTED
+}
+
+enum SafetyAppealStatus {
+  PENDING
+  UPHELD
+  LIFTED
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  BLOCKED
+}
+
+enum SocialCommandType {
+  FRIEND_REQUEST_CREATE
+  FRIEND_REQUEST_ACCEPT
+  FRIEND_REQUEST_REJECT
+  FRIEND_REQUEST_WITHDRAW
+  FRIEND_DELETE
+  BLOCK_CREATE
+  BLOCK_DELETE
+  ROOM_INVITATION_CREATE
+  ROOM_INVITATION_DECLINE
+}
+
+enum RoomInvitationStatus {
+  PENDING
+  DECLINED
+  CONSUMED
+  CANCELLED
+}
+
+enum AiExpressionInputMode {
+  TEXT
+  AUDIO
+}
+
+enum AiExpressionStatus {
+  RESERVED
+  STT_RUNNING
+  AI_RUNNING
+  SUCCEEDED
+  FAILED
+  UNCERTAIN
+}
+
+enum AiUsageKind {
+  AI_EXPRESSION
+  STT_AUDIO
+}
+
+enum SpeechProcessingPurpose {
+  AI_EXPRESSION_AUDIO
+  ROOM_SAFETY_DETECTION
+  POST_ROOM_KEYWORDS
+}
+
+enum SpeechConsentAction {
+  ACCEPT
+  REVOKE
+}
+
+enum RoomSpeechRiskCategory {
+  HARASSMENT_ABUSE
+  HATE_DISCRIMINATION
+  SEXUAL_CONTENT
+  THREAT_VIOLENCE
+  SPAM_ADVERTISING
+  OTHER_SAFETY_RISK
+}
+
+enum RoomSpeechRiskSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RoomSpeechAlertDeliveryStatus {
+  PENDING
+  RUNNING
+  DELIVERED
+  EXPIRED
+  FAILED
+}
+
+enum SafetyCapabilityComponent {
+  MEDIA_SUBSCRIPTION
+  STREAMING_STT
+  RISK_RULES
+  COORDINATION
+  HOST_ALERT_DELIVERY
+  KEYWORD_CANDIDATE_EXTRACTION
+  KEYWORD_CANDIDATE_STORE
+}
+
+enum SafetyCapabilityIncidentStatus {
+  OPEN
+  RECOVERED
+}
+
+enum RoomKeywordSummaryStatus {
+  COLLECTING
+  PENDING
+  READY
+  UNAVAILABLE
+}
+
+enum RoomKeywordItemKind {
+  KEYWORD
+  EXPRESSION
+}
+
+enum RoomKeywordSummaryJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum VocabularyCommandAction {
+  IMPORT
+}
+
+enum AccountLifecycleAction {
+  DELETE_ACCOUNT
+}
+
+enum AccountLifecycleCommandStatus {
+  COMPLETED
+}
+
+enum MetricGrain {
+  DAY
+  WEEK
+}
+
+enum MetricSnapshotStatus {
+  COMPLETE
+  PARTIAL
+  UNAVAILABLE
+}
+
+enum MetricRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum OperationalIncidentSeverity {
+  INFO
+  WARNING
+  HIGH
+  CRITICAL
+}
+
+enum OperationalIncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum OperationalAlertDeliveryStatus {
+  PENDING
+  RUNNING
+  DELIVERED
+  FAILED
+}
+
+enum OperationalCommandAction {
+  ACKNOWLEDGE_INCIDENT
+  RESOLVE_INCIDENT
+}
+
+enum RetentionDataCategory {
+  TEMPORARY_SPEECH_CONTENT
+  SHORT_TERM_AI_OUTPUT
+  TEMPORARY_COORDINATION
+  TECHNICAL_COMMAND
+  OPERATIONS_METRIC
+  ACCOUNT_IDENTITY
+  USER_PRIVATE_CONTENT
+  SAFETY_EVIDENCE
+  ENFORCEMENT_APPEAL
+  BACKOFFICE_AUDIT
+}
+
+enum RetentionPolicyStatus {
+  DRAFT
+  ACTIVE
+  SUPERSEDED
+}
+
+enum RetentionRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum DeletionEvidenceResult {
+  COMPLETED
+  UNCERTAIN
+  FAILED
+}
+
+enum RecoveryDrillEnvironment {
+  LOCAL
+  TARGET
+}
+
+enum RecoveryDrillStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
 }

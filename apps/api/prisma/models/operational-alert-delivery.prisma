@@ -1,0 +1,18 @@
+model OperationalAlertDelivery {
+  id            String                         @id @default(uuid()) @db.Uuid
+  incidentId    String                         @db.Uuid
+  status        OperationalAlertDeliveryStatus @default(PENDING)
+  attempts      Int                            @default(0)
+  nextAttemptAt DateTime                       @default(now()) @db.Timestamptz(3)
+  leaseId       String?                        @db.Uuid
+  generation    Int                            @default(0)
+  lockedUntil   DateTime?                      @db.Timestamptz(3)
+  lastError     String?                        @db.VarChar(64)
+  deliveredAt   DateTime?                      @db.Timestamptz(3)
+  createdAt     DateTime                       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime                       @updatedAt @db.Timestamptz(3)
+  incident      OperationalIncident            @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@unique([incidentId])
+  @@index([status, nextAttemptAt, lockedUntil])
+}

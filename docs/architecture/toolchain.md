@@ -118,3 +118,10 @@ parent and are not separate technology choices.
 - A deferred dependency requires an approved change with a real consumer and verification plan.
 - Components, views and routes never depend directly on HTTP transports or provider SDKs.
 - Major runtime/framework upgrades require compatibility, migration and rollback evidence.
+
+## Realtime backend adoption
+
+`implement-livekit-voice-session-backend` adopts `livekit-server-sdk` 2.19.0, `bullmq` 6.3.4,
+and `ioredis` 6.0.0 in the API only. PostgreSQL owns authorization, identity history, events and
+commands; Redis delivers recoverable jobs. Workers run in the existing API process.
+LiveKit Cloud is required for strict token revocation; real Cloud smoke remains separate evidence.
