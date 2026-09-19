@@ -1,0 +1,12 @@
+model OperationalCommand {
+  id              String                   @id @default(uuid()) @db.Uuid
+  actorUserId     String                   @db.Uuid
+  clientRequestId String                   @db.Uuid
+  action          OperationalCommandAction
+  payloadHash     String                   @db.Char(64)
+  result          Json
+  createdAt       DateTime                 @default(now()) @db.Timestamptz(3)
+
+  @@unique([actorUserId, clientRequestId])
+  @@index([createdAt, id])
+}

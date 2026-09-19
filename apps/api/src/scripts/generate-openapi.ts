@@ -17,6 +17,8 @@ Object.assign(process.env, {
   REFRESH_TOKEN_PEPPER: 'contract-only-refresh-pepper-32-characters',
   ROOM_PASSWORD_PEPPER: 'contract-only-room-password-pepper-32-chars',
   ROOM_RULES_VERSION: '2026-09-v1',
+  ROOM_SHARE_BASE_URL: 'http://localhost:5173/rooms/',
+  REALTIME_ENABLED: 'false',
   GOOGLE_OAUTH_ENABLED: 'false',
   WECHAT_OAUTH_ENABLED: 'false',
 });

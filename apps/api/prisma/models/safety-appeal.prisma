@@ -1,0 +1,17 @@
+model SafetyAppeal {
+  id              String             @id @default(uuid()) @db.Uuid
+  restrictionId   String             @unique @db.Uuid
+  userId          String             @db.Uuid
+  reason          String             @db.Text
+  status          SafetyAppealStatus @default(PENDING)
+  submittedAt     DateTime           @default(now()) @db.Timestamptz(3)
+  decidedAt       DateTime?          @db.Timestamptz(3)
+  decidedByUserId String?            @db.Uuid
+  decisionReason  String?            @db.VarChar(500)
+  restriction     SafetyRestriction  @relation(fields: [restrictionId], references: [id], onDelete: Restrict)
+  user            User               @relation("SafetyAppealOwner", fields: [userId], references: [id], onDelete: Restrict)
+  decidedBy       User?              @relation("SafetyAppealDecider", fields: [decidedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([status, submittedAt, id])
+  @@index([userId, submittedAt, id])
+}

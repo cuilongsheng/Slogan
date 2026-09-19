@@ -1,0 +1,19 @@
+model SafetyCapabilityIncident {
+  id               String                         @id @db.Uuid
+  roomId           String?                        @db.Uuid
+  component        SafetyCapabilityComponent
+  errorCategory    String                         @db.VarChar(64)
+  providerCategory String?                        @db.VarChar(64)
+  activeKey        String?                        @unique @db.VarChar(255)
+  status           SafetyCapabilityIncidentStatus @default(OPEN)
+  startedAt        DateTime                       @db.Timestamptz(3)
+  lastObservedAt   DateTime                       @db.Timestamptz(3)
+  recoveredAt      DateTime?                      @db.Timestamptz(3)
+  affectedWindows  Int                            @default(1)
+  createdAt        DateTime                       @default(now()) @db.Timestamptz(3)
+  room             Room?                          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([status, lastObservedAt, id])
+  @@index([roomId, startedAt, id])
+  @@index([component, status, lastObservedAt])
+}

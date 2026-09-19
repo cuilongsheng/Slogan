@@ -1,0 +1,29 @@
+model AiExpressionRequest {
+  id               String                @id @db.Uuid
+  userId           String                @db.Uuid
+  roomId           String                @db.Uuid
+  clientRequestId  String                @db.Uuid
+  inputMode        AiExpressionInputMode
+  inputDigest      String                @db.Char(64)
+  status           AiExpressionStatus    @default(RESERVED)
+  leaseToken       String?               @db.Uuid
+  leaseExpiresAt   DateTime?             @db.Timestamptz(3)
+  providerCategory String?               @db.VarChar(64)
+  inputSize        Int
+  audioDurationMs  Int?
+  output           Json?
+  outputExpiresAt  DateTime?             @db.Timestamptz(3)
+  outputPurgedAt   DateTime?             @db.Timestamptz(3)
+  errorCode        String?               @db.VarChar(64)
+  createdAt        DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime              @updatedAt @db.Timestamptz(3)
+  finishedAt       DateTime?             @db.Timestamptz(3)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  room             Room                  @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  usage            AiUsageLedger[]
+
+  @@unique([userId, clientRequestId])
+  @@index([roomId, userId, createdAt])
+  @@index([status, leaseExpiresAt])
+  @@index([outputExpiresAt, outputPurgedAt])
+}

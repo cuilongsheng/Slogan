@@ -1,0 +1,13 @@
+model RealtimeIdentity {
+  identity          String             @id @db.Uuid
+  roomId            String             @db.Uuid
+  membershipId      String             @db.Uuid
+  credentialVersion Int
+  issueUntil        DateTime           @db.Timestamptz(3)
+  revokedAt         DateTime?          @db.Timestamptz(3)
+  room              Room               @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  membership        RoomMembership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  issuances         RealtimeIssuance[]
+
+  @@index([roomId, revokedAt])
+}

@@ -1,4 +1,14 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -19,6 +29,7 @@ import { Public } from '../../../common/decorators/public.decorator.js';
 import { AuthRateLimitGuard } from '../../../common/guards/auth-rate-limit.guard.js';
 import { ErrorResponseDto } from '../../../common/errors/error-response.dto.js';
 import { AuthService } from '../application/services/auth.service.js';
+import { PhoneAuthService } from '../application/services/phone-auth.service.js';
 import { SessionService } from '../application/services/session.service.js';
 import {
   OAuthExchangeDto,
@@ -27,6 +38,11 @@ import {
   RefreshTokenDto,
   TokenPairDto,
 } from './dto/auth.dto.js';
+import {
+  PhoneChallengeDto,
+  PhoneChallengeResponseDto,
+  PhoneExchangeDto,
+} from './dto/phone-auth.dto.js';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -34,7 +50,45 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly sessions: SessionService,
+    private readonly phone: PhoneAuthService,
   ) {}
+
+  @Public()
+  @Post('phone/challenges')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: PhoneChallengeResponseDto })
+  async requestPhoneChallenge(
+    @Body() body: PhoneChallengeDto,
+    @Req() request: Request,
+  ): Promise<PhoneChallengeResponseDto> {
+    const challenge = await this.phone.requestChallenge({
+      ...body,
+      purpose: 'LOGIN',
+      source: request.ip ?? 'unknown',
+    });
+    return {
+      challengeId: challenge.challengeId,
+      expiresAt: challenge.expiresAt.toISOString(),
+      resendAt: challenge.resendAt.toISOString(),
+    };
+  }
+
+  @Public()
+  @Post('phone/exchange')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: OAuthExchangeResponseDto })
+  async exchangePhone(@Body() body: PhoneExchangeDto): Promise<OAuthExchangeResponseDto> {
+    const result = await this.phone.exchange(body);
+    return {
+      userId: result.userId,
+      created: result.created,
+      onboardingState: result.onboardingState,
+      tokens: {
+        ...result.tokens,
+        refreshTokenExpiresAt: result.tokens.refreshTokenExpiresAt.toISOString(),
+      },
+    };
+  }
 
   @Public()
   @UseGuards(AuthRateLimitGuard)

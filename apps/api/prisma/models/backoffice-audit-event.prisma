@@ -1,0 +1,25 @@
+model BackofficeAuditEvent {
+  id              String                   @id @default(uuid()) @db.Uuid
+  actorType       BackofficeAuditActorType
+  actorUserId     String?                  @db.Uuid
+  actorRoles      BackofficeRole[]
+  action          String                   @db.VarChar(64)
+  targetType      String                   @db.VarChar(64)
+  targetId        String?                  @db.VarChar(128)
+  role            BackofficeRole?
+  reason          String?                  @db.VarChar(500)
+  result          BackofficeAuditResult
+  clientRequestId String?                  @db.Uuid
+  requestHash     String?                  @db.VarChar(64)
+  requestId       String?                  @db.VarChar(128)
+  details         Json?
+  occurredAt      DateTime                 @default(now()) @db.Timestamptz(3)
+  actor           User?                    @relation("BackofficeAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@unique([actorUserId, clientRequestId])
+  @@index([occurredAt, id])
+  @@index([actorUserId, occurredAt, id])
+  @@index([action, occurredAt, id])
+  @@index([targetType, targetId, occurredAt, id])
+  @@index([result, occurredAt, id])
+}

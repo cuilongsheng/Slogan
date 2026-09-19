@@ -1,0 +1,18 @@
+model Report {
+  id              String         @id @default(uuid()) @db.Uuid
+  roomId          String         @db.Uuid
+  reporterUserId  String         @db.Uuid
+  targetUserId    String         @db.Uuid
+  clientRequestId String         @db.Uuid
+  category        ReportCategory
+  description     String         @db.Text
+  submittedAt     DateTime       @default(now()) @db.Timestamptz(3)
+  room            Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  reporter        RoomMembership @relation("ReportReporter", fields: [roomId, reporterUserId], references: [roomId, userId], onDelete: Restrict, onUpdate: Restrict)
+  target          RoomMembership @relation("ReportTarget", fields: [roomId, targetUserId], references: [roomId, userId], onDelete: Restrict, onUpdate: Restrict)
+  event           RoomEvent?
+  safetyCase      SafetyCase?
+
+  @@unique([reporterUserId, clientRequestId])
+  @@index([roomId, submittedAt, id])
+}

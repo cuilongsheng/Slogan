@@ -1,19 +1,52 @@
 model Room {
-  id             String           @id @db.Uuid
-  hostUserId     String           @db.Uuid
-  topic          String           @db.VarChar(120)
-  cefrLevel      CefrLevel
-  capacity       Int
-  passwordDigest String?          @db.Char(64)
-  status         RoomStatus       @default(OPEN)
-  startedAt      DateTime         @db.Timestamptz(3)
-  endsAt         DateTime         @db.Timestamptz(3)
-  createdAt      DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime         @updatedAt @db.Timestamptz(3)
-  host           User             @relation("RoomHost", fields: [hostUserId], references: [id], onDelete: Restrict)
-  memberships    RoomMembership[]
+  kind                            RoomKind                   @default(INSTANT)
+  initialHostDeadline             DateTime?                  @db.Timestamptz(3)
+  initialHostResolved             Boolean                    @default(false)
+  cancelledAt                     DateTime?                  @db.Timestamptz(3)
+  cancelledReason                 String?                    @db.VarChar(64)
+  reservations                    RoomReservation[]
+  notes                           RoomNote[]
+  visibility                      RoomVisibility             @default(PUBLIC)
+  shareCode                       String                     @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  extensionCount                  Int                        @default(0)
+  timeExtensions                  RoomTimeExtension[]
+  invitations                     RoomInvitation[]
+  aiExpressionRequests            AiExpressionRequest[]
+  sensitiveSpeechDetectionEnabled Boolean                    @default(false)
+  postRoomKeywordsEnabled         Boolean                    @default(false)
+  speechRiskEvents                RoomSpeechRiskEvent[]
+  safetyCapabilityIncidents       SafetyCapabilityIncident[]
+  keywordSummary                  RoomKeywordSummary?
+  shareAttributions               RoomShareAttribution[]
+  id                              String                     @id @db.Uuid
+  hostUserId                      String                     @db.Uuid
+  topic                           String                     @db.VarChar(120)
+  cefrLevel                       CefrLevel
+  capacity                        Int
+  passwordDigest                  String?                    @db.Char(64)
+  status                          RoomStatus                 @default(OPEN)
+  startedAt                       DateTime                   @db.Timestamptz(3)
+  endsAt                          DateTime                   @db.Timestamptz(3)
+  createdAt                       DateTime                   @default(now()) @db.Timestamptz(3)
+  updatedAt                       DateTime                   @updatedAt @db.Timestamptz(3)
+  host                            User                       @relation("RoomHost", fields: [hostUserId], references: [id], onDelete: Restrict)
+  memberships                     RoomMembership[]
+  hostDisconnectedAt              DateTime?                  @db.Timestamptz(3)
+  hostReconnectDeadline           DateTime?                  @db.Timestamptz(3)
+  hostReconnectVersion            Int                        @default(0)
+  stateVersion                    Int                        @default(0)
+  providerRoomSid                 String?
+  endedAt                         DateTime?                  @db.Timestamptz(3)
+  endedReason                     String?                    @db.VarChar(64)
+  realtimeIdentities              RealtimeIdentity[]
+  events                          RoomEvent[]
+  realtimeCommands                RealtimeCommand[]
+
+  reports     Report[]
+  safetyCases SafetyCase[]
 
   @@index([status, startedAt, id])
   @@index([status, endsAt])
+  @@index([kind, visibility, status, startedAt, id])
   @@index([hostUserId])
 }

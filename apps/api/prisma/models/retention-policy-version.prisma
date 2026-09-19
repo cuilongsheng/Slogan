@@ -1,0 +1,18 @@
+model RetentionPolicyVersion {
+  id               String                @id @default(uuid()) @db.Uuid
+  category         RetentionDataCategory
+  scopeKey         String                @db.VarChar(128)
+  version          Int
+  retentionSeconds Int?
+  rationaleRef     String                @db.VarChar(256)
+  automatic        Boolean               @default(false)
+  status           RetentionPolicyStatus @default(DRAFT)
+  createdByUserId  String                @db.Uuid
+  createdAt        DateTime              @default(now()) @db.Timestamptz(3)
+  activatedAt      DateTime?             @db.Timestamptz(3)
+  dryRuns          RetentionDryRun[]
+  runs             RetentionRun[]
+
+  @@unique([category, scopeKey, version])
+  @@index([category, scopeKey, status])
+}

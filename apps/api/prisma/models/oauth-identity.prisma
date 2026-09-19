@@ -9,5 +9,6 @@ model OAuthIdentity {
   user      User          @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@unique([issuer, subject])
+  @@unique([userId, provider])
   @@index([userId])
 }

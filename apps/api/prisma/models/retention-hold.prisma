@@ -1,0 +1,17 @@
+model RetentionHold {
+  id               String                @id @default(uuid()) @db.Uuid
+  category         RetentionDataCategory
+  targetType       String?               @db.VarChar(64)
+  targetId         String?               @db.VarChar(128)
+  startsAt         DateTime              @db.Timestamptz(3)
+  endsAt           DateTime?             @db.Timestamptz(3)
+  reason           String                @db.VarChar(500)
+  createdByUserId  String                @db.Uuid
+  createdAt        DateTime              @default(now()) @db.Timestamptz(3)
+  releasedAt       DateTime?             @db.Timestamptz(3)
+  releasedByUserId String?               @db.Uuid
+  releaseReason    String?               @db.VarChar(500)
+
+  @@index([category, startsAt, endsAt])
+  @@index([targetType, targetId, releasedAt])
+}

@@ -1,6 +1,18 @@
 const adminFeatures = ['auth', 'dashboard', 'rooms', 'moderation', 'users', 'settings'];
 const mobileFeatures = ['auth', 'profile', 'room-discovery', 'voice-room', 'reporting'];
-const apiModules = ['auth', 'users', 'profiles', 'rooms', 'voice', 'moderation', 'audit'];
+const apiModules = [
+  'auth',
+  'users',
+  'profiles',
+  'rooms',
+  'voice',
+  'moderation',
+  'audit',
+  'backoffice',
+  'assistance',
+  'account-lifecycle',
+  'operations',
+];
 
 const protectInternals = (root, names, internalPattern) =>
   names.map((name) => ({
@@ -60,6 +72,14 @@ module.exports = {
       severity: 'error',
       from: { path: '^packages/shared/' },
       to: { dependencyTypes: ['core'] },
+    },
+    {
+      name: 'speech-safety-domain-has-no-provider-infrastructure',
+      severity: 'error',
+      from: { path: '^apps/api/src/modules/speech-safety/domain/' },
+      to: {
+        path: '^apps/api/src/(infrastructure/(livekit|stt)|workers/)',
+      },
     },
     ...protectInternals('apps/admin/src/features', adminFeatures, '(api|components|hooks|model)'),
     ...protectInternals('apps/mobile/src/features', mobileFeatures, '(api|components|hooks|model)'),

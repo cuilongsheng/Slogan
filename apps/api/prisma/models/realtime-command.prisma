@@ -1,0 +1,20 @@
+model RealtimeCommand {
+  id            String                @id @default(uuid()) @db.Uuid
+  key           String                @unique
+  roomId        String                @db.Uuid
+  type          RealtimeCommandType
+  identity      String?               @db.Uuid
+  stateVersion  Int
+  status        RealtimeCommandStatus @default(PENDING)
+  attempts      Int                   @default(0)
+  nextAttemptAt DateTime              @default(now()) @db.Timestamptz(3)
+  lockedUntil   DateTime?             @db.Timestamptz(3)
+  leaseId       String?               @db.Uuid
+  lastError     String?               @db.VarChar(64)
+  createdAt     DateTime              @default(now()) @db.Timestamptz(3)
+  completedAt   DateTime?             @db.Timestamptz(3)
+  room          Room                  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([roomId, type, status])
+}

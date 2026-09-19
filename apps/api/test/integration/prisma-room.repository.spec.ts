@@ -27,6 +27,8 @@ describe('Prisma instant room repository', () => {
 
   beforeEach(async () => {
     await prisma.roomMembership.deleteMany();
+    await prisma.roomEvent.deleteMany({ where: { reportId: { not: null } } });
+    await prisma.report.deleteMany();
     await prisma.room.deleteMany();
     await prisma.refreshToken.deleteMany();
     await prisma.authSession.deleteMany();
@@ -132,8 +134,13 @@ describe('Prisma instant room repository', () => {
         capacity: 2,
         passwordDigest: null,
         rulesVersion: '2026-09-v1',
+        visibility: 'PUBLIC',
+        shareCode: randomUUID(),
         startedAt: now,
         endsAt: new Date(now.getTime() + 7_200_000),
+        sensitiveSpeechDetectionEnabled: false,
+        postRoomKeywordsEnabled: false,
+        keywordExtractorVersion: 'test-v1',
       }),
     ).rejects.toBeDefined();
     expect(await prisma.room.count()).toBe(1);

@@ -1,0 +1,19 @@
+model RoomEvent {
+  id              String   @id @default(uuid()) @db.Uuid
+  providerEventId String?  @unique
+  roomId          String?  @db.Uuid
+  type            String   @db.VarChar(64)
+  source          String   @db.VarChar(32)
+  actorId         String?  @db.Uuid
+  targetId        String?  @db.Uuid
+  reason          String?  @db.VarChar(64)
+  result          String   @db.VarChar(32)
+  occurredAt      DateTime @db.Timestamptz(3)
+  recordedAt      DateTime @default(now()) @db.Timestamptz(3)
+  room            Room?    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  reportId String? @unique @db.Uuid
+  report   Report? @relation(fields: [reportId], references: [id], onDelete: Restrict)
+
+  @@index([roomId, occurredAt])
+}

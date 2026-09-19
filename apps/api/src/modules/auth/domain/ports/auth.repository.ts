@@ -1,4 +1,5 @@
 import type { OAuthProviderName, ProviderIdentity } from '../entities/provider-identity.js';
+import type { LoginMethodView, PhoneFingerprint } from '../entities/phone-auth.js';
 
 export const AUTH_REPOSITORY = Symbol('AUTH_REPOSITORY');
 
@@ -28,4 +29,22 @@ export interface AuthRepository {
   revokeSession(userId: string, sessionId: string, now: Date): Promise<void>;
   isSessionActive(userId: string, sessionId: string, now: Date): Promise<boolean>;
   findProviderForUser(userId: string): Promise<OAuthProviderName | null>;
+  findOrCreatePhoneUser(
+    phone: PhoneFingerprint,
+    now: Date,
+  ): Promise<{ userId: string; created: boolean }>;
+  linkPhoneIdentity(
+    userId: string,
+    phone: PhoneFingerprint,
+    now: Date,
+  ): Promise<'CREATED' | 'ALREADY_LINKED'>;
+  linkOAuthIdentity(
+    userId: string,
+    identity: ProviderIdentity,
+    now: Date,
+  ): Promise<'CREATED' | 'ALREADY_LINKED'>;
+  listLoginMethods(userId: string): Promise<LoginMethodView[]>;
+  ownsOAuthIdentity(userId: string, identity: ProviderIdentity): Promise<boolean>;
+  ownsPhoneIdentity(userId: string, phone: PhoneFingerprint): Promise<boolean>;
+  assertActive(userId: string): Promise<void>;
 }

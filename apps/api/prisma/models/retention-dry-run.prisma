@@ -1,0 +1,19 @@
+model RetentionDryRun {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  policyId           String                 @db.Uuid
+  actorUserId        String                 @db.Uuid
+  clientRequestId    String                 @db.Uuid
+  payloadHash        String                 @db.Char(64)
+  boundaryEligibleAt DateTime               @db.Timestamptz(3)
+  candidateCount     Int
+  earliestEligibleAt DateTime?              @db.Timestamptz(3)
+  latestEligibleAt   DateTime?              @db.Timestamptz(3)
+  expiresAt          DateTime               @db.Timestamptz(3)
+  consumedAt         DateTime?              @db.Timestamptz(3)
+  createdAt          DateTime               @default(now()) @db.Timestamptz(3)
+  policy             RetentionPolicyVersion @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  run                RetentionRun?
+
+  @@unique([actorUserId, clientRequestId])
+  @@index([policyId, expiresAt, id])
+}

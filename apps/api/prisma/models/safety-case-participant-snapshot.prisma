@@ -1,0 +1,16 @@
+model SafetyCaseParticipantSnapshot {
+  id         String              @id @default(uuid()) @db.Uuid
+  caseId     String              @db.Uuid
+  userId     String              @db.Uuid
+  role       RoomMembershipRole
+  lifecycle  MembershipLifecycle
+  joinedAt   DateTime            @db.Timestamptz(3)
+  leftAt     DateTime?           @db.Timestamptz(3)
+  removedAt  DateTime?           @db.Timestamptz(3)
+  capturedAt DateTime            @db.Timestamptz(3)
+  safetyCase SafetyCase          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user       User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([caseId, userId])
+  @@index([userId, capturedAt])
+}

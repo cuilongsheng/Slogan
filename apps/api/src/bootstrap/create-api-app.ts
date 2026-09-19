@@ -4,6 +4,7 @@ import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
+import { raw } from 'express';
 import { pinoHttp } from 'pino-http';
 
 import { AppModule } from '../app.module.js';
@@ -24,6 +25,7 @@ export function configureApiApp(app: INestApplication): void {
   app.useLogger(app.get(StructuredLogger));
   app.setGlobalPrefix('v1');
   app.use(helmet());
+  app.use('/v1/webhooks/livekit', raw({ type: 'application/webhook+json', limit: '256kb' }));
   app.use(
     pinoHttp({
       level: config.get('NODE_ENV', { infer: true }) === 'test' ? 'silent' : 'info',

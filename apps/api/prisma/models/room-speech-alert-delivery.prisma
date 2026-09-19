@@ -1,0 +1,17 @@
+model RoomSpeechAlertDelivery {
+  id            String                        @id @db.Uuid
+  riskEventId   String                        @db.Uuid
+  status        RoomSpeechAlertDeliveryStatus @default(PENDING)
+  attempts      Int                           @default(0)
+  nextAttemptAt DateTime                      @default(now()) @db.Timestamptz(3)
+  expiresAt     DateTime                      @db.Timestamptz(3)
+  lockedUntil   DateTime?                     @db.Timestamptz(3)
+  leaseId       String?                       @db.Uuid
+  deliveredAt   DateTime?                     @db.Timestamptz(3)
+  lastError     String?                       @db.VarChar(64)
+  createdAt     DateTime                      @default(now()) @db.Timestamptz(3)
+  riskEvent     RoomSpeechRiskEvent           @relation(fields: [riskEventId], references: [id], onDelete: Cascade)
+
+  @@unique([riskEventId])
+  @@index([status, nextAttemptAt])
+}

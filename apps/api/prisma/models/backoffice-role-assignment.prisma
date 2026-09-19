@@ -1,0 +1,17 @@
+model BackofficeRoleAssignment {
+  id              String         @id @default(uuid()) @db.Uuid
+  userId          String         @db.Uuid
+  role            BackofficeRole
+  grantedAt       DateTime       @default(now()) @db.Timestamptz(3)
+  grantedByUserId String?        @db.Uuid
+  revokedAt       DateTime?      @db.Timestamptz(3)
+  revokedByUserId String?        @db.Uuid
+  version         Int            @default(1)
+  user            User           @relation("BackofficeRoleOwner", fields: [userId], references: [id], onDelete: Restrict)
+  grantedBy       User?          @relation("BackofficeRoleGrantor", fields: [grantedByUserId], references: [id], onDelete: Restrict)
+  revokedBy       User?          @relation("BackofficeRoleRevoker", fields: [revokedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, role])
+  @@index([role, revokedAt, userId])
+  @@index([grantedAt, id])
+}

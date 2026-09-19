@@ -1,0 +1,13 @@
+model SocialCommand {
+  id              String            @id @db.Uuid
+  actorUserId     String            @db.Uuid
+  clientRequestId String            @db.Uuid
+  type            SocialCommandType
+  payloadHash     String            @db.Char(64)
+  result          Json
+  createdAt       DateTime          @default(now()) @db.Timestamptz(3)
+  actor           User              @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@unique([actorUserId, clientRequestId])
+  @@index([createdAt])
+}

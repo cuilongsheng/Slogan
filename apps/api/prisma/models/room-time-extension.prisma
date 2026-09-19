@@ -1,0 +1,17 @@
+model RoomTimeExtension {
+  id                    String   @id @default(uuid()) @db.Uuid
+  roomId                String   @db.Uuid
+  actorUserId           String   @db.Uuid
+  clientRequestId       String   @db.Uuid
+  additionalMinutes     Int
+  previousEndsAt        DateTime @db.Timestamptz(3)
+  endsAt                DateTime @db.Timestamptz(3)
+  resultingCount        Int
+  resultingStateVersion Int
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  room                  Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  actor                 User     @relation("RoomTimeExtensionActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@unique([actorUserId, clientRequestId])
+  @@index([roomId, createdAt, id])
+}

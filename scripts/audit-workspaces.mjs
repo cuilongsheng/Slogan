@@ -21,11 +21,9 @@ const deferredPackages = new Set([
   '@tanstack/react-query',
   '@tanstack/react-table',
   'axios',
-  'bullmq',
   'date-fns',
   'date-fns-tz',
   'i18next',
-  'ioredis',
   'nativewind',
   'react-hook-form',
   'redux',
@@ -50,6 +48,14 @@ for (const { manifestPath, manifest } of manifests) {
 
   for (const section of ['dependencies', 'devDependencies', 'peerDependencies']) {
     for (const [name, range] of Object.entries(manifest[section] ?? {})) {
+      if (
+        ['livekit-server-sdk', 'bullmq', 'ioredis'].includes(name) &&
+        manifest.name !== '@slogan/api'
+      ) {
+        errors.push(
+          `${manifestPath}: realtime backend dependency ${name} belongs only in @slogan/api`,
+        );
+      }
       if (deferredPackages.has(name)) {
         errors.push(`${manifestPath}: deferred package ${name} is installed in ${section}`);
       }

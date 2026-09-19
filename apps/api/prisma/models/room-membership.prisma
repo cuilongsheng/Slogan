@@ -1,17 +1,31 @@
 model RoomMembership {
-  id              String             @id @db.Uuid
-  roomId          String             @db.Uuid
-  userId          String             @db.Uuid
-  role            RoomMembershipRole
-  joinOrder       Int
-  rulesVersion    String             @db.VarChar(64)
-  rulesAcceptedAt DateTime           @db.Timestamptz(3)
-  joinedAt        DateTime           @db.Timestamptz(3)
-  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
-  room            Room               @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user            User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  id                  String              @id @db.Uuid
+  roomId              String              @db.Uuid
+  userId              String              @db.Uuid
+  role                RoomMembershipRole
+  lifecycle           MembershipLifecycle @default(ACTIVE)
+  leftAt              DateTime?           @db.Timestamptz(3)
+  removedAt           DateTime?           @db.Timestamptz(3)
+  removalReason       String?             @db.VarChar(64)
+  joinOrder           Int
+  rulesVersion        String              @db.VarChar(64)
+  rulesAcceptedAt     DateTime            @db.Timestamptz(3)
+  joinedAt            DateTime            @db.Timestamptz(3)
+  participantIdentity String              @unique @default(uuid()) @db.Uuid
+  credentialVersion   Int                 @default(0)
+  presence            RealtimePresence    @default(DISCONNECTED)
+  providerSessionSid  String?
+  presenceUpdatedAt   DateTime?           @db.Timestamptz(3)
+  realtimeIdentities  RealtimeIdentity[]
+  createdAt           DateTime            @default(now()) @db.Timestamptz(3)
+  room                Room                @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user                User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  reportsSubmitted Report[] @relation("ReportReporter")
+  reportsReceived  Report[] @relation("ReportTarget")
 
   @@unique([roomId, userId])
   @@unique([roomId, joinOrder])
   @@index([userId])
+  @@index([roomId, lifecycle])
 }

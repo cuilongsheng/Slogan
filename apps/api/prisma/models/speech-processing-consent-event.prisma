@@ -1,0 +1,14 @@
+model SpeechProcessingConsentEvent {
+  id               String                  @id @db.Uuid
+  userId           String                  @db.Uuid
+  clientRequestId  String                  @db.Uuid
+  purpose          SpeechProcessingPurpose
+  action           SpeechConsentAction
+  noticeVersion    String                  @db.VarChar(64)
+  providerCategory String                  @db.VarChar(64)
+  createdAt        DateTime                @default(now()) @db.Timestamptz(3)
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, clientRequestId])
+  @@index([userId, purpose, createdAt, id])
+}

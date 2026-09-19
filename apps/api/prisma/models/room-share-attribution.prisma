@@ -1,0 +1,10 @@
+model RoomShareAttribution {
+  id       String    @id @default(uuid()) @db.Uuid
+  roomId   String    @db.Uuid
+  openedAt DateTime  @default(now()) @db.Timestamptz(3)
+  joinedAt DateTime? @db.Timestamptz(3)
+  room     Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, openedAt, id])
+  @@index([joinedAt, openedAt, id])
+}

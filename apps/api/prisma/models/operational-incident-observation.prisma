@@ -1,0 +1,10 @@
+model OperationalIncidentObservation {
+  id         String              @id @default(uuid()) @db.Uuid
+  incidentId String              @db.Uuid
+  reasonCode String              @db.VarChar(64)
+  observedAt DateTime            @db.Timestamptz(3)
+  count      Int                 @default(1)
+  incident   OperationalIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, observedAt, id])
+}

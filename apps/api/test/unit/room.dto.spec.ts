@@ -14,6 +14,7 @@ describe('room transport DTOs', () => {
     { topic: 'Valid topic', cefrLevel: 'Z9', capacity: 4 },
     { topic: 'Valid topic', cefrLevel: 'B1', capacity: 1 },
     { topic: 'Valid topic', cefrLevel: 'B1', capacity: 4, password: '12a4' },
+    { topic: 'Valid topic', cefrLevel: 'B1', capacity: 4, visibility: 'PRIVATE' },
   ])('rejects invalid room creation payload %#', async (payload) => {
     expect(await validate(plainToInstance(CreateRoomDto, payload))).not.toHaveLength(0);
   });
@@ -33,6 +34,9 @@ describe('room transport DTOs', () => {
     expect(await validate(query)).toHaveLength(0);
     expect(query.limit).toBe(50);
     expect(await validate(plainToInstance(ListRoomsQueryDto, { limit: 51 }))).not.toHaveLength(0);
+    expect(
+      await validate(plainToInstance(ListRoomsQueryDto, { cefrLevel: 'Z9', topic: 'valid' })),
+    ).not.toHaveLength(0);
   });
 
   it('requires a UUID room id and a boolean rules decision', async () => {
