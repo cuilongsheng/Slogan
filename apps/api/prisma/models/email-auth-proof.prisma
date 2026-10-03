@@ -1,0 +1,15 @@
+model EmailAuthProof {
+  id                String            @id @db.Uuid
+  userId            String            @db.Uuid
+  sessionId         String            @db.Uuid
+  commandId         String            @db.Uuid
+  purpose           EmailProofPurpose
+  tokenDigest       String            @unique @db.VarChar(128)
+  credentialVersion Int?
+  expiresAt         DateTime          @db.Timestamptz(3)
+  consumedAt        DateTime?         @db.Timestamptz(3)
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+}

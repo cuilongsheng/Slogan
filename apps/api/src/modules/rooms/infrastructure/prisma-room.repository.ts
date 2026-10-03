@@ -16,6 +16,7 @@ import type {
   RoomRecord,
   RoomShareRecord,
 } from '../domain/entities/room.js';
+import { ROOM_CEFR_LEVELS, type RoomCefrLevel } from '../domain/entities/room.js';
 import type {
   CreateRoomRepositoryInput,
   LockedRoom,
@@ -245,6 +246,7 @@ export class PrismaRoomRepository implements RoomRepository {
 
   async findByShareCode(
     shareCode: string,
+    attributionId?: string,
   ): Promise<{ status: 'FOUND'; room: RoomShareRecord } | { status: 'UNAVAILABLE' } | null> {
     const initial = await this.prisma.room.findUnique({
       where: { shareCode },
@@ -275,17 +277,31 @@ export class PrismaRoomRepository implements RoomRepository {
         room.host.profile === null
       )
         return { status: 'UNAVAILABLE' as const };
+      if (!ROOM_CEFR_LEVELS.includes(room.cefrLevel as RoomCefrLevel)) {
+        return { status: 'UNAVAILABLE' as const };
+      }
       const active = new Set(room.memberships.map(({ userId }) => userId));
       const reservedCount = room.reservations.filter(({ userId }) => !active.has(userId)).length;
+      const existingAttribution = attributionId
+        ? await transaction.roomShareAttribution.findFirst({
+            where: { id: attributionId, roomId: room.id },
+          })
+        : null;
+      const attribution =
+        existingAttribution ??
+        (await transaction.roomShareAttribution.create({
+          data: { id: randomUUID(), roomId: room.id, openedAt: context.now },
+        }));
       return {
         status: 'FOUND' as const,
         room: {
+          attributionId: attribution.id,
           id: room.id,
           kind: room.kind,
           status: room.status,
           visibility: room.visibility,
           topic: room.topic,
-          cefrLevel: room.cefrLevel,
+          cefrLevel: room.cefrLevel as RoomCefrLevel,
           capacity: room.capacity,
           memberCount: active.size,
           reservedCount,
@@ -473,6 +489,12 @@ export class PrismaRoomRepository implements RoomRepository {
             await transaction.roomInvitation.update({
               where: { id: invitation.id },
               data: { status: 'CONSUMED', resolvedAt: consumedAt, updatedAt: consumedAt },
+            });
+          },
+          markShareAttribution: async (attributionId, joinedAt) => {
+            await transaction.roomShareAttribution.updateMany({
+              where: { id: attributionId, roomId, joinedAt: null },
+              data: { joinedAt },
             });
           },
           createMembership: async (input) => {

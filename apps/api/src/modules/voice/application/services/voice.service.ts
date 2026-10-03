@@ -63,6 +63,10 @@ export class VoiceService {
     this.assertEnabled();
     return this.rooms.members(roomId, userId);
   }
+  removedMembers(roomId: string, userId: string) {
+    this.assertEnabled();
+    return this.rooms.removedMembers(roomId, userId);
+  }
   async webhook(body: string, authorization: string) {
     this.assertEnabled();
     const event = await this.provider.verifyWebhook(body, authorization);

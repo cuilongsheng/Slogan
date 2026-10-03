@@ -102,9 +102,13 @@ describe('room discovery, sharing and extension persistence', () => {
       visibility: 'LINK_ONLY',
     });
     const projection = await rooms.resolveShare(created.room.shareCode);
+    const repeated = await rooms.resolveShare(created.room.shareCode, projection.attributionId);
+    expect(repeated.attributionId).toBe(projection.attributionId);
+    expect(await prisma.roomShareAttribution.count({ where: { roomId: created.room.id } })).toBe(1);
     expect(Object.keys(projection).sort()).toEqual(
       [
         'availableCount',
+        'attributionId',
         'capacity',
         'cefrLevel',
         'endsAt',
@@ -122,6 +126,16 @@ describe('room discovery, sharing and extension persistence', () => {
         'visibility',
       ].sort(),
     );
+    await rooms.join(memberId, created.room.id, {
+      rulesAccepted: true,
+      password: '1234',
+      shareAttributionId: projection.attributionId,
+    });
+    expect(
+      await prisma.roomShareAttribution.count({
+        where: { id: projection.attributionId, joinedAt: { not: null } },
+      }),
+    ).toBe(1);
     await prisma.room.update({ where: { id: created.room.id }, data: { status: 'ENDED' } });
     await expect(rooms.resolveShare(created.room.shareCode)).rejects.toMatchObject({
       code: 'ROOM_SHARE_UNAVAILABLE',

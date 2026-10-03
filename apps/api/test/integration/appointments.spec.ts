@@ -246,11 +246,12 @@ describe('appointment transactions and lifecycle', () => {
     expect((await room()).status).toBe('ENDING');
   });
   it('recovers overdue rooms with realtime disabled and no Redis, never opening an expired appointment', async () => {
+    const startedAt = new Date(Date.now() - 600_000);
     await prisma.room.update({
       where: { id },
       data: {
-        startedAt: new Date(Date.now() - 600_000),
-        initialHostDeadline: new Date(Date.now() - 300_000),
+        startedAt,
+        initialHostDeadline: new Date(startedAt.getTime() + 300_000),
         endsAt: new Date(Date.now() - 10_000),
       },
     });

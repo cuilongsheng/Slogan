@@ -1,0 +1,20 @@
+model EmailDelivery {
+  id               String              @id @db.Uuid
+  challengeId      String              @unique @db.Uuid
+  status           EmailDeliveryStatus @default(PENDING)
+  encryptedPayload String?
+  keyId            String              @db.VarChar(32)
+  generation       Int                 @default(0)
+  attempts         Int                 @default(0)
+  leaseUntil       DateTime?           @db.Timestamptz(3)
+  nextAttemptAt    DateTime            @db.Timestamptz(3)
+  terminalAt       DateTime?           @db.Timestamptz(3)
+  resultCode       String?             @db.VarChar(64)
+  createdAt        DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime            @updatedAt @db.Timestamptz(3)
+  challenge        EmailChallenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([leaseUntil])
+  @@index([terminalAt])
+}

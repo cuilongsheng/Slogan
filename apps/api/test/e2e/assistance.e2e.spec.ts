@@ -52,6 +52,9 @@ class HttpTranscriber implements SpeechTranscriber {
   readonly category = 'FAKE_STT';
   calls = 0;
   async healthCheck() {}
+  async deletionAssurance() {
+    return { mode: 'NO_RETENTION' as const, result: 'COMPLETED' as const };
+  }
   async transcribe() {
     this.calls += 1;
     return { transcript: '请再说一次', durationMs: 1000, usageUnits: 1 };
@@ -166,7 +169,7 @@ describe('AI expression assistance HTTP contract', () => {
       .get('/v1/me/speech-processing-consents')
       .set(auth(member))
       .expect(200);
-    expect(initial.body.items[0]).toMatchObject({ status: 'REQUIRED', noticeVersion: null });
+    expect(initial.body.items[0]).toMatchObject({ status: 'REQUIRED', noticeVersion: null, currentNoticeVersion: '2026-09-v1' });
     expect(initial.body.items[1]).toMatchObject({
       purpose: 'ROOM_SAFETY_DETECTION',
       status: 'REQUIRED',

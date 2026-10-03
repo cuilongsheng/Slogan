@@ -17,7 +17,7 @@ export const METRIC_KEYS = [
 export type MetricKey = (typeof METRIC_KEYS)[number];
 export const METRIC_GRAINS = ['DAY', 'WEEK'] as const;
 export type MetricGrain = (typeof METRIC_GRAINS)[number];
-export const METRIC_DIMENSIONS = ['NATIONALITY', 'CEFR'] as const;
+export const METRIC_DIMENSIONS = ['NATIONALITY', 'CEFR', 'ROOM_TYPE', 'RESULT'] as const;
 export type MetricDimension = (typeof METRIC_DIMENSIONS)[number];
 export type MetricStatus = 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE';
 
@@ -57,6 +57,15 @@ export interface MetricSnapshotQuery {
   dimension?: MetricDimension;
   cursor?: string;
   limit: number;
+}
+
+export interface RoomOperationsQuery {
+  cursor?: string;
+  limit: number;
+  q?: string;
+  status?: import('../../../rooms/index.js').RoomStatus;
+  visibility?: import('../../../rooms/index.js').RoomVisibility;
+  from?: Date;
 }
 
 export const INCIDENT_SEVERITIES = ['INFO', 'WARNING', 'HIGH', 'CRITICAL'] as const;
@@ -133,6 +142,8 @@ export interface RetentionPolicyView {
 export interface RetentionDryRunView {
   id: string;
   policyId: string;
+  category: RetentionCategory;
+  impact: 'PHYSICAL_DELETE_OR_PURGE';
   boundaryEligibleAt: Date;
   candidateCount: number;
   earliestEligibleAt: Date | null;
@@ -158,6 +169,9 @@ export interface RetentionRunView {
   id: string;
   policyId: string;
   dryRunId: string;
+  category: RetentionCategory;
+  policyVersion: number;
+  boundaryEligibleAt: Date;
   status: RetentionRunStatus;
   generation: number;
   scannedCount: number;
@@ -168,6 +182,29 @@ export interface RetentionRunView {
   startedAt: Date | null;
   completedAt: Date | null;
   createdAt: Date;
+}
+
+export interface DeletionEvidenceView {
+  id: string;
+  category: RetentionCategory;
+  purpose: string;
+  providerCategory: string | null;
+  policyVersion: string;
+  deadlineAt: Date;
+  completedAt: Date | null;
+  result: 'COMPLETED' | 'UNCERTAIN' | 'FAILED';
+  reasonCode: string | null;
+  createdAt: Date;
+}
+
+export interface GovernancePageQuery {
+  cursor?: string;
+  limit: number;
+}
+
+export interface GovernancePage<T> {
+  items: T[];
+  nextCursor: string | null;
 }
 
 export interface RecoveryDrillView {

@@ -4,6 +4,7 @@ import type {
   MetricSnapshotQuery,
   MetricSnapshotView,
   MetricWindow,
+  RoomOperationsQuery,
 } from '../entities/operations.js';
 
 export const METRICS_REPOSITORY = Symbol('METRICS_REPOSITORY');
@@ -17,7 +18,11 @@ export interface MetricRunClaim {
 }
 
 export interface MetricsRepository {
-  claim(window: MetricWindow, definitionVersion: string, leaseSeconds: number): Promise<MetricRunClaim>;
+  claim(
+    window: MetricWindow,
+    definitionVersion: string,
+    leaseSeconds: number,
+  ): Promise<MetricRunClaim>;
   compute(window: MetricWindow, now: Date): Promise<MetricFact[]>;
   commit(claim: MetricRunClaim, facts: MetricFact[], dataThroughAt: Date): Promise<void>;
   fail(claim: MetricRunClaim, errorCode: string): Promise<void>;
@@ -31,8 +36,7 @@ export interface MetricsRepository {
   rooms(
     actorUserId: string,
     actorRoles: BackofficeRole[],
-    cursor: string | undefined,
-    limit: number,
+    query: RoomOperationsQuery,
     requestId?: string,
   ): Promise<{ items: Record<string, unknown>[]; nextCursor: string | null }>;
   activeUsers(

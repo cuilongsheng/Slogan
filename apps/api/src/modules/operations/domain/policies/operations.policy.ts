@@ -44,7 +44,7 @@ export function normalizeDimensions(dimensions: Record<string, string>): {
   const entries = Object.entries(dimensions)
     .map(([key, value]) => [key.trim().toUpperCase(), value.trim().toUpperCase()] as const)
     .sort(([a], [b]) => a.localeCompare(b));
-  const allowed: MetricDimension[] = ['NATIONALITY', 'CEFR'];
+  const allowed: MetricDimension[] = ['NATIONALITY', 'CEFR', 'ROOM_TYPE', 'RESULT'];
   if (
     entries.some(([key, value]) => !allowed.includes(key as MetricDimension) || value.length < 1) ||
     new Set(entries.map(([key]) => key)).size !== entries.length
@@ -101,4 +101,86 @@ export function validateRetentionSeconds(
 
 export function commandHash(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+export function mergedConnectionDurations(
+  events: Array<{
+    membershipId: string;
+    userId: string;
+    type: string;
+    occurredAt: Date;
+  }>,
+  windowEnd: Date,
+): Map<string, number> {
+  const starts = new Map<string, Date>();
+  const intervals = new Map<string, Array<{ start: Date; end: Date }>>();
+  const append = (userId: string, start: Date, end: Date) => {
+    if (end <= start) return;
+    const rows = intervals.get(userId) ?? [];
+    rows.push({ start, end });
+    intervals.set(userId, rows);
+  };
+  for (const event of events) {
+    if (event.type === 'joined') {
+      if (!starts.has(event.membershipId)) starts.set(event.membershipId, event.occurredAt);
+      continue;
+    }
+    const start = starts.get(event.membershipId);
+    if (!start) continue;
+    append(event.userId, start, event.occurredAt);
+    starts.delete(event.membershipId);
+  }
+  for (const [membershipId, start] of starts) {
+    const userId = events.find((item) => item.membershipId === membershipId)?.userId;
+    if (userId) append(userId, start, windowEnd);
+  }
+  const totals = new Map<string, number>();
+  for (const [userId, rows] of intervals) {
+    const ordered = rows.sort(
+      (left, right) =>
+        left.start.getTime() - right.start.getTime() || left.end.getTime() - right.end.getTime(),
+    );
+    let current = ordered[0];
+    let total = 0;
+    for (const interval of ordered.slice(1)) {
+      if (interval.start <= current!.end) {
+        if (interval.end > current!.end) current = { start: current!.start, end: interval.end };
+        continue;
+      }
+      total += current!.end.getTime() - current!.start.getTime();
+      current = interval;
+    }
+    if (current) total += current.end.getTime() - current.start.getTime();
+    totals.set(userId, total);
+  }
+  return totals;
+}
+
+const RECOVERY_CHECK_KEYS = new Set([
+  'migrations',
+  'identity_ownership',
+  'room_membership',
+  'reservations',
+  'safety',
+  'roles',
+  'private_content',
+  'commands',
+  'governance',
+]);
+
+export function normalizeRecoveryCheckSummary(
+  value: Record<string, string | number | boolean>,
+): Record<string, string | number | boolean> {
+  const entries = Object.entries(value).sort(([left], [right]) => left.localeCompare(right));
+  if (
+    entries.length < 1 ||
+    entries.some(
+      ([key, result]) =>
+        !RECOVERY_CHECK_KEYS.has(key) ||
+        (typeof result === 'string' && !['PASSED', 'FAILED', 'SKIPPED'].includes(result)) ||
+        (typeof result === 'number' && (!Number.isInteger(result) || result < 0)),
+    )
+  )
+    throw new Error('RECOVERY_CHECK_SUMMARY_INVALID');
+  return Object.fromEntries(entries);
 }

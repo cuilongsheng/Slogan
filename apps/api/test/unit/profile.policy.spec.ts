@@ -27,6 +27,10 @@ describe('ProfilePolicy', () => {
     });
   });
 
+  it.each(['A1_A2', 'B1_B2', 'C1_C2'] as const)('accepts profile CEFR band %s', (cefrLevel) => {
+    expect(policy.validate({ ...validProfile, cefrLevel }, now).cefrLevel).toBe(cefrLevel);
+  });
+
   it.each([
     ['avatarUrl', { avatarUrl: 'file:///tmp/avatar' }],
     ['displayName', { displayName: 'x' }],

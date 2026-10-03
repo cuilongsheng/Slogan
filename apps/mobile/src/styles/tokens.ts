@@ -1,10 +1,21 @@
 export const tokens = {
   color: {
-    surface: '#f4f6f8',
+    surface: '#FFF9F6',
     panel: '#ffffff',
-    foreground: '#16202a',
-    muted: '#5f6b76',
-    border: '#dce2e7',
+    foreground: '#26233B',
+    muted: '#787587',
+    border: '#E0DEED',
+    purple: '#6247E8',
+    purpleSoft: '#F2EEFF',
+    coral: '#FF6F70',
+    peach: '#FFF0E8',
+    peachBorder: '#F0DCD5',
+    ambientGold: '#FFD65A',
+    mint: '#E6FAF5',
+    mintInk: '#137D75',
+    blueSoft: '#E8F7FF',
+    goldSoft: '#FFF4D8',
+    error: '#BE3444',
   },
   space: {
     sm: 8,
@@ -14,6 +25,8 @@ export const tokens = {
   },
   radius: {
     lg: 24,
+    md: 16,
+    sm: 12,
   },
   font: {
     sm: 12,

@@ -30,7 +30,7 @@ import { Public } from '../../../common/decorators/public.decorator.js';
 import { ErrorResponseDto } from '../../../common/errors/error-response.dto.js';
 import { VoiceService } from '../application/services/voice.service.js';
 import { RealtimeError } from '../domain/errors/realtime.error.js';
-import { RealtimeCredentialDto, RealtimeMemberDto } from './dto/voice.dto.js';
+import { RealtimeCredentialDto, RealtimeMemberDto, RemovedRoomMemberDto } from './dto/voice.dto.js';
 
 @ApiTags('voice')
 @ApiBearerAuth()
@@ -58,6 +58,14 @@ export class VoiceController {
     @CurrentIdentity() identity: CurrentAccessIdentity,
   ) {
     return this.voice.members(roomId, identity.userId);
+  }
+  @Get(':roomId/removed-members')
+  @ApiOkResponse({ type: [RemovedRoomMemberDto] })
+  removedMembers(
+    @Param('roomId', new ParseUUIDPipe()) roomId: string,
+    @CurrentIdentity() identity: CurrentAccessIdentity,
+  ) {
+    return this.voice.removedMembers(roomId, identity.userId);
   }
 }
 

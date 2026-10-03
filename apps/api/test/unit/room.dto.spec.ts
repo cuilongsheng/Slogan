@@ -12,6 +12,7 @@ describe('room transport DTOs', () => {
   it.each([
     { topic: 'x', cefrLevel: 'B1', capacity: 4 },
     { topic: 'Valid topic', cefrLevel: 'Z9', capacity: 4 },
+    { topic: 'Valid topic', cefrLevel: 'B1_B2', capacity: 4 },
     { topic: 'Valid topic', cefrLevel: 'B1', capacity: 1 },
     { topic: 'Valid topic', cefrLevel: 'B1', capacity: 4, password: '12a4' },
     { topic: 'Valid topic', cefrLevel: 'B1', capacity: 4, visibility: 'PRIVATE' },

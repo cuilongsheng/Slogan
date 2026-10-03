@@ -81,7 +81,7 @@ export class OAuthDeleteProofDto extends OAuthExchangeDto {
 }
 
 export class LoginMethodDto {
-  @ApiProperty({ enum: ['PHONE', 'GOOGLE', 'WECHAT'] })
+  @ApiProperty({ enum: ['PHONE', 'GOOGLE', 'WECHAT', 'EMAIL_PASSWORD'] })
   type!: string;
 
   @ApiProperty({ format: 'date-time' })

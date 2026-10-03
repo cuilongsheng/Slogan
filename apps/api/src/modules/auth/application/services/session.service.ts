@@ -22,11 +22,17 @@ export class SessionService {
     private readonly config: ConfigService<Environment, true>,
   ) {}
 
-  async issue(userId: string, deviceName?: string, now = new Date()): Promise<TokenPair> {
+  async issue(
+    userId: string,
+    deviceName?: string,
+    now = new Date(),
+    credentialVersion?: number,
+  ): Promise<TokenPair> {
     const refreshToken = this.newRefreshToken();
     const refreshTokenExpiresAt = this.refreshExpiry(now);
     const { sessionId } = await this.repository.createSession({
       userId,
+      ...(credentialVersion === undefined ? {} : { credentialVersion }),
       ...(deviceName === undefined ? {} : { deviceName }),
       digest: this.digest(refreshToken),
       expiresAt: refreshTokenExpiresAt,

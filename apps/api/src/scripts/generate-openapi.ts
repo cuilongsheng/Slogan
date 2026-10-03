@@ -27,7 +27,6 @@ async function generate(): Promise<void> {
   const { createApiApp } = await import('../bootstrap/create-api-app.js');
   const app = await createApiApp();
   try {
-    await app.init();
     const config = new DocumentBuilder()
       .setTitle('Slogan Voice Room API')
       .setDescription('Backend control-plane API for the adult English voice-room product.')

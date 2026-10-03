@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CEFR_LEVELS } from '../../../profiles/index.js';
 export class RealtimeCredentialDto {
   @ApiProperty({ enum: ['ACTIVE'] }) lifecycle!: string;
   @ApiProperty({ enum: ['HOST', 'MEMBER'] }) role!: string;
@@ -18,10 +19,19 @@ export class RealtimeMemberDto {
   @ApiProperty({ type: String, format: 'date-time', nullable: true }) hostReconnectDeadline!:
     string | null;
   @ApiProperty({ format: 'uuid' }) membershipId!: string;
+  @ApiProperty({ format: 'uuid' }) userId!: string;
   @ApiProperty() displayName!: string;
-  @ApiProperty({ enum: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] }) cefrLevel!: string;
+  @ApiProperty({ enum: CEFR_LEVELS }) cefrLevel!: string;
   @ApiProperty({ enum: ['HOST', 'MEMBER'] }) role!: string;
   @ApiProperty({ minimum: 1 }) position!: number;
   @ApiProperty({ enum: ['CONNECTED', 'DISCONNECTED'] }) presence!: string;
   @ApiProperty({ format: 'uuid' }) participantIdentity!: string;
+}
+
+export class RemovedRoomMemberDto {
+  @ApiProperty({ format: 'uuid' }) membershipId!: string;
+  @ApiProperty({ format: 'uuid' }) userId!: string;
+  @ApiProperty() displayName!: string;
+  @ApiProperty({ enum: CEFR_LEVELS }) cefrLevel!: string;
+  @ApiProperty({ minimum: 0 }) credentialVersion!: number;
 }

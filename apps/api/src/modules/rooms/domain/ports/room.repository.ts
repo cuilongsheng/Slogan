@@ -48,6 +48,7 @@ export interface LockedRoom {
     rulesVersion: string;
     now: Date;
   }): Promise<RoomMembershipRecord>;
+  markShareAttribution(attributionId: string, joinedAt: Date): Promise<void>;
   consumeInvitation(invitationId: string, now: Date): Promise<void>;
 }
 
@@ -73,6 +74,7 @@ export interface RoomRepository {
   }): Promise<RoomAssistanceContext | null>;
   findByShareCode(
     shareCode: string,
+    attributionId?: string,
   ): Promise<{ status: 'FOUND'; room: RoomShareRecord } | { status: 'UNAVAILABLE' } | null>;
   extend(input: {
     roomId: string;

@@ -19,14 +19,13 @@ Record only confirmed design targets. Do not copy visual specifications into thi
 | First profile | `Slogan` | `01 Prototype` | `Profile / First setup — Scrolled` | `22:733` | Profile scroll reference | Confirmed |
 | First profile | `Slogan` | `01 Prototype` | `Profile / First setup — Validation` | `22:809` | Required-field error reference | Confirmed |
 
-Figma file: [Slogan](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan). The `Mobile Prototype / V1` section is node `22:205` and contains all 12 mobile frames at 390 x 844.
+Figma file: [Slogan](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan). This table records the initial authentication targets only. For the full, live-checked prototype and high-fidelity inventory, see [v1-figma-coverage.md](./v1-figma-coverage.md). The `Mobile Prototype / V1` section (`22:205`) now contains 34 frames; the admin prototype (`102:2007`) contains 10 frames. The five partner/direct-chat frames (`112:1101`) belong to an unapproved change proposal.
 
 ## Prototype evidence
 
-- The prototype contains 21 confirmed reactions, covering username/password sign-in, registration, email verification, password recovery, WeChat waiting/success/expired/refresh states, Google account selection/cancel/failure/retry, and entry into first profile setup.
+- The initial authentication prototype contains 21 confirmed reactions, covering username/password sign-in, registration, email verification, password recovery, WeChat waiting/success/expired/refresh states, Google account selection/cancel/failure/retry, and entry into first profile setup.
 - `Profile / Scroll View` (`22:669`) uses vertical scrolling. Its 542 px viewport contains `Profile / Scroll Content` (`22:670`) at 1015 px, while the primary completion action remains in a separate sticky region.
-- The prototype section contains 108 component instances and no top-level frames outside the named section.
-- Final lint scanned 681 nodes. It reported 0 critical findings for contrast, text styles, default names, and token use. The remaining 42 warnings are the intentional black/white vector paths inside the demo QR illustration.
+- The earlier authentication batch contained 108 component instances. That count and its 681-node lint result apply only to that batch, not the expanded V1 prototype or `02 UI`.
 - The QR image and Google accounts are prototype-only examples. The Figma file contains no App ID, Client ID, secret, callback URL, real account, or usable production QR code.
 
 Figma is visual truth. OpenSpec defines behavior and OpenAPI defines API contracts.

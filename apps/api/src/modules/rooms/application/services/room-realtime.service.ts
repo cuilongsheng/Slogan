@@ -140,6 +140,7 @@ export class RoomRealtimeService {
         .filter((m) => m.lifecycle === 'ACTIVE')
         .map((m, index) => ({
           membershipId: m.id,
+          userId: m.userId,
           lifecycle: m.lifecycle,
           credentialVersion: m.credentialVersion,
           hostReconnectDeadline: ctx.room.hostReconnectDeadline?.toISOString() ?? null,
@@ -149,6 +150,30 @@ export class RoomRealtimeService {
           position: index + 1,
           presence: m.presence,
           participantIdentity: m.participantIdentity,
+        }));
+    });
+    if (!result) throw new RoomError('ROOM_NOT_FOUND', 'Room not found');
+    return result;
+  }
+  async removedMembers(roomId: string, userId: string) {
+    await this.rooms.detail(userId, roomId);
+    const result = await this.repository.withRoom(roomId, async (ctx) => {
+      this.assertOpen(ctx);
+      if (
+        ctx.room.hostUserId !== userId ||
+        !ctx.members.some(
+          (m) => m.userId === userId && m.role === 'HOST' && m.lifecycle === 'ACTIVE',
+        )
+      )
+        throw new RoomError('ROOM_HOST_REQUIRED', 'Current host permission required');
+      return ctx.members
+        .filter((m) => m.lifecycle === 'REMOVED')
+        .map((m) => ({
+          membershipId: m.id,
+          userId: m.userId,
+          displayName: m.displayName,
+          cefrLevel: m.cefrLevel,
+          credentialVersion: m.credentialVersion,
         }));
     });
     if (!result) throw new RoomError('ROOM_NOT_FOUND', 'Room not found');

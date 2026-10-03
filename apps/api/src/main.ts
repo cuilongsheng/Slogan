@@ -7,7 +7,10 @@ async function bootstrap() {
   const app = await createApiApp();
   const config = app.get<ConfigService<Environment, true>>(ConfigService);
 
-  await app.listen(config.get('APP_PORT', { infer: true }), '127.0.0.1');
+  await app.listen(
+    config.get('APP_PORT', { infer: true }),
+    config.get('APP_HOST', { infer: true }),
+  );
 }
 
 void bootstrap();

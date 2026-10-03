@@ -1,9 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../../config/environment.js';
 import { StructuredLogger } from '../../../infrastructure/observability/structured-logger.service.js';
 import { PostRoomLearningService } from '../../post-room-learning/index.js';
+import { GovernanceService } from '../../operations/index.js';
 import {
   ROOM_SPEECH_COORDINATOR,
   ROOM_SPEECH_TRANSCRIBER,
@@ -32,6 +33,7 @@ export class RoomSpeechProcessingService {
     private readonly learning: PostRoomLearningService,
     private readonly config: ConfigService<Environment, true>,
     private readonly logger: StructuredLogger,
+    @Optional() private readonly governance?: GovernanceService,
   ) {}
 
   activeRooms() {
@@ -111,6 +113,44 @@ export class RoomSpeechProcessingService {
       return results;
     } finally {
       audio.fill(0);
+      const now = new Date();
+      const retention = this.config.get('STT_RETENTION_SECONDS', { infer: true }) ?? 0;
+      const assurance = await this.transcriber.deletionAssurance().catch(() => ({
+        mode: 'DELETE_AFTER_PROCESSING' as const,
+        result: 'UNCERTAIN' as const,
+        reasonCode: 'PROVIDER_DELETION_CHECK_FAILED',
+      }));
+      await Promise.allSettled([
+        this.governance?.recordDeletion({
+          category: 'TEMPORARY_SPEECH_CONTENT',
+          purpose: 'ROOM_SPEECH_LOCAL_WINDOW',
+          policyVersion: this.config.get('ROOM_SPEECH_RULE_SET_VERSION', { infer: true }),
+          deadlineAt: now,
+          completedAt: now,
+          result: 'COMPLETED',
+        }),
+        this.governance?.recordDeletion({
+          category: 'TEMPORARY_SPEECH_CONTENT',
+          purpose: 'ROOM_SPEECH_LOCAL_TRANSCRIPT',
+          policyVersion: this.config.get('ROOM_SPEECH_RULE_SET_VERSION', { infer: true }),
+          deadlineAt: now,
+          completedAt: now,
+          result: 'COMPLETED',
+        }),
+        this.governance?.recordDeletion({
+          category: 'TEMPORARY_SPEECH_CONTENT',
+          purpose: 'ROOM_SPEECH_STT_PROVIDER',
+          providerCategory: this.transcriber.category,
+          policyVersion: this.config.get('ROOM_SPEECH_RULE_SET_VERSION', { infer: true }),
+          deadlineAt: new Date(now.getTime() + retention * 1000),
+          ...(assurance.result === 'COMPLETED'
+            ? { completedAt: now, result: assurance.result }
+            : {
+                result: assurance.result,
+                ...(assurance.reasonCode ? { reasonCode: assurance.reasonCode } : {}),
+              }),
+        }),
+      ]);
     }
   }
 

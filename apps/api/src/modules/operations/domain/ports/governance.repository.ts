@@ -1,5 +1,8 @@
 import type { BackofficeRole } from '../../../backoffice/index.js';
 import type {
+  DeletionEvidenceView,
+  GovernancePage,
+  GovernancePageQuery,
   RecoveryDrillView,
   RetentionCategory,
   RetentionDryRunView,
@@ -11,6 +14,13 @@ import type {
 export const GOVERNANCE_REPOSITORY = Symbol('GOVERNANCE_REPOSITORY');
 
 export interface GovernanceRepository {
+  recordPolicyRejection(input: {
+    actorUserId: string;
+    actorRoles: BackofficeRole[];
+    category: RetentionCategory;
+    reasonCode: string;
+    requestId?: string;
+  }): Promise<void>;
   createPolicy(input: {
     actorUserId: string;
     actorRoles: BackofficeRole[];
@@ -28,7 +38,12 @@ export interface GovernanceRepository {
     reason: string;
     requestId?: string;
   }): Promise<RetentionPolicyView>;
-  listPolicies(): Promise<RetentionPolicyView[]>;
+  listPolicies(
+    actorUserId: string,
+    actorRoles: BackofficeRole[],
+    query: GovernancePageQuery,
+    requestId?: string,
+  ): Promise<GovernancePage<RetentionPolicyView>>;
   createDryRun(input: {
     actorUserId: string;
     actorRoles: BackofficeRole[];
@@ -39,6 +54,12 @@ export interface GovernanceRepository {
     now: Date;
     requestId?: string;
   }): Promise<RetentionDryRunView>;
+  listDryRuns(
+    actorUserId: string,
+    actorRoles: BackofficeRole[],
+    query: GovernancePageQuery,
+    requestId?: string,
+  ): Promise<GovernancePage<RetentionDryRunView>>;
   createHold(input: {
     actorUserId: string;
     actorRoles: BackofficeRole[];
@@ -57,7 +78,12 @@ export interface GovernanceRepository {
     reason: string;
     requestId?: string;
   }): Promise<RetentionHoldView>;
-  listHolds(): Promise<RetentionHoldView[]>;
+  listHolds(
+    actorUserId: string,
+    actorRoles: BackofficeRole[],
+    query: GovernancePageQuery,
+    requestId?: string,
+  ): Promise<GovernancePage<RetentionHoldView>>;
   createRun(input: {
     actorUserId: string;
     actorRoles: BackofficeRole[];
@@ -67,9 +93,20 @@ export interface GovernanceRepository {
     now: Date;
     requestId?: string;
   }): Promise<RetentionRunView>;
+  scheduleAutomaticRuns(now: Date, dryRunTtlSeconds: number): Promise<number>;
   claimRun(leaseSeconds: number, now: Date): Promise<RetentionRunView | null>;
-  executeBatch(runId: string, generation: number, batchSize: number, now: Date): Promise<RetentionRunView>;
-  listRuns(): Promise<RetentionRunView[]>;
+  executeBatch(
+    runId: string,
+    generation: number,
+    batchSize: number,
+    now: Date,
+  ): Promise<RetentionRunView>;
+  listRuns(
+    actorUserId: string,
+    actorRoles: BackofficeRole[],
+    query: GovernancePageQuery,
+    requestId?: string,
+  ): Promise<GovernancePage<RetentionRunView>>;
   recordDeletionEvidence(input: {
     category: RetentionCategory;
     purpose: string;
@@ -80,7 +117,12 @@ export interface GovernanceRepository {
     result: 'COMPLETED' | 'UNCERTAIN' | 'FAILED';
     reasonCode?: string;
   }): Promise<void>;
-  listDeletionEvidence(): Promise<Record<string, unknown>[]>;
+  listDeletionEvidence(
+    actorUserId: string,
+    actorRoles: BackofficeRole[],
+    query: GovernancePageQuery,
+    requestId?: string,
+  ): Promise<GovernancePage<DeletionEvidenceView>>;
   recordRecoveryDrill(input: {
     actorUserId: string;
     actorRoles: BackofficeRole[];
@@ -100,6 +142,12 @@ export interface GovernanceRepository {
     completedAt: Date;
     requestId?: string;
   }): Promise<RecoveryDrillView>;
-  listRecoveryDrills(): Promise<RecoveryDrillView[]>;
+  listRecoveryDrills(
+    actorUserId: string,
+    actorRoles: BackofficeRole[],
+    query: GovernancePageQuery,
+    requestId?: string,
+  ): Promise<GovernancePage<RecoveryDrillView>>;
+  failRun(runId: string, generation: number, errorCode: string, now: Date): Promise<void>;
   health(now: Date): Promise<Record<string, unknown>>;
 }

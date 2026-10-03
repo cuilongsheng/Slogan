@@ -1,2 +1,15 @@
 export { HttpSmsAdapter } from './infrastructure/http-sms.adapter.js';
 export { RedisPhoneChallengeStore } from './infrastructure/redis-phone-challenge.store.js';
+export * from './domain/policies/email-password.policy.js';
+export * from './domain/errors/email-auth.error.js';
+export * from './domain/ports/email-auth.repository.js';
+export * from './domain/ports/email-delivery.repository.js';
+export * from './domain/ports/email-security.port.js';
+export * from './infrastructure/scrypt-password-hasher.js';
+export * from './infrastructure/email-security.js';
+export * from './infrastructure/redis-email-quota.js';
+export * from './infrastructure/prisma-email-auth.repository.js';
+export * from './infrastructure/prisma-email-delivery.repository.js';
+export * from './infrastructure/prisma-auth.repository.js';
+export * from './infrastructure/smtp-mail-sender.js';
+export * from './application/services/auth-mail.service.js';

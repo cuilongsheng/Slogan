@@ -74,6 +74,7 @@ export class ConsentStateDto {
     enum: ['AI_EXPRESSION_AUDIO', 'ROOM_SAFETY_DETECTION', 'POST_ROOM_KEYWORDS'],
   })
   purpose!: string;
+  @ApiProperty() currentNoticeVersion!: string;
   @ApiPropertyOptional({ nullable: true }) noticeVersion!: string | null;
   @ApiPropertyOptional({ nullable: true }) providerCategory!: string | null;
   @ApiProperty({ enum: ['ACCEPTED', 'REVOKED', 'REQUIRED'] }) status!: string;

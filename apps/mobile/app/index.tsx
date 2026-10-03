@@ -1,58 +1,20 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Redirect } from 'expo-router';
+import { Text } from 'react-native';
 
-import { tokens } from '../src/styles/tokens';
+import { AuthPage } from '../src/components/ui/AuthPage';
+import { useAuth } from '../src/features/auth/context';
+import { onboardingRoute } from '../src/features/auth/routes';
+import { t } from '../src/services/locale';
 
-export default function BootstrapRoute() {
-  return (
-    <View style={styles.screen}>
-      <View style={styles.panel}>
-        <Text style={styles.eyebrow}>ENGINEERING BOOTSTRAP</Text>
-        <Text accessibilityRole="header" style={styles.title}>
-          Slogan Mobile is ready
-        </Text>
-        <Text style={styles.body}>
-          This route verifies Expo Router, native styles, bundle, and tests. It is not a voice room.
-        </Text>
-      </View>
-      <StatusBar style="dark" />
-    </View>
-  );
+export default function IndexRoute() {
+  const { state } = useAuth();
+  if (state.kind === 'loading')
+    return (
+      <AuthPage>
+        <Text>{t('signingIn')}</Text>
+      </AuthPage>
+    );
+  if (state.kind === 'signedIn')
+    return <Redirect href={onboardingRoute(state.me.onboardingState)} />;
+  return <Redirect href="/sign-in" />;
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: tokens.space.lg,
-    backgroundColor: tokens.color.surface,
-  },
-  panel: {
-    width: '100%',
-    maxWidth: 520,
-    padding: tokens.space.xl,
-    borderWidth: 1,
-    borderColor: tokens.color.border,
-    borderRadius: tokens.radius.lg,
-    backgroundColor: tokens.color.panel,
-  },
-  eyebrow: {
-    color: tokens.color.muted,
-    fontSize: tokens.font.sm,
-    fontWeight: '700',
-    letterSpacing: 1.6,
-  },
-  title: {
-    marginTop: tokens.space.sm,
-    color: tokens.color.foreground,
-    fontSize: tokens.font.xl,
-    fontWeight: '700',
-  },
-  body: {
-    marginTop: tokens.space.md,
-    color: tokens.color.muted,
-    fontSize: tokens.font.md,
-    lineHeight: 24,
-  },
-});

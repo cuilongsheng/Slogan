@@ -20,28 +20,29 @@ template inspected during this change.
 
 ## Adopt Now
 
-| Area   | Technology                 |                 Version | Responsibility                       |
-| ------ | -------------------------- | ----------------------: | ------------------------------------ |
-| Root   | ESLint                     |                 10.10.0 | Static code quality                  |
-| Root   | Prettier                   |                   3.9.6 | Deterministic formatting             |
-| Root   | dependency-cruiser         |                  18.2.0 | Dependency boundaries and cycles     |
-| Root   | Playwright                 |                  1.63.0 | Admin browser E2E evidence           |
-| Admin  | React / React DOM          |                  19.2.3 | PC rendering                         |
-| Admin  | Vite / React plugin        |           8.2.2 / 6.1.1 | PC development and build             |
-| Admin  | React Router DOM           |                  7.18.3 | Centralized PC routing               |
-| Admin  | Tailwind CSS / Vite plugin |                   4.3.3 | PC styles and semantic tokens        |
-| Admin  | Vitest / Testing Library   |          5.0.0 / 16.3.3 | Fast component tests                 |
-| Mobile | Expo / Expo Router         |       57.0.21 / 57.0.20 | Native runtime and file routing      |
-| Mobile | React / React Native       |         19.2.3 / 0.86.3 | Native rendering                     |
-| Mobile | React Native StyleSheet    |                platform | Native styles using semantic tokens  |
-| Mobile | Jest / jest-expo           |         29.7.0 / 57.0.5 | Native component tests               |
-| API    | NestJS / Express adapter   |                  12.0.1 | Modular HTTP application shell       |
-| API    | @nestjs/config / Zod       |          12.0.0 / 4.5.4 | Startup configuration validation     |
-| API    | PostgreSQL / Prisma        |         server / 7.10.0 | Persistent identity and profile data |
-| API    | NestJS Swagger             |                  12.0.1 | Code-first OpenAPI generation        |
-| API    | JWT / rotating token       |                  12.0.1 | Access and refresh session boundary  |
-| API    | Pino / Helmet / limiter    | 10.3.1 / 8.3.0 / 11.2.0 | Logging and HTTP security baseline   |
-| API    | Jest / ts-jest             |        29.7.0 / 29.4.12 | API bootstrap tests                  |
+| Area       | Technology                         |                 Version | Responsibility                                  |
+| ---------- | ---------------------------------- | ----------------------: | ----------------------------------------------- |
+| Root       | ESLint                             |                 10.10.0 | Static code quality                             |
+| Root       | Prettier                           |                   3.9.6 | Deterministic formatting                        |
+| Root       | dependency-cruiser                 |                  18.2.0 | Dependency boundaries and cycles                |
+| Root       | Playwright                         |                  1.63.0 | Admin browser E2E evidence                      |
+| Admin      | React / React DOM                  |                  19.2.3 | PC rendering                                    |
+| Admin      | Vite / React plugin                |           8.2.2 / 6.1.1 | PC development and build                        |
+| Admin      | React Router DOM                   |                  7.18.3 | Centralized PC routing                          |
+| Admin      | Tailwind CSS / Vite plugin         |                   4.3.3 | PC styles and semantic tokens                   |
+| Admin      | Vitest / Testing Library           |          5.0.0 / 16.3.3 | Fast component tests                            |
+| Mobile     | Expo / Expo Router                 |       57.0.21 / 57.0.20 | Native runtime and file routing                 |
+| Mobile     | React / React Native               |         19.2.3 / 0.86.3 | Native rendering                                |
+| Mobile     | React Native StyleSheet            |                platform | Native styles using semantic tokens             |
+| Mobile     | Jest / jest-expo                   |         29.7.0 / 57.0.5 | Native component tests                          |
+| API        | NestJS / Express adapter           |                  12.0.1 | Modular HTTP application shell                  |
+| API        | @nestjs/config / Zod               |          12.0.0 / 4.5.4 | Startup configuration validation                |
+| API        | PostgreSQL / Prisma                |         server / 7.10.0 | Persistent identity and profile data            |
+| API        | NestJS Swagger                     |                  12.0.1 | Code-first OpenAPI generation                   |
+| API        | JWT / rotating token               |                  12.0.1 | Access and refresh session boundary             |
+| API client | openapi-typescript / openapi-fetch |         7.13.0 / 0.17.0 | Generated contract types and typed fetch client |
+| API        | Pino / Helmet / limiter            | 10.3.1 / 8.3.0 / 11.2.0 | Logging and HTTP security baseline              |
+| API        | Jest / ts-jest                     |        29.7.0 / 29.4.12 | API bootstrap tests                             |
 
 ## Adopt On Trigger
 
@@ -87,30 +88,30 @@ The manifests and lockfile remain the version authority. This inventory explains
 dependency that supports the adopt-now stack; transitive packages are owned by their direct
 parent and are not separate technology choices.
 
-| Workspace  | Direct packages                                                                                                    | Responsibility                                                                     |
-| ---------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| Root       | `typescript`, `@types/node`                                                                                        | Shared compiler and Node types for tooling configuration                           |
-| Root       | `eslint`, `@eslint/js`, `typescript-eslint`, `globals`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh` | Flat lint configuration and React-specific static checks                           |
-| Root       | `prettier`, `dependency-cruiser`, `@playwright/test`                                                               | Formatting, dependency boundaries and browser E2E                                  |
-| Admin      | `react`, `react-dom`, `react-router-dom`                                                                           | PC runtime and centralized routing                                                 |
-| Admin      | `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`                                                 | PC build and semantic-token styling                                                |
-| Admin      | `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/jest-dom`                   | Component test runtime and DOM assertions                                          |
-| Admin      | `typescript`, `@types/react`, `@types/react-dom`                                                                   | App-local compiler and framework types                                             |
-| Mobile     | `expo`, `expo-router`, `expo-constants`, `expo-linking`, `expo-status-bar`                                         | Expo runtime, routing, linking and shell status bar                                |
-| Mobile     | `react`, `react-native`, `react-native-safe-area-context`, `react-native-screens`                                  | Native rendering and Expo Router navigation peers                                  |
-| Mobile     | `react-native-reanimated`, `react-native-worklets`                                                                 | Expo Router animation/worklet peers required by the selected SDK template          |
-| Mobile     | `jest`, `jest-expo`, `@testing-library/react-native`, `react-test-renderer`                                        | Expo-compatible component tests                                                    |
-| Mobile     | `@react-native/metro-config`, `typescript`, `@types/jest`, `@types/react`                                          | Metro, compiler and test/framework types                                           |
-| API        | `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`                                                       | NestJS ESM application and Express HTTP adapter                                    |
-| API        | `@nestjs/config`, `zod`, `reflect-metadata`, `rxjs`                                                                | Startup configuration validation and NestJS runtime peers                          |
-| API        | `@prisma/client`, `@prisma/adapter-pg`, `pg`                                                                       | PostgreSQL persistence behind infrastructure adapters                              |
-| API        | `@nestjs/jwt`, `@nestjs/swagger`, `class-validator`, `class-transformer`, `yaml`                                   | Sessions, transport validation and generated OpenAPI                               |
-| API        | `express`, `helmet`, `pino`, `pino-http`, `rate-limiter-flexible`                                                  | HTTP runtime, security, redacted structured logs and single-instance rate limiting |
-| API        | `@nestjs/cli`, `@nestjs/testing`, `jest`, `ts-jest`                                                                | Build, bootstrap test harness and TypeScript transformation                        |
-| API        | `prisma`, `supertest`, `@apidevtools/swagger-parser`, `openapi-types`                                              | Migrations, HTTP E2E and OpenAPI validation                                        |
-| API        | `typescript`, `@types/node`, `@types/jest`, `@types/express`, `@types/pg`, `@types/supertest`                      | App-local compiler and runtime/test types                                          |
-| Shared     | `typescript`, `vitest`                                                                                             | Platform-neutral build, typecheck and test only                                    |
-| API client | None                                                                                                               | Reserved generation boundary; no contract or client exists yet                     |
+| Workspace  | Direct packages                                                                                                    | Responsibility                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Root       | `typescript`, `@types/node`                                                                                        | Shared compiler and Node types for tooling configuration                                 |
+| Root       | `eslint`, `@eslint/js`, `typescript-eslint`, `globals`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh` | Flat lint configuration and React-specific static checks                                 |
+| Root       | `prettier`, `dependency-cruiser`, `@playwright/test`                                                               | Formatting, dependency boundaries and browser E2E                                        |
+| Admin      | `react`, `react-dom`, `react-router-dom`                                                                           | PC runtime and centralized routing                                                       |
+| Admin      | `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`                                                 | PC build and semantic-token styling                                                      |
+| Admin      | `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/jest-dom`                   | Component test runtime and DOM assertions                                                |
+| Admin      | `typescript`, `@types/react`, `@types/react-dom`                                                                   | App-local compiler and framework types                                                   |
+| Mobile     | `expo`, `expo-router`, `expo-constants`, `expo-linking`, `expo-status-bar`                                         | Expo runtime, routing, linking and shell status bar                                      |
+| Mobile     | `react`, `react-native`, `react-native-safe-area-context`, `react-native-screens`                                  | Native rendering and Expo Router navigation peers                                        |
+| Mobile     | `react-native-reanimated`, `react-native-worklets`                                                                 | Expo Router animation/worklet peers required by the selected SDK template                |
+| Mobile     | `jest`, `jest-expo`, `@testing-library/react-native`, `react-test-renderer`                                        | Expo-compatible component tests                                                          |
+| Mobile     | `@react-native/metro-config`, `typescript`, `@types/jest`, `@types/react`                                          | Metro, compiler and test/framework types                                                 |
+| API        | `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`                                                       | NestJS ESM application and Express HTTP adapter                                          |
+| API        | `@nestjs/config`, `zod`, `reflect-metadata`, `rxjs`                                                                | Startup configuration validation and NestJS runtime peers                                |
+| API        | `@prisma/client`, `@prisma/adapter-pg`, `pg`                                                                       | PostgreSQL persistence behind infrastructure adapters                                    |
+| API        | `@nestjs/jwt`, `@nestjs/swagger`, `class-validator`, `class-transformer`, `yaml`                                   | Sessions, transport validation and generated OpenAPI                                     |
+| API        | `express`, `helmet`, `pino`, `pino-http`, `rate-limiter-flexible`                                                  | HTTP runtime, security, redacted structured logs and single-instance rate limiting       |
+| API        | `@nestjs/cli`, `@nestjs/testing`, `jest`, `ts-jest`                                                                | Build, bootstrap test harness and TypeScript transformation                              |
+| API        | `prisma`, `supertest`, `@apidevtools/swagger-parser`, `openapi-types`                                              | Migrations, HTTP E2E and OpenAPI validation                                              |
+| API        | `typescript`, `@types/node`, `@types/jest`, `@types/express`, `@types/pg`, `@types/supertest`                      | App-local compiler and runtime/test types                                                |
+| Shared     | `typescript`, `vitest`                                                                                             | Platform-neutral build, typecheck and test only                                          |
+| API client | `openapi-fetch`, `openapi-typescript`, isolated `typescript` 5.9.3                                                 | Typed fetch runtime and deterministic OpenAPI generation; mobile remains on TypeScript 6 |
 
 ## Selection Rules
 

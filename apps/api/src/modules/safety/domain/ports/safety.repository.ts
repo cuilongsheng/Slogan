@@ -9,6 +9,8 @@ import type {
 export const SAFETY_REPOSITORY = Symbol('SAFETY_REPOSITORY');
 
 export interface SafetyRepository {
+  caseSummary(actor: SafetyActor): Promise<{ open: number; highRisk: number; closed: number }>;
+  appealSummary(actor: SafetyActor): Promise<{ pending: number; upheld: number; lifted: number }>;
   listCases(actor: SafetyActor, query: SafetyCaseQuery): Promise<unknown>;
   caseDetail(actor: SafetyActor, caseId: string): Promise<unknown>;
   evidence(actor: SafetyActor, caseId: string): Promise<unknown>;

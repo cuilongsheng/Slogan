@@ -2,6 +2,7 @@ import type {
   BlockRecord,
   FriendRequestAction,
   FriendRequestRecord,
+  FriendRequestListRecord,
   FriendshipRecord,
   PublicSocialProfile,
   SocialCursor,
@@ -29,7 +30,7 @@ export interface SocialRepository {
     direction: 'incoming' | 'outgoing';
     cursor: SocialCursor | null;
     limit: number;
-  }): Promise<SocialPage<FriendRequestRecord>>;
+  }): Promise<SocialPage<FriendRequestListRecord>>;
   listFriends(input: {
     userId: string;
     cursor: SocialCursor | null;

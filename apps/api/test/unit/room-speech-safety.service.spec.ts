@@ -62,6 +62,10 @@ describe('RoomSpeechSafetyService', () => {
     const transcriber = {
       category: 'TEST_STT',
       healthCheck: fn(async () => undefined),
+      deletionAssurance: fn(async () => ({
+        mode: 'NO_RETENTION' as const,
+        result: 'COMPLETED' as const,
+      })),
       openSession: fn(async () => ({ transcribeWindow, close })),
     } satisfies RoomSpeechTranscriber;
     const realtime = {} as RealtimeProvider;
@@ -173,6 +177,10 @@ describe('RoomSpeechSafetyService', () => {
     const transcriber = {
       category: 'TEST_STT',
       healthCheck: fn(async () => undefined),
+      deletionAssurance: fn(async () => ({
+        mode: 'NO_RETENTION' as const,
+        result: 'COMPLETED' as const,
+      })),
       openSession: fn(async () => ({
         transcribeWindow: () =>
           new Promise<never>((_resolve, reject) => {
@@ -235,6 +243,10 @@ describe('RoomSpeechSafetyService', () => {
     const transcriber = {
       category: 'TEST_STT',
       healthCheck: fn(async () => undefined),
+      deletionAssurance: fn(async () => ({
+        mode: 'NO_RETENTION' as const,
+        result: 'COMPLETED' as const,
+      })),
       openSession: fn(async () => ({
         transcribeWindow: fn(async () => ({
           transcript: 'I will attack you',

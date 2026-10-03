@@ -3,9 +3,17 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, type OperationalIncident } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 import { appendBackofficeAuditEvent } from '../../audit/index.js';
-import type { IncidentObservationInput, IncidentQuery, IncidentView } from '../domain/entities/operations.js';
+import type {
+  IncidentObservationInput,
+  IncidentQuery,
+  IncidentView,
+} from '../domain/entities/operations.js';
 import { OperationsError } from '../domain/errors/operations.error.js';
-import type { AlertDeliveryClaim, IncidentCommandInput, IncidentsRepository } from '../domain/ports/incidents.repository.js';
+import type {
+  AlertDeliveryClaim,
+  IncidentCommandInput,
+  IncidentsRepository,
+} from '../domain/ports/incidents.repository.js';
 import { incidentFingerprint, normalizeReason } from '../domain/policies/operations.policy.js';
 
 type Cursor = { at: string; id: string };
@@ -50,7 +58,7 @@ function view(row: OperationalIncident): IncidentView {
 export class PrismaIncidentsRepository implements IncidentsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async observe(input: IncidentObservationInput): Promise<IncidentView> {
+  async observe(input: IncidentObservationInput, cooldownSeconds: number): Promise<IncidentView> {
     const fingerprint = incidentFingerprint(input);
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fingerprint}, 0))`;
@@ -72,7 +80,7 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
         const last = await tx.operationalIncident.findFirst({
           where: { fingerprint },
           orderBy: { occurrence: 'desc' },
-          select: { occurrence: true },
+          select: { occurrence: true, resolvedAt: true },
         });
         row = await tx.operationalIncident.create({
           data: {
@@ -91,7 +99,15 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
           },
         });
         await tx.operationalAlertDelivery.create({
-          data: { id: randomUUID(), incidentId: row.id },
+          data: {
+            id: randomUUID(),
+            incidentId: row.id,
+            nextAttemptAt:
+              last?.resolvedAt &&
+              last.resolvedAt.getTime() + cooldownSeconds * 1000 > input.observedAt.getTime()
+                ? new Date(last.resolvedAt.getTime() + cooldownSeconds * 1000)
+                : input.observedAt,
+          },
         });
       }
       await tx.operationalIncidentObservation.create({
@@ -103,10 +119,62 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
         },
       });
       return view(row);
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
   }
 
-  async list(actorUserId: string, actorRoles: IncidentCommandInput['actorRoles'], query: IncidentQuery, requestId?: string) {
+  async recover(
+    input: Omit<IncidentObservationInput, 'severity' | 'reasonCode'>,
+  ): Promise<boolean> {
+    const fingerprint = incidentFingerprint({
+      ...input,
+      severity: 'INFO',
+      reasonCode: 'RECOVERED',
+    });
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fingerprint}, 0))`;
+      const current = await tx.operationalIncident.findFirst({
+        where: { fingerprint, status: { not: 'RESOLVED' } },
+        orderBy: { occurrence: 'desc' },
+      });
+      if (!current) return false;
+      await tx.operationalIncident.update({
+        where: { id: current.id },
+        data: {
+          status: 'RESOLVED',
+          resolvedAt: input.observedAt,
+          resolutionReason: 'PROBE_RECOVERED',
+          lastObservedAt: input.observedAt,
+        },
+      });
+      await tx.operationalIncidentObservation.create({
+        data: {
+          id: randomUUID(),
+          incidentId: current.id,
+          reasonCode: 'PROBE_RECOVERED',
+          observedAt: input.observedAt,
+        },
+      });
+      await tx.operationalAlertDelivery.update({
+        where: { incidentId: current.id },
+        data: {
+          status: 'PENDING',
+          nextAttemptAt: input.observedAt,
+          leaseId: null,
+          lockedUntil: null,
+          deliveredAt: null,
+          lastError: null,
+        },
+      });
+      return true;
+    });
+  }
+
+  async list(
+    actorUserId: string,
+    actorRoles: IncidentCommandInput['actorRoles'],
+    query: IncidentQuery,
+    requestId?: string,
+  ) {
     const cursor = decode(query.cursor);
     return this.prisma.$transaction(async (tx) => {
       const rows = await tx.operationalIncident.findMany({
@@ -114,29 +182,70 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
           ...(query.status ? { status: query.status } : {}),
           ...(query.severity ? { severity: query.severity } : {}),
           ...(query.component ? { component: query.component } : {}),
-          ...(query.from || query.to ? { lastObservedAt: { ...(query.from ? { gte: query.from } : {}), ...(query.to ? { lt: query.to } : {}) } } : {}),
-          ...(cursor ? { OR: [{ lastObservedAt: { lt: new Date(cursor.at) } }, { lastObservedAt: new Date(cursor.at), id: { lt: cursor.id } }] } : {}),
+          ...(query.from || query.to
+            ? {
+                lastObservedAt: {
+                  ...(query.from ? { gte: query.from } : {}),
+                  ...(query.to ? { lt: query.to } : {}),
+                },
+              }
+            : {}),
+          ...(cursor
+            ? {
+                OR: [
+                  { lastObservedAt: { lt: new Date(cursor.at) } },
+                  { lastObservedAt: new Date(cursor.at), id: { lt: cursor.id } },
+                ],
+              }
+            : {}),
         },
         orderBy: [{ lastObservedAt: 'desc' }, { id: 'desc' }],
         take: query.limit + 1,
       });
       await appendBackofficeAuditEvent(tx, {
-        actorType: 'USER', actorUserId, actorRoles, action: 'OPERATIONAL_INCIDENTS_VIEWED',
-        targetType: 'OPERATIONAL_INCIDENT_LIST', result: 'SUCCEEDED', ...(requestId ? { requestId } : {}),
-        details: { status: query.status ?? null, severity: query.severity ?? null, component: query.component ?? null, limit: query.limit },
+        actorType: 'USER',
+        actorUserId,
+        actorRoles,
+        action: 'OPERATIONAL_INCIDENTS_VIEWED',
+        targetType: 'OPERATIONAL_INCIDENT_LIST',
+        result: 'SUCCEEDED',
+        ...(requestId ? { requestId } : {}),
+        details: {
+          status: query.status ?? null,
+          severity: query.severity ?? null,
+          component: query.component ?? null,
+          limit: query.limit,
+        },
       });
       const page = rows.slice(0, query.limit);
-      return { items: page.map(view), nextCursor: rows.length > query.limit && page.at(-1) ? encode({ at: page.at(-1)!.lastObservedAt.toISOString(), id: page.at(-1)!.id }) : null };
+      return {
+        items: page.map(view),
+        nextCursor:
+          rows.length > query.limit && page.at(-1)
+            ? encode({ at: page.at(-1)!.lastObservedAt.toISOString(), id: page.at(-1)!.id })
+            : null,
+      };
     });
   }
 
-  async detail(actorUserId: string, actorRoles: IncidentCommandInput['actorRoles'], incidentId: string, requestId?: string) {
+  async detail(
+    actorUserId: string,
+    actorRoles: IncidentCommandInput['actorRoles'],
+    incidentId: string,
+    requestId?: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const row = await tx.operationalIncident.findUnique({ where: { id: incidentId } });
       if (!row) return null;
       await appendBackofficeAuditEvent(tx, {
-        actorType: 'USER', actorUserId, actorRoles, action: 'OPERATIONAL_INCIDENTS_VIEWED',
-        targetType: 'OPERATIONAL_INCIDENT', targetId: incidentId, result: 'SUCCEEDED', ...(requestId ? { requestId } : {}),
+        actorType: 'USER',
+        actorUserId,
+        actorRoles,
+        action: 'OPERATIONAL_INCIDENTS_VIEWED',
+        targetType: 'OPERATIONAL_INCIDENT',
+        targetId: incidentId,
+        result: 'SUCCEEDED',
+        ...(requestId ? { requestId } : {}),
       });
       return view(row);
     });
@@ -146,7 +255,12 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
     const reason = normalizeReason(input.reason);
     return this.prisma.$transaction(async (tx) => {
       const replay = await tx.operationalCommand.findUnique({
-        where: { actorUserId_clientRequestId: { actorUserId: input.actorUserId, clientRequestId: input.clientRequestId } },
+        where: {
+          actorUserId_clientRequestId: {
+            actorUserId: input.actorUserId,
+            clientRequestId: input.clientRequestId,
+          },
+        },
       });
       if (replay) {
         if (replay.payloadHash !== input.payloadHash) throw OperationsError.conflict();
@@ -154,23 +268,65 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
       }
       const current = await tx.operationalIncident.findUnique({ where: { id: input.incidentId } });
       if (!current) throw OperationsError.notFound();
-      if (input.action === 'ACKNOWLEDGE' && current.status !== 'OPEN') throw OperationsError.conflict('INCIDENT_STATE_CONFLICT');
-      if (input.action === 'RESOLVE' && current.status === 'RESOLVED') throw OperationsError.conflict('INCIDENT_STATE_CONFLICT');
+      if (input.action === 'ACKNOWLEDGE' && current.status !== 'OPEN')
+        throw OperationsError.conflict('INCIDENT_STATE_CONFLICT');
+      if (input.action === 'RESOLVE' && current.status === 'RESOLVED')
+        throw OperationsError.conflict('INCIDENT_STATE_CONFLICT');
       const updated = await tx.operationalIncident.update({
         where: { id: current.id },
-        data: input.action === 'ACKNOWLEDGE'
-          ? { status: 'ACKNOWLEDGED', acknowledgedAt: input.now, acknowledgedBy: input.actorUserId, acknowledgeReason: reason }
-          : { status: 'RESOLVED', resolvedAt: input.now, resolvedBy: input.actorUserId, resolutionReason: reason },
+        data:
+          input.action === 'ACKNOWLEDGE'
+            ? {
+                status: 'ACKNOWLEDGED',
+                acknowledgedAt: input.now,
+                acknowledgedBy: input.actorUserId,
+                acknowledgeReason: reason,
+              }
+            : {
+                status: 'RESOLVED',
+                resolvedAt: input.now,
+                resolvedBy: input.actorUserId,
+                resolutionReason: reason,
+              },
       });
       const result = view(updated);
+      if (input.action === 'RESOLVE')
+        await tx.operationalAlertDelivery.update({
+          where: { incidentId: current.id },
+          data: {
+            status: 'PENDING',
+            nextAttemptAt: input.now,
+            leaseId: null,
+            lockedUntil: null,
+            deliveredAt: null,
+            lastError: null,
+          },
+        });
       await tx.operationalCommand.create({
-        data: { id: randomUUID(), actorUserId: input.actorUserId, clientRequestId: input.clientRequestId, action: input.action === 'ACKNOWLEDGE' ? 'ACKNOWLEDGE_INCIDENT' : 'RESOLVE_INCIDENT', payloadHash: input.payloadHash, result: result as unknown as Prisma.InputJsonValue },
+        data: {
+          id: randomUUID(),
+          actorUserId: input.actorUserId,
+          clientRequestId: input.clientRequestId,
+          action: input.action === 'ACKNOWLEDGE' ? 'ACKNOWLEDGE_INCIDENT' : 'RESOLVE_INCIDENT',
+          payloadHash: input.payloadHash,
+          result: result as unknown as Prisma.InputJsonValue,
+        },
       });
       await appendBackofficeAuditEvent(tx, {
-        actorType: 'USER', actorUserId: input.actorUserId, actorRoles: input.actorRoles,
-        action: input.action === 'ACKNOWLEDGE' ? 'OPERATIONAL_INCIDENT_ACKNOWLEDGED' : 'OPERATIONAL_INCIDENT_RESOLVED',
-        targetType: 'OPERATIONAL_INCIDENT', targetId: input.incidentId, reason, result: 'SUCCEEDED',
-        clientRequestId: input.clientRequestId, requestHash: input.payloadHash, ...(input.requestId ? { requestId: input.requestId } : {}),
+        actorType: 'USER',
+        actorUserId: input.actorUserId,
+        actorRoles: input.actorRoles,
+        action:
+          input.action === 'ACKNOWLEDGE'
+            ? 'OPERATIONAL_INCIDENT_ACKNOWLEDGED'
+            : 'OPERATIONAL_INCIDENT_RESOLVED',
+        targetType: 'OPERATIONAL_INCIDENT',
+        targetId: input.incidentId,
+        reason,
+        result: 'SUCCEEDED',
+        clientRequestId: input.clientRequestId,
+        requestHash: input.payloadHash,
+        ...(input.requestId ? { requestId: input.requestId } : {}),
       });
       return result;
     });
@@ -178,10 +334,16 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
 
   async trends(from: Date, to: Date) {
     const rows = await this.prisma.operationalIncident.groupBy({
-      by: ['component', 'severity'], where: { firstObservedAt: { gte: from, lt: to } }, _count: { _all: true },
+      by: ['component', 'severity'],
+      where: { firstObservedAt: { gte: from, lt: to } },
+      _count: { _all: true },
       orderBy: [{ component: 'asc' }, { severity: 'asc' }],
     });
-    return rows.map((row) => ({ component: row.component, severity: row.severity, count: row._count._all }));
+    return rows.map((row) => ({
+      component: row.component,
+      severity: row.severity,
+      count: row._count._all,
+    }));
   }
 
   async claimDelivery(leaseSeconds: number, now: Date): Promise<AlertDeliveryClaim | null> {
@@ -195,24 +357,57 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
       if (!candidate) return null;
       const leaseId = randomUUID();
       const delivery = await tx.operationalAlertDelivery.update({
-        where: { id: candidate.id }, data: { status: 'RUNNING', leaseId, generation: { increment: 1 }, lockedUntil: new Date(now.getTime() + leaseSeconds * 1000), attempts: { increment: 1 } },
+        where: { id: candidate.id },
+        data: {
+          status: 'RUNNING',
+          leaseId,
+          generation: { increment: 1 },
+          lockedUntil: new Date(now.getTime() + leaseSeconds * 1000),
+          attempts: { increment: 1 },
+        },
         include: { incident: true },
       });
-      return { id: delivery.id, incidentId: delivery.incidentId, leaseId, generation: delivery.generation, payload: {
-        component: delivery.incident.component, category: delivery.incident.category, severity: delivery.incident.severity,
-        scopeType: delivery.incident.scopeType, reasonCode: delivery.incident.reasonCode,
-        firstObservedAt: delivery.incident.firstObservedAt.toISOString(),
-      } };
+      return {
+        id: delivery.id,
+        incidentId: delivery.incidentId,
+        leaseId,
+        generation: delivery.generation,
+        payload: {
+          status: delivery.incident.status,
+          component: delivery.incident.component,
+          category: delivery.incident.category,
+          severity: delivery.incident.severity,
+          scopeType: delivery.incident.scopeType,
+          reasonCode: delivery.incident.reasonCode,
+          firstObservedAt: delivery.incident.firstObservedAt.toISOString(),
+        },
+      };
     });
   }
 
   async completeDelivery(claim: AlertDeliveryClaim, now: Date): Promise<void> {
-    const result = await this.prisma.operationalAlertDelivery.updateMany({ where: { id: claim.id, leaseId: claim.leaseId, generation: claim.generation, status: 'RUNNING' }, data: { status: 'DELIVERED', deliveredAt: now, lockedUntil: null, lastError: null } });
+    const result = await this.prisma.operationalAlertDelivery.updateMany({
+      where: {
+        id: claim.id,
+        leaseId: claim.leaseId,
+        generation: claim.generation,
+        status: 'RUNNING',
+      },
+      data: { status: 'DELIVERED', deliveredAt: now, lockedUntil: null, lastError: null },
+    });
     if (result.count !== 1) throw OperationsError.conflict('ALERT_DELIVERY_FENCED');
   }
 
   async failDelivery(claim: AlertDeliveryClaim, errorCode: string, retryAt: Date): Promise<void> {
-    const result = await this.prisma.operationalAlertDelivery.updateMany({ where: { id: claim.id, leaseId: claim.leaseId, generation: claim.generation, status: 'RUNNING' }, data: { status: 'FAILED', lastError: errorCode, nextAttemptAt: retryAt, lockedUntil: null } });
+    const result = await this.prisma.operationalAlertDelivery.updateMany({
+      where: {
+        id: claim.id,
+        leaseId: claim.leaseId,
+        generation: claim.generation,
+        status: 'RUNNING',
+      },
+      data: { status: 'FAILED', lastError: errorCode, nextAttemptAt: retryAt, lockedUntil: null },
+    });
     if (result.count !== 1) throw OperationsError.conflict('ALERT_DELIVERY_FENCED');
   }
 }

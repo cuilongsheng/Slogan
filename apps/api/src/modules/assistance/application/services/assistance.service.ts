@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../../../config/environment.js';
 import { StructuredLogger } from '../../../../infrastructure/observability/structured-logger.service.js';
 import { RoomsService } from '../../../rooms/index.js';
+import { GovernanceService } from '../../../operations/index.js';
 import type { ExpressionResult } from '../../domain/entities/assistance.js';
 import { AssistanceError, type AssistanceErrorCode } from '../../domain/errors/assistance.error.js';
 import {
@@ -41,6 +42,7 @@ export class AssistanceService {
     private readonly policy: AssistancePolicy,
     private readonly config: ConfigService<Environment, true>,
     private readonly logger: StructuredLogger,
+    private readonly governance: GovernanceService,
   ) {}
 
   consentState(userId: string) {
@@ -280,6 +282,44 @@ export class AssistanceService {
       throw error;
     } finally {
       await permit.release();
+      input.audio.fill(0);
+      const retention = this.config.get('STT_RETENTION_SECONDS', { infer: true }) ?? 0;
+      const assurance = await this.transcriber.deletionAssurance().catch(() => ({
+        mode: 'DELETE_AFTER_PROCESSING' as const,
+        result: 'UNCERTAIN' as const,
+        reasonCode: 'PROVIDER_DELETION_CHECK_FAILED',
+      }));
+      await Promise.allSettled([
+        this.governance.recordDeletion({
+          category: 'TEMPORARY_SPEECH_CONTENT',
+          purpose: 'AI_EXPRESSION_LOCAL_AUDIO',
+          policyVersion: currentVersion,
+          deadlineAt: now,
+          completedAt: new Date(),
+          result: 'COMPLETED',
+        }),
+        this.governance.recordDeletion({
+          category: 'TEMPORARY_SPEECH_CONTENT',
+          purpose: 'AI_EXPRESSION_LOCAL_TRANSCRIPT',
+          policyVersion: currentVersion,
+          deadlineAt: now,
+          completedAt: new Date(),
+          result: 'COMPLETED',
+        }),
+        this.governance.recordDeletion({
+          category: 'TEMPORARY_SPEECH_CONTENT',
+          purpose: 'AI_EXPRESSION_STT_PROVIDER',
+          providerCategory: this.transcriber.category,
+          policyVersion: currentVersion,
+          deadlineAt: new Date(now.getTime() + retention * 1000),
+          ...(assurance.result === 'COMPLETED'
+            ? { completedAt: new Date(), result: assurance.result }
+            : {
+                result: assurance.result,
+                ...(assurance.reasonCode ? { reasonCode: assurance.reasonCode } : {}),
+              }),
+        }),
+      ]);
     }
   }
 

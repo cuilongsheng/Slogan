@@ -12,7 +12,10 @@ export class HttpOperationalAlertSink implements OperationalAlertSink {
     const token = this.config.get('OPERATIONS_ALERT_SINK_TOKEN', { infer: true });
     if (!url || !token) throw new Error('ALERT_SINK_NOT_CONFIGURED');
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.config.get('OPERATIONS_ALERT_TIMEOUT_MS', { infer: true }));
+    const timeout = setTimeout(
+      () => controller.abort(),
+      this.config.get('OPERATIONS_ALERT_TIMEOUT_MS', { infer: true }),
+    );
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -22,7 +25,8 @@ export class HttpOperationalAlertSink implements OperationalAlertSink {
       });
       if (!response.ok) throw new Error('ALERT_SINK_REJECTED');
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') throw new Error('ALERT_SINK_TIMEOUT');
+      if (error instanceof Error && error.name === 'AbortError')
+        throw new Error('ALERT_SINK_TIMEOUT', { cause: error });
       throw error;
     } finally {
       clearTimeout(timeout);

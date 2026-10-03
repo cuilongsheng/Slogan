@@ -50,12 +50,34 @@ export class TokenPairDto {
   refreshTokenExpiresAt!: string;
 }
 
+export class BrowserTokenDto {
+  @ApiProperty()
+  accessToken!: string;
+
+  @ApiProperty({ example: 900 })
+  accessTokenExpiresInSeconds!: number;
+}
+
 export class SuggestedProfileDto {
   @ApiPropertyOptional()
   displayName?: string;
 
   @ApiPropertyOptional()
   avatarUrl?: string;
+}
+
+export class BrowserOAuthExchangeResponseDto extends BrowserTokenDto {
+  @ApiProperty({ format: 'uuid' })
+  userId!: string;
+
+  @ApiProperty()
+  created!: boolean;
+
+  @ApiProperty({ enum: ['PROFILE_REQUIRED', 'AGE_RESTRICTED', 'ELIGIBLE'] })
+  onboardingState!: string;
+
+  @ApiPropertyOptional({ type: SuggestedProfileDto })
+  suggestedProfile?: SuggestedProfileDto;
 }
 
 export class OAuthExchangeResponseDto {

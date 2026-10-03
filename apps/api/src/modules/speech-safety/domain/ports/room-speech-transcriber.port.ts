@@ -13,5 +13,10 @@ export interface RoomSpeechTranscriptionSession {
 export interface RoomSpeechTranscriber {
   readonly category: string;
   healthCheck(): Promise<void>;
+  deletionAssurance(): Promise<{
+    mode: 'NO_RETENTION' | 'DELETE_AFTER_PROCESSING';
+    result: 'COMPLETED' | 'UNCERTAIN';
+    reasonCode?: string;
+  }>;
   openSession(input: { anonymousSessionId: string }): Promise<RoomSpeechTranscriptionSession>;
 }

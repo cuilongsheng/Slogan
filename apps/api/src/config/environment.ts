@@ -1,9 +1,10 @@
+import { isIP } from 'node:net';
 import { z } from 'zod';
 
-const optionalString = z.preprocess(
-  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
-  z.string().trim().min(1).optional(),
-);
+const blankToUndefined = (value: unknown) =>
+  typeof value === 'string' && value.trim() === '' ? undefined : value;
+
+const optionalString = z.preprocess(blankToUndefined, z.string().trim().min(1).optional());
 
 const booleanFromEnvironment = z.preprocess((value) => {
   if (value === true || value === 'true') return true;
@@ -25,6 +26,7 @@ const environmentSchema = z
   .object({
     APP_NAME: z.string().trim().min(1),
     APP_PORT: z.coerce.number().int().positive().max(65_535).default(3000),
+    APP_HOST: z.enum(['127.0.0.1', '0.0.0.0']).default('127.0.0.1'),
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     DATABASE_URL: z.string().startsWith('postgresql://'),
     CORS_ALLOWED_ORIGINS: commaSeparatedUrls,
@@ -45,6 +47,31 @@ const environmentSchema = z
     AUTH_RATE_LIMIT_POINTS: z.coerce.number().int().min(1).max(1000).default(10),
     AUTH_RATE_LIMIT_DURATION_SECONDS: z.coerce.number().int().min(1).max(3600).default(60),
     OAUTH_HTTP_TIMEOUT_MS: z.coerce.number().int().min(500).max(30_000).default(5000),
+    EMAIL_PASSWORD_AUTH_ENABLED: booleanFromEnvironment,
+    EMAIL_SMTP_HOST: optionalString,
+    EMAIL_SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(465),
+    EMAIL_SMTP_TLS_MODE: z.enum(['TLS', 'STARTTLS', 'LOCAL_TEST']).default('TLS'),
+    EMAIL_SMTP_USER: optionalString,
+    EMAIL_SMTP_PASSWORD: z.string().min(1).optional(),
+    EMAIL_SMTP_FROM: optionalString,
+    EMAIL_SMTP_TIMEOUT_MS: z.coerce.number().int().min(500).max(30000).default(5000),
+    EMAIL_VERIFY_URL: optionalString,
+    EMAIL_RESET_URL: optionalString,
+    EMAIL_AUTH_HMAC_KEY_ID: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]{1,32}$/)
+      .default('v1'),
+    EMAIL_AUTH_HMAC_KEYS: optionalString,
+    EMAIL_AUTH_AES_KEY_ID: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]{1,32}$/)
+      .default('v1'),
+    EMAIL_AUTH_AES_KEYS: optionalString,
+    EMAIL_AUTH_SOURCE_LIMIT: z.coerce.number().int().min(1).max(100).default(20),
+    EMAIL_AUTH_LOGIN_TARGET_LIMIT: z.coerce.number().int().min(1).max(30).default(10),
+    EMAIL_AUTH_MAIL_TARGET_LIMIT: z.coerce.number().int().min(1).max(20).default(5),
+    EMAIL_AUTH_MAIL_GLOBAL_LIMIT: z.coerce.number().int().min(1).max(1000).default(100),
+    EMAIL_AUTH_TRUSTED_PROXIES: optionalString,
     PHONE_AUTH_ENABLED: booleanFromEnvironment,
     ACCOUNT_LIFECYCLE_ENABLED: booleanFromEnvironment,
     PHONE_IDENTITY_HASH_VERSION: z.string().trim().min(1).max(32).default('v1'),
@@ -99,7 +126,10 @@ const environmentSchema = z
     AI_EXPRESSION_MODEL: optionalString,
     AI_EXPRESSION_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(10_000),
     AI_EXPRESSION_REGION: optionalString,
-    AI_EXPRESSION_DATA_USE: z.enum(['REQUEST_PROCESSING_ONLY']).optional(),
+    AI_EXPRESSION_DATA_USE: z.preprocess(
+      blankToUndefined,
+      z.enum(['REQUEST_PROCESSING_ONLY']).optional(),
+    ),
     AI_EXPRESSION_RETENTION_SECONDS: z.coerce.number().int().min(0).max(604_800).optional(),
     AI_EXPRESSION_NO_TRAINING: booleanFromEnvironment,
     STT_PROVIDER_CATEGORY: optionalString,
@@ -108,10 +138,13 @@ const environmentSchema = z
     STT_MODEL: optionalString,
     STT_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(15_000),
     STT_REGION: optionalString,
-    STT_DATA_USE: z.enum(['REQUEST_PROCESSING_ONLY']).optional(),
+    STT_DATA_USE: z.preprocess(blankToUndefined, z.enum(['REQUEST_PROCESSING_ONLY']).optional()),
     STT_RETENTION_SECONDS: z.coerce.number().int().min(0).max(604_800).optional(),
-    STT_DELETION_MODE: z.enum(['NO_RETENTION', 'DELETE_AFTER_PROCESSING']).optional(),
-    STT_STREAMING_MODE: z.enum(['SHORT_WINDOW']).optional(),
+    STT_DELETION_MODE: z.preprocess(
+      blankToUndefined,
+      z.enum(['NO_RETENTION', 'DELETE_AFTER_PROCESSING']).optional(),
+    ),
+    STT_STREAMING_MODE: z.preprocess(blankToUndefined, z.enum(['SHORT_WINDOW']).optional()),
     ROOM_SPEECH_DETECTION_ENABLED: booleanFromEnvironment,
     ROOM_SPEECH_NOTICE_VERSION: z.string().trim().min(1).max(64).default('2026-09-v1'),
     ROOM_SPEECH_RULE_SET_VERSION: z.string().trim().min(1).max(64).default('2026-09-v1'),
@@ -163,12 +196,7 @@ const environmentSchema = z
       .default(172_800),
     OPERATIONS_METRIC_LEASE_SECONDS: z.coerce.number().int().min(5).max(900).default(60),
     OPERATIONS_INCIDENT_FAILURE_THRESHOLD: z.coerce.number().int().min(1).max(100).default(3),
-    OPERATIONS_INCIDENT_COOLDOWN_SECONDS: z.coerce
-      .number()
-      .int()
-      .min(10)
-      .max(86_400)
-      .default(300),
+    OPERATIONS_INCIDENT_COOLDOWN_SECONDS: z.coerce.number().int().min(10).max(86_400).default(300),
     OPERATIONS_ALERT_SINK_URL: optionalString,
     OPERATIONS_ALERT_SINK_TOKEN: optionalString,
     OPERATIONS_ALERT_TIMEOUT_MS: z.coerce.number().int().min(500).max(30_000).default(5000),
@@ -178,9 +206,18 @@ const environmentSchema = z
     GOVERNANCE_TECHNICAL_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
     BACKUP_ENVIRONMENT_ID: optionalString,
     BACKUP_ENCRYPTION_KEY_ID: optionalString,
-    BACKUP_RETENTION_COUNT: z.coerce.number().int().min(1).max(365).optional(),
-    BACKUP_RPO_SECONDS: z.coerce.number().int().min(60).max(2_592_000).optional(),
-    BACKUP_RTO_SECONDS: z.coerce.number().int().min(60).max(604_800).optional(),
+    BACKUP_RETENTION_COUNT: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(1).max(365).optional(),
+    ),
+    BACKUP_RPO_SECONDS: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(60).max(2_592_000).optional(),
+    ),
+    BACKUP_RTO_SECONDS: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(60).max(604_800).optional(),
+    ),
     GOOGLE_OAUTH_ENABLED: booleanFromEnvironment,
     GOOGLE_OAUTH_CLIENT_ID: optionalString,
     GOOGLE_OAUTH_CLIENT_SECRET: optionalString,
@@ -193,12 +230,12 @@ const environmentSchema = z
   .superRefine((environment, context) => {
     try {
       const shareUrl = new URL(environment.ROOM_SHARE_BASE_URL);
-      const localTestUrl =
-        environment.NODE_ENV === 'test' &&
+      const localDevelopmentUrl =
+        environment.NODE_ENV !== 'production' &&
         shareUrl.protocol === 'http:' &&
         ['localhost', '127.0.0.1'].includes(shareUrl.hostname);
       if (
-        (shareUrl.protocol !== 'https:' && !localTestUrl) ||
+        (shareUrl.protocol !== 'https:' && !localDevelopmentUrl) ||
         shareUrl.username ||
         shareUrl.password ||
         shareUrl.search ||
@@ -245,6 +282,46 @@ const environmentSchema = z
             'Realtime requires a LiveKit Cloud WSS URL, key, secret (32+ characters), and Redis URL',
         });
       }
+    }
+    if (
+      environment.EMAIL_AUTH_TRUSTED_PROXIES &&
+      !environment.EMAIL_AUTH_TRUSTED_PROXIES.split(',').every((value) => {
+        const [address, prefix] = value.trim().split('/');
+        const version = isIP(address ?? '');
+        return (
+          version > 0 &&
+          (prefix === undefined ||
+            (/^\d{1,3}$/.test(prefix) && Number(prefix) <= (version === 4 ? 32 : 128)))
+        );
+      })
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Email trusted proxies must be explicit IP addresses or CIDR ranges',
+      });
+    if (environment.EMAIL_PASSWORD_AUTH_ENABLED) {
+      const localSmtp = environment.EMAIL_SMTP_TLS_MODE === 'LOCAL_TEST';
+      if (
+        !environment.EMAIL_SMTP_HOST ||
+        /[\s/@]/.test(environment.EMAIL_SMTP_HOST) ||
+        !environment.EMAIL_SMTP_FROM ||
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(
+          environment.EMAIL_SMTP_FROM,
+        ) ||
+        !validProviderUrl(environment.EMAIL_VERIFY_URL, 'production') ||
+        !validProviderUrl(environment.EMAIL_RESET_URL, 'production') ||
+        !validKeyRing(environment.EMAIL_AUTH_HMAC_KEYS, environment.EMAIL_AUTH_HMAC_KEY_ID) ||
+        !validKeyRing(environment.EMAIL_AUTH_AES_KEYS, environment.EMAIL_AUTH_AES_KEY_ID) ||
+        !validRedisUrl(environment.REDIS_URL) ||
+        (localSmtp &&
+          (environment.NODE_ENV !== 'test' ||
+            !['localhost', '127.0.0.1', '::1'].includes(environment.EMAIL_SMTP_HOST))) ||
+        (!localSmtp && (!environment.EMAIL_SMTP_USER || !environment.EMAIL_SMTP_PASSWORD))
+      )
+        context.addIssue({
+          code: 'custom',
+          message: 'Email authentication requires secure SMTP, trusted links, key rings, and Redis',
+        });
     }
     if (environment.PHONE_AUTH_ENABLED) {
       const required = [
@@ -411,7 +488,8 @@ const environmentSchema = z
     ) {
       context.addIssue({
         code: 'custom',
-        message: 'Backup readiness requires environment, encryption, retention, RPO, and RTO policy',
+        message:
+          'Backup readiness requires environment, encryption, retention, RPO, and RTO policy',
       });
     }
     const providers = [
@@ -470,6 +548,28 @@ function validRedisUrl(value: string | undefined): boolean {
   try {
     const url = new URL(value ?? '');
     return ['redis:', 'rediss:'].includes(url.protocol) && !!url.hostname;
+  } catch {
+    return false;
+  }
+}
+
+function validKeyRing(value: string | undefined, activeId: string): boolean {
+  try {
+    const keys: unknown = JSON.parse(value ?? '');
+    if (!keys || typeof keys !== 'object' || Array.isArray(keys)) return false;
+    const entries = Object.entries(keys);
+    return (
+      entries.length > 0 &&
+      entries.length <= 4 &&
+      Object.hasOwn(keys, activeId) &&
+      entries.every(
+        ([id, key]) =>
+          /^[a-zA-Z0-9_-]{1,32}$/.test(id) &&
+          typeof key === 'string' &&
+          /^[A-Za-z0-9+/]{43}=$/.test(key) &&
+          Buffer.from(key, 'base64').length === 32,
+      )
+    );
   } catch {
     return false;
   }

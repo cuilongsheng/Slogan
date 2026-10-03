@@ -177,4 +177,31 @@ describe('API bootstrap', () => {
       'Post-room keywords require',
     );
   });
+
+  it('keeps operations disabled by default and requires complete secure sink and backup policy', () => {
+    expect(validateEnvironment(rawTestEnvironment()).OPERATIONS_GOVERNANCE_ENABLED).toBe(false);
+    const sink = rawTestEnvironment({
+      OPERATIONS_GOVERNANCE_ENABLED: 'true',
+      OPERATIONS_ALERT_SINK_URL: 'http://localhost:4777/alerts',
+      OPERATIONS_ALERT_SINK_TOKEN: 'test-alert-token-with-at-least-32-characters',
+    });
+    expect(validateEnvironment(sink).OPERATIONS_GOVERNANCE_ENABLED).toBe(true);
+    expect(() => validateEnvironment({ ...sink, OPERATIONS_ALERT_SINK_TOKEN: 'short' })).toThrow(
+      'Operations alert sink requires',
+    );
+    expect(() =>
+      validateEnvironment(rawTestEnvironment({ BACKUP_ENVIRONMENT_ID: 'test' })),
+    ).toThrow('Backup readiness requires');
+    expect(
+      validateEnvironment(
+        rawTestEnvironment({
+          BACKUP_ENVIRONMENT_ID: 'test-isolated',
+          BACKUP_ENCRYPTION_KEY_ID: 'test-key',
+          BACKUP_RETENTION_COUNT: '3',
+          BACKUP_RPO_SECONDS: '3600',
+          BACKUP_RTO_SECONDS: '3600',
+        }),
+      ).BACKUP_ENVIRONMENT_ID,
+    ).toBe('test-isolated');
+  });
 });

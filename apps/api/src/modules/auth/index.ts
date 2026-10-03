@@ -17,3 +17,7 @@ export type { LoginMethodView, PhoneFingerprint } from './domain/entities/phone-
 export { PhonePolicy } from './domain/policies/phone.policy.js';
 export { SMS_PROVIDER } from './domain/ports/sms-provider.port.js';
 export type { SmsProvider } from './domain/ports/sms-provider.port.js';
+
+export { EmailAuthService } from './application/services/email-auth.service.js';
+export { AuthMailService } from './application/services/auth-mail.service.js';
+export { EmailAuthError } from './domain/errors/email-auth.error.js';

@@ -359,6 +359,7 @@ export class MemoryRoomRepository implements RoomRepository {
     return {
       status: 'FOUND',
       room: {
+        attributionId: randomUUID(),
         id: room.id,
         kind: room.kind,
         status: room.status,
@@ -415,6 +416,7 @@ export class MemoryRoomRepository implements RoomRepository {
       existingMembership: memberships.find((membership) => membership.userId === userId) ?? null,
       nextJoinOrder: maximum + 1,
       consumeInvitation: async () => undefined,
+      markShareAttribution: async () => undefined,
       createMembership: async (input) => {
         const membership: RoomMembershipRecord = {
           id: input.id,

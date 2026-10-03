@@ -20,6 +20,10 @@ export interface FriendRequestRecord {
   resolvedAt: Date | null;
 }
 
+export interface FriendRequestListRecord extends FriendRequestRecord {
+  peerDisplayName: string | null;
+}
+
 export interface FriendshipRecord {
   id: string;
   friend: PublicSocialProfile;

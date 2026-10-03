@@ -8,17 +8,26 @@ import type {
   MetricSnapshotQuery,
   MetricSnapshotView,
   MetricWindow,
+  RoomOperationsQuery,
 } from '../domain/entities/operations.js';
-import type {
-  MetricRunClaim,
-  MetricsRepository,
-} from '../domain/ports/metrics.repository.js';
-import { normalizeDimensions, ratio } from '../domain/policies/operations.policy.js';
+import { OperationsError } from '../domain/errors/operations.error.js';
+import type { MetricRunClaim, MetricsRepository } from '../domain/ports/metrics.repository.js';
+import {
+  mergedConnectionDurations,
+  normalizeDimensions,
+  ratio,
+} from '../domain/policies/operations.policy.js';
 
 type Cursor = { at: string; id: string };
 type ActivityCursor = { count: number; userId: string };
 type CountRow = { count: bigint };
-type DurationRow = { id: string; userId: string; type: string; occurredAt: Date };
+type DurationRow = {
+  id: string;
+  userId: string;
+  roomType: string;
+  type: string;
+  occurredAt: Date;
+};
 
 const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
 function decode(value?: string): Cursor | undefined {
@@ -28,7 +37,7 @@ function decode(value?: string): Cursor | undefined {
     if (!parsed.id || Number.isNaN(new Date(parsed.at).getTime())) throw new Error();
     return parsed;
   } catch {
-    throw new Error('OPERATIONS_CURSOR_INVALID');
+    throw OperationsError.invalid();
   }
 }
 function decodeActivity(value?: string): ActivityCursor | undefined {
@@ -38,7 +47,7 @@ function decodeActivity(value?: string): ActivityCursor | undefined {
     if (!parsed.userId || !Number.isInteger(parsed.count) || parsed.count < 0) throw new Error();
     return parsed;
   } catch {
-    throw new Error('OPERATIONS_CURSOR_INVALID');
+    throw OperationsError.invalid();
   }
 }
 
@@ -73,7 +82,9 @@ export class PrismaMetricsRepository implements MetricsRepository {
           update: {},
         });
         await tx.$queryRaw`SELECT 1 FROM "MetricComputationRun" WHERE "id" = ${existing.id}::uuid FOR UPDATE`;
-        const current = await tx.metricComputationRun.findUniqueOrThrow({ where: { id: existing.id } });
+        const current = await tx.metricComputationRun.findUniqueOrThrow({
+          where: { id: existing.id },
+        });
         if (current.status === 'RUNNING' && current.lockedUntil && current.lockedUntil > now)
           throw new Error('METRIC_RUN_BUSY');
         const leaseId = randomUUID();
@@ -118,13 +129,17 @@ export class PrismaMetricsRepository implements MetricsRepository {
       hostHandled,
       dismissedCases,
     ] = await Promise.all([
-      this.count`SELECT COUNT(*)::bigint AS count FROM "User" WHERE "createdAt" >= ${window.start} AND "createdAt" < ${window.end}`,
-      this.count`SELECT COUNT(*)::bigint AS count FROM "UserProfile" p JOIN "User" u ON u.id=p."userId" WHERE u."createdAt" >= ${window.start} AND u."createdAt" < ${window.end}`,
-      this.count`SELECT COUNT(*)::bigint AS count FROM (SELECT "userId" FROM "RoomMembership" GROUP BY "userId" HAVING MIN("joinedAt") >= ${window.start} AND MIN("joinedAt") < ${window.end}) s`,
-      this.count`SELECT COUNT(*)::bigint AS count FROM (SELECT m."userId" FROM "RoomEvent" e JOIN "RoomMembership" m ON m.id=e."targetId" WHERE e.type='joined' GROUP BY m."userId" HAVING MIN(e."occurredAt") >= ${window.start} AND MIN(e."occurredAt") < ${window.end}) s`,
+      this
+        .count`SELECT COUNT(*)::bigint AS count FROM "User" WHERE "createdAt" >= ${window.start} AND "createdAt" < ${window.end}`,
+      this
+        .count`SELECT COUNT(*)::bigint AS count FROM "UserProfile" p JOIN "User" u ON u.id=p."userId" WHERE u."createdAt" >= ${window.start} AND u."createdAt" < ${window.end}`,
+      this
+        .count`SELECT COUNT(*)::bigint AS count FROM (SELECT "userId" FROM "RoomMembership" GROUP BY "userId" HAVING MIN("joinedAt") >= ${window.start} AND MIN("joinedAt") < ${window.end}) s`,
+      this
+        .count`SELECT COUNT(*)::bigint AS count FROM (SELECT m."userId" FROM "RoomEvent" e JOIN "RoomMembership" m ON m.id=e."targetId" WHERE e.type='joined' GROUP BY m."userId" HAVING MIN(e."occurredAt") >= ${window.start} AND MIN(e."occurredAt") < ${window.end}) s`,
       this.prisma.$queryRaw<DurationRow[]>`
-        SELECT m.id, m."userId", e.type, e."occurredAt"
-        FROM "RoomEvent" e JOIN "RoomMembership" m ON m.id=e."targetId"
+        SELECT m.id, m."userId", r.kind "roomType", e.type, e."occurredAt"
+        FROM "RoomEvent" e JOIN "RoomMembership" m ON m.id=e."targetId" JOIN "Room" r ON r.id=m."roomId"
         WHERE e.type IN ('joined','left','aborted') AND e."occurredAt" >= ${window.start} AND e."occurredAt" < ${window.end}
         ORDER BY m.id, e."occurredAt", e.id`,
       this.prisma.room.findMany({
@@ -136,10 +151,15 @@ export class PrismaMetricsRepository implements MetricsRepository {
         distinct: ['userId'],
         select: { userId: true },
       }),
-      this.count`SELECT COUNT(DISTINCT a."userId")::bigint AS count FROM "AiExpressionRequest" a WHERE a.status='SUCCEEDED' AND a."finishedAt" >= ${window.start} AND a."finishedAt" < ${window.end} AND EXISTS (SELECT 1 FROM "RoomMembership" m JOIN "RoomEvent" e ON e."targetId"=m.id WHERE m."userId"=a."userId" AND m."roomId"=a."roomId" AND e.type='joined' AND e."occurredAt" >= a."finishedAt")`,
-      this.count`SELECT COUNT(DISTINCT m."userId")::bigint AS count FROM "RoomMembership" m JOIN "Room" r ON r.id=m."roomId" WHERE r."endedAt" >= ${window.start} AND r."endedAt" < ${window.end}`,
-      this.count`SELECT COUNT(DISTINCT "userId")::bigint AS count FROM "VocabularyItem" WHERE "createdAt" >= ${window.start} AND "createdAt" < ${window.end}`,
-      this.prisma.roomShareAttribution.count({ where: { openedAt: { gte: window.start, lt: window.end } } }),
+      this
+        .count`SELECT COUNT(DISTINCT a."userId")::bigint AS count FROM "AiExpressionRequest" a WHERE a.status='SUCCEEDED' AND a."finishedAt" >= ${window.start} AND a."finishedAt" < ${window.end} AND EXISTS (SELECT 1 FROM "RoomMembership" m JOIN "RoomEvent" e ON e."targetId"=m.id WHERE m."userId"=a."userId" AND m."roomId"=a."roomId" AND e.type='joined' AND e."occurredAt" >= a."finishedAt")`,
+      this
+        .count`SELECT COUNT(DISTINCT m."userId")::bigint AS count FROM "RoomMembership" m JOIN "Room" r ON r.id=m."roomId" WHERE r."endedAt" >= ${window.start} AND r."endedAt" < ${window.end}`,
+      this
+        .count`SELECT COUNT(DISTINCT "userId")::bigint AS count FROM "VocabularyItem" WHERE "createdAt" >= ${window.start} AND "createdAt" < ${window.end}`,
+      this.prisma.roomShareAttribution.count({
+        where: { openedAt: { gte: window.start, lt: window.end } },
+      }),
       this.prisma.roomShareAttribution.count({
         where: { openedAt: { gte: window.start, lt: window.end }, joinedAt: { not: null } },
       }),
@@ -156,28 +176,38 @@ export class PrismaMetricsRepository implements MetricsRepository {
         where: { decidedAt: { gte: window.start, lt: window.end } },
         select: { createdAt: true, decidedAt: true, status: true },
       }),
-      this.count`SELECT COUNT(*)::bigint AS count FROM (SELECT "targetUserId" FROM "Report" WHERE "submittedAt" >= ${window.start} AND "submittedAt" < ${window.end} GROUP BY "targetUserId" HAVING COUNT(*) > 1 UNION SELECT m."userId" FROM "RoomEvent" e JOIN "RoomMembership" m ON m.id=e."targetId" WHERE e.type='member_removed' AND e."occurredAt" >= ${window.start} AND e."occurredAt" < ${window.end} GROUP BY m."userId" HAVING COUNT(*) > 1) s`,
+      this
+        .count`SELECT COUNT(*)::bigint AS count FROM (SELECT "targetUserId" FROM "Report" WHERE "submittedAt" >= ${window.start} AND "submittedAt" < ${window.end} GROUP BY "targetUserId" HAVING COUNT(*) > 1 UNION SELECT m."userId" FROM "RoomEvent" e JOIN "RoomMembership" m ON m.id=e."targetId" WHERE e.type='member_removed' AND e."occurredAt" >= ${window.start} AND e."occurredAt" < ${window.end} GROUP BY m."userId" HAVING COUNT(*) > 1) s`,
       this.prisma.report.count({ where: { submittedAt: { gte: window.start, lt: window.end } } }),
-      this.count`SELECT COUNT(DISTINCT r.id)::bigint AS count FROM "Report" r WHERE r."submittedAt" >= ${window.start} AND r."submittedAt" < ${window.end} AND EXISTS (SELECT 1 FROM "RoomMembership" m JOIN "RoomEvent" e ON e."targetId"=m.id WHERE m."roomId"=r."roomId" AND m."userId"=r."targetUserId" AND e.type='member_removed' AND e."occurredAt" >= r."submittedAt")`,
+      this
+        .count`SELECT COUNT(DISTINCT r.id)::bigint AS count FROM "Report" r WHERE r."submittedAt" >= ${window.start} AND r."submittedAt" < ${window.end} AND EXISTS (SELECT 1 FROM "RoomMembership" m JOIN "RoomEvent" e ON e."targetId"=m.id WHERE m."roomId"=r."roomId" AND m."userId"=r."targetUserId" AND e.type='member_removed' AND e."occurredAt" >= r."submittedAt")`,
       this.prisma.safetyCase.count({
         where: { decidedAt: { gte: window.start, lt: window.end }, status: 'DISMISSED' },
       }),
     ]);
 
     const durations = this.connectedDurations(events, window.end);
-    const connectedUsers = new Set(events.filter((event) => event.type === 'joined').map((e) => e.userId));
-    const effectiveUsers = new Set(
-      [...durations.entries()].filter(([, milliseconds]) => milliseconds >= 300_000).map(([id]) => id),
+    const connectedUsers = new Set(
+      events.filter((event) => event.type === 'joined').map((e) => e.userId),
     );
+    const effectiveUsers = new Set(
+      [...durations.entries()]
+        .filter(([, milliseconds]) => milliseconds >= 300_000)
+        .map(([id]) => id),
+    );
+    const effectiveRoomDurations = endedRooms
+      .map((room) =>
+        Math.max(
+          0,
+          (room.endedAt?.getTime() ?? room.startedAt.getTime()) - room.startedAt.getTime(),
+        ),
+      )
+      .filter((duration) => duration >= 300_000);
     const averageRoomSeconds =
-      endedRooms.length === 0
+      effectiveRoomDurations.length === 0
         ? null
-        : endedRooms.reduce(
-            (sum, room) =>
-              sum + Math.max(0, (room.endedAt?.getTime() ?? room.startedAt.getTime()) - room.startedAt.getTime()),
-            0,
-          ) /
-          endedRooms.length /
+        : effectiveRoomDurations.reduce((sum, duration) => sum + duration, 0) /
+          effectiveRoomDurations.length /
           1000;
     const decidedDurations = decidedCases
       .filter((item) => item.decidedAt)
@@ -211,7 +241,11 @@ export class PrismaMetricsRepository implements MetricsRepository {
       this.rate('FIRST_ROOM_ACTION_RATE', Number(firstActions), Number(cohort)),
       this.rate('FIRST_VOICE_CONNECTION_RATE', Number(firstConnections), Number(cohort)),
       this.rate('FIVE_MINUTE_CONVERSATION_RATE', effectiveUsers.size, connectedUsers.size),
-      this.value('AVERAGE_EFFECTIVE_ROOM_SECONDS', averageRoomSeconds, endedRooms.length),
+      this.value(
+        'AVERAGE_EFFECTIVE_ROOM_SECONDS',
+        averageRoomSeconds,
+        effectiveRoomDurations.length,
+      ),
       this.rate('AI_CONTINUATION_RATE', Number(aiNumerator), aiDenominator.length),
       this.rate('POST_ROOM_SAVE_RATE', Number(postRoomNumerator), Number(postRoomDenominator)),
       now < returnBoundary
@@ -220,7 +254,11 @@ export class PrismaMetricsRepository implements MetricsRepository {
       this.rate('SHARE_JOIN_CONVERSION_RATE', shareJoined, shareOpened),
       this.rate('APPOINTMENT_ATTENDANCE_RATE', appointmentNumerator, appointmentDenominator),
       this.value('SAFETY_CASE_RESOLUTION_SECONDS', safetySeconds, decidedDurations.length),
-      this.value('REPEAT_REMOVED_OR_REPORTED_USERS', Number(repeatRiskUsers), Number(repeatRiskUsers)),
+      this.value(
+        'REPEAT_REMOVED_OR_REPORTED_USERS',
+        Number(repeatRiskUsers),
+        Number(repeatRiskUsers),
+      ),
       this.rate('HOST_REPORT_COMPLETION_RATE', Number(hostHandled), reportDenominator),
       this.rate('DISMISSED_REPORT_RATE', dismissedCases, decidedCases.length),
     ];
@@ -231,7 +269,10 @@ export class PrismaMetricsRepository implements MetricsRepository {
         select: { userId: true, nationalityCode: true, cefrLevel: true },
       });
       for (const [dimension, selector] of [
-        ['NATIONALITY', (item: (typeof profilesForVoice)[number]) => item.nationalityCode ?? 'UNKNOWN'],
+        [
+          'NATIONALITY',
+          (item: (typeof profilesForVoice)[number]) => item.nationalityCode ?? 'UNKNOWN',
+        ],
         ['CEFR', (item: (typeof profilesForVoice)[number]) => item.cefrLevel],
       ] as const) {
         const groups = new Map<string, { numerator: number; denominator: number }>();
@@ -250,7 +291,33 @@ export class PrismaMetricsRepository implements MetricsRepository {
           );
         }
       }
+
+      for (const roomType of [...new Set(events.map((event) => event.roomType))].sort()) {
+        const roomEvents = events.filter((event) => event.roomType === roomType);
+        const roomDurations = this.connectedDurations(roomEvents, window.end);
+        const roomConnectedUsers = new Set(
+          roomEvents.filter((event) => event.type === 'joined').map((event) => event.userId),
+        );
+        const roomEffectiveUsers = [...roomDurations.values()].filter(
+          (milliseconds) => milliseconds >= 300_000,
+        ).length;
+        facts.push(
+          this.rate('FIVE_MINUTE_CONVERSATION_RATE', roomEffectiveUsers, roomConnectedUsers.size, {
+            ROOM_TYPE: roomType,
+          }),
+        );
+      }
     }
+    if (decidedCases.length > 0)
+      for (const result of [...new Set(decidedCases.map((item) => item.status))].sort())
+        facts.push(
+          this.rate(
+            'DISMISSED_REPORT_RATE',
+            decidedCases.filter((item) => item.status === result).length,
+            decidedCases.length,
+            { RESULT: result },
+          ),
+        );
     return facts;
   }
 
@@ -263,7 +330,12 @@ export class PrismaMetricsRepository implements MetricsRepository {
           generation: claim.generation,
           status: 'RUNNING',
         },
-        data: { status: 'COMPLETED', completedAt: new Date(), watermark: dataThroughAt, lockedUntil: null },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          watermark: dataThroughAt,
+          lockedUntil: null,
+        },
       });
       if (updated.count !== 1) throw new Error('METRIC_RUN_FENCED');
       await tx.metricSnapshot.deleteMany({ where: { runId: claim.runId } });
@@ -313,7 +385,7 @@ export class PrismaMetricsRepository implements MetricsRepository {
           windowStart: { gte: query.from, lt: query.to },
           ...(query.grain ? { grain: query.grain } : {}),
           ...(query.metricKey ? { metricKey: query.metricKey } : {}),
-          ...(query.dimension ? { dimensionKey: { contains: `\"${query.dimension}\"` } } : {}),
+          ...(query.dimension ? { dimensionKey: { contains: `"${query.dimension}"` } } : {}),
           ...(cursor
             ? {
                 OR: [
@@ -385,27 +457,34 @@ export class PrismaMetricsRepository implements MetricsRepository {
   async rooms(
     actorUserId: string,
     actorRoles: import('../../backoffice/index.js').BackofficeRole[],
-    cursor: string | undefined,
-    limit: number,
+    query: RoomOperationsQuery,
     requestId?: string,
   ) {
-    const decoded = decode(cursor);
+    const q = query.q?.trim() ?? '';
+    const scope = q || query.status || query.visibility || query.from
+      ? JSON.stringify([q.toLowerCase(), query.status ?? '', query.visibility ?? '', query.from?.toISOString() ?? ''])
+      : '';
+    const decoded = decode(query.cursor) as (Cursor & { scope?: string }) | undefined;
+    if (decoded && (decoded.scope ?? '') !== scope) throw OperationsError.invalid();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
+    const where: Prisma.RoomWhereInput = {
+      ...(q ? isUuid ? { id: q } : { topic: { contains: q, mode: 'insensitive' } } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.visibility ? { visibility: query.visibility } : {}),
+      ...(query.from ? { createdAt: { gte: query.from } } : {}),
+      ...(decoded ? { OR: [
+        { createdAt: { lt: new Date(decoded.at) } },
+        { createdAt: new Date(decoded.at), id: { lt: decoded.id } },
+      ] } : {}),
+    };
     return this.prisma.$transaction(async (tx) => {
       const rows = await tx.room.findMany({
-        ...(decoded
-          ? {
-              where: {
-                OR: [
-                  { createdAt: { lt: new Date(decoded.at) } },
-                  { createdAt: new Date(decoded.at), id: { lt: decoded.id } },
-                ],
-              },
-            }
-          : {}),
+        where,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        take: limit + 1,
+        take: query.limit + 1,
         select: {
           id: true,
+          topic: true,
           kind: true,
           visibility: true,
           status: true,
@@ -415,7 +494,13 @@ export class PrismaMetricsRepository implements MetricsRepository {
           endsAt: true,
           endedAt: true,
           createdAt: true,
-          _count: { select: { memberships: true, reservations: true, reports: true } },
+          _count: {
+            select: {
+              memberships: { where: { lifecycle: 'ACTIVE' } },
+              reservations: { where: { status: 'BOOKED' } },
+              reports: true,
+            },
+          },
         },
       });
       await appendBackofficeAuditEvent(tx, {
@@ -427,14 +512,14 @@ export class PrismaMetricsRepository implements MetricsRepository {
         reason: 'room operations detail query',
         result: 'SUCCEEDED',
         ...(requestId ? { requestId } : {}),
-        details: { limit },
+        details: { limit: query.limit, filtered: Boolean(scope) },
       });
-      const page = rows.slice(0, limit);
+      const page = rows.slice(0, query.limit);
       return {
         items: page,
         nextCursor:
-          rows.length > limit && page.at(-1)
-            ? encode({ at: page.at(-1)!.createdAt.toISOString(), id: page.at(-1)!.id })
+          rows.length > query.limit && page.at(-1)
+            ? encode({ at: page.at(-1)!.createdAt.toISOString(), id: page.at(-1)!.id, ...(scope ? { scope } : {}) })
             : null,
       };
     });
@@ -494,24 +579,10 @@ export class PrismaMetricsRepository implements MetricsRepository {
   }
 
   private connectedDurations(events: DurationRow[], end: Date): Map<string, number> {
-    const starts = new Map<string, Date>();
-    const totals = new Map<string, number>();
-    for (const event of events) {
-      if (event.type === 'joined') {
-        if (!starts.has(event.id)) starts.set(event.id, event.occurredAt);
-        continue;
-      }
-      const start = starts.get(event.id);
-      if (!start) continue;
-      totals.set(event.userId, (totals.get(event.userId) ?? 0) + Math.max(0, event.occurredAt.getTime() - start.getTime()));
-      starts.delete(event.id);
-    }
-    for (const [membershipId, start] of starts) {
-      const userId = events.find((item) => item.id === membershipId)?.userId;
-      if (userId)
-        totals.set(userId, (totals.get(userId) ?? 0) + Math.max(0, end.getTime() - start.getTime()));
-    }
-    return totals;
+    return mergedConnectionDurations(
+      events.map((event) => ({ ...event, membershipId: event.id })),
+      end,
+    );
   }
 
   private rate(

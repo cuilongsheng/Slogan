@@ -15,6 +15,13 @@ export class SafetyService {
     private readonly queue: SafetyQueue,
   ) {}
 
+  caseSummary(actor: SafetyActor) {
+    return this.repository.caseSummary(actor);
+  }
+  appealSummary(actor: SafetyActor) {
+    return this.repository.appealSummary(actor);
+  }
+
   listCases(actor: SafetyActor, query: SafetyCaseQuery) {
     return this.repository.listCases(actor, query);
   }

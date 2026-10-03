@@ -57,6 +57,7 @@ export interface RoomDiscoveryFilter {
 }
 
 export interface RoomShareRecord {
+  attributionId: string;
   id: string;
   kind: 'INSTANT' | 'APPOINTMENT';
   status: RoomStatus;

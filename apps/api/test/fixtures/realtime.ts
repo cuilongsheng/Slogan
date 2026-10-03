@@ -83,6 +83,24 @@ export async function seedAdult(prisma: PrismaService, name = 'Test member') {
   });
 }
 export async function clearRealtimeFixtures(prisma: PrismaService) {
+  await prisma.emailDelivery.deleteMany();
+  await prisma.emailChallenge.deleteMany();
+  await prisma.emailAuthProof.deleteMany();
+  await prisma.emailEnrollment.deleteMany();
+  await prisma.emailCredential.deleteMany();
+  await prisma.retentionRunBatch.deleteMany();
+  await prisma.retentionRun.deleteMany();
+  await prisma.retentionDryRun.deleteMany();
+  await prisma.retentionHold.deleteMany();
+  await prisma.retentionPolicyVersion.deleteMany();
+  await prisma.deletionEvidence.deleteMany();
+  await prisma.recoveryDrill.deleteMany();
+  await prisma.operationalAlertDelivery.deleteMany();
+  await prisma.operationalIncidentObservation.deleteMany();
+  await prisma.operationalIncident.deleteMany();
+  await prisma.operationalCommand.deleteMany();
+  await prisma.metricSnapshot.deleteMany();
+  await prisma.metricComputationRun.deleteMany();
   await prisma.vocabularyCommand.deleteMany();
   await prisma.vocabularyItem.deleteMany();
   await prisma.roomKeywordSummaryJob.deleteMany();
@@ -111,6 +129,7 @@ export async function clearRealtimeFixtures(prisma: PrismaService) {
   await prisma.report.deleteMany();
   await prisma.roomNote.deleteMany();
   await prisma.roomReservation.deleteMany();
+  await prisma.roomShareAttribution.deleteMany();
   await prisma.room.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.authSession.deleteMany();

@@ -3,7 +3,23 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "files": [
-    "src/generated"
-  ]
+    "src"
+  ],
+  "scripts": {
+    "generate": "openapi-typescript ../../openapi/openapi.yaml -o src/generated/schema.d.ts",
+    "generate:check": "openapi-typescript ../../openapi/openapi.yaml -o src/generated/schema.d.ts --check",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  }
 }

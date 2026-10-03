@@ -6,6 +6,7 @@ import { Prisma, OAuthProvider } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 import type { OAuthProviderName, ProviderIdentity } from '../domain/entities/provider-identity.js';
 import type { LoginMethodView, PhoneFingerprint } from '../domain/entities/phone-auth.js';
+import { EmailAuthError } from '../domain/errors/email-auth.error.js';
 import { AuthError } from '../domain/errors/auth.error.js';
 import type { AuthRepository, RotateRefreshResult } from '../domain/ports/auth.repository.js';
 
@@ -64,6 +65,7 @@ export class PrismaAuthRepository implements AuthRepository {
 
   async createSession(input: {
     userId: string;
+    credentialVersion?: number;
     deviceName?: string;
     digest: string;
     expiresAt: Date;
@@ -73,7 +75,17 @@ export class PrismaAuthRepository implements AuthRepository {
     await this.prisma.$transaction(async (transaction) => {
       await transaction.$queryRaw`SELECT id FROM "User" WHERE id = ${input.userId}::uuid FOR UPDATE`;
       const user = await transaction.user.findUnique({ where: { id: input.userId } });
+      if (input.credentialVersion !== undefined && user?.status !== 'ACTIVE')
+        throw new EmailAuthError('EMAIL_CREDENTIALS_INVALID');
       this.assertActiveRecord(user?.status);
+      if (input.credentialVersion !== undefined) {
+        await transaction.$queryRaw`SELECT "userId" FROM "EmailCredential" WHERE "userId" = ${input.userId}::uuid FOR UPDATE`;
+        const credential = await transaction.emailCredential.findUnique({
+          where: { userId: input.userId },
+        });
+        if (!credential?.passwordHash || credential.credentialVersion !== input.credentialVersion)
+          throw new EmailAuthError('EMAIL_CREDENTIALS_INVALID');
+      }
       await transaction.authSession.create({
         data: {
           id: sessionId,
@@ -181,9 +193,12 @@ export class PrismaAuthRepository implements AuthRepository {
   }
 
   async revokeSession(userId: string, sessionId: string, now: Date): Promise<void> {
-    await this.prisma.authSession.updateMany({
-      where: { id: sessionId, userId, revokedAt: null },
-      data: { revokedAt: now, updatedAt: now },
+    await this.prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT id FROM "User" WHERE id=${userId}::uuid FOR UPDATE`;
+      await transaction.authSession.updateMany({
+        where: { id: sessionId, userId, revokedAt: null },
+        data: { revokedAt: now, updatedAt: now },
+      });
     });
   }
 
@@ -350,9 +365,10 @@ export class PrismaAuthRepository implements AuthRepository {
 
   async listLoginMethods(userId: string): Promise<LoginMethodView[]> {
     await this.assertActive(userId);
-    const [phone, oauth] = await Promise.all([
+    const [phone, oauth, email] = await Promise.all([
       this.prisma.phoneIdentity.findUnique({ where: { userId } }),
       this.prisma.oAuthIdentity.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
+      this.prisma.emailCredential.findUnique({ where: { userId }, select: { verifiedAt: true } }),
     ]);
     return [
       ...(phone
@@ -363,6 +379,9 @@ export class PrismaAuthRepository implements AuthRepository {
               mask: `+${phone.countryCallingCode}••${phone.lastTwo}`,
             },
           ]
+        : []),
+      ...(email
+        ? [{ type: 'EMAIL_PASSWORD' as const, verifiedAt: email.verifiedAt, mask: '•••@•••' }]
         : []),
       ...oauth.map((item) => ({ type: item.provider, verifiedAt: item.createdAt })),
     ];

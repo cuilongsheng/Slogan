@@ -48,6 +48,9 @@ class FakeTranscriber implements SpeechTranscriber {
   readonly category = 'FAKE_STT';
   readonly calls: Array<Parameters<SpeechTranscriber['transcribe']>[0]> = [];
   async healthCheck() {}
+  async deletionAssurance() {
+    return { mode: 'NO_RETENTION' as const, result: 'COMPLETED' as const };
+  }
   fail = false;
   async transcribe(input: Parameters<SpeechTranscriber['transcribe']>[0]) {
     this.calls.push(input);

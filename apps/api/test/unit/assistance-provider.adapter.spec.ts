@@ -113,6 +113,23 @@ describe('assistance provider adapters', () => {
     expect([...form.values()].join(' ')).not.toContain('user');
   });
 
+  it('exposes the configured provider deletion assurance without claiming confirmation', async () => {
+    await expect(new OpenAiCompatibleSttAdapter(config).deletionAssurance()).resolves.toEqual({
+      mode: 'NO_RETENTION',
+      result: 'COMPLETED',
+    });
+    const deletionConfig = new ConfigService<Environment, true>(
+      testEnvironment({ ...environment, STT_DELETION_MODE: 'DELETE_AFTER_PROCESSING' }),
+    );
+    await expect(
+      new OpenAiCompatibleSttAdapter(deletionConfig).deletionAssurance(),
+    ).resolves.toEqual({
+      mode: 'DELETE_AFTER_PROCESSING',
+      result: 'UNCERTAIN',
+      reasonCode: 'PROVIDER_DELETION_UNCONFIRMED',
+    });
+  });
+
   it('normalizes malformed STT responses', async () => {
     jest
       .spyOn(globalThis, 'fetch')

@@ -16,6 +16,9 @@ enum CefrLevel {
   B2
   C1
   C2
+  A1_A2
+  B1_B2
+  C1_C2
 }
 
 enum RoomStatus {
@@ -368,4 +371,28 @@ enum RecoveryDrillStatus {
   RUNNING
   SUCCEEDED
   FAILED
+}
+
+enum EmailEnrollmentPurpose {
+  REGISTER
+  LINK
+}
+
+enum EmailChallengePurpose {
+  REGISTER
+  LINK
+  RESET_PASSWORD
+}
+
+enum EmailProofPurpose {
+  LINK_EMAIL
+  ACCOUNT_DELETE
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  RUNNING
+  DELIVERED
+  FAILED
+  CANCELLED
 }

@@ -51,5 +51,5 @@
 ## External acceptance boundary
 
 - **BLOCKED — LiveKit Cloud and qualified STT provider:** no repository environment contains usable LiveKit Cloud or approved STT provider credentials/policy evidence. The required two-person smoke for hidden participation, uninterrupted human voice, current-host-only alerting, host takeover, immediate consent withdrawal and provider degradation has not run.
-- **BLOCKED — supported device:** the mobile client has not integrated the consent and alert envelope, so real-device join, reconnect, host takeover and alert acceptance has not run.
+- **BLOCKED — supported device:** the mobile client now has locally tested consent and alert-envelope integration (`implement-mobile-room-processing-consents` and `implement-mobile-room-safety-alerts`), but signed native login and real-device join, reconnect, host takeover and alert acceptance have not run.
 - Local fakes, synthetic audio and control-plane unit tests are not production connectivity, provider deletion, latency or device proof. These two tasks remain unchecked.

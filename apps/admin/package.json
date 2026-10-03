@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@slogan/api-client": "workspace:*",
+    "@tanstack/react-query": "5.90.20",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-router-dom": "7.18.3"

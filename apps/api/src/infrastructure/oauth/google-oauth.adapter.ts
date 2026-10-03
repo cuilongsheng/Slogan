@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { OAuth2Client } from 'google-auth-library';
 
 import type { Environment } from '../../config/environment.js';
 import {
@@ -11,6 +12,9 @@ import { fetchJson, requireAllowedRedirect } from './oauth-http.js';
 
 @Injectable()
 export class GoogleOAuthAdapter {
+  private readonly verifier = new OAuth2Client();
+  private readonly logger = new Logger(GoogleOAuthAdapter.name);
+
   constructor(private readonly config: ConfigService<Environment, true>) {}
 
   async exchange(input: OAuthExchangeInput): Promise<ProviderIdentity> {
@@ -28,7 +32,7 @@ export class GoogleOAuthAdapter {
       code: input.authorizationCode,
       client_id: clientId!,
       client_secret: clientSecret!,
-      redirect_uri: input.redirectUri,
+      redirect_uri: input.redirectUri === 'slogan://oauth/google/native' ? '' : input.redirectUri,
       grant_type: 'authorization_code',
     });
     if (input.codeVerifier !== undefined) form.set('code_verifier', input.codeVerifier);
@@ -42,18 +46,25 @@ export class GoogleOAuthAdapter {
         body: form,
       },
       timeout,
+      (status, providerError) =>
+        this.logger.warn({ event: 'google_token_exchange_rejected', status, providerError }),
     );
     if (typeof token.id_token !== 'string') {
       throw new AuthError('AUTH_CODE_REJECTED', 'Google did not return an identity token');
     }
 
-    const claims = await fetchJson(
-      new URL(
-        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token.id_token)}`,
-      ),
-      { method: 'GET' },
-      timeout,
-    );
+    let claims;
+    try {
+      const ticket = await this.verifier.verifyIdToken({
+        idToken: token.id_token,
+        audience: clientId!,
+      });
+      claims = ticket.getPayload();
+    } catch {
+      throw new AuthError('AUTH_CODE_REJECTED', 'Google identity token validation failed');
+    }
+    if (!claims)
+      throw new AuthError('AUTH_CODE_REJECTED', 'Google identity token validation failed');
     const issuer = claims.iss;
     const subject = claims.sub;
     const audience = claims.aud;

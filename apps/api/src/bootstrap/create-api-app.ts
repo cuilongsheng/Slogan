@@ -4,7 +4,7 @@ import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
-import { raw } from 'express';
+import { raw, type Express } from 'express';
 import { pinoHttp } from 'pino-http';
 
 import { AppModule } from '../app.module.js';
@@ -22,6 +22,13 @@ export async function createApiApp(): Promise<INestApplication> {
 export function configureApiApp(app: INestApplication): void {
   const config = app.get<ConfigService<Environment, true>>(ConfigService);
 
+  const trustedProxies = config.get('EMAIL_AUTH_TRUSTED_PROXIES', { infer: true });
+  if (config.get('EMAIL_PASSWORD_AUTH_ENABLED', { infer: true }) && trustedProxies) {
+    (app.getHttpAdapter().getInstance() as Express).set(
+      'trust proxy',
+      trustedProxies.split(',').map((value) => value.trim()),
+    );
+  }
   app.useLogger(app.get(StructuredLogger));
   app.setGlobalPrefix('v1');
   app.use(helmet());
@@ -41,7 +48,7 @@ export function configureApiApp(app: INestApplication): void {
   );
   app.enableCors({
     origin: config.get('CORS_ALLOWED_ORIGINS', { infer: true }),
-    credentials: false,
+    credentials: true,
   });
   app.useGlobalPipes(
     new ValidationPipe({
