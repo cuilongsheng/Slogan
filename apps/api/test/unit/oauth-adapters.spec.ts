@@ -1,4 +1,7 @@
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
+import { OAuth2Client } from 'google-auth-library';
+import { spyOn } from 'jest-mock';
 
 import type { Environment } from '../../src/config/environment.js';
 import { GoogleOAuthAdapter } from '../../src/infrastructure/oauth/google-oauth.adapter.js';
@@ -43,10 +46,16 @@ describe('OAuth provider adapters', () => {
   const originalFetch = global.fetch;
   let fetchCalls: Array<[string | URL | Request, RequestInit | undefined]>;
   let fetchResults: Array<Promise<Response>>;
+  let verifyIdToken: jest.SpyInstance;
+
+  function verifiedClaims(claims: Record<string, unknown>) {
+    verifyIdToken.mockResolvedValue({ getPayload: () => claims });
+  }
 
   beforeEach(() => {
     fetchCalls = [];
     fetchResults = [];
+    verifyIdToken = spyOn(OAuth2Client.prototype, 'verifyIdToken');
     global.fetch = ((input: string | URL | Request, init?: RequestInit) => {
       fetchCalls.push([input, init]);
       const result = fetchResults.shift();
@@ -57,22 +66,19 @@ describe('OAuth provider adapters', () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+    verifyIdToken.mockRestore();
   });
 
   it('exchanges and validates a Google authorization code without trusting suggested profile data', async () => {
-    fetchResults.push(
-      Promise.resolve(jsonResponse({ id_token: 'provider-id-token' })),
-      Promise.resolve(
-        jsonResponse({
-          iss: 'accounts.google.com',
-          sub: 'google-subject',
-          aud: 'google-client',
-          exp: Math.floor(Date.now() / 1000) + 300,
-          name: 'Suggested Name',
-          picture: 'https://example.com/avatar.png',
-        }),
-      ),
-    );
+    fetchResults.push(Promise.resolve(jsonResponse({ id_token: 'provider-id-token' })));
+    verifiedClaims({
+      iss: 'accounts.google.com',
+      sub: 'google-subject',
+      aud: 'google-client',
+      exp: Math.floor(Date.now() / 1000) + 300,
+      name: 'Suggested Name',
+      picture: 'https://example.com/avatar.png',
+    });
     const adapter = new GoogleOAuthAdapter(config());
 
     const identity = await adapter.exchange({
@@ -95,6 +101,50 @@ describe('OAuth provider adapters', () => {
     expect(tokenRequest?.[1]?.method).toBe('POST');
     expect(String(tokenRequest?.[1]?.body)).toContain('code=one-time-code');
     expect(String(tokenRequest?.[1]?.body)).toContain('code_verifier=pkce-verifier');
+    expect(verifyIdToken).toHaveBeenCalledWith({
+      idToken: 'provider-id-token',
+      audience: 'google-client',
+    });
+  });
+
+  it('exchanges a native Google server authorization code with an empty provider redirect', async () => {
+    fetchResults.push(Promise.resolve(jsonResponse({ id_token: 'provider-id-token' })));
+    verifiedClaims({
+      iss: 'accounts.google.com',
+      sub: 'native-google-subject',
+      aud: 'google-client',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    });
+    const adapter = new GoogleOAuthAdapter(
+      config({ GOOGLE_OAUTH_REDIRECT_URIS: 'slogan://oauth/google/native' }),
+    );
+    await adapter.exchange({
+      authorizationCode: 'native-server-code',
+      redirectUri: 'slogan://oauth/google/native',
+    });
+    const body = new URLSearchParams(String(fetchCalls[0]?.[1]?.body));
+    expect(body.get('redirect_uri')).toBe('');
+    expect(body.get('code_verifier')).toBeNull();
+  });
+
+  it('passes the registered browser origin when exchanging a Web popup code', async () => {
+    fetchResults.push(Promise.resolve(jsonResponse({ id_token: 'provider-id-token' })));
+    verifiedClaims({
+      iss: 'accounts.google.com',
+      sub: 'web-google-subject',
+      aud: 'google-client',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    });
+    const adapter = new GoogleOAuthAdapter(
+      config({ GOOGLE_OAUTH_REDIRECT_URIS: 'http://localhost:8082' }),
+    );
+    await adapter.exchange({
+      authorizationCode: 'web-popup-code',
+      redirectUri: 'http://localhost:8082',
+    });
+    const body = new URLSearchParams(String(fetchCalls[0]?.[1]?.body));
+    expect(body.get('redirect_uri')).toBe('http://localhost:8082');
+    expect(body.get('code')).toBe('web-popup-code');
   });
 
   it.each([
@@ -105,11 +155,20 @@ describe('OAuth provider adapters', () => {
     ],
     [{ iss: 'accounts.google.com', sub: 'subject', aud: 'google-client', exp: 1 }, 'expiry'],
   ])('rejects a Google token with an invalid %s claim set', async (claims) => {
-    fetchResults.push(
-      Promise.resolve(jsonResponse({ id_token: 'provider-id-token' })),
-      Promise.resolve(jsonResponse(claims)),
-    );
+    fetchResults.push(Promise.resolve(jsonResponse({ id_token: 'provider-id-token' })));
+    verifiedClaims(claims);
 
+    await expect(
+      new GoogleOAuthAdapter(config()).exchange({
+        authorizationCode: 'one-time-code',
+        redirectUri: 'slogan://oauth/google',
+      }),
+    ).rejects.toMatchObject({ code: 'AUTH_CODE_REJECTED' });
+  });
+
+  it('rejects a Google ID token when signature verification fails', async () => {
+    fetchResults.push(Promise.resolve(jsonResponse({ id_token: 'invalid-signature' })));
+    verifyIdToken.mockRejectedValue(new Error('invalid token'));
     await expect(
       new GoogleOAuthAdapter(config()).exchange({
         authorizationCode: 'one-time-code',
@@ -148,6 +207,36 @@ describe('OAuth provider adapters', () => {
       code: 'AUTH_PROVIDER_UNAVAILABLE',
       message: 'OAuth provider is unavailable',
     });
+  });
+
+  it('logs only a safe Google token rejection category', async () => {
+    const warning = spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    fetchResults.push(
+      Promise.resolve(
+        jsonResponse({ error: 'invalid_grant', error_description: 'private provider detail' }, 400),
+      ),
+    );
+
+    try {
+      await expect(
+        new GoogleOAuthAdapter(config()).exchange({
+          authorizationCode: 'one-time-code',
+          redirectUri: 'slogan://oauth/google',
+        }),
+      ).rejects.toMatchObject({
+        code: 'AUTH_CODE_REJECTED',
+        message: 'OAuth provider rejected the authorization code',
+      });
+      expect(warning).toHaveBeenCalledWith({
+        event: 'google_token_exchange_rejected',
+        status: 400,
+        providerError: 'invalid_grant',
+      });
+      expect(JSON.stringify(warning.mock.calls)).not.toContain('one-time-code');
+      expect(JSON.stringify(warning.mock.calls)).not.toContain('private provider detail');
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   it('rejects unregistered redirects before sending credentials', async () => {

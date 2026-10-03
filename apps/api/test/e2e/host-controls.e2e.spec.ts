@@ -106,6 +106,17 @@ describe('host controls HTTP contract', () => {
     await post(`members/${membershipId}/removals`, hostToken, {
       expectedCredentialVersion: 0,
     }).expect(200);
+    const removed = await request(app.getHttpServer())
+      .get(`/v1/rooms/${roomId}/removed-members`)
+      .set('authorization', `Bearer ${hostToken}`)
+      .expect(200);
+    expect(removed.body).toEqual([
+      expect.objectContaining({ membershipId, userId: memberId, credentialVersion: 1 }),
+    ]);
+    await request(app.getHttpServer())
+      .get(`/v1/rooms/${roomId}/removed-members`)
+      .set('authorization', `Bearer ${memberToken}`)
+      .expect(403);
     await post('realtime-credentials', memberToken).expect(403);
     expect(
       (await post('memberships', memberToken, { rulesAccepted: true }).expect(403)).body.code,
@@ -113,6 +124,14 @@ describe('host controls HTTP contract', () => {
     await post(`members/${membershipId}/invitations`, hostToken, {
       expectedCredentialVersion: 1,
     }).expect(200);
+    expect(
+      (
+        await request(app.getHttpServer())
+          .get(`/v1/rooms/${roomId}/removed-members`)
+          .set('authorization', `Bearer ${hostToken}`)
+          .expect(200)
+      ).body,
+    ).toEqual([]);
     await post('memberships', memberToken, { rulesAccepted: false }).expect(400);
     await post('memberships', memberToken, { rulesAccepted: true }).expect(201);
     const fresh = await post('realtime-credentials', memberToken).expect(200);
@@ -192,7 +211,7 @@ describe('host controls HTTP contract', () => {
       credentialVersion: 0,
       hostReconnectDeadline: rejected.body.details.retryAt,
     });
-    expect(members.body[0]).not.toHaveProperty('userId');
+    expect(members.body[0]).toHaveProperty('userId', hostId);
     expect(members.body[0]).not.toHaveProperty('providerSessionSid');
   });
 });

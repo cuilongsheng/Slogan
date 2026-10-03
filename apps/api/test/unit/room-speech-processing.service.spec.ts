@@ -40,6 +40,10 @@ describe('RoomSpeechProcessingService', () => {
     const transcriber = {
       category: 'TEST_STT',
       healthCheck: fn(async () => undefined),
+      deletionAssurance: fn(async () => ({
+        mode: 'NO_RETENTION' as const,
+        result: 'COMPLETED' as const,
+      })),
       openSession: fn(async () => ({ transcribeWindow, close })),
     } as unknown as RoomSpeechTranscriber;
     const consumeSafety = fn(async () => undefined);

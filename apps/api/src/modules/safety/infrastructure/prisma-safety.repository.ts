@@ -165,6 +165,58 @@ export class PrismaSafetyRepository implements SafetyRepository {
     return roles;
   }
 
+  async caseSummary(actor: SafetyActor) {
+    return this.prisma.$transaction(async (tx) => {
+      const roles = await this.reader(tx, actor.userId);
+      const visible = roles.includes('PLATFORM_ADMIN')
+        ? {}
+        : { OR: [{ assigneeUserId: actor.userId }, { assigneeUserId: null }] };
+      const [open, highRisk, closed] = await Promise.all([
+        tx.safetyCase.count({ where: { ...visible, status: { in: ['OPEN', 'UNDER_REVIEW'] } } }),
+        tx.safetyCase.count({
+          where: {
+            ...visible,
+            assessedSeverity: 'HIGH_RISK',
+          },
+        }),
+        tx.safetyCase.count({ where: { ...visible, status: { in: ['RESOLVED', 'DISMISSED'] } } }),
+      ]);
+      await appendBackofficeAuditEvent(tx, {
+        actorType: 'USER',
+        actorUserId: actor.userId,
+        actorRoles: roles,
+        action: 'SAFETY_CASES_VIEWED',
+        targetType: 'SAFETY_CASE_LIST',
+        result: 'SUCCEEDED',
+        ...(actor.requestId ? { requestId: actor.requestId } : {}),
+        details: { summary: true },
+      });
+      return { open, highRisk, closed };
+    });
+  }
+
+  async appealSummary(actor: SafetyActor) {
+    return this.prisma.$transaction(async (tx) => {
+      const roles = await this.officer(tx, actor.userId);
+      const [pending, upheld, lifted] = await Promise.all([
+        tx.safetyAppeal.count({ where: { status: 'PENDING' } }),
+        tx.safetyAppeal.count({ where: { status: 'UPHELD' } }),
+        tx.safetyAppeal.count({ where: { status: 'LIFTED' } }),
+      ]);
+      await appendBackofficeAuditEvent(tx, {
+        actorType: 'USER',
+        actorUserId: actor.userId,
+        actorRoles: roles,
+        action: 'SAFETY_APPEALS_VIEWED',
+        targetType: 'SAFETY_APPEAL_LIST',
+        result: 'SUCCEEDED',
+        ...(actor.requestId ? { requestId: actor.requestId } : {}),
+        details: { summary: true },
+      });
+      return { pending, upheld, lifted };
+    });
+  }
+
   async listCases(actor: SafetyActor, query: SafetyCaseQuery) {
     const cursor = decodeCursor(query.cursor);
     return this.prisma.$transaction(async (tx) => {

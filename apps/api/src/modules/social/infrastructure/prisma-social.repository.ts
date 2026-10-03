@@ -151,11 +151,15 @@ export class PrismaSocialRepository implements SocialRepository {
         : { requesterUserId: input.userId };
     const rows = await this.prisma.friendRequest.findMany({
       where: { ...owner, status: 'PENDING', ...this.after(input.cursor) },
+      include: { requester: { include: { profile: true } }, recipient: { include: { profile: true } } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: input.limit + 1,
     });
     return this.page(
-      rows.map((row) => this.request(row)),
+      rows.map((row) => ({
+        ...this.request(row),
+        peerDisplayName: (input.direction === 'incoming' ? row.requester : row.recipient).profile?.displayName ?? null,
+      })),
       input.limit,
     );
   }
@@ -444,7 +448,14 @@ export class PrismaSocialRepository implements SocialRepository {
     createdAt: Date;
     resolvedAt: Date | null;
   }): FriendRequestRecord {
-    return { ...row, status: row.status as FriendRequestRecord['status'] };
+    return {
+      id: row.id,
+      requesterUserId: row.requesterUserId,
+      recipientUserId: row.recipientUserId,
+      status: row.status as FriendRequestRecord['status'],
+      createdAt: row.createdAt,
+      resolvedAt: row.resolvedAt,
+    };
   }
 
   private friendRequestById(id: string): Promise<FriendRequestRecord> {

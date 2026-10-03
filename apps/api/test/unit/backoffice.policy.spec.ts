@@ -36,6 +36,19 @@ describe('backoffice policy', () => {
     );
     expect(hasBackofficePermission(['AUDITOR'], 'ACCOUNT_RESTRICTED_RECORD_READ')).toBe(false);
   });
+  it('separates aggregate operations, restricted detail, incident and governance permissions', () => {
+    expect(hasBackofficePermission(['OPERATIONS_ANALYST'], 'OPERATIONS_METRICS_READ')).toBe(true);
+    expect(hasBackofficePermission(['OPERATIONS_ANALYST'], 'OPERATIONS_DETAILS_READ')).toBe(false);
+    expect(hasBackofficePermission(['OPERATIONS_ANALYST'], 'OPERATIONAL_INCIDENTS_READ')).toBe(
+      false,
+    );
+    expect(hasBackofficePermission(['AUDITOR'], 'OPERATIONAL_INCIDENTS_READ')).toBe(true);
+    expect(hasBackofficePermission(['AUDITOR'], 'OPERATIONAL_INCIDENTS_MANAGE')).toBe(false);
+    expect(hasBackofficePermission(['AUDITOR'], 'DATA_GOVERNANCE_READ')).toBe(true);
+    expect(hasBackofficePermission(['AUDITOR'], 'DATA_GOVERNANCE_MANAGE')).toBe(false);
+    expect(hasBackofficePermission(['PLATFORM_ADMIN'], 'RECOVERY_DRILLS_MANAGE')).toBe(true);
+    expect(hasBackofficePermission(['SAFETY_OFFICER'], 'OPERATIONS_HEALTH_READ')).toBe(false);
+  });
   it('normalizes reason using Unicode code points and enforces 1–500', () => {
     expect(normalizeBackofficeReason('  安全复核  ')).toBe('安全复核');
     expect(normalizeBackofficeReason('😀'.repeat(500))).toHaveLength(1000);

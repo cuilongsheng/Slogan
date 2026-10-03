@@ -133,6 +133,12 @@ describe('host controls PostgreSQL transactions', () => {
       targetId: m.id,
       expectedCredentialVersion: 0,
     });
+    expect(await realtime.removedMembers(roomId, hostId)).toEqual([
+      expect.objectContaining({ membershipId: m.id, userId: memberId, credentialVersion: 1 }),
+    ]);
+    await expect(realtime.removedMembers(roomId, thirdId)).rejects.toMatchObject({
+      code: 'ROOM_HOST_REQUIRED',
+    });
     await host.execute(roomId, hostId, {
       kind: 'remove',
       targetId: m.id,
@@ -149,6 +155,7 @@ describe('host controls PostgreSQL transactions', () => {
       targetId: m.id,
       expectedCredentialVersion: 1,
     });
+    expect(await realtime.removedMembers(roomId, hostId)).toEqual([]);
     await host.execute(roomId, hostId, {
       kind: 'invite',
       targetId: m.id,

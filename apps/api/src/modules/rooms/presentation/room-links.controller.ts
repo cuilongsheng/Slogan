@@ -1,14 +1,15 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiGoneResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '../../../common/decorators/public.decorator.js';
 import { ErrorResponseDto } from '../../../common/errors/error-response.dto.js';
 import { RoomsService } from '../application/services/rooms.service.js';
 import type { RoomShareRecord } from '../domain/entities/room.js';
-import { RoomShareDto, RoomShareParamsDto } from './dto/room.dto.js';
+import { RoomShareDto, RoomShareParamsDto, RoomShareQueryDto } from './dto/room.dto.js';
 
 function presentShare(room: RoomShareRecord): RoomShareDto {
   return {
+    attributionId: room.attributionId,
     id: room.id,
     kind: room.kind,
     status: room.status,
@@ -38,7 +39,10 @@ export class RoomLinksController {
   @ApiOkResponse({ type: RoomShareDto })
   @ApiNotFoundResponse({ type: ErrorResponseDto })
   @ApiGoneResponse({ type: ErrorResponseDto })
-  async resolve(@Param() params: RoomShareParamsDto): Promise<RoomShareDto> {
-    return presentShare(await this.rooms.resolveShare(params.shareCode));
+  async resolve(
+    @Param() params: RoomShareParamsDto,
+    @Query() query: RoomShareQueryDto,
+  ): Promise<RoomShareDto> {
+    return presentShare(await this.rooms.resolveShare(params.shareCode, query.attributionId));
   }
 }

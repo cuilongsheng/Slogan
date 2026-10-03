@@ -9,7 +9,7 @@ export interface RestrictedAccountRecord {
   status: 'DELETED';
   createdAt: Date;
   deletedAt: Date;
-  loginMethods: Array<'PHONE' | 'GOOGLE' | 'WECHAT'>;
+  loginMethods: Array<'PHONE' | 'GOOGLE' | 'WECHAT' | 'EMAIL_PASSWORD'>;
   profile: {
     displayName: string;
     avatarUrl: string;

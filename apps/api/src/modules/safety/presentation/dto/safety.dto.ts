@@ -119,6 +119,11 @@ export class SafetyCaseListDto {
   @ApiProperty({ type: [SafetyCaseDto] }) items!: SafetyCaseDto[];
   @ApiProperty({ type: String, nullable: true }) nextCursor!: string | null;
 }
+export class SafetyCaseSummaryDto {
+  @ApiProperty({ minimum: 0 }) open!: number;
+  @ApiProperty({ minimum: 0 }) highRisk!: number;
+  @ApiProperty({ minimum: 0 }) closed!: number;
+}
 export class SafetyRestrictionDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ format: 'uuid' }) caseId!: string;
@@ -171,6 +176,11 @@ export class SafetyAppealDto {
 export class SafetyAppealListDto {
   @ApiProperty({ type: [SafetyAppealDto] }) items!: SafetyAppealDto[];
   @ApiProperty({ type: String, nullable: true }) nextCursor!: string | null;
+}
+export class SafetyAppealSummaryDto {
+  @ApiProperty({ minimum: 0 }) pending!: number;
+  @ApiProperty({ minimum: 0 }) upheld!: number;
+  @ApiProperty({ minimum: 0 }) lifted!: number;
 }
 export class SafetyResolveResultDto {
   @ApiProperty({ type: SafetyCaseDto }) case!: SafetyCaseDto;

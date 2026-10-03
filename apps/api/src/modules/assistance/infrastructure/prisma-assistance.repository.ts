@@ -334,6 +334,7 @@ export class PrismaAssistanceRepository implements AssistanceRepository {
     });
     return {
       purpose,
+      currentNoticeVersion: noticeVersion,
       noticeVersion: event?.noticeVersion ?? null,
       providerCategory: event?.providerCategory ?? null,
       status:

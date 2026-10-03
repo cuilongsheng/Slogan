@@ -1,0 +1,49 @@
+# Slogan V1 Figma coverage
+
+Live inventory checked through Figma Desktop Bridge on 2026-09-24. [Open the file](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan). Node IDs below are the design review targets, not evidence that every behavior has been approved or implemented. OpenSpec remains the requirements authority.
+
+Visual review rejected the earlier high-fidelity direction. The [V2 room-list](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=115-1197), [V2 voice-room](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=115-1425), and [V2 authentication/profile section](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=114-1434) are review candidates. The admin pages remain drafts.
+
+## Prototype inventory
+
+| Area | `01 Prototype` | Count | `02 UI` coverage |
+| --- | --- | ---: | --- |
+| Authentication | Sign in; Register; Verify Email; Forgot Password; WeChat QR, Expired, Success; Google Account Chooser, Error | 9 | V2 sign in `118:2970`, register `118:3001`, verify email `118:3063`, forgot password `118:3186`, WeChat QR `118:3238`. Expiry/success, reset-email feedback, and Google provider states still need interaction specifications. |
+| First profile and eligibility | First setup, Scrolled, Validation; Underage | 4 | V2 basic profile `118:3095`, learning preferences `118:3140`, underage `118:3214`. Avatar, name, gender, country/region, birth year/month, interests and CEFR level are visible; validation and age branching still need interaction specifications. |
+| Room discovery | List; Create; Detail | 3 | List `104:858`, Create `111:979`, Detail `111:1026`. |
+| Joining | Password, Password Error; Rules Unconfirmed, Confirmed; Device Ready, Permission Blocked | 6 | Password `111:1071`, Rules `114:2508`, Device ready `114:2509`. Error, confirmed and blocked states still need variants or annotations. |
+| Live voice and member management | Member Muted; Self Speaking; Members; Reinvite; Transfer Host; Remove Confirm | 6 | Voice room `104:954`, Members `114:2510`; invite, handoff and remove overlays `111:882`, `111:906`, `111:872`. Speaking/muted behavior and host-only controls need an interaction audit. |
+| Safety | Report Member; Report Submitted | 2 | Report form overlay `111:842`; submitted state needs specification. |
+| Room lifecycle | Host Reconnecting; End Confirm; Ended | 3 | Reconnecting `114:2511`, end confirmation `114:2514`, ended `114:2512`. |
+| Private expression assist | Flow note | 1 | V2 start `115:1627`, listening `115:1673`, private English result `115:1720`; room entry is linked from `115:1425`. |
+| **Mobile total** | Section `22:205` | **34** | Page coverage is partial; the missing items above must not be counted as complete. |
+| Admin | Rooms cards; Safety cases; Appeals; Degradation; Role assignments; Audit events; Case detail; Appeal detail; Role editor; Confirmation | **10** | Six pages `114:1602`, `114:1655`, `114:1708`, `114:1761`, `114:1814`, `114:1867` and four overlays `114:2422`, `114:2445`, `114:2469`, `114:2487`. Room management uses cards; the other management pages use tables. |
+
+Admin prototype section: `102:2007`. The six admin pages and four overlays were captured and visually checked after creation. The mobile join/lifecycle pages were also captured and checked; a layout issue in the WeChat QR page and dark-screen back icons was corrected and checked again.
+
+## Separate proposed flow
+
+The `Partner & Direct Chat / Flow Draft` section (`112:1101`) has five low-fidelity frames: Find idle users, Recent & friends, Text & voice chat, Incoming voice request and Active call. These belong to `openspec/changes/add-partner-discovery-direct-conversations/`. The change is still a proposal; these frames are not approved V1 high-fidelity coverage.
+
+## Current OpenSpec features with no dedicated mobile prototype
+
+The 34 mobile frames do **not** cover every user-facing feature in the current `openspec/specs/` tree. At minimum, the prototype review still needs:
+
+| Current requirement | Missing design decision or screen |
+| --- | --- |
+| `friend-relationships`, `user-blocking` | Friend requests/list and block/unblock entry and feedback. |
+| `room-invitations`, `user-availability` | Invite inbox/response and eligible-user picker for the current host. The proposed general “找伙伴” flow is a separate, unapproved extension. |
+| `room-history-notes` | Room history and private post-room notes/editing. |
+| `safety-restriction-appeals` | My restrictions, appeal entry and submitted/pending/result states. |
+| `localization-and-room-rules`, `room-discovery-sharing` | Language selection, persistent in-room rules display/entry and room share entry. |
+| `room-time-extension`, `room-sensitive-speech-detection` | Host time-extension control and creation-time safety processing opt-in/status. |
+| `temporary-speech-processing`, `ai-expression-assistance` | Purpose-specific voice-processing consent, each short-voice prompt and expression-assist failure/limit states. |
+
+Some can be component states or overlays; they do not all need separate full-size page copies. This list is a requirements-to-prototype gap, not permission to invent product behavior in Figma. Review the affected OpenSpec scenario before drawing each interaction.
+
+## Requirement boundary
+
+- The current main `identity-and-profile` spec requires WeChat/Google login and first profile setup, including avatar, name, gender, country or city, interests, CEFR level and birth month/year.
+- Username/password login, registration, email verification and recovery are represented in the prototype and the `implement-email-password-auth-backend` change, but are not part of the current main identity spec until that change is approved/synced.
+- A different text message, loading outcome or validation result should normally be shown as a state/variant or interaction annotation on the same page. A separate screen is justified when layout or task flow materially changes.
+- The high-fidelity screens need a final prototype-link and requirements pass before claiming complete V1 design coverage.

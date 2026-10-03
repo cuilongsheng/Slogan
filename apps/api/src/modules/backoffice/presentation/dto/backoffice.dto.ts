@@ -71,7 +71,7 @@ export class ListRoleAssignmentsQueryDto {
 }
 export class RoleAssignmentListDto {
   @ApiProperty({ type: [RoleAssignmentDto] }) items!: RoleAssignmentDto[];
-  @ApiProperty({ nullable: true }) nextCursor!: string | null;
+  @ApiProperty({ type: String, nullable: true }) nextCursor!: string | null;
 }
 export class AuditEventDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
@@ -125,5 +125,5 @@ export class ListAuditEventsQueryDto {
 }
 export class AuditEventListDto {
   @ApiProperty({ type: [AuditEventDto] }) items!: AuditEventDto[];
-  @ApiProperty({ nullable: true }) nextCursor!: string | null;
+  @ApiProperty({ type: String, nullable: true }) nextCursor!: string | null;
 }

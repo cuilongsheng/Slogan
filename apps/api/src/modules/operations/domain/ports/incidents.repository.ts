@@ -25,6 +25,7 @@ export interface AlertDeliveryClaim {
   leaseId: string;
   generation: number;
   payload: {
+    status: string;
     component: string;
     category: string;
     severity: string;
@@ -35,7 +36,8 @@ export interface AlertDeliveryClaim {
 }
 
 export interface IncidentsRepository {
-  observe(input: IncidentObservationInput): Promise<IncidentView>;
+  observe(input: IncidentObservationInput, cooldownSeconds: number): Promise<IncidentView>;
+  recover(input: Omit<IncidentObservationInput, 'severity' | 'reasonCode'>): Promise<boolean>;
   list(
     actorUserId: string,
     actorRoles: BackofficeRole[],
@@ -49,7 +51,10 @@ export interface IncidentsRepository {
     requestId?: string,
   ): Promise<IncidentView | null>;
   command(input: IncidentCommandInput): Promise<IncidentView>;
-  trends(from: Date, to: Date): Promise<Array<{ component: string; severity: string; count: number }>>;
+  trends(
+    from: Date,
+    to: Date,
+  ): Promise<Array<{ component: string; severity: string; count: number }>>;
   claimDelivery(leaseSeconds: number, now: Date): Promise<AlertDeliveryClaim | null>;
   completeDelivery(claim: AlertDeliveryClaim, now: Date): Promise<void>;
   failDelivery(claim: AlertDeliveryClaim, errorCode: string, retryAt: Date): Promise<void>;

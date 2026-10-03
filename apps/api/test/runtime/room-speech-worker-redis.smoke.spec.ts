@@ -48,6 +48,9 @@ class RuntimeTranscriber implements SpeechTranscriber {
   readonly category = 'RUNTIME_STT';
   readonly audio: Uint8Array[] = [];
   async healthCheck() {}
+  async deletionAssurance() {
+    return { mode: 'NO_RETENTION' as const, result: 'COMPLETED' as const };
+  }
   async transcribe(input: Parameters<SpeechTranscriber['transcribe']>[0]) {
     this.audio.push(input.audio);
     return { transcript: 'I will attack you', durationMs: 300, usageUnits: 1 };

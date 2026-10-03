@@ -1,0 +1,23 @@
+model EmailEnrollment {
+  id               String                 @id @db.Uuid
+  purpose          EmailEnrollmentPurpose
+  userId           String?                @db.Uuid
+  sessionId        String?                @db.Uuid
+  commandId        String?                @db.Uuid
+  payloadHash      String?                @db.VarChar(64)
+  username         String?                @db.VarChar(20)
+  email            String?                @db.VarChar(254)
+  passwordHash     String?                @db.VarChar(512)
+  managementDigest String?                @unique @db.VarChar(128)
+  generation       Int                    @default(1)
+  lastSentAt       DateTime               @db.Timestamptz(3)
+  expiresAt        DateTime               @db.Timestamptz(3)
+  completedAt      DateTime?              @db.Timestamptz(3)
+  createdAt        DateTime               @default(now()) @db.Timestamptz(3)
+  challenges       EmailChallenge[]
+
+  @@unique([userId, commandId])
+  @@index([username, expiresAt])
+  @@index([email, expiresAt])
+  @@index([expiresAt])
+}

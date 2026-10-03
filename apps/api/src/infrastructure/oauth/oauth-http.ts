@@ -4,6 +4,7 @@ export async function fetchJson(
   url: string | URL,
   init: RequestInit,
   timeoutMs: number,
+  onRejected?: (status: number, providerError: string) => void,
 ): Promise<Record<string, unknown>> {
   let response: Response;
   try {
@@ -20,7 +21,21 @@ export async function fetchJson(
       throw new AuthError('AUTH_PROVIDER_UNAVAILABLE', 'OAuth provider is unavailable');
     }
     const body: unknown = await response.json();
-    if (!response.ok || typeof body !== 'object' || body === null) {
+    if (!response.ok) {
+      const providerError =
+        typeof body === 'object' && body !== null && 'error' in body ? body.error : undefined;
+      onRejected?.(
+        response.status,
+        typeof providerError === 'string' &&
+          ['invalid_client', 'invalid_grant', 'invalid_request', 'unauthorized_client'].includes(
+            providerError,
+          )
+          ? providerError
+          : 'other',
+      );
+      throw new AuthError('AUTH_CODE_REJECTED', 'OAuth provider rejected the authorization code');
+    }
+    if (typeof body !== 'object' || body === null) {
       throw new AuthError('AUTH_CODE_REJECTED', 'OAuth provider rejected the authorization code');
     }
     return body as Record<string, unknown>;

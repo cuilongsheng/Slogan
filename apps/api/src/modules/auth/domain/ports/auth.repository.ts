@@ -15,6 +15,7 @@ export interface AuthRepository {
   ): Promise<{ userId: string; created: boolean }>;
   createSession(input: {
     userId: string;
+    credentialVersion?: number;
     deviceName?: string;
     digest: string;
     expiresAt: Date;

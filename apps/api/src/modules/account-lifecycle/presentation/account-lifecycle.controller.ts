@@ -29,7 +29,11 @@ export class AccountLifecycleController {
     @CurrentIdentity() identity: CurrentAccessIdentity,
     @Body() body: DeleteAccountDto,
   ): Promise<AccountDeletionResponseDto> {
-    const result = await this.lifecycle.deleteAccount({ userId: identity.userId, ...body });
+    const result = await this.lifecycle.deleteAccount({
+      userId: identity.userId,
+      sessionId: identity.sessionId,
+      ...body,
+    });
     return { ...result, deletedAt: result.deletedAt.toISOString() };
   }
 

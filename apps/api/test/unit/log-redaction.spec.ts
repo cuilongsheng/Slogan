@@ -39,6 +39,13 @@ describe('structured log redaction', () => {
         roomPasswordPepper: 'private-room-pepper',
       },
       shareCode: 'private-share-code',
+      email: 'private-email@example.test',
+      token: 'private-email-token',
+      managementToken: 'private-enrollment-management-token',
+      passwordHash: 'private-email-password-hash',
+      mailBody: 'private-mail-body',
+      EMAIL_AUTH_AES_KEYS: 'private-aes-key-ring',
+      EMAIL_AUTH_HMAC_KEYS: 'private-hmac-key-ring',
       text: 'private-expression-text',
       audio: 'private-audio-content',
       transcript: 'private-transcript',
@@ -58,6 +65,10 @@ describe('structured log redaction', () => {
       grantId: 'private-verification-grant',
       phoneLookupHash: 'private-phone-hash',
       providerPayload: 'private-sms-payload',
+      OPERATIONS_ALERT_SINK_TOKEN: 'private-alert-token',
+      OPERATIONS_ALERT_SINK_URL: 'https://private-alert.example/hook',
+      DATABASE_URL: 'postgresql://user:private-db-password@db.example/app',
+      BACKUP_ENCRYPTION_KEY_ID: 'private-backup-key',
       candidate: {
         candidateText: 'private-candidate',
         displayText: 'private-final-item',
@@ -97,7 +108,18 @@ describe('structured log redaction', () => {
     expect(output).not.toContain('private-verification-grant');
     expect(output).not.toContain('private-phone-hash');
     expect(output).not.toContain('private-sms-payload');
+    expect(output).not.toContain('private-alert-token');
+    expect(output).not.toContain('private-alert.example');
+    expect(output).not.toContain('private-db-password');
+    expect(output).not.toContain('private-backup-key');
     for (const value of [
+      'private-email@example.test',
+      'private-email-token',
+      'private-enrollment-management-token',
+      'private-email-password-hash',
+      'private-mail-body',
+      'private-aes-key-ring',
+      'private-hmac-key-ring',
       'private-participant-token',
       'private-webhook-payload',
       'private-livekit-secret',

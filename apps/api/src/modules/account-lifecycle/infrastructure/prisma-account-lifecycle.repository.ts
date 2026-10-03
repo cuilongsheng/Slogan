@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 
+import { EmailAuthError } from '../../auth/index.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 import { appendBackofficeAuditEvent } from '../../audit/index.js';
@@ -41,6 +42,8 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
     userId: string;
     clientRequestId: string;
     payloadHash: string;
+    emailProofDigests?: string[];
+    sessionId?: string;
     now: Date;
   }): Promise<AccountDeletionResult> {
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -76,6 +79,7 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
             where: { id: input.targetUserId },
             include: {
               phoneIdentity: true,
+              emailCredential: { select: { userId: true } },
               identities: true,
               profile: true,
               safetyCasesReceived: {
@@ -123,6 +127,7 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
           deletedAt: target.deletedAt,
           loginMethods: [
             ...(target.phoneIdentity ? (['PHONE'] as const) : []),
+            ...(target.emailCredential ? (['EMAIL_PASSWORD'] as const) : []),
             ...target.identities.map((item) => item.provider),
           ],
           profile: target.profile
@@ -153,7 +158,14 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
 
   private async deleteLocked(
     tx: Prisma.TransactionClient,
-    input: { userId: string; clientRequestId: string; payloadHash: string; now: Date },
+    input: {
+      userId: string;
+      clientRequestId: string;
+      payloadHash: string;
+      now: Date;
+      emailProofDigests?: string[];
+      sessionId?: string;
+    },
   ): Promise<AccountDeletionResult> {
     await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${input.userId}::uuid FOR UPDATE`;
     const existing = await tx.accountLifecycleCommand.findUnique({
@@ -187,6 +199,66 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
         'Active backoffice roles must be revoked before account deletion',
       );
     }
+
+    await tx.$queryRaw`SELECT "userId" FROM "EmailCredential" WHERE "userId"=${input.userId}::uuid FOR UPDATE`;
+    if (input.emailProofDigests) {
+      if (!input.sessionId) throw new EmailAuthError('EMAIL_TOKEN_INVALID');
+      const credential = await tx.emailCredential.findUnique({ where: { userId: input.userId } });
+      const active = await tx.authSession.count({
+        where: {
+          id: input.sessionId,
+          userId: input.userId,
+          revokedAt: null,
+          expiresAt: { gt: input.now },
+        },
+      });
+      if (!credential?.passwordHash || !active) throw new EmailAuthError('EMAIL_TOKEN_INVALID');
+      const proof = await tx.emailAuthProof.updateMany({
+        where: {
+          tokenDigest: { in: input.emailProofDigests },
+          userId: input.userId,
+          sessionId: input.sessionId,
+          commandId: input.clientRequestId,
+          purpose: 'ACCOUNT_DELETE',
+          credentialVersion: credential.credentialVersion,
+          consumedAt: null,
+          expiresAt: { gt: input.now },
+        },
+        data: { consumedAt: input.now },
+      });
+      if (proof.count !== 1) throw new EmailAuthError('EMAIL_TOKEN_INVALID');
+    }
+    await tx.emailCredential.updateMany({
+      where: { userId: input.userId },
+      data: { passwordHash: null, credentialVersion: { increment: 1 } },
+    });
+    await tx.emailAuthProof.updateMany({
+      where: { userId: input.userId, consumedAt: null },
+      data: { consumedAt: input.now },
+    });
+    await tx.emailEnrollment.updateMany({
+      where: { userId: input.userId },
+      data: {
+        completedAt: input.now,
+        username: null,
+        email: null,
+        passwordHash: null,
+        managementDigest: null,
+      },
+    });
+    await tx.emailChallenge.updateMany({
+      where: { userId: input.userId, consumedAt: null },
+      data: { consumedAt: input.now },
+    });
+    await tx.emailDelivery.updateMany({
+      where: { status: { in: ['PENDING', 'RUNNING'] }, challenge: { userId: input.userId } },
+      data: {
+        encryptedPayload: null,
+        status: 'CANCELLED',
+        terminalAt: input.now,
+        generation: { increment: 1 },
+      },
+    });
 
     const hosted = await tx.room.findMany({
       where: { hostUserId: input.userId, status: { in: ['OPEN', 'SCHEDULED'] } },

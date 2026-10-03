@@ -109,8 +109,8 @@ export class RoomsService {
     return { ...detail, shareUrl: this.shareUrl(detail.room.shareCode) };
   }
 
-  async resolveShare(shareCode: string) {
-    const result = await this.rooms.findByShareCode(shareCode);
+  async resolveShare(shareCode: string, attributionId?: string) {
+    const result = await this.rooms.findByShareCode(shareCode, attributionId);
     if (result === null) throw new RoomError('ROOM_SHARE_NOT_FOUND', 'Room share link not found');
     if (result.status === 'UNAVAILABLE')
       throw new RoomError('ROOM_SHARE_UNAVAILABLE', 'Room share link is unavailable');
@@ -129,7 +129,12 @@ export class RoomsService {
   async join(
     userId: string,
     roomId: string,
-    input: { rulesAccepted: boolean; password?: string; invitationId?: string },
+    input: {
+      rulesAccepted: boolean;
+      password?: string;
+      invitationId?: string;
+      shareAttributionId?: string;
+    },
     now?: Date,
   ): Promise<RoomDetail & { shareUrl: string }> {
     await this.assertEligible(userId, now ?? new Date());
@@ -152,6 +157,8 @@ export class RoomsService {
       if (locked.existingMembership?.lifecycle === 'ACTIVE') {
         if (input.invitationId)
           await locked.consumeInvitation(input.invitationId, now ?? new Date());
+        if (input.shareAttributionId)
+          await locked.markShareAttribution(input.shareAttributionId, checkedAt);
         return { room: locked.room, currentMembership: locked.existingMembership };
       }
       if (locked.existingMembership?.lifecycle === 'REMOVED')
@@ -200,6 +207,8 @@ export class RoomsService {
         rulesVersion: this.rulesVersion,
         now: checkedAt,
       });
+      if (input.shareAttributionId)
+        await locked.markShareAttribution(input.shareAttributionId, checkedAt);
       return {
         room: { ...locked.room, memberCount: locked.room.memberCount + 1 },
         currentMembership: membership,

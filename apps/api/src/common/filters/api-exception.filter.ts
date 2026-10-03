@@ -102,6 +102,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return false;
     }
     return [
+      'EMAIL_AUTH_UNAVAILABLE',
+      'EMAIL_AUTH_RATE_LIMITED',
+      'EMAIL_USERNAME_INVALID',
+      'EMAIL_ADDRESS_INVALID',
+      'EMAIL_PASSWORD_INVALID',
+      'EMAIL_PASSWORD_WEAK',
+      'EMAIL_USERNAME_TAKEN',
+      'EMAIL_ADDRESS_TAKEN',
+      'EMAIL_CREDENTIALS_INVALID',
+      'EMAIL_VERIFICATION_REQUIRED',
+      'EMAIL_TOKEN_INVALID',
+      'EMAIL_COMMAND_CONFLICT',
       'ACCESS_TOKEN_INVALID',
       'AUTH_CODE_REJECTED',
       'AUTH_PROVIDER_INVALID',
@@ -210,6 +222,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
   }
 
   private statusForCode(code: string): number {
+    if (code === 'EMAIL_AUTH_UNAVAILABLE') return 503;
+    if (code === 'EMAIL_AUTH_RATE_LIMITED') return 429;
+    if (code === 'EMAIL_CREDENTIALS_INVALID') return 401;
+    if (code === 'EMAIL_VERIFICATION_REQUIRED') return 403;
+    if (['EMAIL_USERNAME_TAKEN', 'EMAIL_ADDRESS_TAKEN', 'EMAIL_COMMAND_CONFLICT'].includes(code))
+      return 409;
+
     if (['PHONE_AUTH_DISABLED', 'SMS_PROVIDER_FAILED', 'ACCOUNT_DELETE_UNAVAILABLE'].includes(code))
       return HttpStatus.SERVICE_UNAVAILABLE;
     if (code === 'SMS_PROVIDER_TIMEOUT') return HttpStatus.GATEWAY_TIMEOUT;

@@ -1,0 +1,48 @@
+import type { ReactNode } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+export function VoicePage({ children }: { children: ReactNode }) {
+  const page = (
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.safe, Platform.OS === 'web' && styles.webFrame]}
+    >
+      <StatusBar style="light" />
+      {Platform.OS === 'web' && (
+        <View style={styles.previewStatus} accessibilityElementsHidden>
+          <Text style={styles.previewText}>9:41</Text>
+          <Text style={styles.previewText}>●●● 100%</Text>
+        </View>
+      )}
+      {children}
+      {Platform.OS === 'web' && <View pointerEvents="none" style={styles.homeIndicator} />}
+    </SafeAreaView>
+  );
+  return Platform.OS === 'web' ? <View style={styles.canvas}>{page}</View> : page;
+}
+
+const styles = StyleSheet.create({
+  canvas: { flex: 1, alignItems: 'center', backgroundColor: '#EFF4FC' },
+  safe: { flex: 1, backgroundColor: '#2A1D4B', overflow: 'hidden' },
+  webFrame: { width: '100%', maxWidth: 390, minHeight: 844 },
+  previewStatus: {
+    height: 43,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingTop: 11,
+  },
+  previewText: { color: '#fff', fontSize: 13 },
+  homeIndicator: {
+    position: 'absolute',
+    width: 100,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#fff',
+    bottom: 6,
+    alignSelf: 'center',
+  },
+});

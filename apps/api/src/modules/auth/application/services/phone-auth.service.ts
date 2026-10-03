@@ -68,7 +68,7 @@ export class PhoneAuthService {
     if (input.userId) await this.repository.assertActive(input.userId);
     const phone = this.policy.normalize(input.phone, input.defaultRegion);
     if (
-      input.purpose === 'ACCOUNT_DELETE' &&
+      (input.purpose === 'ACCOUNT_DELETE' || input.purpose === 'LINK_EMAIL') &&
       input.userId &&
       !(await this.repository.ownsPhoneIdentity(input.userId, phone))
     ) {

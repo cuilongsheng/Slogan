@@ -110,6 +110,15 @@ describe('safety case restriction HTTP flow', () => {
       status: 'OPEN',
       assigneeUserId: admin.id,
     });
+    const caseSummary = await request(app.getHttpServer())
+      .get('/v1/backoffice/safety/cases/summary')
+      .set(bearer(adminToken))
+      .expect(200);
+    expect(caseSummary.body).toEqual({ open: 1, highRisk: 0, closed: 0 });
+    await request(app.getHttpServer())
+      .get('/v1/backoffice/safety/cases/summary')
+      .set(bearer(targetToken))
+      .expect(403);
     const evidence = await request(app.getHttpServer())
       .get(`/v1/backoffice/safety/cases/${accepted.body.caseId}/evidence`)
       .set(bearer(adminToken))
@@ -248,6 +257,11 @@ describe('safety case restriction HTTP flow', () => {
       .set(bearer(adminToken))
       .expect(200);
     expect(appeals.body.items.map((item: { id: string }) => item.id)).toContain(appeal.body.id);
+    const appealSummary = await request(app.getHttpServer())
+      .get('/v1/backoffice/safety/appeals/summary')
+      .set(bearer(adminToken))
+      .expect(200);
+    expect(appealSummary.body).toEqual({ pending: 1, upheld: 0, lifted: 0 });
     await request(app.getHttpServer())
       .post(`/v1/backoffice/safety/appeals/${appeal.body.id}/decide`)
       .set(bearer(adminToken))

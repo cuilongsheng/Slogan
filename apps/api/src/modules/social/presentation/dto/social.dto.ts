@@ -64,6 +64,10 @@ export class FriendRequestDto {
   @ApiProperty({ type: String, format: 'date-time', nullable: true }) resolvedAt!: string | null;
 }
 
+export class FriendRequestListDto extends FriendRequestDto {
+  @ApiProperty({ type: String, nullable: true }) peerDisplayName!: string | null;
+}
+
 export class PublicSocialProfileDto {
   @ApiProperty({ format: 'uuid' }) userId!: string;
   @ApiProperty() displayName!: string;
@@ -92,7 +96,7 @@ export class BlockDto {
 }
 
 export class FriendRequestPageDto {
-  @ApiProperty({ type: [FriendRequestDto] }) items!: FriendRequestDto[];
+  @ApiProperty({ type: [FriendRequestListDto] }) items!: FriendRequestListDto[];
   @ApiProperty({ type: String, nullable: true }) nextCursor!: string | null;
 }
 export class FriendPageDto {

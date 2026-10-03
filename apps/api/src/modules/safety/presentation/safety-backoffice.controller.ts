@@ -39,10 +39,12 @@ import {
   SafetyAppealListDto,
   SafetyAppealListQueryDto,
   SafetyAppealParamsDto,
+  SafetyAppealSummaryDto,
   SafetyCaseDto,
   SafetyCaseListDto,
   SafetyCaseListQueryDto,
   SafetyCaseParamsDto,
+  SafetyCaseSummaryDto,
   SafetyCommandDto,
   SafetyEvidenceDto,
   SafetyReasonCommandDto,
@@ -90,6 +92,11 @@ export class SafetyBackofficeController {
       ...(query.cursor ? { cursor: query.cursor } : {}),
       limit: query.limit ?? 20,
     });
+  }
+  @Get('cases/summary')
+  @ApiOkResponse({ type: SafetyCaseSummaryDto })
+  caseSummary(@CurrentIdentity() identity: CurrentAccessIdentity, @Req() request: SafetyRequest) {
+    return this.safety.caseSummary(this.actor(identity, request));
   }
   @Get('cases/:caseId')
   @ApiOkResponse({ type: SafetyCaseDto })
@@ -200,6 +207,11 @@ export class SafetyBackofficeController {
       ...(query.cursor ? { cursor: query.cursor } : {}),
       limit: query.limit ?? 20,
     });
+  }
+  @Get('appeals/summary')
+  @ApiOkResponse({ type: SafetyAppealSummaryDto })
+  appealSummary(@CurrentIdentity() identity: CurrentAccessIdentity, @Req() request: SafetyRequest) {
+    return this.safety.appealSummary(this.actor(identity, request));
   }
   @Post('appeals/:appealId/decide')
   @HttpCode(HttpStatus.OK)

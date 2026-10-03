@@ -89,6 +89,33 @@ describe('social and room invitation HTTP contract', () => {
     return created.body.id as string;
   }
 
+  it('shows the other participant public name only in the caller-owned pending request list', async () => {
+    await request(app.getHttpServer())
+      .post('/v1/friend-requests')
+      .set(auth(alice))
+      .send({ targetUserId: bob.id, clientRequestId: randomUUID() })
+      .expect(201);
+    const incoming = await request(app.getHttpServer())
+      .get('/v1/friend-requests?direction=incoming')
+      .set(auth(bob))
+      .expect(200);
+    expect(incoming.body.items).toHaveLength(1);
+    expect(incoming.body.items[0].peerDisplayName).toBe('Alice Social');
+    expect(Object.keys(incoming.body.items[0]).sort()).toEqual([
+      'createdAt', 'id', 'peerDisplayName', 'recipientUserId', 'requesterUserId', 'resolvedAt', 'status',
+    ].sort());
+    expect(JSON.stringify(incoming.body)).not.toMatch(/birthYear|birthMonth|email/);
+    const outgoing = await request(app.getHttpServer())
+      .get('/v1/friend-requests?direction=outgoing')
+      .set(auth(alice))
+      .expect(200);
+    expect(outgoing.body.items[0].peerDisplayName).toBe('Bob Social');
+    expect((await request(app.getHttpServer())
+      .get('/v1/friend-requests?direction=incoming')
+      .set(auth(charlie))
+      .expect(200)).body.items).toEqual([]);
+  });
+
   it('requires mutual consent and exposes only caller-owned social lists', async () => {
     const requestId = await friends();
     const list = await request(app.getHttpServer())

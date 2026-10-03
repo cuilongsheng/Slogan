@@ -1,4 +1,4 @@
-export const PHONE_CHALLENGE_PURPOSES = ['LOGIN', 'LINK', 'ACCOUNT_DELETE'] as const;
+export const PHONE_CHALLENGE_PURPOSES = ['LOGIN', 'LINK', 'ACCOUNT_DELETE', 'LINK_EMAIL'] as const;
 export type PhoneChallengePurpose = (typeof PHONE_CHALLENGE_PURPOSES)[number];
 
 export interface PhoneFingerprint {
@@ -28,7 +28,7 @@ export interface VerificationGrant {
 }
 
 export interface LoginMethodView {
-  type: 'PHONE' | 'GOOGLE' | 'WECHAT';
+  type: 'PHONE' | 'GOOGLE' | 'WECHAT' | 'EMAIL_PASSWORD';
   verifiedAt: Date;
   mask?: string;
 }

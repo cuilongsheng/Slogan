@@ -1,9 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsUUID } from 'class-validator';
+import { IsIn, IsUUID, Matches } from 'class-validator';
 
 export class DeleteAccountDto {
-  @ApiProperty({ format: 'uuid' })
-  @IsUUID()
+  @ApiProperty({ description: 'Existing UUID proof or email password proof', maxLength: 64 })
+  @Matches(
+    /^(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|email:[A-Za-z0-9_-]{43})$/,
+  )
   proof!: string;
 
   @ApiProperty({ enum: ['DELETE MY ACCOUNT'] })
@@ -59,7 +61,7 @@ export class RestrictedAccountRecordDto {
   @ApiProperty({ format: 'date-time' })
   deletedAt!: string;
 
-  @ApiProperty({ enum: ['PHONE', 'GOOGLE', 'WECHAT'], isArray: true })
+  @ApiProperty({ enum: ['PHONE', 'GOOGLE', 'WECHAT', 'EMAIL_PASSWORD'], isArray: true })
   loginMethods!: string[];
 
   @ApiPropertyOptional({ type: RestrictedProfileDto, nullable: true })

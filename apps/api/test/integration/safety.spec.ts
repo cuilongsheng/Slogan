@@ -176,6 +176,7 @@ describe('safety cases, restrictions and appeals on PostgreSQL', () => {
     const startKey = randomUUID();
     const started = (await safety.start(actor(officerId), pending.caseId, startKey)) as CaseView;
     expect(started.status).toBe('UNDER_REVIEW');
+    expect((await safety.caseSummary(actor(officerId))).open).toBe(1);
     expect(await safety.start(actor(officerId), pending.caseId, startKey)).toEqual(started);
     await expect(safety.start(actor(otherId), pending.caseId, randomUUID())).rejects.toMatchObject({
       code: 'SAFETY_STATE_CONFLICT',
@@ -191,6 +192,7 @@ describe('safety cases, restrictions and appeals on PostgreSQL', () => {
       reason: '  confirmed behavior  ',
     })) as ResolveView;
     expect(resolved.case.status).toBe('RESOLVED');
+    expect((await safety.caseSummary(actor(officerId))).open).toBe(0);
     expect(resolved.restriction).toMatchObject({ status: 'ACTIVE', severity: 'GENERAL' });
     expect(
       new Date(resolved.restriction!.endsAt!).getTime() -
@@ -632,6 +634,16 @@ describe('safety cases, restrictions and appeals on PostgreSQL', () => {
     await backoffice.bootstrap(admin.id);
     await grantSafety(admin.id, second.id);
     const created = [await createReportCase(), await createReportCase(), await createReportCase()];
+    await expect(safety.caseSummary(actor(admin.id))).resolves.toEqual({
+      open: 3,
+      highRisk: 0,
+      closed: 0,
+    });
+    await expect(safety.appealSummary(actor(admin.id))).resolves.toEqual({
+      pending: 0,
+      upheld: 0,
+      lifted: 0,
+    });
 
     const firstPage = (await safety.listCases(actor(admin.id), { limit: 2 })) as {
       items: CaseView[];
@@ -661,6 +673,7 @@ describe('safety cases, restrictions and appeals on PostgreSQL', () => {
     const secondQueue = (await safety.listCases(actor(second.id), { limit: 20 })) as {
       items: CaseView[];
     };
+    expect((await safety.caseSummary(actor(second.id))).open).toBe(secondQueue.items.length);
     expect(secondQueue.items.every((item) => item.assigneeUserId === second.id)).toBe(true);
     const otherCase = created
       .map((item) => item.caseId)

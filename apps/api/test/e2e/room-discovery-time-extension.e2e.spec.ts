@@ -77,7 +77,7 @@ describe('room discovery, share and extension HTTP contract', () => {
     expect(list.body.items.map((room: { id: string }) => room.id)).not.toContain(hidden.body.id);
   });
 
-  it('resolves a minimal share projection without authentication or side effects', async () => {
+  it('resolves a minimal anonymous share projection and binds a successful join', async () => {
     const created = await create({
       topic: 'Protected shared room',
       cefrLevel: 'B2',
@@ -90,6 +90,7 @@ describe('room discovery, share and extension HTTP contract', () => {
       memberships: await prisma.roomMembership.count(),
       reservations: await prisma.roomReservation.count(),
       identities: await prisma.realtimeIdentity.count(),
+      attributions: await prisma.roomShareAttribution.count(),
     };
     const resolved = await request(app.getHttpServer())
       .get(`/v1/room-links/${shareCode}`)
@@ -97,6 +98,7 @@ describe('room discovery, share and extension HTTP contract', () => {
     expect(Object.keys(resolved.body).sort()).toEqual(
       [
         'availableCount',
+        'attributionId',
         'capacity',
         'cefrLevel',
         'endsAt',
@@ -119,7 +121,13 @@ describe('room discovery, share and extension HTTP contract', () => {
       memberships: await prisma.roomMembership.count(),
       reservations: await prisma.roomReservation.count(),
       identities: await prisma.realtimeIdentity.count(),
-    }).toEqual(before);
+      attributions: await prisma.roomShareAttribution.count(),
+    }).toEqual({ ...before, attributions: before.attributions + 1 });
+    const repeated = await request(app.getHttpServer())
+      .get(`/v1/room-links/${shareCode}?attributionId=${resolved.body.attributionId}`)
+      .expect(200);
+    expect(repeated.body.attributionId).toBe(resolved.body.attributionId);
+    expect(await prisma.roomShareAttribution.count()).toBe(before.attributions + 1);
 
     await request(app.getHttpServer()).post(`/v1/rooms/${created.body.id}/memberships`).expect(401);
     await request(app.getHttpServer())
@@ -132,6 +140,24 @@ describe('room discovery, share and extension HTTP contract', () => {
       .set('authorization', `Bearer ${memberToken}`)
       .send({ rulesAccepted: false, password: '1234' })
       .expect(400);
+    await request(app.getHttpServer())
+      .post(`/v1/rooms/${created.body.id}/memberships`)
+      .set('authorization', `Bearer ${memberToken}`)
+      .send({
+        rulesAccepted: true,
+        password: '1234',
+        shareAttributionId: resolved.body.attributionId,
+      })
+      .expect(201);
+    expect(
+      await prisma.roomShareAttribution.count({
+        where: {
+          id: resolved.body.attributionId,
+          roomId: created.body.id,
+          joinedAt: { not: null },
+        },
+      }),
+    ).toBe(1);
     await request(app.getHttpServer())
       .post(`/v1/rooms/${created.body.id}/realtime-credentials`)
       .set('authorization', `Bearer ${memberToken}`)

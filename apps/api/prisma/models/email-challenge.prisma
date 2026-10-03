@@ -1,0 +1,17 @@
+model EmailChallenge {
+  id                String                @id @db.Uuid
+  purpose           EmailChallengePurpose
+  enrollmentId      String?               @db.Uuid
+  userId            String?               @db.Uuid
+  tokenDigest       String                @unique @db.VarChar(128)
+  generation        Int
+  credentialVersion Int?
+  expiresAt         DateTime              @db.Timestamptz(3)
+  consumedAt        DateTime?             @db.Timestamptz(3)
+  createdAt         DateTime              @default(now()) @db.Timestamptz(3)
+  enrollment        EmailEnrollment?      @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  deliveries        EmailDelivery[]
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+}

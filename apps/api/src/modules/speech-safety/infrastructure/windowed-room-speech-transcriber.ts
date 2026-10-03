@@ -17,6 +17,10 @@ export class WindowedRoomSpeechTranscriber implements RoomSpeechTranscriber {
     return this.provider.healthCheck();
   }
 
+  deletionAssurance() {
+    return this.provider.deletionAssurance();
+  }
+
   async openSession(_input: {
     anonymousSessionId: string;
   }): Promise<RoomSpeechTranscriptionSession> {

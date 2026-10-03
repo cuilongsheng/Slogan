@@ -19,6 +19,8 @@ describe('SafetyRunner without Redis', () => {
     let scanned = 0;
     const unused = async () => undefined;
     const repository: SafetyRepository = {
+      caseSummary: async () => ({ open: 0, highRisk: 0, closed: 0 }),
+      appealSummary: async () => ({ pending: 0, upheld: 0, lifted: 0 }),
       listCases: unused,
       caseDetail: unused,
       evidence: unused,

@@ -40,6 +40,17 @@ export class OpenAiCompatibleSttAdapter implements SpeechTranscriber {
     }
   }
 
+  async deletionAssurance() {
+    const mode = this.config.get('STT_DELETION_MODE', { infer: true })!;
+    return mode === 'NO_RETENTION'
+      ? { mode, result: 'COMPLETED' as const }
+      : {
+          mode,
+          result: 'UNCERTAIN' as const,
+          reasonCode: 'PROVIDER_DELETION_UNCONFIRMED',
+        };
+  }
+
   async transcribe(input: Parameters<SpeechTranscriber['transcribe']>[0]) {
     if (
       !this.config.get('ASSISTANCE_AUDIO_ENABLED', { infer: true }) &&

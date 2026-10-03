@@ -1,10 +1,14 @@
 import { createHash } from 'node:crypto';
 
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import type { Environment } from '../../../../config/environment.js';
-import { PHONE_CHALLENGE_STORE, type PhoneChallengeStore } from '../../../auth/index.js';
+import {
+  EmailAuthService,
+  PHONE_CHALLENGE_STORE,
+  type PhoneChallengeStore,
+} from '../../../auth/index.js';
 import { SOCIAL_PRESENCE, type SocialPresence } from '../../../social/index.js';
 import { AccountLifecycleError } from '../../domain/errors/account-lifecycle.error.js';
 import {
@@ -20,10 +24,12 @@ export class AccountLifecycleService {
     @Inject(PHONE_CHALLENGE_STORE) private readonly grants: PhoneChallengeStore,
     @Inject(SOCIAL_PRESENCE) private readonly presence: SocialPresence,
     private readonly config: ConfigService<Environment, true>,
+    @Optional() private readonly email?: EmailAuthService,
   ) {}
 
   async deleteAccount(input: {
     userId: string;
+    sessionId?: string;
     proof: string;
     confirmation: string;
     clientRequestId: string;
@@ -49,19 +55,30 @@ export class AccountLifecycleService {
       payloadHash,
     );
     if (replay) return replay;
-    await this.grants.readGrant({
-      grantId: input.proof,
-      purpose: 'ACCOUNT_DELETE',
-      userId: input.userId,
-      clientRequestId: input.clientRequestId,
-    });
+    const emailProof = input.proof.startsWith('email:');
+    if (emailProof && (!this.email || !input.sessionId))
+      throw new AccountLifecycleError(
+        'ACCOUNT_DELETE_UNAVAILABLE',
+        'Account deletion is unavailable',
+      );
+    const emailProofDigests = emailProof
+      ? this.email!.deletionProofDigests(input.proof)
+      : undefined;
+    if (!emailProof)
+      await this.grants.readGrant({
+        grantId: input.proof,
+        purpose: 'ACCOUNT_DELETE',
+        userId: input.userId,
+        clientRequestId: input.clientRequestId,
+      });
     const result = await this.repository.deleteAccount({
       userId: input.userId,
       clientRequestId: input.clientRequestId,
       payloadHash,
+      ...(emailProofDigests ? { emailProofDigests, sessionId: input.sessionId! } : {}),
       now: new Date(),
     });
-    await this.grants.completeGrant(input.proof, input.clientRequestId);
+    if (!emailProof) await this.grants.completeGrant(input.proof, input.clientRequestId);
     await this.presence.clear(input.userId);
     return result;
   }

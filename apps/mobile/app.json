@@ -1,12 +1,25 @@
 {
   "expo": {
-    "name": "Slogan Bootstrap",
+    "name": "Slogan",
     "slug": "slogan-mobile",
     "version": "0.0.0",
     "orientation": "portrait",
     "scheme": "slogan",
-    "userInterfaceStyle": "automatic",
-    "plugins": ["expo-router"],
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-dev-client",
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Slogan to use your microphone in voice rooms."
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     }

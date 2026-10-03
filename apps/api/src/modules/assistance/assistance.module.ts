@@ -5,6 +5,7 @@ import { ObservabilityModule } from '../../infrastructure/observability/observab
 import { RedisModule } from '../../infrastructure/redis/redis.module.js';
 import { SttProviderModule } from '../../infrastructure/stt/stt-provider.module.js';
 import { RoomsModule } from '../rooms/index.js';
+import { OperationsModule } from '../operations/index.js';
 import { AssistanceService } from './application/services/assistance.service.js';
 import { ASSISTANCE_MAINTENANCE } from './domain/ports/assistance-maintenance.port.js';
 import { ASSISTANCE_REPOSITORY } from './domain/ports/assistance.repository.js';
@@ -14,7 +15,14 @@ import { PrismaAssistanceRepository } from './infrastructure/prisma-assistance.r
 import { AssistanceController } from './presentation/assistance.controller.js';
 
 @Module({
-  imports: [RoomsModule, RedisModule, AiProviderModule, SttProviderModule, ObservabilityModule],
+  imports: [
+    RoomsModule,
+    RedisModule,
+    AiProviderModule,
+    SttProviderModule,
+    ObservabilityModule,
+    OperationsModule,
+  ],
   controllers: [AssistanceController],
   providers: [
     AssistanceService,

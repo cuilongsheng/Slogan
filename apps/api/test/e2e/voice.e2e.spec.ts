@@ -100,6 +100,7 @@ describe('realtime HTTP API', () => {
     expect(Object.keys(members.body[0]).sort()).toEqual(
       [
         'membershipId',
+        'userId',
         'lifecycle',
         'credentialVersion',
         'hostReconnectDeadline',

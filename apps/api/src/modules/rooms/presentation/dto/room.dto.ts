@@ -102,6 +102,14 @@ export class JoinRoomDto {
   @IsOptional()
   @IsUUID()
   invitationId?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Anonymous attribution returned by the share-link resolve endpoint.',
+  })
+  @IsOptional()
+  @IsUUID()
+  shareAttributionId?: string;
 }
 
 export class RoomMembershipDto {
@@ -196,7 +204,15 @@ export class RoomShareParamsDto {
   shareCode!: string;
 }
 
+export class RoomShareQueryDto {
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  attributionId?: string;
+}
+
 export class RoomShareDto {
+  @ApiProperty({ format: 'uuid' }) attributionId!: string;
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ enum: ['INSTANT', 'APPOINTMENT'] }) kind!: 'INSTANT' | 'APPOINTMENT';
   @ApiProperty({ enum: ['SCHEDULED', 'OPEN'] }) status!: string;

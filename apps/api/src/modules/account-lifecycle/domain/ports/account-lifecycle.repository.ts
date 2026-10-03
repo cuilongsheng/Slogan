@@ -15,6 +15,8 @@ export interface AccountLifecycleRepository {
     userId: string;
     clientRequestId: string;
     payloadHash: string;
+    emailProofDigests?: string[];
+    sessionId?: string;
     now: Date;
   }): Promise<AccountDeletionResult>;
   restrictedRecord(input: {

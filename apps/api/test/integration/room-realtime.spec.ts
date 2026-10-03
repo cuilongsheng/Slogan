@@ -87,7 +87,7 @@ describe('realtime PostgreSQL state and recovery', () => {
       presence: 'DISCONNECTED',
       role: 'HOST',
     });
-    expect(members[0]).not.toHaveProperty('userId');
+    expect(members[0]).toHaveProperty('userId', hostId);
     expect(members[0]).not.toHaveProperty('providerSessionSid');
     expect((await rooms.detail(hostId, roomId)).room.memberCount).toBe(2);
     expect(await prisma.realtimeIdentity.count()).toBe(1);
