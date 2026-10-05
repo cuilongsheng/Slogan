@@ -84,8 +84,11 @@ export class LoginMethodDto {
   @ApiProperty({ enum: ['PHONE', 'GOOGLE', 'WECHAT', 'EMAIL_PASSWORD'] })
   type!: string;
 
-  @ApiProperty({ format: 'date-time' })
-  verifiedAt!: string;
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
+  verifiedAt!: string | null;
+
+  @ApiPropertyOptional({ enum: ['EMAIL_VERIFIED', 'PREVIEW_PROVISIONED'] })
+  origin?: 'EMAIL_VERIFIED' | 'PREVIEW_PROVISIONED';
 
   @ApiPropertyOptional({ example: '+86••78' })
   mask?: string;

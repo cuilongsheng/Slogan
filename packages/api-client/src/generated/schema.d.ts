@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AuthCapabilitiesController_capabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/email/registrations": {
         parameters: {
             query?: never;
@@ -2049,6 +2065,11 @@ export interface components {
             }[];
             nextCursor: string | null;
         };
+        AuthCapabilitiesDto: {
+            email: boolean;
+            google: boolean;
+            password: boolean;
+        };
         AvailableUserDto: {
             /** Format: uri */
             avatarUrl: string;
@@ -2524,18 +2545,22 @@ export interface components {
             /** @example +86••78 */
             mask?: string;
             /** @enum {string} */
+            origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED";
+            /** @enum {string} */
             type: "PHONE" | "GOOGLE" | "WECHAT" | "EMAIL_PASSWORD";
             /** Format: date-time */
-            verifiedAt: string;
+            verifiedAt: string | null;
         };
         LoginMethodsResponseDto: {
             methods: {
                 /** @example +86••78 */
                 mask?: string;
                 /** @enum {string} */
+                origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED";
+                /** @enum {string} */
                 type: "PHONE" | "GOOGLE" | "WECHAT" | "EMAIL_PASSWORD";
                 /** Format: date-time */
-                verifiedAt: string;
+                verifiedAt: string | null;
             }[];
         };
         MeResponseDto: {
@@ -4895,6 +4920,29 @@ export interface operations {
                         message: string;
                         /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
                         requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    AuthCapabilitiesController_capabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: boolean;
+                        google: boolean;
+                        password: boolean;
                     };
                 };
             };
@@ -13532,9 +13580,11 @@ export interface operations {
                             /** @example +86••78 */
                             mask?: string;
                             /** @enum {string} */
+                            origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED";
+                            /** @enum {string} */
                             type: "PHONE" | "GOOGLE" | "WECHAT" | "EMAIL_PASSWORD";
                             /** Format: date-time */
-                            verifiedAt: string;
+                            verifiedAt: string | null;
                         }[];
                     };
                 };

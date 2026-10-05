@@ -20,9 +20,21 @@ export class AuthMailService {
     @Inject(MAIL_SENDER) private readonly sender: MailSender,
     private readonly config: ConfigService<Environment, true>,
   ) {}
+  async disablePending(now = new Date()): Promise<void> {
+    if (
+      this.config.get('EMAIL_AUTH_MAIL_ENABLED', { infer: true }) ??
+      this.config.get('EMAIL_PASSWORD_AUTH_ENABLED', { infer: true })
+    )
+      throw new Error('EMAIL_MAIL_STILL_ENABLED');
+    await this.repository.cancelPending(now);
+  }
   async tick(now = new Date()): Promise<number> {
-    if (!this.config.get('EMAIL_PASSWORD_AUTH_ENABLED', { infer: true })) return 0;
     await this.repository.cleanup(now);
+    if (!(
+      this.config.get('EMAIL_AUTH_MAIL_ENABLED', { infer: true }) ??
+      this.config.get('EMAIL_PASSWORD_AUTH_ENABLED', { infer: true })
+    ))
+      return 0;
     const claims = await this.repository.claim(now);
     await Promise.all(
       claims.map(async (row) => {

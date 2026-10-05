@@ -37,6 +37,27 @@ describe('email authentication configuration and encryption', () => {
       }
     }
   });
+  it('supports mail-free password preview in production without SMTP/AES/links, while keeping mandatory HMAC/Redis', () => {
+    const overrides = {
+      NODE_ENV: 'production',
+      ROOM_SHARE_BASE_URL: 'https://app.example.test/rooms/',
+      EMAIL_AUTH_MAIL_ENABLED: false,
+      PREVIEW_ACCOUNTS_ENABLED: true,
+      PREVIEW_ENVIRONMENT_ID: 'preview-production',
+      EMAIL_SMTP_HOST: undefined,
+      EMAIL_SMTP_FROM: undefined,
+      EMAIL_AUTH_AES_KEYS: undefined,
+      EMAIL_VERIFY_URL: undefined,
+      EMAIL_RESET_URL: undefined,
+    };
+    expect(emailEnvironment(overrides).EMAIL_AUTH_MAIL_ENABLED).toBe(false);
+    for (const key of ['EMAIL_AUTH_HMAC_KEYS', 'REDIS_URL', 'PREVIEW_ENVIRONMENT_ID'])
+      expect(() => emailEnvironment({ ...overrides, [key]: undefined })).toThrow();
+    expect(() => emailEnvironment({ ...overrides, EMAIL_PASSWORD_AUTH_ENABLED: false })).toThrow();
+    expect(() => emailEnvironment({ ...overrides, EMAIL_AUTH_MAIL_ENABLED: true })).toThrow();
+    expect(emailEnvironment().EMAIL_AUTH_MAIL_ENABLED).toBe(true);
+    expect(validateEnvironment(rawTestEnvironment()).EMAIL_AUTH_MAIL_ENABLED).toBe(false);
+  });
   it('authenticates payload, record identity and key ID, and reads retained keys', () => {
     const security = new EmailSecurityAdapter(emailConfig());
     const payload = {

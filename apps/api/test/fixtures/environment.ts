@@ -21,6 +21,7 @@ export function testEnvironment(overrides: Partial<Environment> = {}): Environme
     AUTH_RATE_LIMIT_DURATION_SECONDS: 60,
     OAUTH_HTTP_TIMEOUT_MS: 1000,
     EMAIL_PASSWORD_AUTH_ENABLED: false,
+    PREVIEW_ACCOUNTS_ENABLED: false,
     EMAIL_SMTP_PORT: 465,
     EMAIL_SMTP_TLS_MODE: 'TLS',
     EMAIL_SMTP_TIMEOUT_MS: 5000,

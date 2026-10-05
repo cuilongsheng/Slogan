@@ -74,6 +74,38 @@ export class PrismaEmailDeliveryRepository implements EmailDeliveryRepository {
       });
     });
   }
+  async cancelPending(now: Date): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.emailDelivery.updateMany({
+        where: { status: { in: ['PENDING', 'RUNNING'] } },
+        data: {
+          status: 'CANCELLED',
+          encryptedPayload: null,
+          terminalAt: now,
+          leaseUntil: null,
+          generation: { increment: 1 },
+        },
+      });
+      await tx.emailChallenge.updateMany({
+        where: { consumedAt: null },
+        data: { consumedAt: now },
+      });
+      await tx.emailAuthProof.updateMany({
+        where: { purpose: 'LINK_EMAIL', consumedAt: null },
+        data: { consumedAt: now },
+      });
+      await tx.emailEnrollment.updateMany({
+        where: { completedAt: null },
+        data: {
+          expiresAt: now,
+          username: null,
+          email: null,
+          passwordHash: null,
+          managementDigest: null,
+        },
+      });
+    });
+  }
   async cleanup(now: Date) {
     await this.prisma.$transaction(async (tx) => {
       await tx.emailDelivery.updateMany({

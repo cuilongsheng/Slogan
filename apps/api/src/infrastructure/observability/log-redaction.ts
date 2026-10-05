@@ -37,6 +37,7 @@ export const LOG_REDACTION = {
     '*.cursor',
     'req.body.description',
     'req.headers.authorization',
+    'req.headers.cookie',
     'req.rawBody',
     'req.body',
     'req.url',

@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Environment } from '../../../config/environment.js';
+import { credentialAllowed, previewUserAllowed } from './credential-access.js';
 
 import { Prisma, OAuthProvider } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
@@ -12,7 +15,10 @@ import type { AuthRepository, RotateRefreshResult } from '../domain/ports/auth.r
 
 @Injectable()
 export class PrismaAuthRepository implements AuthRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly config?: ConfigService<Environment, true>,
+  ) {}
 
   async findOrCreateUser(
     identity: ProviderIdentity,
@@ -74,7 +80,12 @@ export class PrismaAuthRepository implements AuthRepository {
     const sessionId = randomUUID();
     await this.prisma.$transaction(async (transaction) => {
       await transaction.$queryRaw`SELECT id FROM "User" WHERE id = ${input.userId}::uuid FOR UPDATE`;
-      const user = await transaction.user.findUnique({ where: { id: input.userId } });
+      const user = await transaction.user.findUnique({
+        where: { id: input.userId },
+        include: { emailCredential: true, previewAccount: true },
+      });
+      if (!previewUserAllowed(user, this.config))
+        throw new EmailAuthError('EMAIL_CREDENTIALS_INVALID');
       if (input.credentialVersion !== undefined && user?.status !== 'ACTIVE')
         throw new EmailAuthError('EMAIL_CREDENTIALS_INVALID');
       this.assertActiveRecord(user?.status);
@@ -83,7 +94,11 @@ export class PrismaAuthRepository implements AuthRepository {
         const credential = await transaction.emailCredential.findUnique({
           where: { userId: input.userId },
         });
-        if (!credential?.passwordHash || credential.credentialVersion !== input.credentialVersion)
+        if (
+          !credential?.passwordHash ||
+          credential.credentialVersion !== input.credentialVersion ||
+          !credentialAllowed(credential, user?.previewAccount ?? null, this.config)
+        )
           throw new EmailAuthError('EMAIL_CREDENTIALS_INVALID');
       }
       await transaction.authSession.create({
@@ -127,7 +142,7 @@ export class PrismaAuthRepository implements AuthRepository {
             await transaction.$queryRaw`SELECT id FROM "User" WHERE id = ${token.session.userId}::uuid FOR UPDATE`;
             const user = await transaction.user.findUnique({
               where: { id: token.session.userId },
-              select: { status: true },
+              include: { emailCredential: true, previewAccount: true },
             });
 
             if (token.usedAt !== null) {
@@ -142,7 +157,8 @@ export class PrismaAuthRepository implements AuthRepository {
               token.expiresAt <= input.now ||
               token.session.expiresAt <= input.now ||
               token.session.revokedAt !== null ||
-              user?.status !== 'ACTIVE'
+              user?.status !== 'ACTIVE' ||
+              !previewUserAllowed(user, this.config)
             ) {
               return { status: 'INVALID' };
             }
@@ -203,6 +219,11 @@ export class PrismaAuthRepository implements AuthRepository {
   }
 
   async isSessionActive(userId: string, sessionId: string, now: Date): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { emailCredential: true, previewAccount: true },
+    });
+    if (!previewUserAllowed(user, this.config)) return false;
     return (
       (await this.prisma.authSession.count({
         where: {
@@ -368,7 +389,10 @@ export class PrismaAuthRepository implements AuthRepository {
     const [phone, oauth, email] = await Promise.all([
       this.prisma.phoneIdentity.findUnique({ where: { userId } }),
       this.prisma.oAuthIdentity.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
-      this.prisma.emailCredential.findUnique({ where: { userId }, select: { verifiedAt: true } }),
+      this.prisma.emailCredential.findUnique({
+        where: { userId },
+        select: { verifiedAt: true, origin: true },
+      }),
     ]);
     return [
       ...(phone
@@ -381,7 +405,14 @@ export class PrismaAuthRepository implements AuthRepository {
           ]
         : []),
       ...(email
-        ? [{ type: 'EMAIL_PASSWORD' as const, verifiedAt: email.verifiedAt, mask: '•••@•••' }]
+        ? [
+            {
+              type: 'EMAIL_PASSWORD' as const,
+              verifiedAt: email.verifiedAt,
+              origin: email.origin,
+              ...(email.origin === 'EMAIL_VERIFIED' ? { mask: '•••@•••' } : {}),
+            },
+          ]
         : []),
       ...oauth.map((item) => ({ type: item.provider, verifiedAt: item.createdAt })),
     ];

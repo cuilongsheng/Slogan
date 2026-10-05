@@ -14,4 +14,5 @@ export interface EmailDeliveryRepository {
     now: Date,
   ): Promise<void>;
   cleanup(now: Date): Promise<void>;
+  cancelPending(now: Date): Promise<void>;
 }

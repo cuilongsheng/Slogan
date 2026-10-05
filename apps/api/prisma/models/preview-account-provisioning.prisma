@@ -1,0 +1,13 @@
+model PreviewAccountProvisioning {
+  userId String @id @db.Uuid
+  environmentId String @db.VarChar(64)
+  slot PreviewAccountSlot
+  batchId String @db.Uuid
+  grantCommandId String @unique @db.Uuid
+  revokeCommandId String @unique @db.Uuid
+  rolesCompletedAt DateTime? @db.Timestamptz(3)
+  retiredAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([environmentId, slot])
+}

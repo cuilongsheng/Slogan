@@ -119,7 +119,7 @@ describe('operations and governance HTTP RBAC', () => {
       scopeKey: 'primary',
       ruleVersion: 'v1',
       reasonCode: 'PROVIDER_UNAVAILABLE',
-      observedAt: new Date(),
+      observedAt: new Date('2026-09-25T00:00:00.000Z'),
     });
     await request(app.getHttpServer())
       .get('/v1/backoffice/incidents')

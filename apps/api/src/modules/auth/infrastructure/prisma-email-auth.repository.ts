@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Environment } from '../../../config/environment.js';
+import { credentialAllowed } from './credential-access.js';
 import { Prisma, type EmailCredential } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 import { EmailAuthError } from '../domain/errors/email-auth.error.js';
@@ -13,7 +16,10 @@ import type {
 const minute = 60_000;
 @Injectable()
 export class PrismaEmailAuthRepository implements EmailAuthRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly config?: ConfigService<Environment, true>,
+  ) {}
   async enroll(input: EnrollmentInput) {
     return this.transaction(async (tx) => {
       if (input.link) {
@@ -178,6 +184,7 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
           email: e.email,
           passwordHash: e.passwordHash,
           verifiedAt: now,
+          origin: 'EMAIL_VERIFIED',
           createdAt: now,
           updatedAt: now,
         },
@@ -210,14 +217,14 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
   async credential(username: string) {
     const c = await this.prisma.emailCredential.findUnique({
       where: { username },
-      include: { user: { select: { status: true } } },
+      include: { user: { select: { status: true, previewAccount: true } } },
     });
     return c ? this.view(c) : null;
   }
   async credentialForUser(userId: string) {
     const c = await this.prisma.emailCredential.findUnique({
       where: { userId },
-      include: { user: { select: { status: true } } },
+      include: { user: { select: { status: true, previewAccount: true } } },
     });
     return c ? this.view(c) : null;
   }
@@ -324,8 +331,20 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
       });
     });
   }
-  private view(c: EmailCredential & { user: { status: string } }): EmailCredentialView {
-    return { ...c, active: c.user.status === 'ACTIVE' };
+  private view(
+    c: EmailCredential & {
+      user: {
+        status: string;
+        previewAccount:
+          import('../../../generated/prisma/client.js').PreviewAccountProvisioning | null;
+      };
+    },
+  ): EmailCredentialView {
+    return {
+      ...c,
+      active:
+        c.user.status === 'ACTIVE' && credentialAllowed(c, c.user.previewAccount, this.config),
+    };
   }
   private async activeUser(
     tx: Prisma.TransactionClient,

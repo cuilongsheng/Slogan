@@ -21,3 +21,11 @@ export type { SmsProvider } from './domain/ports/sms-provider.port.js';
 export { EmailAuthService } from './application/services/email-auth.service.js';
 export { AuthMailService } from './application/services/auth-mail.service.js';
 export { EmailAuthError } from './domain/errors/email-auth.error.js';
+
+export { PreviewAccountsService } from './application/services/preview-accounts.service.js';
+export { PREVIEW_SLOTS } from './domain/ports/preview-accounts.repository.js';
+export type {
+  PreviewSlot,
+  PreviewAccountInput,
+  PreviewAccountState,
+} from './domain/ports/preview-accounts.repository.js';
