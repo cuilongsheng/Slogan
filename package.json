@@ -9,6 +9,11 @@
     "pnpm": "12.3.4"
   },
   "scripts": {
+    "build:pages:admin": "node scripts/build-pages.mjs admin",
+    "build:pages:mobile": "node scripts/build-pages.mjs mobile",
+    "test:pages": "node --test scripts/tests/pages-*.test.mjs",
+    "test:pages:browser": "pnpm --filter @slogan/api build && node --test scripts/tests/pages-auth.browser.mjs",
+    "test:pages:runtime": "node --test scripts/tests/pages-runtime.smoke.mjs",
     "dev:admin": "pnpm --filter @slogan/admin dev",
     "dev:mobile": "pnpm --filter @slogan/mobile start",
     "dev:api": "pnpm --filter @slogan/api dev",
@@ -17,8 +22,8 @@
     "lint": "eslint apps packages tests scripts playwright.config.ts eslint.config.mjs --max-warnings=0",
     "typecheck": "pnpm -r --if-present run typecheck",
     "deps:check": "node scripts/audit-workspaces.mjs && depcruise apps packages --config dependency-cruiser.config.cjs",
-    "test": "pnpm -r --if-present run test",
-    "test:e2e": "playwright test",
+    "test": "pnpm test:pages && pnpm -r --if-present run test",
+    "test:e2e": "playwright test && pnpm test:pages:browser",
     "build": "pnpm -r --if-present run build",
     "verify:api": "pnpm --filter @slogan/api db:test:up && pnpm --filter @slogan/api verify",
     "verify": "pnpm format:check && pnpm deps:check && pnpm lint && pnpm typecheck && pnpm --filter @slogan/api db:test:up && pnpm test && pnpm build && pnpm test:e2e"
