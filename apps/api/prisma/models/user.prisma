@@ -1,5 +1,6 @@
 model User {
   emailCredential           EmailCredential?
+  previewAccount            PreviewAccountProvisioning?
   roomReservations          RoomReservation[]
   roomNotes                 RoomNote[]
   id                        String                          @id @db.Uuid

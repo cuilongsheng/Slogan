@@ -48,6 +48,15 @@ const environmentSchema = z
     AUTH_RATE_LIMIT_DURATION_SECONDS: z.coerce.number().int().min(1).max(3600).default(60),
     OAUTH_HTTP_TIMEOUT_MS: z.coerce.number().int().min(500).max(30_000).default(5000),
     EMAIL_PASSWORD_AUTH_ENABLED: booleanFromEnvironment,
+    EMAIL_AUTH_MAIL_ENABLED: booleanFromEnvironment.optional(),
+    PREVIEW_ACCOUNTS_ENABLED: booleanFromEnvironment,
+    PREVIEW_ENVIRONMENT_ID: z.preprocess(
+      blankToUndefined,
+      z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]{1,64}$/)
+        .optional(),
+    ),
     EMAIL_SMTP_HOST: optionalString,
     EMAIL_SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(465),
     EMAIL_SMTP_TLS_MODE: z.enum(['TLS', 'STARTTLS', 'LOCAL_TEST']).default('TLS'),
@@ -299,7 +308,28 @@ const environmentSchema = z
         code: 'custom',
         message: 'Email trusted proxies must be explicit IP addresses or CIDR ranges',
       });
-    if (environment.EMAIL_PASSWORD_AUTH_ENABLED) {
+    if (
+      environment.EMAIL_PASSWORD_AUTH_ENABLED &&
+      (!validKeyRing(environment.EMAIL_AUTH_HMAC_KEYS, environment.EMAIL_AUTH_HMAC_KEY_ID) ||
+        !validRedisUrl(environment.REDIS_URL))
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Password authentication requires HMAC keys and Redis',
+      });
+    if (
+      environment.PREVIEW_ACCOUNTS_ENABLED &&
+      (!environment.EMAIL_PASSWORD_AUTH_ENABLED || !environment.PREVIEW_ENVIRONMENT_ID)
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Preview accounts require password authentication and an explicit environment',
+      });
+    const mailEnabled =
+      environment.EMAIL_AUTH_MAIL_ENABLED ?? environment.EMAIL_PASSWORD_AUTH_ENABLED;
+    if (mailEnabled && !environment.EMAIL_PASSWORD_AUTH_ENABLED)
+      context.addIssue({ code: 'custom', message: 'Email flows require password authentication' });
+    if (mailEnabled) {
       const localSmtp = environment.EMAIL_SMTP_TLS_MODE === 'LOCAL_TEST';
       if (
         !environment.EMAIL_SMTP_HOST ||
@@ -576,5 +606,9 @@ function validKeyRing(value: string | undefined, activeId: string): boolean {
 }
 
 export function validateEnvironment(input: Record<string, unknown>): Environment {
-  return environmentSchema.parse(input);
+  const result = environmentSchema.parse(input);
+  return {
+    ...result,
+    EMAIL_AUTH_MAIL_ENABLED: result.EMAIL_AUTH_MAIL_ENABLED ?? result.EMAIL_PASSWORD_AUTH_ENABLED,
+  };
 }

@@ -396,3 +396,16 @@ enum EmailDeliveryStatus {
   FAILED
   CANCELLED
 }
+
+enum PasswordCredentialOrigin {
+  EMAIL_VERIFIED
+  PREVIEW_PROVISIONED
+}
+
+enum PreviewAccountSlot {
+  ADMIN
+  SAFETY
+  MOBILE_A
+  MOBILE_B
+  MOBILE_C
+}

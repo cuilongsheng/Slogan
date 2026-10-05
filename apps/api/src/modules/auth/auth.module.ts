@@ -1,3 +1,7 @@
+import { PreviewAccountsService } from './application/services/preview-accounts.service.js';
+import { PrismaPreviewAccountsRepository } from './infrastructure/prisma-preview-accounts.repository.js';
+import { PREVIEW_ACCOUNTS_REPOSITORY } from './domain/ports/preview-accounts.repository.js';
+import { AuthCapabilitiesController } from './presentation/auth-capabilities.controller.js';
 import { EmailAuthController } from './presentation/email-auth.controller.js';
 import { EmailAuthService } from './application/services/email-auth.service.js';
 import { AuthMailService } from './application/services/auth-mail.service.js';
@@ -37,8 +41,17 @@ import { MeAuthController } from './presentation/me-auth.controller.js';
 
 @Module({
   imports: [JwtModule.register({}), ProfilesModule],
-  controllers: [AuthController, BrowserAuthController, MeAuthController, EmailAuthController],
+  controllers: [
+    AuthCapabilitiesController,
+    AuthController,
+    BrowserAuthController,
+    MeAuthController,
+    EmailAuthController,
+  ],
   providers: [
+    PreviewAccountsService,
+    PrismaPreviewAccountsRepository,
+    { provide: PREVIEW_ACCOUNTS_REPOSITORY, useExisting: PrismaPreviewAccountsRepository },
     EmailAuthService,
     AuthMailService,
     PrismaEmailAuthRepository,
@@ -70,6 +83,7 @@ import { MeAuthController } from './presentation/me-auth.controller.js';
     { provide: APP_GUARD, useClass: AccessTokenGuard },
   ],
   exports: [
+    PreviewAccountsService,
     EmailAuthService,
     AuthMailService,
     SessionService,

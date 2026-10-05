@@ -59,7 +59,7 @@ export class EmailAuthService {
     now = new Date(),
     link?: AccessIdentity & { proof: string; clientRequestId: string },
   ) {
-    this.enabled();
+    this.mailEnabled();
     const username = normalizeUsername(input.username),
       email = normalizeEmail(input.email);
     assertNewPassword(input.password);
@@ -102,7 +102,7 @@ export class EmailAuthService {
     };
   }
   async resend(managementToken: string, source: string, now = new Date()) {
-    this.enabled();
+    this.mailEnabled();
     const row = await this.repository.findEnrollment(this.security.digests(managementToken), now);
     await this.quota.consume({
       source,
@@ -115,7 +115,7 @@ export class EmailAuthService {
     return { resendAt: new Date(now.getTime() + 60000).toISOString() };
   }
   async confirm(token: string, source: string, now = new Date(), identity?: AccessIdentity) {
-    this.enabled();
+    this.mailEnabled();
     await this.quota.consume({ source, target: token, mail: false });
     await this.repository.confirm(
       this.security.digests(token),
@@ -158,14 +158,14 @@ export class EmailAuthService {
     };
   }
   async requestReset(emailInput: string, source: string, now = new Date()) {
-    this.enabled();
+    this.mailEnabled();
     const email = normalizeEmail(emailInput);
     await this.quota.consume({ source, target: email, mail: true });
     await this.repository.requestReset(email, this.newChallenge(email, 'RESET_PASSWORD'), now);
     return { accepted: true };
   }
   async reset(token: string, password: string, source: string, now = new Date()) {
-    this.enabled();
+    this.mailEnabled();
     assertNewPassword(password);
     await this.quota.consume({ source, target: token, mail: false });
     await this.repository.reset(
@@ -180,7 +180,7 @@ export class EmailAuthService {
     input: OAuthExchangeInput & { clientRequestId: string },
     source: string,
   ) {
-    this.enabled();
+    this.mailEnabled();
     await this.quota.consume({ source, target: identity.userId, mail: false });
     const verified = await this.providers.exchange(provider, input);
     if (!(await this.identities.ownsOAuthIdentity(identity.userId, verified)))
@@ -192,7 +192,7 @@ export class EmailAuthService {
     input: { phone: string; defaultRegion?: string; deviceId: string; locale?: string },
     source: string,
   ) {
-    this.enabled();
+    this.mailEnabled();
     await this.quota.consume({ source, target: identity.userId, mail: false });
     return this.phone.requestChallenge({
       ...input,
@@ -206,7 +206,7 @@ export class EmailAuthService {
     input: { challengeId: string; code: string; clientRequestId: string },
     source: string,
   ) {
-    this.enabled();
+    this.mailEnabled();
     await this.quota.consume({ source, target: identity.userId, mail: false });
     const grant = await this.phones.verify({
       challengeId: input.challengeId,
@@ -275,6 +275,14 @@ export class EmailAuthService {
       tokenDigest: this.security.digest(token),
       ...this.security.encrypt(deliveryId, { to, token, purpose }),
     };
+  }
+  private mailEnabled() {
+    this.enabled();
+    if (!(
+      this.config.get('EMAIL_AUTH_MAIL_ENABLED', { infer: true }) ??
+      this.config.get('EMAIL_PASSWORD_AUTH_ENABLED', { infer: true })
+    ))
+      throw new EmailAuthError('EMAIL_AUTH_UNAVAILABLE');
   }
   private enabled() {
     if (!this.config.get('EMAIL_PASSWORD_AUTH_ENABLED', { infer: true }))

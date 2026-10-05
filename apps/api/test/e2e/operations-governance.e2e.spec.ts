@@ -85,23 +85,29 @@ describe('operations and governance HTTP RBAC', () => {
       .set(auth(tokens[admin.id]!))
       .expect(200);
     const matchingRoomId = randomUUID();
-    await prisma.room.create({ data: {
-      id: matchingRoomId,
-      hostUserId: admin.id,
-      topic: 'Admin filter movie topic',
-      cefrLevel: 'B1',
-      capacity: 4,
-      status: 'OPEN',
-      visibility: 'PUBLIC',
-      startedAt: new Date('2026-09-25'),
-      endsAt: new Date('2026-09-26'),
-      createdAt: new Date('2026-09-25'),
-    } });
+    await prisma.room.create({
+      data: {
+        id: matchingRoomId,
+        hostUserId: admin.id,
+        topic: 'Admin filter movie topic',
+        cefrLevel: 'B1',
+        capacity: 4,
+        status: 'OPEN',
+        visibility: 'PUBLIC',
+        startedAt: new Date('2026-09-25'),
+        endsAt: new Date('2026-09-26'),
+        createdAt: new Date('2026-09-25'),
+      },
+    });
     const filteredRooms = await request(app.getHttpServer())
-      .get('/v1/backoffice/operations/rooms?q=MOVIE&status=OPEN&visibility=PUBLIC&from=2026-09-24T00%3A00%3A00.000Z')
+      .get(
+        '/v1/backoffice/operations/rooms?q=MOVIE&status=OPEN&visibility=PUBLIC&from=2026-09-24T00%3A00%3A00.000Z',
+      )
       .set(auth(tokens[admin.id]!))
       .expect(200);
-    expect(filteredRooms.body.items.map((room: { id: string }) => room.id)).toContain(matchingRoomId);
+    expect(filteredRooms.body.items.map((room: { id: string }) => room.id)).toContain(
+      matchingRoomId,
+    );
     await request(app.getHttpServer())
       .get('/v1/backoffice/operations/rooms?status=NOT_A_STATUS')
       .set(auth(tokens[admin.id]!))
@@ -119,7 +125,7 @@ describe('operations and governance HTTP RBAC', () => {
       scopeKey: 'primary',
       ruleVersion: 'v1',
       reasonCode: 'PROVIDER_UNAVAILABLE',
-      observedAt: new Date(),
+      observedAt: new Date('2026-09-25T00:00:00.000Z'),
     });
     await request(app.getHttpServer())
       .get('/v1/backoffice/incidents')

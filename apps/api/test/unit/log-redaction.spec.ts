@@ -6,6 +6,20 @@ import { StructuredLogger } from '../../src/infrastructure/observability/structu
 import { LOG_REDACTION } from '../../src/infrastructure/observability/log-redaction.js';
 
 describe('structured log redaction', () => {
+  it('redacts refresh cookies from request headers', () => {
+    let output = '';
+    const logger = pino(
+      { redact: LOG_REDACTION },
+      {
+        write: (line: string) => {
+          output += line;
+        },
+      },
+    );
+    logger.info({ req: { headers: { cookie: 'slogan_web_refresh=isolated-secret-marker' } } });
+    expect(output).not.toContain('isolated-secret-marker');
+    expect(JSON.parse(output).req.headers.cookie).toBe('[REDACTED]');
+  });
   it('removes authorization codes, tokens, room passwords, digests and client secrets', () => {
     let output = '';
     const destination = new Writable({

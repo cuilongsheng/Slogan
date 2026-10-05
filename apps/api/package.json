@@ -32,7 +32,8 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm test:e2e && pnpm build && pnpm openapi:check",
     "typecheck": "tsc --noEmit",
     "start:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker node dist/workers/auth-mail/main.js",
-    "dev:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker nest start --watch --entryFile workers/auth-mail/main"
+    "dev:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker nest start --watch --entryFile workers/auth-mail/main",
+    "preview:accounts": "node dist/scripts/preview-accounts.js"
   },
   "dependencies": {
     "@livekit/rtc-node": "1.0.0",

@@ -264,6 +264,10 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
       where: { hostUserId: input.userId, status: { in: ['OPEN', 'SCHEDULED'] } },
       select: { id: true, status: true },
     });
+    await tx.previewAccountProvisioning.updateMany({
+      where: { userId: input.userId, retiredAt: null },
+      data: { retiredAt: input.now },
+    });
     await tx.user.update({
       where: { id: input.userId },
       data: { status: 'DELETED', deletedAt: input.now, updatedAt: input.now },
