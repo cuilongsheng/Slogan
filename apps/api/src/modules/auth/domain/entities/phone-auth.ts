@@ -29,6 +29,7 @@ export interface VerificationGrant {
 
 export interface LoginMethodView {
   type: 'PHONE' | 'GOOGLE' | 'WECHAT' | 'EMAIL_PASSWORD';
-  verifiedAt: Date;
+  verifiedAt: Date | null;
+  origin?: 'EMAIL_VERIFIED' | 'PREVIEW_PROVISIONED';
   mask?: string;
 }

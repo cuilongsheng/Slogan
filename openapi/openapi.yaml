@@ -565,6 +565,19 @@ components:
         - items
         - nextCursor
       type: object
+    AuthCapabilitiesDto:
+      properties:
+        email:
+          type: boolean
+        google:
+          type: boolean
+        password:
+          type: boolean
+      required:
+        - password
+        - google
+        - email
+      type: object
     AvailableUserDto:
       properties:
         avatarUrl:
@@ -1798,6 +1811,11 @@ components:
         mask:
           example: +86••78
           type: string
+        origin:
+          enum:
+            - EMAIL_VERIFIED
+            - PREVIEW_PROVISIONED
+          type: string
         type:
           enum:
             - PHONE
@@ -1807,6 +1825,7 @@ components:
           type: string
         verifiedAt:
           format: date-time
+          nullable: true
           type: string
       required:
         - type
@@ -1820,6 +1839,11 @@ components:
               mask:
                 example: +86••78
                 type: string
+              origin:
+                enum:
+                  - EMAIL_VERIFIED
+                  - PREVIEW_PROVISIONED
+                type: string
               type:
                 enum:
                   - PHONE
@@ -1829,6 +1853,7 @@ components:
                 type: string
               verifiedAt:
                 format: date-time
+                nullable: true
                 type: string
             required:
               - type
@@ -7366,6 +7391,30 @@ paths:
         - bearer: []
       tags:
         - appointment-rooms
+  /v1/auth/capabilities:
+    get:
+      operationId: AuthCapabilitiesController_capabilities
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  email:
+                    type: boolean
+                  google:
+                    type: boolean
+                  password:
+                    type: boolean
+                required:
+                  - password
+                  - google
+                  - email
+                type: object
+          description: ""
+      tags:
+        - auth
   /v1/auth/email/registrations:
     post:
       operationId: EmailAuthController_register
@@ -20059,6 +20108,11 @@ paths:
                         mask:
                           example: +86••78
                           type: string
+                        origin:
+                          enum:
+                            - EMAIL_VERIFIED
+                            - PREVIEW_PROVISIONED
+                          type: string
                         type:
                           enum:
                             - PHONE
@@ -20068,6 +20122,7 @@ paths:
                           type: string
                         verifiedAt:
                           format: date-time
+                          nullable: true
                           type: string
                       required:
                         - type

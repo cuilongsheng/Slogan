@@ -13,3 +13,6 @@ export * from './infrastructure/prisma-email-delivery.repository.js';
 export * from './infrastructure/prisma-auth.repository.js';
 export * from './infrastructure/smtp-mail-sender.js';
 export * from './application/services/auth-mail.service.js';
+
+export { PrismaPreviewAccountsRepository } from './infrastructure/prisma-preview-accounts.repository.js';
+export { credentialAllowed, previewUserAllowed } from './infrastructure/credential-access.js';

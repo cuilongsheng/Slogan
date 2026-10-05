@@ -34,7 +34,8 @@ export class MeAuthController {
     return {
       methods: methods.map((method) => ({
         type: method.type,
-        verifiedAt: method.verifiedAt.toISOString(),
+        verifiedAt: method.verifiedAt?.toISOString() ?? null,
+        ...(method.origin ? { origin: method.origin } : {}),
         ...(method.mask ? { mask: method.mask } : {}),
       })),
     };
