@@ -32,11 +32,11 @@
 
 新增 `PREVIEW_ACCOUNTS_ENABLED`（默认 false）、`PREVIEW_ENVIRONMENT_ID`（显式环境绑定，无默认实际数据库），初始化命令同时要求操作者明确提供目标连接与同一环境标识。公开试用仍使用 `NODE_ENV=production` 的 Cookie/TLS 安全行为，不借 `NODE_ENV=test` 或 `LOCAL_TEST` 放宽校验。
 
-| 模式 | 密码开关 | 邮件开关 | 体验开关 | 启动必需配置 |
-| --- | --- | --- | --- | --- |
-| 全关闭 | false | false | false | 原 API 基础配置 |
-| 普通邮箱模式 | true | true | false | Redis、HMAC/AES、SMTP、固定可信验证/重置 URL |
-| 本次试用 | true | false | true | Redis、HMAC、明确体验环境标识；无需 SMTP/AES/邮件 URL |
+| 模式         | 密码开关 | 邮件开关 | 体验开关 | 启动必需配置                                          |
+| ------------ | -------- | -------- | -------- | ----------------------------------------------------- |
+| 全关闭       | false    | false    | false    | 原 API 基础配置                                       |
+| 普通邮箱模式 | true     | true     | false    | Redis、HMAC/AES、SMTP、固定可信验证/重置 URL          |
+| 本次试用     | true     | false    | true     | Redis、HMAC、明确体验环境标识；无需 SMTP/AES/邮件 URL |
 
 基础配置继续包含 PostgreSQL、JWT 签名/issuer/audience、refresh pepper、CORS 和原房间配置；Google 使用独立 `GOOGLE_OAUTH_ENABLED`、client ID/secret、redirect 白名单及两端前端 client ID。trial 时保留 Google 配置，不重构 origin 机制。真实三人语音另需 LiveKit、Redis、HTTPS 和公网 webhook，不能通过初始化账号宣称已满足。
 
@@ -56,13 +56,13 @@
 
 ### 3. 五槽位创建与角色授权分阶段恢复
 
-| 槽位 | 最终后台角色 | 移动房间行为 |
-| --- | --- | --- |
-| 后台管理员 | 仅 `PLATFORM_ADMIN` | 本轮不作为房间测试参与者 |
-| 后台安全员 | 仅 `SAFETY_OFFICER` | 本轮不作为房间测试参与者 |
-| 移动 A | 无 | 正常创建房间，本次成为房主 |
-| 移动 B | 无 | 正常加入 |
-| 移动 C | 无 | 正常加入 |
+| 槽位       | 最终后台角色        | 移动房间行为               |
+| ---------- | ------------------- | -------------------------- |
+| 后台管理员 | 仅 `PLATFORM_ADMIN` | 本轮不作为房间测试参与者   |
+| 后台安全员 | 仅 `SAFETY_OFFICER` | 本轮不作为房间测试参与者   |
+| 移动 A     | 无                  | 正常创建房间，本次成为房主 |
+| 移动 B     | 无                  | 正常加入                   |
+| 移动 C     | 无                  | 正常加入                   |
 
 CLI 通过 auth 拥有的 application API 与 repository 事务初始化，不从 controller 或其他模块深层导入认证 repository；profiles 使用公开 service/policy 校验成年资料。新增脚本/命令不写公网运维 endpoint，不复用测试 fixture。
 

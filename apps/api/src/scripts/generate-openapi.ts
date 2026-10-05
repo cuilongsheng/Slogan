@@ -39,6 +39,7 @@ async function generate(): Promise<void> {
       aliasDuplicateObjects: false,
       sortMapEntries: true,
       lineWidth: 0,
+      singleQuote: true,
     });
 
     if (process.argv.includes('--check')) {
