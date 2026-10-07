@@ -39,6 +39,15 @@ Production Pages publication and public proxy verification remain pending until
 this routing correction is merged into `main` and deployed. Existing preview
 accounts and database contents were not changed.
 
+The remote Pages Preview deployment of `cb810e2` succeeded for both projects.
+Public `/v1/auth/capabilities` requests returned 200 JSON through both proxies:
+`https://d0878922.slogan-preview-admin.pages.dev` and
+`https://4b39ac21.slogan-preview-mobile.pages.dev`. An unauthenticated admin
+preview `/v1/me` request returned 401. These are proxy transport checks; the
+frontend bundles still target their production Pages origins, so full browser
+login acceptance awaits production deployment. Both projects have the upstream
+variable saved in Production and Preview; it takes effect on new deployments.
+
 ## Rollback
 
 Revert the routing correction and restore the prior approved upstream only if
