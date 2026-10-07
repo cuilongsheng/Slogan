@@ -122,7 +122,22 @@ test('static and near-miss paths use Assets without upstream configuration; all 
   assert.equal(staticCalls, 5);
 });
 
-test('rejects missing, non-Render and non-origin configurations without fetch or credential disclosure', async () => {
+test('proxies to the fixed Slogan Vercel production origin', async () => {
+  let target;
+  const proxy = createApiProxy({
+    fetchUpstream: async (url) => {
+      target = url;
+      return Response.json({ password: true });
+    },
+  });
+  const response = await proxy.fetch(request('/v1/auth/capabilities'), {
+    API_UPSTREAM_ORIGIN: 'https://slogan-api-pi.vercel.app',
+  });
+  assert.equal(response.status, 200);
+  assert.equal(target, 'https://slogan-api-pi.vercel.app/v1/auth/capabilities');
+});
+
+test('rejects missing, unapproved and non-origin configurations without fetch or credential disclosure', async () => {
   const proxy = createApiProxy({
     fetchUpstream: async () => {
       assert.fail('must not fetch');
@@ -139,6 +154,10 @@ test('rejects missing, non-Render and non-origin configurations without fetch or
     'https://fixture-api.onrender.com?x=1',
     'https://fixture-api.onrender.com#x',
     'https://fixture-api.onrender.com:8443',
+    'https://other-project.vercel.app',
+    'https://slogan-api-pi.vercel.app.evil.test',
+    'https://slogan-api-pi.vercel.app/v1',
+    'https://user:synthetic@slogan-api-pi.vercel.app',
   ]) {
     const response = await proxy.fetch(request('/v1/auth/web/refresh'), {
       API_UPSTREAM_ORIGIN: value,

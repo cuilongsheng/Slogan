@@ -25,7 +25,10 @@ function upstreamOrigin(value) {
     url.pathname !== '/' ||
     url.search ||
     url.hash ||
-    !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.onrender\.com$/.test(url.hostname)
+    !(
+      url.hostname === 'slogan-api-pi.vercel.app' ||
+      /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.onrender\.com$/.test(url.hostname)
+    )
   )
     throw new Error('Invalid configuration');
   return url.origin;
@@ -94,7 +97,7 @@ export function createApiProxy({ fetchUpstream = fetch, timeoutMs = 90_000 } = {
           cache: 'no-store',
           signal: controller.signal,
         });
-        // Render may serve an HTML availability page before Nest can respond.
+        // Hosting providers may serve an HTML availability page before Nest can respond.
         if (/^text\/html(?:\s*;|$)/i.test(upstream.headers.get('content-type') ?? '')) {
           controller.abort();
           return failure(
