@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import helmet from 'helmet';
+import * as helmet from 'helmet';
 import { raw, type Express } from 'express';
 import { pinoHttp } from 'pino-http';
 
@@ -31,7 +31,7 @@ export function configureApiApp(app: INestApplication): void {
   }
   app.useLogger(app.get(StructuredLogger));
   app.setGlobalPrefix('v1');
-  app.use(helmet());
+  app.use(helmet.default());
   app.use('/v1/webhooks/livekit', raw({ type: 'application/webhook+json', limit: '256kb' }));
   app.use(
     pinoHttp({
