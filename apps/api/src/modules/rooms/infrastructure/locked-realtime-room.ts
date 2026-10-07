@@ -45,6 +45,8 @@ export async function loadLockedRealtimeRoom(
       removalReason: m.removalReason,
       joinOrder: m.joinOrder,
       displayName: m.user.profile?.displayName ?? '',
+      avatarUrl: m.user.profile?.avatarUrl ?? null,
+      nationalityCode: m.user.profile?.nationalityCode ?? null,
       cefrLevel: m.user.profile?.cefrLevel ?? '',
       accountActive: m.user.status === 'ACTIVE',
       participantIdentity: m.participantIdentity,
@@ -56,6 +58,7 @@ export async function loadLockedRealtimeRoom(
     saveRoom: async (patch) => {
       await tx.room.update({ where: { id: roomId }, data: patch });
       if (patch.status === 'ENDING' || patch.status === 'ENDED') {
+        await tx.roomTextMessage.deleteMany({ where: { roomId } });
         const summary = await tx.roomKeywordSummary.findUnique({ where: { roomId } });
         if (summary && summary.status === 'COLLECTING') {
           await tx.roomKeywordSummary.update({

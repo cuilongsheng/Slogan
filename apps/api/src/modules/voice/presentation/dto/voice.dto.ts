@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CEFR_LEVELS } from '../../../profiles/index.js';
 export class RealtimeCredentialDto {
   @ApiProperty({ enum: ['ACTIVE'] }) lifecycle!: string;
@@ -21,6 +21,8 @@ export class RealtimeMemberDto {
   @ApiProperty({ format: 'uuid' }) membershipId!: string;
   @ApiProperty({ format: 'uuid' }) userId!: string;
   @ApiProperty() displayName!: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) avatarUrl?: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) nationalityCode?: string | null;
   @ApiProperty({ enum: CEFR_LEVELS }) cefrLevel!: string;
   @ApiProperty({ enum: ['HOST', 'MEMBER'] }) role!: string;
   @ApiProperty({ minimum: 1 }) position!: number;

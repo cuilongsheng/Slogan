@@ -1,3 +1,4 @@
+import { roomLevelLabel } from './presentation';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { t, tf } from '../../services/locale';
@@ -37,7 +38,7 @@ export function RoomCard({
     >
       <View style={styles.top}>
         <View style={styles.level}>
-          <Text style={styles.levelText}>{room.cefrLevel}</Text>
+          <Text style={styles.levelText}>{roomLevelLabel(room)}</Text>
         </View>
         <Text style={styles.state}>{state}</Text>
       </View>
@@ -66,7 +67,9 @@ export function RoomCard({
           {t(room.sensitiveSpeechDetectionEnabled ? 'roomSpeechSafetyOn' : 'roomSpeechSafetyOff')}
         </Text>
       </View>
-      <Text style={styles.keyword}>{t(room.postRoomKeywordsEnabled ? 'roomKeywordsOn' : 'roomKeywordsOff')}</Text>
+      <Text style={styles.keyword}>
+        {t(room.postRoomKeywordsEnabled ? 'roomKeywordsOn' : 'roomKeywordsOff')}
+      </Text>
     </TouchableOpacity>
   );
 }

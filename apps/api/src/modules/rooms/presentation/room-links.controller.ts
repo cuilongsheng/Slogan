@@ -1,3 +1,4 @@
+import { roomLevelRange } from '../domain/policies/room-level-range.js';
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiGoneResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
@@ -16,6 +17,7 @@ function presentShare(room: RoomShareRecord): RoomShareDto {
     visibility: room.visibility,
     topic: room.topic,
     cefrLevel: room.cefrLevel,
+    ...roomLevelRange(room),
     capacity: room.capacity,
     memberCount: room.memberCount,
     reservedCount: room.reservedCount,

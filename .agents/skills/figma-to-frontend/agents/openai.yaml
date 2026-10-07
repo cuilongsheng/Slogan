@@ -1,0 +1,7 @@
+interface:
+  display_name: "Figma to Frontend"
+  short_description: "Restore Figma screens with direct runtime visual verification"
+  default_prompt: "Use $figma-to-frontend to restore the selected Slogan screen at its target viewport, connect its intended interactions and APIs, and verify the running screen against the original Figma design."
+
+policy:
+  allow_implicit_invocation: true

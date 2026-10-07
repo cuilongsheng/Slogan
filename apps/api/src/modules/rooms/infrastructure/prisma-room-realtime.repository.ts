@@ -88,6 +88,13 @@ export class PrismaRoomRealtimeRepository implements RoomRealtimeRepository {
   }
   async pendingCommands(roomId?: string) {
     const now = new Date();
+    await this.prisma.roomTextMessage.deleteMany({
+      where: {
+        room: {
+          OR: [{ status: { in: ['ENDING', 'ENDED', 'CANCELLED'] } }, { endsAt: { lte: now } }],
+        },
+      },
+    });
     await this.prisma.realtimeIssuance.deleteMany({ where: { expiresAt: { lte: now } } });
     const rows = await this.prisma.realtimeCommand.findMany({
       where: {

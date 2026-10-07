@@ -19,6 +19,8 @@ export interface AppointmentRecord {
   hostUserId: string;
   topic: string;
   cefrLevel: string;
+  cefrLevelMin?: import('../entities/room.js').RoomCefrLevel;
+  cefrLevelMax?: import('../entities/room.js').RoomCefrLevel;
   capacity: number;
   status: RoomStatus;
   startedAt: Date;
@@ -48,7 +50,9 @@ export interface AppointmentRepository {
     id: string;
     userId: string;
     topic: string;
-    cefrLevel: CreateRoomInput['cefrLevel'];
+    cefrLevel: import('../entities/room.js').RoomCefrLevel;
+    cefrLevelMin?: import('../entities/room.js').RoomCefrLevel;
+    cefrLevelMax?: import('../entities/room.js').RoomCefrLevel;
     capacity: number;
     startedAt: Date;
     endsAt: Date;

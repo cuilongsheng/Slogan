@@ -8,6 +8,8 @@ import {
 } from '../entities/room.js';
 import { RoomError } from '../errors/room.error.js';
 
+import { roomLevelRange } from './room-level-range.js';
+
 type RoomEligibilityState = 'PROFILE_REQUIRED' | 'AGE_RESTRICTED' | 'ELIGIBLE';
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
@@ -24,10 +26,14 @@ export class RoomPolicy {
 
   validateCreation(input: CreateRoomInput, now: Date): ValidatedRoomCreation {
     const topic = input.topic.trim();
+    if ((input.cefrLevelMin === undefined) !== (input.cefrLevelMax === undefined))
+      throw new RoomError('ROOM_CONFIGURATION_INVALID', 'Both room level boundaries are required');
+    const range = roomLevelRange(input);
+    if (input.cefrLevel && input.cefrLevel !== range.cefrLevelMin)
+      throw new RoomError('ROOM_CONFIGURATION_INVALID', 'Conflicting room level fields');
     if (
       topic.length < 2 ||
       topic.length > 120 ||
-      !ROOM_CEFR_LEVELS.includes(input.cefrLevel) ||
       !Number.isInteger(input.capacity) ||
       input.capacity < 2 ||
       input.capacity > 6 ||
@@ -38,7 +44,8 @@ export class RoomPolicy {
     }
     return {
       topic,
-      cefrLevel: input.cefrLevel,
+      cefrLevel: range.cefrLevelMin,
+      ...range,
       capacity: input.capacity,
       startedAt: now,
       endsAt: new Date(now.getTime() + TWO_HOURS_MS),

@@ -29,6 +29,8 @@ export class AppointmentDto {
   @ApiProperty({ format: 'uuid' }) hostUserId!: string;
   @ApiProperty() topic!: string;
   @ApiProperty({ enum: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] }) cefrLevel!: string;
+  @ApiProperty() cefrLevelMin!: string;
+  @ApiProperty() cefrLevelMax!: string;
   @ApiProperty({ minimum: 2, maximum: 6 }) capacity!: number;
   @ApiProperty({ enum: ['SCHEDULED', 'OPEN', 'ENDING', 'ENDED', 'CANCELLED'] }) status!: string;
   @ApiProperty({ format: 'date-time' }) startsAt!: string;

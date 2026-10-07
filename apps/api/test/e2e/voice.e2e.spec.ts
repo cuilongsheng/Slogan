@@ -105,6 +105,8 @@ describe('realtime HTTP API', () => {
         'credentialVersion',
         'hostReconnectDeadline',
         'displayName',
+        'avatarUrl',
+        'nationalityCode',
         'cefrLevel',
         'role',
         'position',

@@ -35,6 +35,10 @@ components:
             - C1
             - C2
           type: string
+        cefrLevelMax:
+          type: string
+        cefrLevelMin:
+          type: string
         endsAt:
           format: date-time
           type: string
@@ -105,6 +109,8 @@ components:
         - hostUserId
         - topic
         - cefrLevel
+        - cefrLevelMin
+        - cefrLevelMax
         - capacity
         - status
         - startsAt
@@ -136,6 +142,10 @@ components:
             - B2
             - C1
             - C2
+          type: string
+        cefrLevelMax:
+          type: string
+        cefrLevelMin:
           type: string
         endsAt:
           format: date-time
@@ -204,6 +214,8 @@ components:
         - hostUserId
         - topic
         - cefrLevel
+        - cefrLevelMin
+        - cefrLevelMax
         - capacity
         - status
         - startsAt
@@ -237,6 +249,10 @@ components:
                   - B2
                   - C1
                   - C2
+                type: string
+              cefrLevelMax:
+                type: string
+              cefrLevelMin:
                 type: string
               endsAt:
                 format: date-time
@@ -305,6 +321,8 @@ components:
               - hostUserId
               - topic
               - cefrLevel
+              - cefrLevelMin
+              - cefrLevelMax
               - capacity
               - status
               - startsAt
@@ -877,6 +895,24 @@ components:
             - C1
             - C2
           type: string
+        cefrLevelMax:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        cefrLevelMin:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
         endsAt:
           format: date-time
           type: string
@@ -905,7 +941,6 @@ components:
           type: string
       required:
         - topic
-        - cefrLevel
         - capacity
         - startsAt
         - endsAt
@@ -995,6 +1030,24 @@ components:
             - C1
             - C2
           type: string
+        cefrLevelMax:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        cefrLevelMin:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
         password:
           pattern: ^\d{4}$
           type: string
@@ -1017,7 +1070,6 @@ components:
           type: string
       required:
         - topic
-        - cefrLevel
         - capacity
       type: object
     CreateRoomInvitationDto:
@@ -2095,6 +2147,12 @@ components:
           type: number
         cefrLevel:
           type: string
+        cefrLevelMax:
+          nullable: true
+          type: string
+        cefrLevelMin:
+          nullable: true
+          type: string
         createdAt:
           format: date-time
           type: string
@@ -2126,6 +2184,8 @@ components:
         - visibility
         - status
         - cefrLevel
+        - cefrLevelMin
+        - cefrLevelMax
         - capacity
         - startedAt
         - endsAt
@@ -2154,6 +2214,12 @@ components:
               capacity:
                 type: number
               cefrLevel:
+                type: string
+              cefrLevelMax:
+                nullable: true
+                type: string
+              cefrLevelMin:
+                nullable: true
                 type: string
               createdAt:
                 format: date-time
@@ -2186,6 +2252,8 @@ components:
               - visibility
               - status
               - cefrLevel
+              - cefrLevelMin
+              - cefrLevelMax
               - capacity
               - startedAt
               - endsAt
@@ -2600,6 +2668,9 @@ components:
       type: object
     RealtimeMemberDto:
       properties:
+        avatarUrl:
+          nullable: true
+          type: string
         cefrLevel:
           enum:
             - A1
@@ -2627,6 +2698,9 @@ components:
           type: string
         membershipId:
           format: uuid
+          type: string
+        nationalityCode:
+          nullable: true
           type: string
         participantIdentity:
           format: uuid
@@ -3066,6 +3140,24 @@ components:
             - C1
             - C2
           type: string
+        cefrLevelMax:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        cefrLevelMin:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
         currentMembership:
           allOf:
             - properties:
@@ -3159,6 +3251,8 @@ components:
         - visibility
         - topic
         - cefrLevel
+        - cefrLevelMin
+        - cefrLevelMax
         - capacity
         - memberCount
         - hostReconnectDeadline
@@ -3177,6 +3271,24 @@ components:
           minimum: 2
           type: number
         cefrLevel:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        cefrLevelMax:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+          type: string
+        cefrLevelMin:
           enum:
             - A1
             - A2
@@ -3227,6 +3339,8 @@ components:
         - visibility
         - topic
         - cefrLevel
+        - cefrLevelMin
+        - cefrLevelMax
         - capacity
         - memberCount
         - hostReconnectDeadline
@@ -3630,6 +3744,24 @@ components:
                   - C1
                   - C2
                 type: string
+              cefrLevelMax:
+                enum:
+                  - A1
+                  - A2
+                  - B1
+                  - B2
+                  - C1
+                  - C2
+                type: string
+              cefrLevelMin:
+                enum:
+                  - A1
+                  - A2
+                  - B1
+                  - B2
+                  - C1
+                  - C2
+                type: string
               endsAt:
                 format: date-time
                 type: string
@@ -3672,6 +3804,8 @@ components:
               - visibility
               - topic
               - cefrLevel
+              - cefrLevelMin
+              - cefrLevelMax
               - capacity
               - memberCount
               - hostReconnectDeadline
@@ -3734,6 +3868,69 @@ components:
         - rulesVersion
         - rulesAcceptedAt
         - joinedAt
+      type: object
+    RoomMessageDto:
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          format: uuid
+          type: string
+        senderDisplayName:
+          type: string
+        senderUserId:
+          format: uuid
+          type: string
+        sequence:
+          type: string
+        text:
+          type: string
+      required:
+        - id
+        - sequence
+        - senderUserId
+        - senderDisplayName
+        - text
+        - createdAt
+      type: object
+    RoomMessagesPageDto:
+      properties:
+        hasMore:
+          type: boolean
+        items:
+          items:
+            properties:
+              createdAt:
+                format: date-time
+                type: string
+              id:
+                format: uuid
+                type: string
+              senderDisplayName:
+                type: string
+              senderUserId:
+                format: uuid
+                type: string
+              sequence:
+                type: string
+              text:
+                type: string
+            required:
+              - id
+              - sequence
+              - senderUserId
+              - senderDisplayName
+              - text
+              - createdAt
+            type: object
+          type: array
+        nextCursor:
+          type: string
+      required:
+        - items
+        - nextCursor
+        - hasMore
       type: object
     RoomNoteDto:
       properties:
@@ -5865,6 +6062,19 @@ components:
         - content
         - expectedVersion
       type: object
+    SendRoomMessageDto:
+      properties:
+        clientRequestId:
+          format: uuid
+          type: string
+        text:
+          maxLength: 1000
+          minLength: 1
+          type: string
+      required:
+        - clientRequestId
+        - text
+      type: object
     SocialCommandDto:
       properties:
         clientRequestId:
@@ -6145,6 +6355,10 @@ paths:
                             - C1
                             - C2
                           type: string
+                        cefrLevelMax:
+                          type: string
+                        cefrLevelMin:
+                          type: string
                         endsAt:
                           format: date-time
                           type: string
@@ -6212,6 +6426,8 @@ paths:
                         - hostUserId
                         - topic
                         - cefrLevel
+                        - cefrLevelMin
+                        - cefrLevelMax
                         - capacity
                         - status
                         - startsAt
@@ -6364,6 +6580,24 @@ paths:
                     - C1
                     - C2
                   type: string
+                cefrLevelMax:
+                  enum:
+                    - A1
+                    - A2
+                    - B1
+                    - B2
+                    - C1
+                    - C2
+                  type: string
+                cefrLevelMin:
+                  enum:
+                    - A1
+                    - A2
+                    - B1
+                    - B2
+                    - C1
+                    - C2
+                  type: string
                 endsAt:
                   format: date-time
                   type: string
@@ -6392,7 +6626,6 @@ paths:
                   type: string
               required:
                 - topic
-                - cefrLevel
                 - capacity
                 - startsAt
                 - endsAt
@@ -6419,6 +6652,10 @@ paths:
                       - B2
                       - C1
                       - C2
+                    type: string
+                  cefrLevelMax:
+                    type: string
+                  cefrLevelMin:
                     type: string
                   endsAt:
                     format: date-time
@@ -6490,6 +6727,8 @@ paths:
                   - hostUserId
                   - topic
                   - cefrLevel
+                  - cefrLevelMin
+                  - cefrLevelMax
                   - capacity
                   - status
                   - startsAt
@@ -6646,6 +6885,10 @@ paths:
                       - C1
                       - C2
                     type: string
+                  cefrLevelMax:
+                    type: string
+                  cefrLevelMin:
+                    type: string
                   endsAt:
                     format: date-time
                     type: string
@@ -6716,6 +6959,8 @@ paths:
                   - hostUserId
                   - topic
                   - cefrLevel
+                  - cefrLevelMin
+                  - cefrLevelMax
                   - capacity
                   - status
                   - startsAt
@@ -6872,6 +7117,10 @@ paths:
                       - C1
                       - C2
                     type: string
+                  cefrLevelMax:
+                    type: string
+                  cefrLevelMin:
+                    type: string
                   endsAt:
                     format: date-time
                     type: string
@@ -6939,6 +7188,8 @@ paths:
                   - hostUserId
                   - topic
                   - cefrLevel
+                  - cefrLevelMin
+                  - cefrLevelMax
                   - capacity
                   - status
                   - startsAt
@@ -13355,6 +13606,13 @@ paths:
             minimum: 1
             type: number
         - in: query
+          name: scope
+          required: false
+          schema:
+            enum:
+              - CURRENT
+            type: string
+        - in: query
           name: q
           required: false
           schema:
@@ -13411,6 +13669,12 @@ paths:
                           type: number
                         cefrLevel:
                           type: string
+                        cefrLevelMax:
+                          nullable: true
+                          type: string
+                        cefrLevelMin:
+                          nullable: true
+                          type: string
                         createdAt:
                           format: date-time
                           type: string
@@ -13442,6 +13706,8 @@ paths:
                         - visibility
                         - status
                         - cefrLevel
+                        - cefrLevelMin
+                        - cefrLevelMax
                         - capacity
                         - startedAt
                         - endsAt
@@ -24282,6 +24548,24 @@ paths:
                             - C1
                             - C2
                           type: string
+                        cefrLevelMax:
+                          enum:
+                            - A1
+                            - A2
+                            - B1
+                            - B2
+                            - C1
+                            - C2
+                          type: string
+                        cefrLevelMin:
+                          enum:
+                            - A1
+                            - A2
+                            - B1
+                            - B2
+                            - C1
+                            - C2
+                          type: string
                         endsAt:
                           format: date-time
                           type: string
@@ -24324,6 +24608,8 @@ paths:
                         - visibility
                         - topic
                         - cefrLevel
+                        - cefrLevelMin
+                        - cefrLevelMax
                         - capacity
                         - memberCount
                         - hostReconnectDeadline
@@ -24431,6 +24717,24 @@ paths:
                     - C1
                     - C2
                   type: string
+                cefrLevelMax:
+                  enum:
+                    - A1
+                    - A2
+                    - B1
+                    - B2
+                    - C1
+                    - C2
+                  type: string
+                cefrLevelMin:
+                  enum:
+                    - A1
+                    - A2
+                    - B1
+                    - B2
+                    - C1
+                    - C2
+                  type: string
                 password:
                   pattern: ^\d{4}$
                   type: string
@@ -24453,7 +24757,6 @@ paths:
                   type: string
               required:
                 - topic
-                - cefrLevel
                 - capacity
               type: object
         required: true
@@ -24468,6 +24771,24 @@ paths:
                     minimum: 2
                     type: number
                   cefrLevel:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
+                  cefrLevelMax:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
+                  cefrLevelMin:
                     enum:
                       - A1
                       - A2
@@ -24569,6 +24890,8 @@ paths:
                   - visibility
                   - topic
                   - cefrLevel
+                  - cefrLevelMin
+                  - cefrLevelMax
                   - capacity
                   - memberCount
                   - hostReconnectDeadline
@@ -24677,6 +25000,24 @@ paths:
                       - C1
                       - C2
                     type: string
+                  cefrLevelMax:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
+                  cefrLevelMin:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
                   currentMembership:
                     allOf:
                       - properties:
@@ -24770,6 +25111,8 @@ paths:
                   - visibility
                   - topic
                   - cefrLevel
+                  - cefrLevelMin
+                  - cefrLevelMax
                   - capacity
                   - memberCount
                   - hostReconnectDeadline
@@ -26266,27 +26609,6 @@ paths:
                   - message
                 type: object
           description: ROOM_OPERATION_CONFLICT, ROOM_ENDED, ROOM_FULL or ROOM_HOST_RECONNECTING (details.retryAt)
-        '503':
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    example: VALIDATION_FAILED
-                    type: string
-                  details:
-                    type: object
-                  message:
-                    example: Request validation failed
-                    type: string
-                  requestId:
-                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
-                    type: string
-                required:
-                  - code
-                  - message
-                type: object
-          description: REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back.
       security:
         - bearer: []
       tags:
@@ -26307,6 +26629,9 @@ paths:
               schema:
                 items:
                   properties:
+                    avatarUrl:
+                      nullable: true
+                      type: string
                     cefrLevel:
                       enum:
                         - A1
@@ -26334,6 +26659,9 @@ paths:
                       type: string
                     membershipId:
                       format: uuid
+                      type: string
+                    nationalityCode:
+                      nullable: true
                       type: string
                     participantIdentity:
                       format: uuid
@@ -26944,6 +27272,24 @@ paths:
                       - C1
                       - C2
                     type: string
+                  cefrLevelMax:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
+                  cefrLevelMin:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                    type: string
                   currentMembership:
                     allOf:
                       - properties:
@@ -27037,6 +27383,8 @@ paths:
                   - visibility
                   - topic
                   - cefrLevel
+                  - cefrLevelMin
+                  - cefrLevelMax
                   - capacity
                   - memberCount
                   - hostReconnectDeadline
@@ -27134,6 +27482,389 @@ paths:
                 type: object
           description: ''
         '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - rooms
+  /v1/rooms/{roomId}/messages:
+    get:
+      operationId: RoomMessagesController_list
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            maxLength: 500
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            default: 50
+            maximum: 50
+            minimum: 1
+            type: number
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  hasMore:
+                    type: boolean
+                  items:
+                    items:
+                      properties:
+                        createdAt:
+                          format: date-time
+                          type: string
+                        id:
+                          format: uuid
+                          type: string
+                        senderDisplayName:
+                          type: string
+                        senderUserId:
+                          format: uuid
+                          type: string
+                        sequence:
+                          type: string
+                        text:
+                          type: string
+                      required:
+                        - id
+                        - sequence
+                        - senderUserId
+                        - senderDisplayName
+                        - text
+                        - createdAt
+                      type: object
+                    type: array
+                  nextCursor:
+                    type: string
+                required:
+                  - items
+                  - nextCursor
+                  - hasMore
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - rooms
+    post:
+      operationId: RoomMessagesController_send
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                clientRequestId:
+                  format: uuid
+                  type: string
+                text:
+                  maxLength: 1000
+                  minLength: 1
+                  type: string
+              required:
+                - clientRequestId
+                - text
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  createdAt:
+                    format: date-time
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  senderDisplayName:
+                    type: string
+                  senderUserId:
+                    format: uuid
+                    type: string
+                  sequence:
+                    type: string
+                  text:
+                    type: string
+                required:
+                  - id
+                  - sequence
+                  - senderUserId
+                  - senderDisplayName
+                  - text
+                  - createdAt
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
           content:
             application/json:
               schema:

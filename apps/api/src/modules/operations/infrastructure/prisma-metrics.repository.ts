@@ -461,21 +461,33 @@ export class PrismaMetricsRepository implements MetricsRepository {
     requestId?: string,
   ) {
     const q = query.q?.trim() ?? '';
-    const scope = q || query.status || query.visibility || query.from
-      ? JSON.stringify([q.toLowerCase(), query.status ?? '', query.visibility ?? '', query.from?.toISOString() ?? ''])
-      : '';
+    const scope =
+      q || query.status || query.visibility || query.from || query.scope
+        ? JSON.stringify([
+            q.toLowerCase(),
+            query.status ?? '',
+            query.visibility ?? '',
+            query.from?.toISOString() ?? '',
+            query.scope ?? '',
+          ])
+        : '';
     const decoded = decode(query.cursor) as (Cursor & { scope?: string }) | undefined;
     if (decoded && (decoded.scope ?? '') !== scope) throw OperationsError.invalid();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
     const where: Prisma.RoomWhereInput = {
-      ...(q ? isUuid ? { id: q } : { topic: { contains: q, mode: 'insensitive' } } : {}),
+      ...(q ? (isUuid ? { id: q } : { topic: { contains: q, mode: 'insensitive' } }) : {}),
+      ...(query.scope === 'CURRENT' ? { AND: [{ status: { in: ['OPEN', 'SCHEDULED'] } }] } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.visibility ? { visibility: query.visibility } : {}),
       ...(query.from ? { createdAt: { gte: query.from } } : {}),
-      ...(decoded ? { OR: [
-        { createdAt: { lt: new Date(decoded.at) } },
-        { createdAt: new Date(decoded.at), id: { lt: decoded.id } },
-      ] } : {}),
+      ...(decoded
+        ? {
+            OR: [
+              { createdAt: { lt: new Date(decoded.at) } },
+              { createdAt: new Date(decoded.at), id: { lt: decoded.id } },
+            ],
+          }
+        : {}),
     };
     return this.prisma.$transaction(async (tx) => {
       const rows = await tx.room.findMany({
@@ -489,6 +501,8 @@ export class PrismaMetricsRepository implements MetricsRepository {
           visibility: true,
           status: true,
           cefrLevel: true,
+          cefrLevelMin: true,
+          cefrLevelMax: true,
           capacity: true,
           startedAt: true,
           endsAt: true,
@@ -519,7 +533,11 @@ export class PrismaMetricsRepository implements MetricsRepository {
         items: page,
         nextCursor:
           rows.length > query.limit && page.at(-1)
-            ? encode({ at: page.at(-1)!.createdAt.toISOString(), id: page.at(-1)!.id, ...(scope ? { scope } : {}) })
+            ? encode({
+                at: page.at(-1)!.createdAt.toISOString(),
+                id: page.at(-1)!.id,
+                ...(scope ? { scope } : {}),
+              })
             : null,
       };
     });

@@ -111,6 +111,8 @@ describe('room discovery, sharing and extension persistence', () => {
         'attributionId',
         'capacity',
         'cefrLevel',
+        'cefrLevelMin',
+        'cefrLevelMax',
         'endsAt',
         'hostDisplayName',
         'id',

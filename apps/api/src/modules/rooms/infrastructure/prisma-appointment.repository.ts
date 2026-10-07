@@ -1,3 +1,4 @@
+import { roomLevelRange } from '../domain/policies/room-level-range.js';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../../config/environment.js';
@@ -44,6 +45,7 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
           hostUserId: input.userId,
           topic: input.topic,
           cefrLevel: input.cefrLevel,
+          ...roomLevelRange(input),
           capacity: input.capacity,
           passwordDigest: input.passwordDigest,
           startedAt: input.startedAt,
@@ -217,6 +219,7 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       hostUserId: room.hostUserId,
       topic: room.topic,
       cefrLevel: room.cefrLevel,
+      ...roomLevelRange(room),
       capacity: room.capacity,
       status: room.status,
       startedAt: room.startedAt,

@@ -1,0 +1,51 @@
+{
+  "checkedAt": "2026-10-07T13:29:03.935Z",
+  "target": {
+    "project": "slogan-preview",
+    "branch": "main",
+    "database": "neondb"
+  },
+  "migrationCount": 25,
+  "failedMigrations": 0,
+  "applied": [
+    {
+      "migration_name": "20261007100000_room_level_ranges",
+      "finished_at": "2026-10-07T13:24:32.507Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20261007100100_room_text_messages",
+      "finished_at": "2026-10-07T13:24:35.195Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20261007100200_room_level_range_upper_bound",
+      "finished_at": "2026-10-07T13:24:37.163Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20261007100300_room_message_foreign_keys",
+      "finished_at": "2026-10-07T13:24:39.752Z",
+      "rolled_back_at": null
+    }
+  ],
+  "counts": {
+    "users": 5,
+    "rooms": 4,
+    "messages": 0
+  },
+  "rangeColumns": [
+    "cefrLevelMax",
+    "cefrLevelMin"
+  ],
+  "messageForeignKeys": [
+    "RoomTextMessage_roomId_fkey",
+    "RoomTextMessage_senderUserId_fkey"
+  ],
+  "backup": {
+    "sha256": "e927bb96793bd15928572e2612b81cef5786024de3f6870c6800db75bb6cf1f1",
+    "bytes": 236281,
+    "restoreListValidated": true,
+    "privateLocation": "owner-only local release backup"
+  }
+}

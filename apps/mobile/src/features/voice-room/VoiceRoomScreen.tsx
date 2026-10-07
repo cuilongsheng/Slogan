@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppText as Text } from '../../components/ui/AppText';
+import { roomLevelLabel } from '../room-discovery/presentation';
+import { useRoomMessages } from './useRoomMessages';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
+  AppState,
   Image,
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -28,9 +33,26 @@ import { RoomExtensionSheet } from './RoomExtensionSheet';
 import { RoomSafetyAlertsSheet } from './RoomSafetyAlertsSheet';
 import { createVoiceMedia } from './media';
 import { VoiceRoomSession, type VoiceSessionSnapshot } from './session';
+import profileIcon from '../../../assets/icons/profile.png';
 import micIcon from '../../../assets/icons/mic.png';
+import backIcon from '../../../assets/icons/voice-back.png';
+import exitIcon from '../../../assets/icons/voice-exit.png';
+import moreIcon from '../../../assets/icons/voice-more.png';
+import rulesIcon from '../../../assets/icons/voice-rules.png';
+import sparklesIcon from '../../../assets/icons/voice-sparkles.png';
+import hostIcon from '../../../assets/icons/voice-host.png';
+import sendIcon from '../../../assets/icons/voice-send.png';
+import roomMicIcon from '../../../assets/icons/voice-mic.png';
+import micOffIcon from '../../../assets/icons/voice-mic-off.png';
+import burstIcon from '../../../assets/icons/speech-burst.png';
+import gbFlag from '../../../assets/icons/flag-gb.png';
+import jpFlag from '../../../assets/icons/flag-jp.png';
+import usFlag from '../../../assets/icons/flag-us.png';
+import inFlag from '../../../assets/icons/flag-in.png';
 
-const rules = [t('joinRuleOneBody'), t('joinRuleTwoBody'), t('joinRuleThreeBody')];
+const countryFlags: Record<string, number> = { GB: gbFlag, JP: jpFlag, US: usFlag, IN: inFlag };
+
+const rules = [t('voiceRulesBody')];
 
 function voiceError(code: string | null): string {
   switch (code) {
@@ -61,11 +83,13 @@ function VoiceButton({
   onPress,
   disabled,
   style,
+  textStyle,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   style?: object;
+  textStyle?: object;
 }) {
   return (
     <TouchableOpacity
@@ -75,7 +99,7 @@ function VoiceButton({
       onPress={onPress}
       style={[styles.action, style, disabled && styles.disabled]}
     >
-      <Text style={styles.actionText}>{label}</Text>
+      <Text style={[styles.actionText, textStyle]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -92,9 +116,13 @@ function SessionState({
   draft: JoinDraft | null;
 }) {
   const router = useRouter();
+  const [successor, setSuccessor] = useState<string | null>(null);
+  const exiting = ['leaving', 'leaveUnconfirmed'].includes(snapshot.phase);
+  const chooseSuccessor = snapshot.errorCode === 'ROOM_SUCCESSOR_INVALID';
   const busy = ['joining', 'connecting', 'leaving', 'idle'].includes(snapshot.phase);
-  const title =
-    snapshot.phase === 'preparationRequired'
+  const title = exiting
+    ? t(snapshot.phase === 'leaving' ? 'voiceLeaving' : 'voiceLeaveUnconfirmed')
+    : snapshot.phase === 'preparationRequired'
       ? t('joinPreparationExpired')
       : snapshot.phase === 'failed'
         ? voiceError(snapshot.errorCode)
@@ -109,8 +137,12 @@ function SessionState({
   return (
     <VoicePage>
       <View style={styles.stateHeader}>
-        <Text style={styles.stateTitle}>{t('voiceReconnectingTitle')}</Text>
-        <Text style={styles.stateSubtitle}>{t('voiceReconnectSubtitle')}</Text>
+        <Text style={styles.stateTitle}>
+          {t(exiting ? 'voiceLeave' : 'voiceReconnectingTitle')}
+        </Text>
+        <Text style={styles.stateSubtitle}>
+          {t(exiting ? 'voiceLocalAudioStopped' : 'voiceReconnectSubtitle')}
+        </Text>
       </View>
       <View style={styles.stateCard}>
         {busy ? (
@@ -125,6 +157,22 @@ function SessionState({
       </View>
       {!busy && (
         <View style={styles.stateActions}>
+          {chooseSuccessor &&
+            snapshot.members
+              .filter((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
+              .map((member) => (
+                <TouchableOpacity
+                  key={member.membershipId}
+                  accessibilityRole="button"
+                  onPress={() => setSuccessor(member.membershipId)}
+                  style={[
+                    styles.successorOption,
+                    successor === member.membershipId && styles.successorSelected,
+                  ]}
+                >
+                  <Text style={styles.successorText}>{member.displayName}</Text>
+                </TouchableOpacity>
+              ))}
           {snapshot.phase === 'preparationRequired' || needsEarlierStep ? (
             <VoiceButton
               label={t('voiceBackToPreparation')}
@@ -139,9 +187,21 @@ function SessionState({
               }
             />
           ) : (
-            <VoiceButton label={t('retry')} onPress={() => void session.start(draft)} />
+            <VoiceButton
+              disabled={
+                chooseSuccessor &&
+                !successor &&
+                snapshot.members.some(
+                  (member) => member.role !== 'HOST' && member.presence === 'CONNECTED',
+                )
+              }
+              label={t('retry')}
+              onPress={() =>
+                exiting ? void session.leave(successor ?? undefined) : void session.start(draft)
+              }
+            />
           )}
-          {snapshot.credentialVersion !== null && (
+          {snapshot.credentialVersion !== null && !exiting && (
             <VoiceButton
               label={t('voiceLeave')}
               onPress={() => void session.leave()}
@@ -173,7 +233,8 @@ function Ended({ snapshot }: { snapshot: VoiceSessionSnapshot }) {
         <Text style={styles.endedTopic}>{snapshot.room?.topic ?? t('voiceEndedTitle')}</Text>
         {snapshot.room && (
           <Text style={styles.endedMeta}>
-            {snapshot.room.cefrLevel} · {tf('roomPeople', { count: snapshot.room.memberCount })}
+            {roomLevelLabel(snapshot.room)} ·{' '}
+            {tf('roomPeople', { count: snapshot.room.memberCount })}
           </Text>
         )}
       </View>
@@ -204,15 +265,21 @@ function MemberSeat({
       style={styles.seat}
     >
       <View style={[styles.avatar, media?.speaking && styles.avatarSpeaking]}>
-        <Text style={styles.avatarText}>{member.displayName.slice(0, 1)}</Text>
+        <Image
+          source={member.avatarUrl ? { uri: member.avatarUrl } : profileIcon}
+          style={styles.avatarPhoto}
+        />
+        {member.nationalityCode && countryFlags[member.nationalityCode] && (
+          <Image source={countryFlags[member.nationalityCode]} style={styles.countryFlag} />
+        )}
+        {!media?.microphoneEnabled && <Image source={micOffIcon} style={styles.seatMic} />}
       </View>
-      <Text numberOfLines={1} style={styles.seatName}>
-        {member.displayName}
-      </Text>
-      <Text style={styles.seatState}>
-        {member.role === 'HOST' ? '♛ ' : ''}
-        {media?.microphoneEnabled ? '●' : '⊘'}
-      </Text>
+      <View style={styles.seatIdentity}>
+        {member.role === 'HOST' && <Image source={hostIcon} style={styles.hostIcon} />}
+        <Text numberOfLines={1} style={styles.seatName}>
+          {member.displayName}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -228,6 +295,26 @@ function VoiceRoomBody({
   api: VoiceRoomApi;
   assistanceApi: ExpressionAssistanceApi;
 }) {
+  const chat = useRoomMessages(api, snapshot.room!.id);
+  const messageScroll = useRef<ScrollView>(null);
+  const messageAtBottom = useRef(true);
+  const muteRoomMicrophone = useCallback(async () => {
+    if (session.snapshot.phase !== 'active' || session.snapshot.media.connection !== 'connected')
+      return false;
+    await session.setMicrophoneEnabled(false);
+    return !session.snapshot.media.microphoneEnabled;
+  }, [session]);
+  const restoreRoomMicrophone = useCallback(async () => {
+    if (
+      AppState.currentState === 'background' ||
+      AppState.currentState === 'inactive' ||
+      session.snapshot.phase !== 'active' ||
+      session.snapshot.media.connection !== 'connected'
+    )
+      return;
+    await session.setMicrophoneEnabled(true);
+    if (!session.snapshot.media.microphoneEnabled) throw new Error('ROOM_MIC_RESTORE_FAILED');
+  }, [session]);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [endConfirm, setEndConfirm] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
@@ -236,7 +323,6 @@ function VoiceRoomBody({
   const [extendOpen, setExtendOpen] = useState(false);
   const [assistanceOpen, setAssistanceOpen] = useState(false);
   const [safetyAlertsOpen, setSafetyAlertsOpen] = useState(false);
-  const [assistanceMode, setAssistanceMode] = useState<'audio' | 'text'>('audio');
   const [extendResult, setExtendResult] = useState<{
     endsAt: string;
     providerStatus: 'COMPLETED' | 'PENDING' | 'UNAVAILABLE';
@@ -253,36 +339,70 @@ function VoiceRoomBody({
   return (
     <VoicePage>
       <View style={styles.header}>
-        <TouchableOpacity accessibilityRole="button" onPress={() => setLeaveConfirm(true)}>
-          <Text style={styles.back}>‹</Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t('back')}
+          style={styles.backHit}
+          onPress={() => {
+            if (
+              snapshot.role === 'HOST' &&
+              members.some((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
+            )
+              setLeaveConfirm(true);
+            else void session.leave();
+          }}
+        >
+          <Image source={backIcon} style={styles.backIcon} />
         </TouchableOpacity>
         <View style={styles.headerMiddle}>
           <Text numberOfLines={1} style={styles.headerTopic}>
             {room.topic}
           </Text>
           <Text style={styles.headerMeta}>
-            {room.memberCount}/{room.capacity} {t('voiceOnline')} ·{' '}
+            {room.memberCount} / {room.capacity} {t('voiceOnline')} ·{' '}
             {tf('roomRemainingMinutes', { minutes: remainingMinutes(room.endsAt) })}
           </Text>
-          <Text style={styles.headerLevel}>{room.cefrLevel}</Text>
+          <Text style={styles.headerLevel}>{roomLevelLabel(room)}</Text>
         </View>
-        {snapshot.role === 'HOST' && (
-          <TouchableOpacity accessibilityRole="button" onPress={() => setEndConfirm(true)}>
-            <Text style={styles.power}>⏻</Text>
+        {
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t('voiceLeave')}
+            style={styles.exitHit}
+            onPress={() => {
+              if (
+                snapshot.role === 'HOST' &&
+                members.some((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
+              )
+                setLeaveConfirm(true);
+              else void session.leave();
+            }}
+          >
+            <Image source={exitIcon} style={styles.exitIcon} />
           </TouchableOpacity>
-        )}
+        }
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t('roomShareAction')}
+          style={styles.moreHit}
+          onPress={() => setShareOpen(true)}
+        >
+          <Image source={moreIcon} style={styles.moreIcon} />
+        </TouchableOpacity>
         <Text style={styles.live}>● LIVE</Text>
       </View>
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         <TouchableOpacity
           accessibilityRole="button"
           onPress={() => setRulesOpen(!rulesOpen)}
-          style={styles.rulesBanner}
+          style={[styles.rulesBanner, rulesOpen && styles.rulesExpanded]}
         >
-          <Text style={styles.rulesIcon}>◖</Text>
+          <View style={styles.rulesIcon}>
+            <Image source={rulesIcon} style={styles.rulesImage} />
+          </View>
           <View style={styles.rulesText}>
             <Text style={styles.rulesTitle}>{t('voiceRoomRules')}</Text>
-            <Text numberOfLines={rulesOpen ? undefined : 2} style={styles.rulesPreview}>
+            <Text numberOfLines={rulesOpen ? undefined : 3} style={styles.rulesPreview}>
               {rules.join(' ')}
             </Text>
           </View>
@@ -302,16 +422,6 @@ function VoiceRoomBody({
               <Text style={styles.safetyAlertsCount}>{snapshot.safetyAlerts.length} ›</Text>
             </TouchableOpacity>
           )}
-        <View style={styles.roomTools}>
-          <TouchableOpacity accessibilityRole="button" onPress={() => setShareOpen(true)}>
-            <Text style={styles.roomToolText}>{t('roomShareAction')}</Text>
-          </TouchableOpacity>
-          {snapshot.role === 'HOST' && (
-            <TouchableOpacity accessibilityRole="button" onPress={() => setExtendOpen(true)}>
-              <Text style={styles.roomToolText}>{t('roomExtendAction')}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
         {extendResult && (
           <View style={styles.extensionNotice}>
             <Text style={styles.extensionNoticeText}>
@@ -324,12 +434,18 @@ function VoiceRoomBody({
             )}
           </View>
         )}
-        <View style={styles.speakerCard}>
+        <LinearGradient
+          colors={['#5B3BCB', '#8A55E8']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.speakerCard}
+        >
           <View pointerEvents="none" style={styles.speakerDecorTop} />
           <View pointerEvents="none" style={styles.speakerDecorRing} />
+          <Image source={burstIcon} style={styles.speakerBurst} />
           {speaker && (
             <View pointerEvents="none" style={styles.speakerWave}>
-              {[13, 25, 34, 19, 29].map((height, index) => (
+              {[8, 15, 22, 8, 15, 22].map((height, index) => (
                 <View key={index} style={[styles.speakerWaveBar, { height }]} />
               ))}
             </View>
@@ -339,7 +455,10 @@ function VoiceRoomBody({
           </Text>
           <View style={styles.speakerMain}>
             <View style={styles.speakerAvatar}>
-              <Text style={styles.speakerInitial}>{speaker?.displayName.slice(0, 1) ?? '♪'}</Text>
+              <Image
+                source={speaker?.avatarUrl ? { uri: speaker.avatarUrl } : profileIcon}
+                style={styles.speakerPhoto}
+              />
             </View>
             <View>
               <Text style={styles.speakerName}>
@@ -352,10 +471,10 @@ function VoiceRoomBody({
               </Text>
             </View>
           </View>
-        </View>
+        </LinearGradient>
         <TouchableOpacity accessibilityRole="button" onPress={() => setControlsOpen(true)}>
           <Text style={styles.membersHeading}>
-            {t('voiceRoomMembers')} · {members.length}/{room.capacity} ›
+            {t('voiceRoomMembers')} · {members.length} / {room.capacity}
           </Text>
         </TouchableOpacity>
         <View style={styles.membersGrid}>
@@ -368,12 +487,18 @@ function VoiceRoomBody({
             />
           ))}
           {Array.from({ length: Math.max(0, room.capacity - members.length) }, (_, index) => (
-            <View key={`empty-${index}`} style={styles.seat}>
+            <TouchableOpacity
+              key={`empty-${index}`}
+              accessibilityRole="button"
+              accessibilityLabel={t('voiceEmptySeat')}
+              onPress={() => setShareOpen(true)}
+              style={[styles.seat, styles.inviteSeat]}
+            >
               <View style={styles.emptySeat}>
                 <Text style={styles.emptyPlus}>+</Text>
               </View>
               <Text style={styles.emptyLabel}>{t('voiceEmptySeat')}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
@@ -381,13 +506,41 @@ function VoiceRoomBody({
         <TouchableOpacity
           accessibilityRole="button"
           onPress={() => {
-            setAssistanceMode('audio');
             setAssistanceOpen(true);
           }}
           style={styles.assistanceDisabled}
         >
+          <Image source={sparklesIcon} style={styles.sparklesIcon} />
           <Text style={styles.assistanceText}>{t('voiceAssistanceLater')}</Text>
         </TouchableOpacity>
+        <ScrollView
+          ref={messageScroll}
+          style={styles.messages}
+          onContentSizeChange={() => {
+            if (messageAtBottom.current) messageScroll.current?.scrollToEnd({ animated: true });
+          }}
+          onScroll={({ nativeEvent }) => {
+            messageAtBottom.current =
+              nativeEvent.contentOffset.y + nativeEvent.layoutMeasurement.height >=
+              nativeEvent.contentSize.height - 24;
+          }}
+          scrollEventThrottle={100}
+          keyboardShouldPersistTaps="handled"
+        >
+          {chat.messages.map((message) => (
+            <View key={message.id} style={styles.message}>
+              <Text style={styles.messageName}>{message.senderDisplayName}</Text>
+              <Text selectable style={styles.messageText}>
+                {message.text}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+        {(chat.error || chat.tooLong) && (
+          <Text accessibilityRole="alert" style={styles.messageError}>
+            {t(chat.tooLong ? 'roomMessageTooLong' : 'roomMessageFailed')}
+          </Text>
+        )}
         {!snapshot.media.audioPlaybackAllowed ? (
           <TouchableOpacity
             accessibilityRole="button"
@@ -396,22 +549,30 @@ function VoiceRoomBody({
           >
             <Text style={styles.soundNoticeText}>{t('voiceEnableSound')}</Text>
           </TouchableOpacity>
-        ) : (
-          <View style={styles.soundNotice}>
-            <Text style={styles.soundNoticeText}>{t('voiceMutedByDefault')}</Text>
-          </View>
-        )}
+        ) : null}
         <View style={styles.controls}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            onPress={() => {
-              setAssistanceMode('text');
-              setAssistanceOpen(true);
-            }}
-            style={styles.composerInput}
-          >
-            <Text style={styles.composerText}>{t('voiceComposerLater')}</Text>
-          </TouchableOpacity>
+          <View style={styles.messageEntry}>
+            <TextInput
+              accessibilityLabel={t('voiceComposerLater')}
+              placeholder={t('voiceComposerLater')}
+              placeholderTextColor="#D5CFE3"
+              value={chat.text}
+              onChangeText={chat.setText}
+              maxLength={2000}
+              style={[styles.composerInput, styles.composerText]}
+              onSubmitEditing={() => void chat.send()}
+              returnKeyType="send"
+            />
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('roomSendMessage')}
+              disabled={chat.sending || chat.tooLong || !chat.text.trim()}
+              onPress={() => void chat.send()}
+              style={styles.sendButton}
+            >
+              <Image source={sendIcon} style={styles.sendImage} />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={
@@ -420,53 +581,85 @@ function VoiceRoomBody({
             onPress={() => void session.setMicrophoneEnabled(!snapshot.media.microphoneEnabled)}
             style={[styles.micButton, snapshot.media.microphoneEnabled && styles.micOn]}
           >
-            <Image source={micIcon} style={styles.micImage} />
-            {!snapshot.media.microphoneEnabled && <View style={styles.micSlash} />}
+            <Image
+              source={snapshot.media.microphoneEnabled ? micIcon : roomMicIcon}
+              style={styles.micImage}
+            />
           </TouchableOpacity>
         </View>
       </View>
       {(endConfirm || leaveConfirm) && (
         <View style={styles.overlay}>
-          <View style={styles.confirmSheet}>
-            <Text style={styles.confirmTitle}>
-              {endConfirm ? t('voiceEndConfirmTitle') : t('voiceLeaveConfirmTitle')}
-            </Text>
-            <Text style={styles.confirmBody}>
-              {endConfirm ? t('voiceEndConfirmBody') : t('voiceLeaveConfirmBody')}
+          <View style={[styles.confirmSheet, leaveConfirm && styles.handoffSheet]}>
+            <View style={leaveConfirm && styles.handoffHeader}>
+              <Text style={[styles.confirmTitle, leaveConfirm && styles.handoffTitle]}>
+                {endConfirm ? t('voiceEndConfirmTitle') : t('voiceLeaveConfirmTitle')}
+              </Text>
+              {leaveConfirm && (
+                <>
+                  <View pointerEvents="none" style={styles.handoffDots}>
+                    <View style={[styles.handoffDot, { backgroundColor: '#FF6F70' }]} />
+                    <View
+                      style={[styles.handoffDot, { backgroundColor: '#FFD65A', marginTop: 3 }]}
+                    />
+                    <View style={[styles.handoffDot, { backgroundColor: '#23C8BE' }]} />
+                  </View>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={t('roomCloseSheet')}
+                    style={styles.handoffClose}
+                    onPress={() => {
+                      setLeaveConfirm(false);
+                      setSuccessorMembershipId(null);
+                    }}
+                  >
+                    <Text style={styles.handoffCloseText}>×</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+            <Text style={[styles.confirmBody, leaveConfirm && styles.handoffBody]}>
+              {endConfirm ? t('voiceEndConfirmBody') : t('roomLeaveHostBody')}
             </Text>
             {leaveConfirm && snapshot.role === 'HOST' && (
-              <View style={styles.successors}>
+              <View style={[styles.successors, styles.handoffCandidates]}>
                 {members.filter(
                   (member) => member.role !== 'HOST' && member.presence === 'CONNECTED',
                 ).length === 0 ? (
                   <Text style={styles.successorHint}>{t('roomLeaveNoSuccessor')}</Text>
                 ) : (
                   <>
-                    <Text style={styles.successorHint}>{t('roomLeaveSuccessor')}</Text>
-                    <TouchableOpacity
-                      accessibilityRole="button"
-                      onPress={() => setSuccessorMembershipId(null)}
-                      style={[
-                        styles.successorOption,
-                        successorMembershipId === null && styles.successorSelected,
-                      ]}
-                    >
-                      <Text style={styles.successorText}>{t('roomLeaveDefaultSuccessor')}</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.handoffHint}>{t('roomLeaveSuccessor')}</Text>
                     {members
                       .filter((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
                       .map((member) => (
                         <TouchableOpacity
                           key={member.membershipId}
                           accessibilityRole="button"
+                          accessibilityLabel={member.displayName}
                           onPress={() => setSuccessorMembershipId(member.membershipId)}
                           style={[
-                            styles.successorOption,
+                            styles.handoffOption,
                             successorMembershipId === member.membershipId &&
                               styles.successorSelected,
                           ]}
                         >
-                          <Text style={styles.successorText}>{member.displayName}</Text>
+                          <Text style={styles.handoffName}>{member.displayName}</Text>
+                          <Text style={styles.handoffPresence}>
+                            {t(
+                              snapshot.media.participants.some(
+                                (p) => p.identity === member.participantIdentity && p.speaking,
+                              )
+                                ? 'roomHandoffSpeaking'
+                                : snapshot.media.participants.some(
+                                      (p) =>
+                                        p.identity === member.participantIdentity &&
+                                        p.microphoneEnabled,
+                                    )
+                                  ? 'roomHandoffOnline'
+                                  : 'roomHandoffMuted',
+                            )}
+                          </Text>
                         </TouchableOpacity>
                       ))}
                   </>
@@ -474,10 +667,18 @@ function VoiceRoomBody({
               </View>
             )}
             <VoiceButton
+              style={leaveConfirm ? styles.handoffAction : {}}
+              textStyle={leaveConfirm ? styles.handoffActionText : {}}
+              disabled={
+                !endConfirm &&
+                leaveConfirm &&
+                !successorMembershipId &&
+                members.some((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
+              }
               label={
                 endConfirm
                   ? t('voiceEndRoom')
-                  : leaveConfirm && snapshot.role === 'HOST' && successorMembershipId
+                  : leaveConfirm && snapshot.role === 'HOST'
                     ? t('roomLeaveTransferAction')
                     : t('voiceLeave')
               }
@@ -489,15 +690,17 @@ function VoiceRoomBody({
                 setSuccessorMembershipId(null);
               }}
             />
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={() => {
-                setEndConfirm(false);
-                setLeaveConfirm(false);
-              }}
-            >
-              <Text style={styles.cancel}>{t('cancelAction')}</Text>
-            </TouchableOpacity>
+            {endConfirm && (
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={() => {
+                  setEndConfirm(false);
+                  setLeaveConfirm(false);
+                }}
+              >
+                <Text style={styles.cancel}>{t('cancelAction')}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
@@ -507,6 +710,28 @@ function VoiceRoomBody({
             <Text style={styles.confirmTitle}>{t('roomShareAction')}</Text>
             <View style={styles.shareContent}>
               <RoomShareAction url={room.shareUrl} />
+              {snapshot.role === 'HOST' && (
+                <>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setShareOpen(false);
+                      setExtendOpen(true);
+                    }}
+                  >
+                    <Text style={styles.cancel}>{t('roomExtendAction')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setShareOpen(false);
+                      setEndConfirm(true);
+                    }}
+                  >
+                    <Text style={styles.cancel}>{t('voiceEndRoom')}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
             <TouchableOpacity accessibilityRole="button" onPress={() => setShareOpen(false)}>
               <Text style={styles.cancel}>{t('roomCloseSheet')}</Text>
@@ -541,11 +766,8 @@ function VoiceRoomBody({
         <ExpressionAssistSheet
           roomId={room.id}
           api={assistanceApi}
-          initialMode={assistanceMode}
-          muteRoomMicrophone={async () => {
-            await session.setMicrophoneEnabled(false);
-            return !session.snapshot.media.microphoneEnabled;
-          }}
+          muteRoomMicrophone={muteRoomMicrophone}
+          restoreRoomMicrophone={restoreRoomMicrophone}
           onClose={() => setAssistanceOpen(false)}
         />
       )}
@@ -625,6 +847,33 @@ export function VoiceRoomScreen({ roomId }: { roomId: string }) {
 }
 
 const styles = StyleSheet.create({
+  messages: { maxHeight: 120, marginVertical: 8 },
+  avatarPhoto: { width: 48, height: 48, borderRadius: 24 },
+  speakerPhoto: { width: 72, height: 72, borderRadius: 36 },
+  message: {
+    backgroundColor: '#493274',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 0,
+  },
+  messageName: { color: '#C7BADF', fontSize: 11, lineHeight: 15 },
+  messageText: { color: '#FFFFFF', fontSize: 13, lineHeight: 18 },
+  messageError: { color: '#FF9C9F', fontSize: 12, marginBottom: 6 },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 8,
+    backgroundColor: tokens.color.purple,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendImage: { width: 24, height: 24 },
+  countryFlag: { position: 'absolute', left: -3, top: 2, width: 14, height: 10 },
+  seatMic: { position: 'absolute', width: 17, height: 17, left: 16, top: 16 },
+  seatIdentity: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  hostIcon: { width: 12, height: 12 },
   action: {
     minHeight: 54,
     borderRadius: 14,
@@ -690,42 +939,52 @@ const styles = StyleSheet.create({
   endedTopic: { color: tokens.color.foreground, fontSize: 17, fontWeight: '700', marginTop: 16 },
   endedMeta: { color: tokens.color.muted, fontSize: 12, marginTop: 18 },
   header: {
-    height: 91,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 9,
+    height: 88,
+    marginHorizontal: 16,
   },
-  back: { color: '#fff', fontSize: 35, lineHeight: 39 },
-  headerMiddle: { flex: 1 },
-  headerTopic: { color: '#fff', fontSize: 17, fontWeight: '700', marginTop: 5 },
-  headerMeta: { color: '#C1B6D9', fontSize: 11, marginTop: 14 },
-  headerLevel: { color: '#C1B6D9', fontSize: 11, marginTop: 9 },
-  power: { color: '#fff', fontSize: 29, lineHeight: 38 },
-  live: { color: '#71E8CD', fontSize: 10, marginTop: 50 },
+  backHit: { position: 'absolute', left: -6, top: -2, width: 36, height: 38 },
+  backIcon: { position: 'absolute', left: 9, top: 5, width: 24, height: 24 },
+  headerMiddle: { position: 'absolute', left: 36, top: 3, width: 232 },
+  headerTopic: { color: '#fff', fontSize: 18, lineHeight: 25, fontWeight: '700', height: 31 },
+  headerMeta: { color: '#C1B6D9', fontSize: 12, lineHeight: 17, marginTop: 5, height: 24 },
+  headerLevel: { color: '#C1B6D9', fontSize: 11, lineHeight: 15, fontWeight: '500', marginTop: 2 },
+  exitHit: { position: 'absolute', left: 270, top: 0, width: 34, height: 34 },
+  exitIcon: { position: 'absolute', left: 13, top: 3, width: 18, height: 18 },
+  moreHit: { position: 'absolute', right: 0, top: -2, width: 46, height: 42 },
+  moreIcon: { position: 'absolute', left: 8, top: 2, width: 24, height: 24, tintColor: '#FFFFFF' },
+  live: {
+    position: 'absolute',
+    left: 283,
+    top: 40,
+    color: '#71E8CD',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '500',
+  },
   body: { flex: 1 },
-  bodyContent: { paddingBottom: 155 },
+  bodyContent: { paddingBottom: 16 },
   rulesBanner: {
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 12,
     minHeight: 76,
+    height: 76,
     borderRadius: 18,
     backgroundColor: '#150F29',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    paddingHorizontal: 12,
     gap: 10,
   },
   rulesIcon: {
-    width: 35,
-    height: 35,
+    width: 36,
+    height: 36,
     borderRadius: 18,
     backgroundColor: '#6943DF',
-    color: '#fff',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  rulesImage: { width: 20, height: 20 },
+  rulesExpanded: { height: 'auto', paddingVertical: 12 },
   rulesText: { flex: 1 },
   safetyAlertsBanner: {
     marginHorizontal: 16,
@@ -742,59 +1001,71 @@ const styles = StyleSheet.create({
   safetyAlertsTitle: { color: '#fff', fontSize: 12, fontWeight: '700' },
   safetyAlertsHint: { color: '#C7B8E4', fontSize: 10, marginTop: 5 },
   safetyAlertsCount: { color: '#77E5D4', fontSize: 14, fontWeight: '700' },
-  rulesTitle: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  rulesPreview: { color: '#fff', fontSize: 10, lineHeight: 15, marginTop: 5 },
+  rulesTitle: { color: '#fff', fontSize: 11, lineHeight: 14, fontWeight: '500' },
+  rulesPreview: { color: '#fff', fontSize: 11, lineHeight: 17, marginTop: 1 },
   speakerCard: {
     marginHorizontal: 16,
-    marginTop: 7,
+    marginTop: 6,
     height: 172,
     borderRadius: 24,
     backgroundColor: '#6542D4',
-    padding: 16,
     overflow: 'hidden',
   },
   speakerDecorTop: {
     position: 'absolute',
-    right: -34,
-    top: -72,
-    width: 155,
-    height: 155,
-    borderRadius: 78,
-    backgroundColor: '#E792C0',
-    opacity: 0.55,
+    left: 255,
+    top: -85,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#FF907E',
+    opacity: 0.35,
   },
   speakerDecorRing: {
     position: 'absolute',
-    left: -52,
-    bottom: -89,
-    width: 161,
-    height: 161,
-    borderRadius: 81,
-    borderWidth: 18,
-    borderColor: '#A47CE8',
-    opacity: 0.58,
+    left: -55,
+    top: 92,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 16,
+    borderColor: '#FFFFFF',
+    opacity: 0.18,
   },
+  speakerBurst: { position: 'absolute', left: 298, top: 14, width: 34, height: 34 },
   speakerWave: {
     position: 'absolute',
     right: 19,
-    bottom: 30,
-    height: 38,
+    top: 88,
+    height: 22,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  speakerWaveBar: { width: 4, borderRadius: 3, backgroundColor: '#77E5D4' },
+  speakerWaveBar: { width: 3, borderRadius: 2, backgroundColor: '#89F6E3' },
   speakingPill: {
+    position: 'absolute',
+    left: 16,
+    top: 13,
+    minWidth: 100,
+    height: 25,
     color: '#fff',
     backgroundColor: '#3E2987',
     alignSelf: 'flex-start',
     borderRadius: 15,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 4,
     overflow: 'hidden',
     fontSize: 11,
   },
-  speakerMain: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 19 },
+  speakerMain: {
+    position: 'absolute',
+    left: 15,
+    top: 53,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 15,
+  },
   speakerAvatar: {
     width: 78,
     height: 78,
@@ -806,17 +1077,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   speakerInitial: { color: '#fff', fontSize: 29, fontWeight: '700' },
-  speakerName: { color: '#fff', fontSize: 19, fontWeight: '700' },
-  speakerMeta: { color: '#E8DFFF', fontSize: 11, marginTop: 13 },
-  membersHeading: { color: '#E9E3F4', fontSize: 12, marginHorizontal: 16, marginTop: 27 },
+  speakerName: { color: '#fff', fontSize: 18, lineHeight: 24, fontWeight: '700', marginTop: 5 },
+  speakerMeta: { color: '#E8DFFF', fontSize: 12, lineHeight: 16, fontWeight: '500', marginTop: 6 },
+  membersHeading: {
+    color: '#E9E3F4',
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '500',
+    marginHorizontal: 16,
+    marginTop: 22,
+  },
   membersGrid: {
     marginHorizontal: 16,
     marginTop: 13,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    columnGap: 14,
+    rowGap: 10,
+    justifyContent: 'center',
   },
-  seat: { width: 78, height: 100, alignItems: 'center' },
+  seat: { width: 76, height: 82, alignItems: 'center' },
+  inviteSeat: { height: 96 },
   avatar: {
     width: 51,
     height: 51,
@@ -829,8 +1110,7 @@ const styles = StyleSheet.create({
   },
   avatarSpeaking: { borderColor: '#66E6D1' },
   avatarText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  seatName: { color: '#fff', fontSize: 11, marginTop: 6 },
-  seatState: { color: '#9BD9F4', fontSize: 12, marginTop: 3 },
+  seatName: { color: '#fff', fontSize: 12, lineHeight: 15, fontWeight: '500', maxWidth: 58 },
   emptySeat: {
     width: 51,
     height: 51,
@@ -842,14 +1122,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyPlus: { color: '#fff', fontSize: 31, lineHeight: 37 },
-  emptyLabel: { color: '#C2B5D8', fontSize: 10, marginTop: 7 },
+  emptyLabel: { color: '#C2B5D8', fontSize: 12, marginTop: 7 },
   composer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 25,
-    height: 185,
     backgroundColor: '#24183F',
+    paddingBottom: 12,
     paddingHorizontal: 16,
     paddingTop: 19,
   },
@@ -857,9 +1133,12 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 20,
     backgroundColor: '#49336D',
-    justifyContent: 'center',
-    paddingHorizontal: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 12,
   },
+  sparklesIcon: { width: 20, height: 20 },
   assistanceText: { color: '#C7B8E4', fontSize: 12 },
   soundNotice: {
     height: 46,
@@ -870,33 +1149,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   soundNoticeText: { color: '#E4DDF4', fontSize: 11, fontWeight: '700' },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
+  controls: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  messageEntry: {
+    flex: 1,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#34264F',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   composerInput: {
     flex: 1,
-    height: 49,
+    height: 56,
     borderRadius: 25,
-    backgroundColor: '#34264F',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  composerText: { color: '#C3B8DB', fontSize: 13 },
+  composerText: { fontFamily: 'NotoSansSC', color: '#C3B8DB', fontSize: 13 },
   micButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#5D498D',
+    backgroundColor: tokens.color.coral,
     alignItems: 'center',
     justifyContent: 'center',
   },
   micOn: { backgroundColor: '#6943DF' },
-  micImage: { width: 29, height: 29, tintColor: '#fff' },
-  micSlash: {
-    position: 'absolute',
-    width: 34,
-    height: 2,
-    backgroundColor: '#fff',
-    transform: [{ rotate: '45deg' }],
-  },
+  micImage: { width: 24, height: 24, tintColor: '#fff' },
   overlay: {
     position: 'absolute',
     top: 0,
@@ -916,6 +1196,49 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
   },
   confirmTitle: { color: tokens.color.foreground, fontSize: 21, fontWeight: '700' },
+  handoffSheet: {
+    minHeight: 420,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 42,
+    backgroundColor: '#34274F',
+  },
+  handoffHeader: { height: 30 },
+  handoffTitle: { color: '#FFFFFF', fontSize: 20, lineHeight: 28, fontWeight: '500' },
+  handoffClose: {
+    position: 'absolute',
+    right: 0,
+    top: -4,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+  },
+  handoffCloseText: { color: '#D6CBE9', fontSize: 22, fontWeight: '500', lineHeight: 28 },
+  handoffDots: { position: 'absolute', left: 254, top: 0, flexDirection: 'row', gap: 5 },
+  handoffDot: { width: 7, height: 7, borderRadius: 4 },
+  handoffBody: {
+    color: '#C8BCE0',
+    fontSize: 13,
+    lineHeight: 18,
+    height: 52,
+    marginTop: 14,
+    marginBottom: 9,
+  },
+  handoffCandidates: { gap: 8, marginBottom: 22 },
+  handoffHint: { color: '#C8BCE0', fontSize: 12, lineHeight: 17, height: 22, fontWeight: '500' },
+  handoffOption: {
+    height: 44,
+    borderRadius: 24,
+    backgroundColor: '#45365E',
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  handoffName: { color: '#FFFFFF', fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  handoffPresence: { color: '#C8BCE0', fontSize: 11, lineHeight: 16, width: 86 },
+  handoffAction: { height: 48, minHeight: 48, borderRadius: 24, backgroundColor: '#6D4DE3' },
+  handoffActionText: { fontWeight: '500' },
   confirmBody: { color: tokens.color.muted, fontSize: 13, marginTop: 17, marginBottom: 32 },
   roomTools: {
     flexDirection: 'row',

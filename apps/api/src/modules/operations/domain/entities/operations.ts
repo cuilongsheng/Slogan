@@ -60,6 +60,7 @@ export interface MetricSnapshotQuery {
 }
 
 export interface RoomOperationsQuery {
+  scope?: 'CURRENT';
   cursor?: string;
   limit: number;
   q?: string;

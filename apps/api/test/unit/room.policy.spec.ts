@@ -25,6 +25,8 @@ describe('RoomPolicy', () => {
     ).toEqual({
       topic: 'Backend practice',
       cefrLevel: 'B1',
+      cefrLevelMin: 'B1',
+      cefrLevelMax: 'B1',
       capacity: 4,
       startedAt: now,
       endsAt: new Date('2026-09-11T12:00:00.000Z'),

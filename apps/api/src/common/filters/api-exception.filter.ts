@@ -188,6 +188,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       'ROOM_RESERVED',
       'ROOM_ENDED',
       'ROOM_FULL',
+      'ROOM_MESSAGE_RATE_LIMITED',
       'ROOM_PASSWORD_REQUIRED',
       'ROOM_PASSWORD_INVALID',
       'ROOM_RULES_NOT_ACCEPTED',
@@ -339,6 +340,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       ].includes(code)
     )
       return HttpStatus.CONFLICT;
+    if (code === 'ROOM_MESSAGE_RATE_LIMITED') return HttpStatus.TOO_MANY_REQUESTS;
     if (code === 'ROOM_ENDED' || code === 'ROOM_FULL') return HttpStatus.CONFLICT;
     if (code === 'ROOM_PASSWORD_REQUIRED' || code === 'ROOM_PASSWORD_INVALID') {
       return HttpStatus.FORBIDDEN;

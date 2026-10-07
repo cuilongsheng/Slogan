@@ -1,3 +1,4 @@
+import { roomLevelLabel } from '../room-discovery/presentation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
@@ -92,7 +93,7 @@ export function AppointmentDetailScreen({ roomId }: { roomId: string }) {
             contentContainerStyle={roomPageStyles.scrollContent}
           >
             <View style={styles.card}>
-              <Text style={styles.badge}>{room.cefrLevel}</Text>
+              <Text style={styles.badge}>{roomLevelLabel(room)}</Text>
               <Text style={styles.topic}>{room.topic}</Text>
               <Text style={styles.helper}>
                 {t('createRoomDate')} · {new Date(room.startsAt).toLocaleString()}

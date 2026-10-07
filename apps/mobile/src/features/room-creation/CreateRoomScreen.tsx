@@ -1,14 +1,7 @@
+import { AppText as Text } from '../../components/ui/AppText';
 import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
 import { t, tf } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
@@ -32,31 +25,44 @@ const validationText: Record<
   | 'createRoomPasswordInvalid'
   | 'createRoomDateInvalid'
   | 'createRoomTimeInvalid'
+  | 'createRoomLevelInvalid'
 > = {
   TOPIC: 'createRoomTopicInvalid',
   PASSWORD: 'createRoomPasswordInvalid',
   DATE: 'createRoomDateInvalid',
   TIME: 'createRoomTimeInvalid',
+  LEVEL: 'createRoomLevelInvalid',
 };
 function Chip({
   label,
   selected,
   onPress,
   compact = false,
+  soft = false,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
   compact?: boolean;
+  soft?: boolean;
 }) {
   return (
     <TouchableOpacity
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      style={[styles.chip, compact && styles.compactChip, selected && styles.chipSelected]}
+      style={[
+        styles.chip,
+        soft && styles.levelChip,
+        compact && styles.compactChip,
+        selected && styles.chipSelected,
+      ]}
       onPress={onPress}
     >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+      <Text
+        style={[styles.chipText, soft && styles.levelChipText, selected && styles.chipTextSelected]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -66,7 +72,6 @@ export function CreateRoomScreen() {
   const { authorized } = useAuth();
   const api = useMemo(() => new RoomCreationApi(authorized), [authorized]);
   const [form, setForm] = useState<RoomForm>(initialRoomForm);
-  const [levelOpen, setLevelOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [consentReady, setConsentReady] = useState(false);
@@ -99,11 +104,18 @@ export function CreateRoomScreen() {
       }
     } catch (cause) {
       const code = cause instanceof CreateRoomError ? cause.code : '';
-      setError(t(code === 'ROOM_SPEECH_UNAVAILABLE' || code === 'POST_ROOM_KEYWORDS_UNAVAILABLE'
-        ? 'createRoomProcessingUnavailable'
-        : code === 'ROOM_SPEECH_CONSENT_REQUIRED' || code === 'POST_ROOM_KEYWORDS_CONSENT_REQUIRED'
-          ? 'createRoomConsentRequired'
-          : cause instanceof CreateRoomError && cause.uncertain ? 'createRoomUncertain' : 'createRoomFailed'));
+      setError(
+        t(
+          code === 'ROOM_SPEECH_UNAVAILABLE' || code === 'POST_ROOM_KEYWORDS_UNAVAILABLE'
+            ? 'createRoomProcessingUnavailable'
+            : code === 'ROOM_SPEECH_CONSENT_REQUIRED' ||
+                code === 'POST_ROOM_KEYWORDS_CONSENT_REQUIRED'
+              ? 'createRoomConsentRequired'
+              : cause instanceof CreateRoomError && cause.uncertain
+                ? 'createRoomUncertain'
+                : 'createRoomFailed',
+        ),
+      );
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -113,7 +125,7 @@ export function CreateRoomScreen() {
     <RoomPage ambient>
       <RoomHeader
         title={t('createRoomTitle')}
-        subtitle={t('createRoomSubtitle')}
+        style={{ minHeight: 54 }}
         onBack={() => router.back()}
       />
       <ScrollView
@@ -124,11 +136,9 @@ export function CreateRoomScreen() {
         <Text style={styles.sectionTitle}>{t('createRoomSettings')}</Text>
         <View style={styles.topicCard}>
           <View style={styles.cardTop}>
-            <Text style={styles.whiteTag}>{t('createRoomTopic')}</Text>
-            <Text style={styles.whiteTag}>{form.cefrLevel}</Text>
+            <Text style={styles.label}>{t('createRoomTopic')}</Text>
             <Image source={burstIcon} style={styles.burst} />
           </View>
-          <Text style={styles.label}>{t('createRoomTopic')}</Text>
           <TextInput
             accessibilityLabel={t('createRoomTopic')}
             placeholder={t('createRoomTopicPlaceholder')}
@@ -138,33 +148,55 @@ export function CreateRoomScreen() {
             maxLength={120}
             style={styles.topicInput}
           />
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityState={{ expanded: levelOpen }}
-            style={styles.levelRow}
-            onPress={() => setLevelOpen((open) => !open)}
-          >
+          <View style={styles.levelRow}>
             <Text style={styles.helper}>{t('createRoomLevel')}</Text>
-            <Text style={styles.levelValue}>{form.cefrLevel} ›</Text>
-          </TouchableOpacity>
-          {levelOpen && (
-            <View style={styles.levelChoices}>
-              {levels.map((level) => (
-                <Chip
-                  key={level}
-                  label={level}
-                  selected={form.cefrLevel === level}
-                  onPress={() => {
-                    update({ cefrLevel: level });
-                    setLevelOpen(false);
-                  }}
-                />
-              ))}
-            </View>
-          )}
+            <Text style={styles.levelValue}>
+              {form.cefrLevelMin === form.cefrLevelMax
+                ? form.cefrLevelMin
+                : `${form.cefrLevelMin}–${form.cefrLevelMax}`}
+            </Text>
+          </View>
+          <Text style={[styles.helper, styles.firstBoundary]}>{t('createRoomLevelFrom')}</Text>
+          <View style={styles.levelChoices}>
+            {levels.map((level) => (
+              <Chip
+                key={level}
+                soft
+                label={level}
+                selected={form.cefrLevelMin === level}
+                onPress={() =>
+                  update({
+                    cefrLevel: level,
+                    cefrLevelMin: level,
+                    ...(levels.indexOf(level) > levels.indexOf(form.cefrLevelMax)
+                      ? { cefrLevelMax: level }
+                      : {}),
+                  })
+                }
+              />
+            ))}
+          </View>
+          <Text style={[styles.helper, styles.nextBoundary]}>{t('createRoomLevelTo')}</Text>
+          <View style={styles.levelChoices}>
+            {levels.map((level) => (
+              <Chip
+                key={level}
+                soft
+                label={level}
+                selected={form.cefrLevelMax === level}
+                onPress={() =>
+                  update({
+                    cefrLevelMax: level,
+                    ...(levels.indexOf(level) < levels.indexOf(form.cefrLevelMin)
+                      ? { cefrLevel: level, cefrLevelMin: level }
+                      : {}),
+                  })
+                }
+              />
+            ))}
+          </View>
         </View>
         <View style={styles.accessCard}>
-          <Text style={styles.whiteTag}>{t('createRoomSettings')}</Text>
           <Text style={[styles.label, styles.capacityLabel]}>{t('createRoomCapacity')}</Text>
           <View style={styles.chipRow}>
             {[2, 3, 4, 5, 6].map((capacity) => (
@@ -221,10 +253,40 @@ export function CreateRoomScreen() {
         <View style={styles.processingCard}>
           <Text style={styles.label}>{t('createRoomProcessingTitle')}</Text>
           <Text style={styles.helper}>{t('createRoomProcessingHint')}</Text>
-          <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: form.sensitiveSpeechDetectionEnabled }} onPress={() => update({ sensitiveSpeechDetectionEnabled: !form.sensitiveSpeechDetectionEnabled })} style={styles.processingRow}><Text style={styles.processingName}>{t('consentSafetyTitle')}</Text><Text style={styles.processingValue}>{form.sensitiveSpeechDetectionEnabled ? t('createRoomProcessingOn') : t('createRoomProcessingOff')}</Text></TouchableOpacity>
-          <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: form.postRoomKeywordsEnabled }} onPress={() => update({ postRoomKeywordsEnabled: !form.postRoomKeywordsEnabled })} style={styles.processingRow}><Text style={styles.processingName}>{t('consentKeywordsTitle')}</Text><Text style={styles.processingValue}>{form.postRoomKeywordsEnabled ? t('createRoomProcessingOn') : t('createRoomProcessingOff')}</Text></TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: form.sensitiveSpeechDetectionEnabled }}
+            onPress={() =>
+              update({ sensitiveSpeechDetectionEnabled: !form.sensitiveSpeechDetectionEnabled })
+            }
+            style={styles.processingRow}
+          >
+            <Text style={styles.processingName}>{t('consentSafetyTitle')}</Text>
+            <Text style={styles.processingValue}>
+              {form.sensitiveSpeechDetectionEnabled
+                ? t('createRoomProcessingOn')
+                : t('createRoomProcessingOff')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: form.postRoomKeywordsEnabled }}
+            onPress={() => update({ postRoomKeywordsEnabled: !form.postRoomKeywordsEnabled })}
+            style={styles.processingRow}
+          >
+            <Text style={styles.processingName}>{t('consentKeywordsTitle')}</Text>
+            <Text style={styles.processingValue}>
+              {form.postRoomKeywordsEnabled
+                ? t('createRoomProcessingOn')
+                : t('createRoomProcessingOff')}
+            </Text>
+          </TouchableOpacity>
         </View>
-        <RoomConsentPanel safety={form.sensitiveSpeechDetectionEnabled} keywords={form.postRoomKeywordsEnabled} onReadyChange={setConsentReady} />
+        <RoomConsentPanel
+          safety={form.sensitiveSpeechDetectionEnabled}
+          keywords={form.postRoomKeywordsEnabled}
+          onReadyChange={setConsentReady}
+        />
         <View style={styles.scheduleCard}>
           <View style={styles.modeRow}>
             <Chip
@@ -300,7 +362,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginHorizontal: 20,
     marginTop: 13,
-    marginBottom: 15,
+    marginBottom: 14,
+    lineHeight: 26,
     color: tokens.color.foreground,
     fontSize: 17,
     fontWeight: '700',
@@ -310,9 +373,10 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.purpleSoft,
     borderRadius: 24,
     padding: 14,
-    minHeight: 198,
+    paddingTop: 12,
+    minHeight: 350,
   },
-  cardTop: { flexDirection: 'row', gap: 6, alignItems: 'center', height: 24 },
+  cardTop: { flexDirection: 'row', gap: 6, alignItems: 'center', height: 20 },
   whiteTag: {
     alignSelf: 'flex-start',
     overflow: 'hidden',
@@ -327,14 +391,15 @@ const styles = StyleSheet.create({
   burst: { width: 25, height: 25, marginLeft: 'auto' },
   label: { fontSize: 14, fontWeight: '700', color: tokens.color.foreground },
   topicInput: {
-    height: 55,
-    marginTop: 8,
+    height: 56,
+    marginTop: 18,
+    fontFamily: 'NotoSansSC',
     backgroundColor: '#fff',
     borderColor: tokens.color.border,
     borderWidth: 1,
     borderRadius: 13,
     paddingHorizontal: 14,
-    fontSize: 14,
+    fontSize: 12,
     color: tokens.color.foreground,
   },
   levelRow: {
@@ -343,9 +408,19 @@ const styles = StyleSheet.create({
     marginTop: 15,
     paddingHorizontal: 1,
   },
-  helper: { color: tokens.color.muted, fontSize: 12 },
-  levelValue: { color: tokens.color.purple, fontSize: 12, fontWeight: '700' },
-  levelChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  helper: { color: tokens.color.muted, fontSize: 12, lineHeight: 22 },
+  firstBoundary: { marginTop: 17 },
+  nextBoundary: { marginTop: 15 },
+  levelChip: { backgroundColor: '#EEE8FF', borderColor: '#EEE8FF' },
+  levelChipText: { color: tokens.color.purple },
+  levelValue: {
+    width: 64,
+    color: tokens.color.purple,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  levelChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
   accessCard: {
     marginHorizontal: 16,
     marginTop: 13,
@@ -354,8 +429,22 @@ const styles = StyleSheet.create({
     padding: 14,
     minHeight: 193,
   },
-  processingCard: { marginHorizontal: 16, marginTop: 13, padding: 14, borderRadius: 24, backgroundColor: tokens.color.panel, borderWidth: 1, borderColor: tokens.color.border, gap: 9 },
-  processingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 34 },
+  processingCard: {
+    marginHorizontal: 16,
+    marginTop: 13,
+    padding: 14,
+    borderRadius: 24,
+    backgroundColor: tokens.color.panel,
+    borderWidth: 1,
+    borderColor: tokens.color.border,
+    gap: 9,
+  },
+  processingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 34,
+  },
   processingName: { color: tokens.color.foreground, fontSize: 13 },
   processingValue: { color: tokens.color.purple, fontSize: 12, fontWeight: '700' },
   capacityLabel: { marginTop: 13 },

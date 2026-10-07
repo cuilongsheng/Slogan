@@ -26,6 +26,8 @@ export interface RoomRecord {
   hostDisplayName: string;
   topic: string;
   cefrLevel: RoomCefrLevel;
+  cefrLevelMin?: RoomCefrLevel;
+  cefrLevelMax?: RoomCefrLevel;
   capacity: number;
   passwordDigest: string | null;
   status: RoomStatus;
@@ -64,6 +66,8 @@ export interface RoomShareRecord {
   visibility: RoomVisibility;
   topic: string;
   cefrLevel: RoomCefrLevel;
+  cefrLevelMin?: RoomCefrLevel;
+  cefrLevelMax?: RoomCefrLevel;
   capacity: number;
   memberCount: number;
   reservedCount: number;
@@ -92,7 +96,9 @@ export interface RoomListPage {
 
 export interface CreateRoomInput {
   topic: string;
-  cefrLevel: RoomCefrLevel;
+  cefrLevel?: RoomCefrLevel;
+  cefrLevelMin?: RoomCefrLevel;
+  cefrLevelMax?: RoomCefrLevel;
   capacity: number;
   password?: string;
   visibility?: RoomVisibility;
@@ -103,6 +109,8 @@ export interface CreateRoomInput {
 export interface ValidatedRoomCreation {
   topic: string;
   cefrLevel: RoomCefrLevel;
+  cefrLevelMin?: RoomCefrLevel;
+  cefrLevelMax?: RoomCefrLevel;
   capacity: number;
   startedAt: Date;
   endsAt: Date;

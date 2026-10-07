@@ -1,4 +1,5 @@
 model Room {
+  textMessages RoomTextMessage[]
   kind                            RoomKind                   @default(INSTANT)
   initialHostDeadline             DateTime?                  @db.Timestamptz(3)
   initialHostResolved             Boolean                    @default(false)
@@ -21,6 +22,8 @@ model Room {
   id                              String                     @id @db.Uuid
   hostUserId                      String                     @db.Uuid
   topic                           String                     @db.VarChar(120)
+  cefrLevelMin                    CefrLevel?
+  cefrLevelMax                    CefrLevel?
   cefrLevel                       CefrLevel
   capacity                        Int
   passwordDigest                  String?                    @db.Char(64)

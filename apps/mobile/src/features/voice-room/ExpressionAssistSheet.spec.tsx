@@ -1,64 +1,119 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-
 import { usePrivateRecorder } from '../../services/usePrivateRecorder';
 import { ExpressionAssistSheet } from './ExpressionAssistSheet';
-
 jest.mock('../../services/usePrivateRecorder', () => ({ usePrivateRecorder: jest.fn() }));
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'f3101d4b-3806-4658-89a3-c10278ef1f23') }));
-
-const recorder = { start: jest.fn(), stop: jest.fn(), discard: jest.fn(), clip: null, recording: false, error: null, elapsedSeconds: 0 };
-
+jest.mock('expo-crypto', () => ({
+  randomUUID: jest.fn(() => 'f3101d4b-3806-4658-89a3-c10278ef1f23'),
+}));
+const recorder = {
+  start: jest.fn(async () => undefined),
+  stop: jest.fn(async () => ({ uri: 'clip' })),
+  discard: jest.fn(),
+  elapsedSeconds: 0,
+};
 beforeEach(() => {
   jest.clearAllMocks();
   (usePrivateRecorder as jest.Mock).mockReturnValue(recorder);
 });
-
-test('does not start private recording until room microphone is muted', async () => {
-  const api = { consent: jest.fn(async () => ({ purpose: 'AI_EXPRESSION_AUDIO', status: 'ACCEPTED', currentNoticeVersion: 'current-v2' })) };
-  const muteRoomMicrophone = jest.fn(async () => false);
-  const page = await render(<ExpressionAssistSheet roomId="room-1" api={api as never} initialMode="audio" muteRoomMicrophone={muteRoomMicrophone} onClose={jest.fn()} />);
-  await waitFor(() => expect(page.getByRole('button', { name: 'Start speaking' })).toBeTruthy());
-  await fireEvent.press(page.getByRole('button', { name: 'Start speaking' }));
-  await waitFor(() => expect(page.getByText('Turn off the room microphone before recording privately.')).toBeTruthy());
-  expect(recorder.start).not.toHaveBeenCalled();
-});
-
-test('uses the current server notice version before starting audio', async () => {
+const accepted = {
+  purpose: 'AI_EXPRESSION_AUDIO',
+  status: 'ACCEPTED',
+  currentNoticeVersion: 'current-v2',
+};
+test('press and release auto submit the stopped clip after microphone restoration', async () => {
   const api = {
-    consent: jest.fn(async () => ({ purpose: 'AI_EXPRESSION_AUDIO', status: 'REQUIRED', currentNoticeVersion: 'new-v3' })),
-    acceptConsent: jest.fn(async () => ({ purpose: 'AI_EXPRESSION_AUDIO', status: 'ACCEPTED', currentNoticeVersion: 'new-v3' })),
+    consent: jest.fn(async () => accepted),
+    audio: jest.fn(async () => ({ primary: { text: 'My English' } })),
   };
-  const page = await render(<ExpressionAssistSheet roomId="room-1" api={api as never} initialMode="audio" muteRoomMicrophone={jest.fn(async () => true)} onClose={jest.fn()} />);
-  await waitFor(() => expect(page.getByRole('button', { name: 'Accept and continue' })).toBeTruthy());
+  const restore = jest.fn(async () => undefined);
+  const page = await render(
+    <ExpressionAssistSheet
+      roomId="room-1"
+      api={api as never}
+      muteRoomMicrophone={jest.fn(async () => true)}
+      restoreRoomMicrophone={restore}
+      onClose={jest.fn()}
+    />,
+  );
+  await waitFor(() => expect(page.getByRole('button', { name: 'Hold to speak' })).toBeTruthy());
+  await fireEvent(page.getByRole('button', { name: 'Hold to speak' }), 'pressIn');
+  await waitFor(() => expect(recorder.start).toHaveBeenCalled());
+  await fireEvent(page.getByRole('button', { name: 'Hold to speak' }), 'pressOut');
+  await waitFor(() => expect(page.getByText('My English')).toBeTruthy());
+  expect(api.audio).toHaveBeenCalledWith(
+    'room-1',
+    { uri: 'clip' },
+    'current-v2',
+    expect.any(String),
+    expect.any(AbortSignal),
+  );
+  expect(restore.mock.invocationCallOrder[0]).toBeLessThan(api.audio.mock.invocationCallOrder[0]!);
+});
+test('uses current notice consent and exposes withdrawal through processing settings', async () => {
+  const api = {
+    consent: jest.fn(async () => ({
+      ...accepted,
+      status: 'REQUIRED',
+      currentNoticeVersion: 'new-v3',
+    })),
+    acceptConsent: jest.fn(async () => ({ ...accepted, currentNoticeVersion: 'new-v3' })),
+    revokeConsent: jest.fn(async () => ({
+      ...accepted,
+      status: 'REVOKED',
+      currentNoticeVersion: 'new-v3',
+    })),
+  };
+  const page = await render(
+    <ExpressionAssistSheet
+      roomId="room-1"
+      api={api as never}
+      muteRoomMicrophone={jest.fn(async () => true)}
+      restoreRoomMicrophone={jest.fn()}
+      onClose={jest.fn()}
+    />,
+  );
+  await waitFor(() =>
+    expect(page.getByRole('button', { name: 'Accept and continue' })).toBeTruthy(),
+  );
   await fireEvent.press(page.getByRole('button', { name: 'Accept and continue' }));
-  await waitFor(() => expect(api.acceptConsent).toHaveBeenCalledWith('new-v3', expect.any(String)));
-  expect(page.getByRole('button', { name: 'Start speaking' })).toBeTruthy();
-});
-
-test('retries the same text and request id after a transient failure', async () => {
-  const text = jest.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce({ primary: { text: 'I missed the train.', tone: 'NEUTRAL' }, alternatives: [], noticeCode: 'AI_OUTPUT_MAY_BE_INACCURATE' });
-  const api = { consent: jest.fn(async () => ({ purpose: 'AI_EXPRESSION_AUDIO', status: 'REQUIRED', currentNoticeVersion: 'new-v3' })), text };
-  const page = await render(<ExpressionAssistSheet roomId="room-1" api={api as never} initialMode="text" muteRoomMicrophone={jest.fn()} onClose={jest.fn()} />);
-  await fireEvent.changeText(page.getByLabelText('Type what you want to say'), '我误了火车');
-  await fireEvent.press(page.getByRole('button', { name: 'Generate English' }));
-  await waitFor(() => expect(page.getByText('Could not generate an expression. Try again.')).toBeTruthy());
-  await fireEvent.press(page.getByRole('button', { name: 'Generate English' }));
-  await waitFor(() => expect(page.getByText('I missed the train.')).toBeTruthy());
-  expect(text).toHaveBeenCalledTimes(2);
-  expect(text.mock.calls[1]).toEqual(text.mock.calls[0]);
-  await fireEvent.press(page.getByRole('button', { name: 'Say another phrase' }));
-  expect(page.getByLabelText('Type what you want to say')).toBeTruthy();
-  expect(page.queryByRole('button', { name: 'Start speaking' })).toBeNull();
-});
-
-test('revokes accepted audio consent from the private sheet', async () => {
-  const api = {
-    consent: jest.fn(async () => ({ purpose: 'AI_EXPRESSION_AUDIO', status: 'ACCEPTED', currentNoticeVersion: 'current-v2' })),
-    revokeConsent: jest.fn(async () => ({ purpose: 'AI_EXPRESSION_AUDIO', status: 'REVOKED', currentNoticeVersion: 'current-v2' })),
-  };
-  const page = await render(<ExpressionAssistSheet roomId="room-1" api={api as never} initialMode="audio" muteRoomMicrophone={jest.fn()} onClose={jest.fn()} />);
-  await waitFor(() => expect(page.getByRole('button', { name: 'Revoke audio processing consent' })).toBeTruthy());
+  expect(api.acceptConsent).toHaveBeenCalledWith('new-v3', expect.any(String));
+  await fireEvent.press(page.getByRole('button', { name: 'Audio processing consent' }));
   await fireEvent.press(page.getByRole('button', { name: 'Revoke audio processing consent' }));
-  await waitFor(() => expect(api.revokeConsent).toHaveBeenCalledWith('current-v2', expect.any(String)));
-  expect(page.getByRole('button', { name: 'Accept and continue' })).toBeTruthy();
+  await waitFor(() => expect(api.revokeConsent).toHaveBeenCalledWith('new-v3', expect.any(String)));
+});
+
+test('closing after release but before the notice check completes prevents audio upload', async () => {
+  let finishConsent!: (value: typeof accepted) => void;
+  const api = {
+    consent: jest
+      .fn()
+      .mockResolvedValueOnce(accepted)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishConsent = resolve;
+          }),
+      ),
+    audio: jest.fn(),
+  };
+  const onClose = jest.fn();
+  const page = await render(
+    <ExpressionAssistSheet
+      roomId="room-1"
+      api={api as never}
+      muteRoomMicrophone={jest.fn(async () => true)}
+      restoreRoomMicrophone={jest.fn(async () => undefined)}
+      onClose={onClose}
+    />,
+  );
+  await waitFor(() => expect(page.getByRole('button', { name: 'Hold to speak' })).toBeTruthy());
+  await fireEvent(page.getByRole('button', { name: 'Hold to speak' }), 'pressIn');
+  await waitFor(() => expect(recorder.start).toHaveBeenCalled());
+  await fireEvent(page.getByRole('button', { name: 'Hold to speak' }), 'pressOut');
+  await waitFor(() => expect(api.consent).toHaveBeenCalledTimes(2));
+  await fireEvent.press(page.getByRole('button', { name: 'Close' }));
+  finishConsent(accepted);
+  await waitFor(() => expect(page.getByRole('button', { name: 'Hold to speak' })).toBeTruthy());
+  expect(onClose).toHaveBeenCalled();
+  expect(api.audio).not.toHaveBeenCalled();
 });

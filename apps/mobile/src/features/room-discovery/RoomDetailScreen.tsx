@@ -1,3 +1,4 @@
+import { roomLevelLabel } from './presentation';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
@@ -16,7 +17,13 @@ import { useJoinDraft } from './join';
 import { remainingMinutes, roomAvailability } from './presentation';
 import { useRoomDetail } from './useRoomDetail';
 
-export function RoomDetailScreen({ roomId, invitationId }: { roomId: string; invitationId?: string }) {
+export function RoomDetailScreen({
+  roomId,
+  invitationId,
+}: {
+  roomId: string;
+  invitationId?: string;
+}) {
   const router = useRouter();
   const { room, loading, error, reload } = useRoomDetail(roomId);
   const { begin } = useJoinDraft();
@@ -56,7 +63,7 @@ export function RoomDetailScreen({ roomId, invitationId }: { roomId: string; inv
           >
             <View style={styles.roomCard}>
               <View style={styles.row}>
-                <Text style={styles.badge}>{room.cefrLevel}</Text>
+                <Text style={styles.badge}>{roomLevelLabel(room)}</Text>
                 <Text style={styles.state}>
                   {state ??
                     (room.passwordProtected ? t('roomPasswordProtected') : t('roomAvailable'))}
@@ -103,7 +110,9 @@ export function RoomDetailScreen({ roomId, invitationId }: { roomId: string; inv
                 room.sensitiveSpeechDetectionEnabled ? 'roomSpeechSafetyOn' : 'roomSpeechSafetyOff',
               )}
             </Text>
-            <Text style={styles.safety}>{t(room.postRoomKeywordsEnabled ? 'roomKeywordsOn' : 'roomKeywordsOff')}</Text>
+            <Text style={styles.safety}>
+              {t(room.postRoomKeywordsEnabled ? 'roomKeywordsOn' : 'roomKeywordsOff')}
+            </Text>
             {room.shareUrl && availability !== 'ended' && (
               <View style={styles.access}>
                 <RoomShareAction url={room.shareUrl} />

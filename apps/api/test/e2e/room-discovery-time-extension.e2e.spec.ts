@@ -101,6 +101,8 @@ describe('room discovery, share and extension HTTP contract', () => {
         'attributionId',
         'capacity',
         'cefrLevel',
+        'cefrLevelMin',
+        'cefrLevelMax',
         'endsAt',
         'hostDisplayName',
         'id',

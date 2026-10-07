@@ -1,3 +1,7 @@
+import { RoomMessagesController } from './presentation/room-messages.controller.js';
+import { RoomMessageService } from './application/services/room-message.service.js';
+import { ROOM_MESSAGE_REPOSITORY } from './domain/ports/room-message.repository.js';
+import { PrismaRoomMessageRepository } from './infrastructure/prisma-room-message.repository.js';
 import { AppointmentsService } from './application/services/appointments.service.js';
 import { PrismaAppointmentRepository } from './infrastructure/prisma-appointment.repository.js';
 import { APPOINTMENT_REPOSITORY } from './domain/ports/appointment.repository.js';
@@ -33,6 +37,7 @@ import { RedisModule } from '../../infrastructure/redis/redis.module.js';
 @Module({
   imports: [ProfilesModule, SocialModule, RedisModule],
   controllers: [
+    RoomMessagesController,
     RoomsController,
     RoomLinksController,
     AppointmentsController,
@@ -41,6 +46,9 @@ import { RedisModule } from '../../infrastructure/redis/redis.module.js';
     RoomInvitationsController,
   ],
   providers: [
+    RoomMessageService,
+    PrismaRoomMessageRepository,
+    { provide: ROOM_MESSAGE_REPOSITORY, useExisting: PrismaRoomMessageRepository },
     RoomHistoryService,
     RoomNotePolicy,
     PrismaRoomHistoryRepository,

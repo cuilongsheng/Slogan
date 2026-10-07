@@ -43,11 +43,16 @@ export class OperationsPageQueryDto {
 const ROOM_OPERATION_STATUSES = ['SCHEDULED', 'CANCELLED', 'OPEN', 'ENDING', 'ENDED'] as const;
 const ROOM_OPERATION_VISIBILITIES = ['PUBLIC', 'LINK_ONLY'] as const;
 export class OperationsRoomQueryDto extends OperationsPageQueryDto {
+  @ApiPropertyOptional({ enum: ['CURRENT'] }) @IsOptional() @IsIn(['CURRENT']) scope?: 'CURRENT';
   @ApiPropertyOptional({ maxLength: 100 }) @IsOptional() @IsString() @MaxLength(100) q?: string;
   @ApiPropertyOptional({ enum: ROOM_OPERATION_STATUSES })
-  @IsOptional() @IsIn(ROOM_OPERATION_STATUSES) status?: (typeof ROOM_OPERATION_STATUSES)[number];
+  @IsOptional()
+  @IsIn(ROOM_OPERATION_STATUSES)
+  status?: (typeof ROOM_OPERATION_STATUSES)[number];
   @ApiPropertyOptional({ enum: ROOM_OPERATION_VISIBILITIES })
-  @IsOptional() @IsIn(ROOM_OPERATION_VISIBILITIES) visibility?: (typeof ROOM_OPERATION_VISIBILITIES)[number];
+  @IsOptional()
+  @IsIn(ROOM_OPERATION_VISIBILITIES)
+  visibility?: (typeof ROOM_OPERATION_VISIBILITIES)[number];
   @ApiPropertyOptional({ format: 'date-time' }) @IsOptional() @IsDateString() from?: string;
 }
 export class OperationsRoomCountsDto {
@@ -62,6 +67,8 @@ export class OperationsRoomDto {
   @ApiProperty() visibility!: string;
   @ApiProperty() status!: string;
   @ApiProperty() cefrLevel!: string;
+  @ApiProperty({ type: String, nullable: true }) cefrLevelMin!: string | null;
+  @ApiProperty({ type: String, nullable: true }) cefrLevelMax!: string | null;
   @ApiProperty() capacity!: number;
   @ApiProperty({ format: 'date-time' }) startedAt!: Date;
   @ApiProperty({ format: 'date-time' }) endsAt!: Date;

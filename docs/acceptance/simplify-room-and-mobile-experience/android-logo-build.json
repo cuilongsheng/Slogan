@@ -1,0 +1,101 @@
+{
+  "artifact": "/Users/cls/Downloads/Slogan-android-logo-2026-10-07.apk",
+  "bytes": 85035026,
+  "sha256": "cf73ba3770e38512b500c30bbcdd2b4e3a742a0854abacf9b8d39587e35eac67",
+  "sameSignerAsPreviousApk": true,
+  "legacyAndAdaptiveIconReferencesVerified": true,
+  "iconResourceByteMatches": [
+    {
+      "density": "mdpi",
+      "name": "ic_launcher",
+      "apkPath": "res/d2.webp",
+      "sha256": "c2e5af6ead3cfb058f7fdaaa765babf52ac1abca9117c183aa7daf0d5dcd0ab4"
+    },
+    {
+      "density": "mdpi",
+      "name": "ic_launcher_foreground",
+      "apkPath": "res/Nt.webp",
+      "sha256": "332e1e534325049077572a18b6734343065c1b20984f566317a36a1e7112a841"
+    },
+    {
+      "density": "mdpi",
+      "name": "ic_launcher_round",
+      "apkPath": "res/yw.webp",
+      "sha256": "141013ea4f769d8d66001d2d0cece8bcd06d630cc9d142d22881af55b93de10e"
+    },
+    {
+      "density": "hdpi",
+      "name": "ic_launcher",
+      "apkPath": "res/MO.webp",
+      "sha256": "344bdb1666f5b5fd325df544ba48595db46f2d52a92555c3b0980cca92989d77"
+    },
+    {
+      "density": "hdpi",
+      "name": "ic_launcher_foreground",
+      "apkPath": "res/13.webp",
+      "sha256": "2a0c24d7850bc32f7f9e110a665ddcb1b79fbddd7fd433ff0294724cf550e71e"
+    },
+    {
+      "density": "hdpi",
+      "name": "ic_launcher_round",
+      "apkPath": "res/fq.webp",
+      "sha256": "6556d9cd5b2c1a7b13ffc8c28a1ef2e92cc00b4b2e6105b0a34cbeabb44ce1f2"
+    },
+    {
+      "density": "xhdpi",
+      "name": "ic_launcher",
+      "apkPath": "res/qs.webp",
+      "sha256": "a53324d35db333e4dddd788a2bafc3e36d2ec64616c11a99fac05537676c60fe"
+    },
+    {
+      "density": "xhdpi",
+      "name": "ic_launcher_foreground",
+      "apkPath": "res/9Q.webp",
+      "sha256": "2c4e8a89581b0a972e4aafbe6868a4185c6539a3e8245c7c19aa1a0a4f041cba"
+    },
+    {
+      "density": "xhdpi",
+      "name": "ic_launcher_round",
+      "apkPath": "res/u5.webp",
+      "sha256": "416581cedbf70e08d88f50d61606088166cfdfa13f686962f03fcf5519bf9947"
+    },
+    {
+      "density": "xxhdpi",
+      "name": "ic_launcher",
+      "apkPath": "res/Sn.webp",
+      "sha256": "f7d9318f4c2acfd86c63a00524f8c047a2da7c9bf81ac7eb4c900534509ff5c4"
+    },
+    {
+      "density": "xxhdpi",
+      "name": "ic_launcher_foreground",
+      "apkPath": "res/iE.webp",
+      "sha256": "bca987e97e68a20597f9e290a16f110d38de7a272b99f55945f3ab1790874f7b"
+    },
+    {
+      "density": "xxhdpi",
+      "name": "ic_launcher_round",
+      "apkPath": "res/j_.webp",
+      "sha256": "26625714f5b4c6e9661f678b3e6b0de50a7e75e3127229eb3568d4a7caa04f4d"
+    },
+    {
+      "density": "xxxhdpi",
+      "name": "ic_launcher",
+      "apkPath": "res/sK.webp",
+      "sha256": "26deddd3cab146b5461c4ba588e56a28d057b3a319be4d381fb66b2ac35d1aa8"
+    },
+    {
+      "density": "xxxhdpi",
+      "name": "ic_launcher_foreground",
+      "apkPath": "res/5c.webp",
+      "sha256": "2ac6be958198c4afe20ddb3611db589091263fc40b0dfccf1b3a420c17446ed5"
+    },
+    {
+      "density": "xxxhdpi",
+      "name": "ic_launcher_round",
+      "apkPath": "res/-6.webp",
+      "sha256": "59b2128a23c7b0289dc488bccef96361741405f3312153831b16a624a07200ae"
+    }
+  ],
+  "foregroundSafeZone": "265.2px radius < 312.9px guaranteed safe radius at 1024px",
+  "deviceLauncherVerified": false
+}

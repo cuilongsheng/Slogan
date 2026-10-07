@@ -163,9 +163,25 @@ describe('host controls HTTP contract', () => {
   });
   it('ends with no online successor and cannot restore room membership or credentials', async () => {
     const ended = await post('leave', hostToken, { expectedCredentialVersion: 0 }).expect(200);
-    expect(ended.body.roomStatus).toBe('ENDED');
+    expect(ended.body).toMatchObject({ roomStatus: 'ENDING', providerStatus: 'PENDING' });
+    expect(provider.deleted).toEqual([]);
+    expect(
+      (await post('leave', hostToken, { expectedCredentialVersion: 0 }).expect(200)).body.lifecycle,
+    ).toBe('LEFT');
     await post('memberships', memberToken, { rulesAccepted: true }).expect(409);
     await post('realtime-credentials', memberToken).expect(409);
+  });
+  it('commits leave without provider I/O when the provider is unavailable', async () => {
+    await post('realtime-credentials', memberToken).expect(200);
+    provider.fail = true;
+    const response = await post('leave', memberToken, { expectedCredentialVersion: 0 }).expect(200);
+    expect(response.body).toMatchObject({ lifecycle: 'LEFT', providerStatus: 'PENDING' });
+    expect(provider.revoked).toEqual([]);
+    expect(
+      await prisma.realtimeCommand.count({
+        where: { roomId, type: 'REVOKE_IDENTITY', status: 'PENDING' },
+      }),
+    ).toBeGreaterThan(0);
   });
   it('returns committed operation details when provider cleanup fails and supports end retries', async () => {
     await post('realtime-credentials', memberToken).expect(200);

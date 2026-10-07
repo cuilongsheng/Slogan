@@ -23,7 +23,8 @@
     "typecheck": "pnpm -r --if-present run typecheck",
     "deps:check": "node scripts/audit-workspaces.mjs && depcruise apps packages --config dependency-cruiser.config.cjs",
     "test": "pnpm test:pages && pnpm -r --if-present run test",
-    "test:e2e": "playwright test && pnpm test:pages:browser",
+    "test:e2e": "playwright test && pnpm test:visual:voice && pnpm test:pages:browser",
+    "test:visual:voice": "playwright test --config tests/visual-harness/playwright.config.ts",
     "build": "pnpm -r --if-present run build",
     "verify:api": "pnpm --filter @slogan/api db:test:up && pnpm --filter @slogan/api verify",
     "verify": "pnpm format:check && pnpm deps:check && pnpm lint && pnpm typecheck && pnpm --filter @slogan/api db:test:up && pnpm test && pnpm build && pnpm test:e2e"

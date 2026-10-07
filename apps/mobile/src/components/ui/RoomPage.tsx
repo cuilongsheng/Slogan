@@ -1,6 +1,16 @@
+import { AppText as Text } from './AppText';
 import type { ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { t } from '../../services/locale';
@@ -27,7 +37,14 @@ export function RoomPage({
           <Text style={styles.previewSystem}>●●● 100%</Text>
         </View>
       )}
-      {children}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={
+          Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined
+        }
+      >
+        {children}
+      </KeyboardAvoidingView>
       {Platform.OS === 'web' && <View pointerEvents="none" style={styles.homeIndicator} />}
     </SafeAreaView>
   );
@@ -38,13 +55,15 @@ export function RoomHeader({
   title,
   subtitle,
   onBack,
+  style,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   onBack?: () => void;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, style]}>
       {onBack && (
         <TouchableOpacity
           accessibilityRole="button"
@@ -59,7 +78,7 @@ export function RoomHeader({
         <Text accessibilityRole="header" style={[styles.title, !onBack && styles.listTitle]}>
           {title}
         </Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
     </View>
   );
@@ -111,17 +130,23 @@ export const roomPageStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: tokens.color.surface, overflow: 'hidden' },
   webCanvas: { flex: 1, alignItems: 'center', backgroundColor: '#EFF4FC' },
-  webFrame: { width: '100%', maxWidth: 390, minHeight: 844 },
+  webFrame: { width: '100%', maxWidth: 390 },
   previewStatus: {
     height: 49,
     paddingHorizontal: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingTop: 10,
+    paddingTop: 13,
   },
-  previewTime: { color: tokens.color.foreground, fontSize: 14, fontWeight: '500' },
-  previewSystem: { color: tokens.color.foreground, fontSize: 12, fontWeight: '500' },
+  previewTime: { color: tokens.color.foreground, fontSize: 12, fontWeight: '400' },
+  previewSystem: {
+    width: 88,
+    marginRight: -8,
+    color: tokens.color.foreground,
+    fontSize: 11,
+    fontWeight: '400',
+  },
   homeIndicator: {
     position: 'absolute',
     width: 100,
@@ -138,14 +163,15 @@ const styles = StyleSheet.create({
     width: 154,
     height: 154,
     borderRadius: 77,
-    backgroundColor: tokens.color.peach,
+    backgroundColor: '#FFB48B',
+    opacity: 0.16,
   },
   header: { flexDirection: 'row', minHeight: 76, paddingHorizontal: 16 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   backIcon: { width: 24, height: 24 },
   heading: { marginLeft: 8, flex: 1 },
   headingFull: { marginLeft: 4 },
-  title: { color: tokens.color.foreground, fontSize: 28, fontWeight: '700', lineHeight: 42 },
+  title: { color: tokens.color.foreground, fontSize: 28, fontWeight: '700', lineHeight: 39 },
   listTitle: { fontSize: 24, lineHeight: 34 },
   subtitle: { color: tokens.color.muted, fontSize: 12, lineHeight: 21 },
   action: {

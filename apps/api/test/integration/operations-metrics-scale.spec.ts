@@ -80,20 +80,125 @@ describe('operations metric bounded PostgreSQL query', () => {
 
   it('filters the complete operations room queue and binds pagination to its filters', async () => {
     const actor = await seedAdult(prisma);
-    const ids = [randomUUID(), randomUUID(), randomUUID()];
-    await prisma.room.createMany({ data: [
-      { id: ids[0]!, hostUserId: actor.id, topic: 'English movies', cefrLevel: 'B1', capacity: 4, status: 'OPEN', visibility: 'PUBLIC', startedAt: new Date('2026-09-25'), endsAt: new Date('2026-09-26'), createdAt: new Date('2026-09-25') },
-      { id: ids[1]!, hostUserId: actor.id, topic: 'MOVIE chat', cefrLevel: 'B1', capacity: 4, status: 'OPEN', visibility: 'PUBLIC', startedAt: new Date('2026-09-26'), endsAt: new Date('2026-09-27'), createdAt: new Date('2026-09-26') },
-      { id: ids[2]!, hostUserId: actor.id, topic: 'Movie club', cefrLevel: 'B1', capacity: 4, status: 'ENDED', visibility: 'LINK_ONLY', startedAt: new Date('2026-09-27'), endsAt: new Date('2026-09-28'), createdAt: new Date('2026-09-27') },
-    ] });
-    const filter = { q: ' movie ', status: 'OPEN' as const, visibility: 'PUBLIC' as const, from: new Date('2026-09-24'), limit: 1 };
+    const ids = [randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+    await prisma.room.createMany({
+      data: [
+        {
+          id: ids[0]!,
+          hostUserId: actor.id,
+          topic: 'English movies',
+          cefrLevel: 'B1',
+          capacity: 4,
+          status: 'OPEN',
+          visibility: 'PUBLIC',
+          startedAt: new Date('2026-09-25'),
+          endsAt: new Date('2026-09-26'),
+          createdAt: new Date('2026-09-25'),
+        },
+        {
+          id: ids[1]!,
+          hostUserId: actor.id,
+          topic: 'MOVIE chat',
+          cefrLevel: 'B1',
+          capacity: 4,
+          status: 'OPEN',
+          visibility: 'PUBLIC',
+          startedAt: new Date('2026-09-26'),
+          endsAt: new Date('2026-09-27'),
+          createdAt: new Date('2026-09-26'),
+        },
+        {
+          id: ids[2]!,
+          hostUserId: actor.id,
+          topic: 'Movie club',
+          cefrLevel: 'B1',
+          capacity: 4,
+          status: 'ENDED',
+          visibility: 'LINK_ONLY',
+          startedAt: new Date('2026-09-27'),
+          endsAt: new Date('2026-09-28'),
+          createdAt: new Date('2026-09-27'),
+        },
+      ],
+    });
+    await prisma.room.createMany({
+      data: [
+        {
+          id: ids[3]!,
+          hostUserId: actor.id,
+          topic: 'Scheduled',
+          kind: 'APPOINTMENT',
+          cefrLevel: 'B1',
+          capacity: 4,
+          status: 'SCHEDULED',
+          visibility: 'PUBLIC',
+          startedAt: new Date('2026-09-28'),
+          initialHostDeadline: new Date('2026-09-28T00:05:00Z'),
+          endsAt: new Date('2026-09-29'),
+          createdAt: new Date('2026-09-28'),
+        },
+        {
+          id: ids[4]!,
+          hostUserId: actor.id,
+          topic: 'Cancelled',
+          kind: 'APPOINTMENT',
+          cefrLevel: 'B1',
+          capacity: 4,
+          status: 'CANCELLED',
+          visibility: 'PUBLIC',
+          startedAt: new Date('2026-09-29'),
+          initialHostDeadline: new Date('2026-09-29T00:05:00Z'),
+          endsAt: new Date('2026-09-30'),
+          createdAt: new Date('2026-09-29'),
+        },
+      ],
+    });
+    const allCurrent = await metrics.rooms(actor.id, ['PLATFORM_ADMIN'], {
+      scope: 'CURRENT',
+      limit: 20,
+    });
+    expect(allCurrent.items.map((item) => item.id)).toEqual([ids[3], ids[1], ids[0]]);
+    await prisma.room.update({ where: { id: ids[1]! }, data: { status: 'ENDED' } });
+    const refreshed = await metrics.rooms(actor.id, ['PLATFORM_ADMIN'], {
+      scope: 'CURRENT',
+      limit: 20,
+    });
+    expect(refreshed.items.map((item) => item.id)).toEqual([ids[3], ids[0]]);
+    expect(await prisma.room.count()).toBe(5);
+    await prisma.room.update({ where: { id: ids[1]! }, data: { status: 'OPEN' } });
+    const filter = {
+      q: ' movie ',
+      status: 'OPEN' as const,
+      visibility: 'PUBLIC' as const,
+      from: new Date('2026-09-24'),
+      limit: 1,
+    };
     const first = await metrics.rooms(actor.id, ['PLATFORM_ADMIN'], filter);
     expect(first.items.map((item) => item.id)).toEqual([ids[1]]);
     expect(first.nextCursor).toEqual(expect.any(String));
-    const second = await metrics.rooms(actor.id, ['PLATFORM_ADMIN'], { ...filter, cursor: first.nextCursor! });
+    const second = await metrics.rooms(actor.id, ['PLATFORM_ADMIN'], {
+      ...filter,
+      cursor: first.nextCursor!,
+    });
     expect(second.items.map((item) => item.id)).toEqual([ids[0]]);
     expect(second.nextCursor).toBeNull();
-    await expect(metrics.rooms(actor.id, ['PLATFORM_ADMIN'], { ...filter, status: 'ENDED', cursor: first.nextCursor! })).rejects.toMatchObject({ code: 'OPERATIONS_VALIDATION_FAILED' });
+    await expect(
+      metrics.rooms(actor.id, ['PLATFORM_ADMIN'], {
+        ...filter,
+        status: 'ENDED',
+        cursor: first.nextCursor!,
+      }),
+    ).rejects.toMatchObject({ code: 'OPERATIONS_VALIDATION_FAILED' });
+    const current = await metrics.rooms(actor.id, ['PLATFORM_ADMIN'], {
+      scope: 'CURRENT',
+      limit: 1,
+    });
+    expect(current.items.every((item) => ['OPEN', 'SCHEDULED'].includes(String(item.status)))).toBe(
+      true,
+    );
+    await expect(
+      metrics.rooms(actor.id, ['PLATFORM_ADMIN'], { limit: 1, cursor: current.nextCursor! }),
+    ).rejects.toMatchObject({ code: 'OPERATIONS_VALIDATION_FAILED' });
     const exact = await metrics.rooms(actor.id, ['PLATFORM_ADMIN'], { q: ids[2]!, limit: 20 });
     expect(exact.items.map((item) => item.id)).toEqual([ids[2]]);
   });

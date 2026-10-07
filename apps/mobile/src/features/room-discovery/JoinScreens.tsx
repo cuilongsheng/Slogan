@@ -1,3 +1,4 @@
+import { roomLevelLabel } from './presentation';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
@@ -65,7 +66,7 @@ export function JoinPasswordScreen({ roomId }: { roomId: string }) {
             <Text style={styles.section}>{t('joinTargetRoom')}</Text>
             <View style={styles.targetCard}>
               <View style={styles.targetHeader}>
-                <Text style={styles.targetLevel}>{room.cefrLevel}</Text>
+                <Text style={styles.targetLevel}>{roomLevelLabel(room)}</Text>
                 <Text style={styles.targetState}>
                   {room.passwordProtected ? t('roomPasswordProtected') : t('roomAvailable')}
                 </Text>
@@ -146,7 +147,9 @@ export function JoinRulesScreen({ roomId }: { roomId: string }) {
   const { draft, acceptRules } = useJoinDraft();
   const { room, loading } = useRoomDetail(roomId);
   const [consentReady, setConsentReady] = useState(false);
-  const processingRequired = Boolean(room?.sensitiveSpeechDetectionEnabled || room?.postRoomKeywordsEnabled);
+  const processingRequired = Boolean(
+    room?.sensitiveSpeechDetectionEnabled || room?.postRoomKeywordsEnabled,
+  );
   const valid =
     draft?.roomId === roomId &&
     room &&
@@ -167,7 +170,10 @@ export function JoinRulesScreen({ roomId }: { roomId: string }) {
         <>
           <ScrollView
             style={roomPageStyles.scroll}
-            contentContainerStyle={[roomPageStyles.scrollContent, processingRequired && styles.rulesProcessingScroll]}
+            contentContainerStyle={[
+              roomPageStyles.scrollContent,
+              processingRequired && styles.rulesProcessingScroll,
+            ]}
           >
             <Text style={styles.rulesIntro}>{t('joinRulesIntro')}</Text>
             {rules.map(([title, body], index) => (
@@ -185,7 +191,13 @@ export function JoinRulesScreen({ roomId }: { roomId: string }) {
                 <Text style={styles.ruleBody}>{t(body)}</Text>
               </View>
             ))}
-            {processingRequired ? <RoomConsentPanel safety={Boolean(room?.sensitiveSpeechDetectionEnabled)} keywords={Boolean(room?.postRoomKeywordsEnabled)} onReadyChange={setConsentReady} /> : null}
+            {processingRequired ? (
+              <RoomConsentPanel
+                safety={Boolean(room?.sensitiveSpeechDetectionEnabled)}
+                keywords={Boolean(room?.postRoomKeywordsEnabled)}
+                onReadyChange={setConsentReady}
+              />
+            ) : null}
             <TouchableOpacity
               accessibilityRole="checkbox"
               accessibilityState={{ checked: draft.rulesAccepted }}

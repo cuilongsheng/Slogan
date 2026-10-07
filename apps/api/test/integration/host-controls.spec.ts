@@ -281,9 +281,10 @@ describe('host controls PostgreSQL transactions', () => {
       code: 'ROOM_HOST_REQUIRED',
     });
   });
-  it('chooses earliest online ACTIVE successor and closes when none remain', async () => {
+  it('requires explicit online successor and closes when none remain', async () => {
     await connect(thirdId);
-    await leave(hostId);
+    await expect(leave(hostId)).rejects.toMatchObject({ code: 'ROOM_SUCCESSOR_INVALID' });
+    await leave(hostId, (await membership(thirdId)).id);
     expect((await room()).hostUserId).toBe(thirdId);
     await leave(thirdId);
     expect((await room()).status).toBe('ENDING');
@@ -416,7 +417,7 @@ describe('host controls PostgreSQL transactions', () => {
     await connect(thirdId);
     const m = await membership(memberId);
     await Promise.allSettled([
-      leave(hostId),
+      leave(hostId, m.id),
       leave(memberId),
       host.execute(roomId, hostId, {
         kind: 'remove',

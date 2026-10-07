@@ -30,7 +30,7 @@ Exit evidence: affected behavior works, server-side authorization is enforced, a
 
 Use when mobile or admin behavior changes. Follow existing application architecture and generated API clients rather than duplicating contracts or types.
 
-For Figma + API page implementation, use `$voice-room-figma-to-frontend`.
+For Figma + API page implementation, use `$figma-to-frontend`.
 
 Exit evidence: the requested behavior works in the target route/device context and applicable Figma differences are resolved or documented.
 
@@ -69,4 +69,3 @@ An affected-stage declaration should be short:
 ```
 
 Do not list unaffected stages and do not create mechanical `N/A` sections.
-
