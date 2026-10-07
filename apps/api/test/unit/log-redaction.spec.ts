@@ -20,6 +20,31 @@ describe('structured log redaction', () => {
     expect(output).not.toContain('isolated-secret-marker');
     expect(JSON.parse(output).req.headers.cookie).toBe('[REDACTED]');
   });
+  it('redacts Vercel credentials and signed forwarding headers', () => {
+    let output = '';
+    const logger = pino(
+      { redact: LOG_REDACTION },
+      {
+        write: (line: string) => {
+          output += line;
+        },
+      },
+    );
+    const headers = {
+      'x-vercel-oidc-token': 'isolated-oidc-secret',
+      'x-vercel-proxy-signature': 'Bearer isolated-proxy-secret',
+      'x-vercel-protection-bypass': 'isolated-bypass-secret',
+      forwarded: 'for=127.0.0.1;sig=isolated-forwarding-secret',
+    };
+    logger.info({ req: { headers } });
+    expect(output).not.toContain('isolated-');
+    expect(Object.values(JSON.parse(output).req.headers)).toEqual([
+      '[REDACTED]',
+      '[REDACTED]',
+      '[REDACTED]',
+      '[REDACTED]',
+    ]);
+  });
   it('removes authorization codes, tokens, room passwords, digests and client secrets', () => {
     let output = '';
     const destination = new Writable({
