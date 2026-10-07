@@ -1,6 +1,6 @@
 # 房间与手机体验修正：验收记录
 
-2026-10-07，OpenSpec `simplify-room-and-mobile-experience`。代码基线为 develop `716cc0bd0fd4e0010721f0e0ac3c77eec4522436` 加当前未提交工作区。本记录不代表提交、合并、生产迁移或部署。
+2026-10-07，OpenSpec `simplify-room-and-mobile-experience`。代码基线为 develop `716cc0bd0fd4e0010721f0e0ac3c77eec4522436` 加当前未提交工作区。发布分支已提交并推送，四个生产迁移已完成；尚未合并 main 或更新生产 API，以下明确区分本地、预览与生产证据。
 
 结果：后端合同、行为实现、本地故障恢复测试和 Android 构建已通过。完整视觉、真机音频/键盘和云端消费者验收未完成；本 change 未归档。不能声称全部完成、已上线或全局 `1:1 PASS`。
 
@@ -12,7 +12,7 @@
 | 卡片折叠、类型和标识难读 | `<details>`、UUID 主展示及技术枚举             | 全部详情直接展示，中文即时/预约房间，话题作为标题                                                | DOM/浏览器通过；完整视觉仍 PARTIAL，见下方差异                                                         |
 | 我的没有退出             | 未接入已有 auth logout                         | 只保留限制与申诉、词汇、退出；清理本地凭证并请求撤销会话                                         | auth 测试与真实页面浏览器操作通过；浏览器截图不能证明 Android 字体/安全区                              |
 | 键盘盖住输入             | 固定页面尺寸/底部操作，缺少页面级避让          | 共享壳 KeyboardAvoidingView、表单滚动及 Android adjustResize                                     | typecheck/build 和 APK manifest 通过；实际焦点/键盘录像 BLOCKED                                        |
-| 等级只能单选             | 房间合同及存储只有代表单级                     | 新增最小/最大等级，直接可见两组选择；旧单级及组合枚举兼容                                        | 本地迁移、B1–B2 HTTP 创建/读取、客户端提交通过；远程迁移未执行                                         |
+| 等级只能单选             | 房间合同及存储只有代表单级                     | 新增最小/最大等级，直接可见两组选择；旧单级及组合枚举兼容                                        | 本地迁移、B1–B2 HTTP 创建/读取、客户端提交通过；四个远程迁移已执行并核对                                         |
 | 房间输入错接 AI          | composer 是打开翻译弹层的触摸入口              | 独立文字消息 POST/GET、滚动增量读取、发送失败幂等重试；退出/后台取消轮询                         | 两成员真实 HTTP、权限/清理/限流及页面组件测试通过；双 Android 的实际显示待验证                         |
 | 母语表达繁琐             | 多模式、多次确认和多候选；缺少静音恢复编排     | 按住确认静音后录音，松开或 10 秒停止、开麦、自动翻译，只显示主英文；保留首次有效用途同意及撤回   | 竞态/取消/同段 UUID/失败恢复测试通过；按住/松开与结果组件浏览器截图通过；真实 STT/AI、双设备隔离待验证 |
 | 退出像重新加入           | 退出串行等待媒体和后端，失败混入连接状态       | 普通成员与独自房主直接退出；其他在线成员存在时房主明确选接任者；独立退出未确认状态，以原代次重试 | 角色组件、会话状态、并发/响应丢失测试通过；真机本地音频停止待验证                                      |
@@ -24,7 +24,7 @@
 
 唯一合同仍由 NestJS code-first 生成到 `openapi/openapi.yaml` 和 api-client；本次没有第二份手写合同。新文字消息与等级范围本地 READY；当前生产部署尚未更新，所以生产 READY 未证明。Google 登录保持本次开始时的状态，没有开启或修改密钥。
 
-四个增量迁移仅在隔离测试 PostgreSQL 执行：
+四个增量迁移先在隔离 PostgreSQL 验证，2026-10-07 已在授权的 Neon main / neondb 执行并核对：
 
 - `20261007100000_room_level_ranges`
 - `20261007100100_room_text_messages`
@@ -33,7 +33,7 @@
 
 验证覆盖旧 B1_B2/C1 数据回填、空字段旧写入兼容、上下限约束、消息外键级联、消息幂等及关闭清理；未改写历史迁移。
 
-Vercel 模式使用 `@vercel/queue` 发布短任务，独立 `api/realtime.func` 是私有消费者；公开 `index.func` 承接 HTTP。本地 `vercel build` 成功，触发元数据见 [vercel-local-build.json](vercel-local-build.json)。本地临时项目设置已删除，未执行云端部署。非 Vercel 环境保留 BullMQ；独立 Node worker 是可选部署方式，不要求另买服务器。
+Vercel 模式使用 `@vercel/queue` 发布短任务，独立 `api/realtime.func` 是私有消费者；公开 `index.func` 承接 HTTP。本地 `vercel build` 成功，触发元数据见 [vercel-local-build.json](vercel-local-build.json)。本地临时项目设置已删除。发布分支的 Vercel 和两个 Pages 预览构建已成功；生产环境仍等待 PR 合并。非 Vercel 环境保留 BullMQ；独立 Node worker 是可选部署方式，不要求另买服务器。
 
 队列失败重投递、数据库扫描恢复、重复投递和 next-scan 发布失败测试通过。平台 beta/用量/保留期、播种失败及扫描断链恢复仍需要线上验证；不能把 SDK mock 或本地构建当成持续运行证明。发布顺序和回滚见 [Vercel 队列方案](../../deployment/room-experience-vercel-queues.md)。
 
@@ -93,8 +93,8 @@ Desktop Bridge 最后一轮读取和导出已恢复；此前问题是实例后�
 
 最新 APK、签名/哈希/API 及安装边界见 [Android 发布记录](../../releases/2026-10-07-room-experience-android.md)。这是受控安装产物，不是商店正式发行。没有触及 iOS。
 
-`adb devices -l` 为空，SDK 中没有可运行模拟器。待连接真实 Android 后验证：登录/资料/创建/消息/笔记键盘；两机消息显示；旁听者听不到私人录音；松开后恢复对话；切后台/失败/取消/离房无残留采集；退出立即停本地媒体。需两台设备完成音频隔离证据。
+用户明确自行执行真机测试；代理没有真机 PASS 证据。用户设备验收范围：登录/资料/创建/消息/笔记键盘；两机消息显示；旁听者听不到私人录音；松开后恢复对话；切后台/失败/取消/离房无残留采集；退出立即停本地媒体。需两台设备完成音频隔离证据。
 
-云端仍需按部署方案执行四个迁移、API/消费者发布、客户端发布及 provider 故障恢复采样。首次上线先更新后端再验收新版 APK，当前在线旧 API 不提供本次全部合同。
+四个线上迁移已完成，见 [迁移证据](production-migrations.json)；5 个账号登录及 admin/mobile 同源浏览器 exchange、HttpOnly cookie、logout 已在线验证，见 [认证证据](production-auth-smoke.json)。Google capabilities 为 false。API/消费者和客户端生产发布、provider 恢复采样仍待完成。首次上线先更新后端再验收新版 APK，当前在线旧 API 不提供本次全部合同。
 
 OpenSpec 未完成项保留未勾选；在视觉、真机、云端门槛满足前不归档，也不宣称这七项全部完成。

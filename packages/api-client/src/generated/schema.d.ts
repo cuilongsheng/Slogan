@@ -2563,7 +2563,7 @@ export interface components {
             expectedCredentialVersion: number;
             /**
              * Format: uuid
-             * @description Current host only; must reference an online ACTIVE member. Omit to select the earliest online member.
+             * @description Required for the current host when other online ACTIVE members remain. Must reference a valid online ACTIVE member; omit only when no successor is needed.
              */
             successorMembershipId?: string;
         };
@@ -3348,6 +3348,10 @@ export interface components {
             capacity: number;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
             /** Format: date-time */
             endsAt: string;
             hostDisplayName: string;
@@ -16402,6 +16406,10 @@ export interface operations {
                         capacity: number;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                         /** Format: date-time */
                         endsAt: string;
                         hostDisplayName: string;
@@ -17695,7 +17703,7 @@ export interface operations {
                     expectedCredentialVersion: number;
                     /**
                      * Format: uuid
-                     * @description Current host only; must reference an online ACTIVE member. Omit to select the earliest online member.
+                     * @description Required for the current host when other online ACTIVE members remain. Must reference a valid online ACTIVE member; omit only when no successor is needed.
                      */
                     successorMembershipId?: string;
                 };

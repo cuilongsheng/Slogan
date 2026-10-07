@@ -18,7 +18,7 @@ export class LeaveRoomDto extends MemberGenerationDto {
   @ApiPropertyOptional({
     format: 'uuid',
     description:
-      'Current host only; must reference an online ACTIVE member. Omit to select the earliest online member.',
+      'Required for the current host when other online ACTIVE members remain. Must reference a valid online ACTIVE member; omit only when no successor is needed.',
   })
   @IsOptional()
   @IsUUID()

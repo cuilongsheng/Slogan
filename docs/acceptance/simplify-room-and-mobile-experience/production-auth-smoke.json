@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-07T13:35:01.803Z",
+  "passwordLogins": 5,
+  "browserOrigins": [
+    {
+      "origin": "https://slogan-preview-admin.pages.dev",
+      "status": "PASS",
+      "httpOnlyCookie": true
+    },
+    {
+      "origin": "https://slogan-preview-mobile.pages.dev",
+      "status": "PASS",
+      "httpOnlyCookie": true
+    }
+  ],
+  "googleEnabled": false
+}
