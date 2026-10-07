@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 
 import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import * as helmet from 'helmet';
-import { raw, type Express } from 'express';
+import type { HelmetOptions } from 'helmet';
+import { raw, type Express, type RequestHandler } from 'express';
 import { pinoHttp } from 'pino-http';
 
 import { AppModule } from '../app.module.js';
@@ -12,6 +13,11 @@ import { ApiExceptionFilter } from '../common/filters/api-exception.filter.js';
 import type { Environment } from '../config/environment.js';
 import { StructuredLogger } from '../infrastructure/observability/structured-logger.service.js';
 import { LOG_REDACTION } from '../infrastructure/observability/log-redaction.js';
+
+// Load Helmet's callable CommonJS export consistently in Node and Vercel's compiler.
+const helmet = createRequire(import.meta.url)('helmet') as (
+  options?: HelmetOptions,
+) => RequestHandler;
 
 export async function createApiApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -31,7 +37,7 @@ export function configureApiApp(app: INestApplication): void {
   }
   app.useLogger(app.get(StructuredLogger));
   app.setGlobalPrefix('v1');
-  app.use(helmet.default());
+  app.use(helmet());
   app.use('/v1/webhooks/livekit', raw({ type: 'application/webhook+json', limit: '256kb' }));
   app.use(
     pinoHttp({
