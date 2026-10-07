@@ -15,9 +15,8 @@ import { StructuredLogger } from '../infrastructure/observability/structured-log
 import { LOG_REDACTION } from '../infrastructure/observability/log-redaction.js';
 
 // Load Helmet's callable CommonJS export consistently in Node and Vercel's compiler.
-const helmet = createRequire(import.meta.url)('helmet') as (
-  options?: HelmetOptions,
-) => RequestHandler;
+const require = createRequire(import.meta.url);
+const helmet = require('helmet') as (options?: HelmetOptions) => RequestHandler;
 
 export async function createApiApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
