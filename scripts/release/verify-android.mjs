@@ -45,12 +45,25 @@ assert.equal(config.android?.versionCode, Number(process.env.SLOGAN_ANDROID_VERS
 assert(badging.includes(`versionCode='${config.android.versionCode}'`));
 assert(badging.includes(`versionName='${config.version}'`));
 let launcherResources = 0;
+const resources = execFileSync(join(tools, 'aapt2'), ['dump', 'resources', apk], {
+  encoding: 'utf8',
+  maxBuffer: 16 * 1024 * 1024,
+});
 for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
   for (const name of ['ic_launcher', 'ic_launcher_round', 'ic_launcher_foreground']) {
     const expected = await readFile(
       `apps/mobile/android/app/src/main/res/mipmap-${density}/${name}.webp`,
     );
-    const packaged = execFileSync('unzip', ['-p', apk, `res/mipmap-${density}-v4/${name}.webp`]);
+    const section = resources.match(
+      new RegExp(
+        `resource 0x[0-9a-f]+ mipmap/${name}\\n([\\s\\S]*?)(?=\\n    resource |\\n  type |$)`,
+      ),
+    )?.[1];
+    const packagedPath = section?.match(
+      new RegExp(`\\(${density}\\) \\(file\\) (res/[^\\s]+\\.webp)`),
+    )?.[1];
+    assert(packagedPath, `Launcher resource missing: ${density}/${name}`);
+    const packaged = execFileSync('unzip', ['-p', apk, packagedPath]);
     assert(expected.equals(packaged), `Launcher icon mismatch: ${density}/${name}`);
     launcherResources++;
   }
