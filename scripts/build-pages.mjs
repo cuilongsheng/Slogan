@@ -2,7 +2,17 @@ import { spawnSync } from 'node:child_process';
 import { access, copyFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export const API_ROUTES = { version: 1, include: ['/v1', '/v1/*'], exclude: [] };
+export const API_ROUTES = {
+  version: 1,
+  include: [
+    '/v1',
+    '/v1/*',
+    '/downloads/android',
+    '/downloads/android.apk',
+    '/downloads/android.json',
+  ],
+  exclude: [],
+};
 const root = new URL('../', import.meta.url);
 const sites = {
   admin: {
@@ -50,6 +60,12 @@ export function validateSiteOrigin(value, key) {
 
 export async function packagePages(output) {
   await access(new URL('index.html', output));
+  const commit = process.env.CF_PAGES_COMMIT_SHA || process.env.SLOGAN_RELEASE_COMMIT;
+  if (commit && !/^[a-f0-9]{40}$/.test(commit)) throw new Error('Invalid Pages release commit');
+  await writeFile(
+    new URL('release.json', output),
+    JSON.stringify({ commit: commit || null, builtAt: new Date().toISOString() }) + '\n',
+  );
   await copyFile(new URL('scripts/pages-api-proxy.mjs', root), new URL('_worker.js', output));
   await writeFile(new URL('_routes.json', output), `${JSON.stringify(API_ROUTES, null, 2)}\n`);
 }

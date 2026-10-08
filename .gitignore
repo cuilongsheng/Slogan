@@ -27,3 +27,6 @@ npm-debug.log*
 
 # Local Vercel settings and generated function bundles
 **/.vercel/
+
+# Generated Android delivery output
+release-artifacts/
