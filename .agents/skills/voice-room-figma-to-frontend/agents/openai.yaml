@@ -1,8 +1,0 @@
-interface:
-  display_name: "Voice Room Figma to Frontend"
-  short_description: "Build verified voice-room screens from Figma and OpenAPI"
-  default_prompt: "Use $voice-room-figma-to-frontend to implement the selected voice-room screen from Figma and the approved OpenAPI contract."
-
-policy:
-  allow_implicit_invocation: true
-

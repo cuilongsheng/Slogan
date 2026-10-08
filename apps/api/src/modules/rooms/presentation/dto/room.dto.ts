@@ -22,9 +22,20 @@ export class CreateRoomDto {
   @Length(2, 120)
   topic!: string;
 
-  @ApiProperty({ enum: ROOM_CEFR_LEVELS })
+  @ApiPropertyOptional({ enum: ROOM_CEFR_LEVELS })
+  @IsOptional()
   @IsIn(ROOM_CEFR_LEVELS)
-  cefrLevel!: (typeof ROOM_CEFR_LEVELS)[number];
+  cefrLevel?: (typeof ROOM_CEFR_LEVELS)[number];
+
+  @ApiPropertyOptional({ enum: ROOM_CEFR_LEVELS })
+  @IsOptional()
+  @IsIn(ROOM_CEFR_LEVELS)
+  cefrLevelMin?: (typeof ROOM_CEFR_LEVELS)[number];
+
+  @ApiPropertyOptional({ enum: ROOM_CEFR_LEVELS })
+  @IsOptional()
+  @IsIn(ROOM_CEFR_LEVELS)
+  cefrLevelMax?: (typeof ROOM_CEFR_LEVELS)[number];
 
   @ApiProperty({ minimum: 2, maximum: 6 })
   @IsInt()
@@ -159,6 +170,8 @@ export class RoomDto {
 
   @ApiProperty({ enum: ROOM_CEFR_LEVELS })
   cefrLevel!: (typeof ROOM_CEFR_LEVELS)[number];
+  @ApiProperty({ enum: ROOM_CEFR_LEVELS }) cefrLevelMin!: (typeof ROOM_CEFR_LEVELS)[number];
+  @ApiProperty({ enum: ROOM_CEFR_LEVELS }) cefrLevelMax!: (typeof ROOM_CEFR_LEVELS)[number];
 
   @ApiProperty({ minimum: 2, maximum: 6 })
   capacity!: number;
@@ -219,6 +232,8 @@ export class RoomShareDto {
   @ApiProperty({ enum: ROOM_VISIBILITIES }) visibility!: (typeof ROOM_VISIBILITIES)[number];
   @ApiProperty() topic!: string;
   @ApiProperty({ enum: ROOM_CEFR_LEVELS }) cefrLevel!: (typeof ROOM_CEFR_LEVELS)[number];
+  @ApiProperty({ enum: ROOM_CEFR_LEVELS }) cefrLevelMin!: (typeof ROOM_CEFR_LEVELS)[number];
+  @ApiProperty({ enum: ROOM_CEFR_LEVELS }) cefrLevelMax!: (typeof ROOM_CEFR_LEVELS)[number];
   @ApiProperty({ minimum: 2, maximum: 6 }) capacity!: number;
   @ApiProperty({ minimum: 0 }) memberCount!: number;
   @ApiProperty({ minimum: 0 }) reservedCount!: number;

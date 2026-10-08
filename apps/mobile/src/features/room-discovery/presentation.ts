@@ -12,3 +12,13 @@ export function roomAvailability(room: RoomSummary | RoomDetail, now = Date.now(
 export function remainingMinutes(endsAt: string, now = Date.now()) {
   return Math.max(0, Math.ceil((Date.parse(endsAt) - now) / 60_000));
 }
+
+export function roomLevelLabel(room: {
+  cefrLevel: string;
+  cefrLevelMin?: string | null;
+  cefrLevelMax?: string | null;
+}) {
+  const min = room.cefrLevelMin ?? room.cefrLevel.split('_')[0];
+  const max = room.cefrLevelMax ?? room.cefrLevel.split('_').at(-1);
+  return min === max ? min : `${min}–${max}`;
+}

@@ -29,6 +29,8 @@ export interface RealtimeMember {
   removalReason: string | null;
   joinOrder: number;
   displayName: string;
+  avatarUrl?: string | null;
+  nationalityCode?: string | null;
   cefrLevel: string;
   accountActive: boolean;
   participantIdentity: string;

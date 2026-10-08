@@ -59,12 +59,41 @@ function committedResult<T extends LeaveResult | EndResult>(
   return result as T;
 }
 
+export type RoomTextMessage =
+  SloganApiPaths['/v1/rooms/{roomId}/messages']['post']['responses'][200]['content']['application/json'];
+
 export class VoiceRoomApi {
   constructor(
     private readonly authorize: AuthorizedRequest,
     private readonly client: Client = createMobileApiClient(),
   ) {}
 
+  async messages(roomId: string, cursor?: string, signal?: AbortSignal) {
+    const { data, error, response } = await this.authorize((accessToken) =>
+      this.client.GET('/v1/rooms/{roomId}/messages', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { path: { roomId }, query: { ...(cursor ? { cursor } : {}) } },
+        ...(signal ? { signal } : {}),
+      }),
+    );
+    if (!data) throw asApiError(response.status, error);
+    return data;
+  }
+  async sendMessage(
+    roomId: string,
+    text: string,
+    clientRequestId: string,
+  ): Promise<RoomTextMessage> {
+    const { data, error, response } = await this.authorize((accessToken) =>
+      this.client.POST('/v1/rooms/{roomId}/messages', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { path: { roomId } },
+        body: { text, clientRequestId },
+      }),
+    );
+    if (!data) throw asApiError(response.status, error);
+    return data;
+  }
   async join(
     roomId: string,
     input: { rulesAccepted: true; password?: string; invitationId?: string },

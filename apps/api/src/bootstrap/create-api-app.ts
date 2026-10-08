@@ -37,6 +37,13 @@ export function configureApiApp(app: INestApplication): void {
   app.useLogger(app.get(StructuredLogger));
   app.setGlobalPrefix('v1');
   app.use(helmet());
+  const releaseCommit = process.env.VERCEL_GIT_COMMIT_SHA || process.env.SLOGAN_RELEASE_COMMIT;
+  if (releaseCommit && /^[a-f0-9]{40}$/.test(releaseCommit)) {
+    app.use(((_request, response, next) => {
+      response.setHeader('x-slogan-commit', releaseCommit);
+      next();
+    }) as RequestHandler);
+  }
   app.use('/v1/webhooks/livekit', raw({ type: 'application/webhook+json', limit: '256kb' }));
   app.use(
     pinoHttp({

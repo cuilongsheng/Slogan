@@ -321,3 +321,40 @@ test('Render HTML availability pages become sanitized JSON instead of a frontend
     assert.equal((await response.json()).code, 'API_PROXY_UPSTREAM_UNAVAILABLE');
   }
 });
+
+test('APK downloads use fixed public release redirects without forwarding credentials or query targets', async () => {
+  const proxy = createApiProxy({ fetchUpstream: async () => assert.fail('no upstream request') });
+  for (const [path, target] of [
+    ['/downloads/android.apk', '/download/slogan.apk'],
+    ['/downloads/android.json', '/download/android-release.json'],
+    ['/downloads/android', ''],
+  ]) {
+    for (const method of ['GET', 'HEAD']) {
+      const response = await proxy.fetch(
+        request(path + '?target=https://evil.test', {
+          method,
+          headers: { authorization: 'Bearer synthetic', cookie: 'private=synthetic' },
+        }),
+        {},
+      );
+      assert.equal(response.status, 302);
+      assert.equal(
+        response.headers.get('location'),
+        'https://github.com/cuilongsheng/Slogan/releases/latest' + target,
+      );
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.equal(response.headers.get('set-cookie'), null);
+    }
+    assert.equal((await proxy.fetch(request(path, { method: 'POST' }), {})).status, 405);
+  }
+  let staticCalls = 0;
+  await proxy.fetch(request('/downloads/android.apk.evil'), {
+    ASSETS: {
+      fetch: async () => {
+        staticCalls++;
+        return new Response('static');
+      },
+    },
+  });
+  assert.equal(staticCalls, 1);
+});

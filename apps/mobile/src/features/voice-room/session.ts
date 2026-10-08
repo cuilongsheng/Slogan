@@ -10,6 +10,7 @@ export type VoicePhase =
   | 'connecting'
   | 'active'
   | 'failed'
+  | 'leaveUnconfirmed'
   | 'leaving'
   | 'left'
   | 'ended'
@@ -71,6 +72,7 @@ export class VoiceRoomSession {
   private safetyGeneration = 0;
   private roomRefreshGeneration = 0;
   private disposed = false;
+  private leavingSuccessor: string | undefined;
 
   constructor(
     private readonly roomId: string,
@@ -173,7 +175,7 @@ export class VoiceRoomSession {
     if (this.pending) return this.pending;
     if (
       (this.state.phase === 'active' && this.media.snapshot.connection !== 'disconnected') ||
-      this.state.phase === 'ended' ||
+      ['ended', 'left', 'leaving', 'leaveUnconfirmed'].includes(this.state.phase) ||
       this.disposed
     ) {
       return Promise.resolve();
@@ -238,7 +240,11 @@ export class VoiceRoomSession {
   }
 
   async refresh(): Promise<void> {
-    if (this.disposed || this.state.phase === 'left' || this.state.phase === 'ended') return;
+    if (
+      this.disposed ||
+      ['left', 'ended', 'leaving', 'leaveUnconfirmed'].includes(this.state.phase)
+    )
+      return;
     const generation = ++this.roomRefreshGeneration;
     try {
       const room = await this.rooms.detail(this.roomId);
@@ -253,7 +259,7 @@ export class VoiceRoomSession {
       if (
         this.disposed ||
         generation !== this.roomRefreshGeneration ||
-        this.state.phase === 'leaving'
+        ['leaving', 'leaveUnconfirmed'].includes(this.state.phase)
       )
         return;
       const isCurrentHost =
@@ -270,7 +276,7 @@ export class VoiceRoomSession {
       if (
         this.disposed ||
         generation !== this.roomRefreshGeneration ||
-        this.state.phase === 'leaving'
+        ['leaving', 'leaveUnconfirmed'].includes(this.state.phase)
       )
         return;
       if (error instanceof RoomApiError && error.status === 403) {
@@ -309,7 +315,9 @@ export class VoiceRoomSession {
 
   async leave(successorMembershipId?: string): Promise<void> {
     if (this.pending) return this.pending;
-    const operation = this.exit(successorMembershipId).finally(() => {
+    if (['left', 'ended'].includes(this.state.phase)) return;
+    if (successorMembershipId) this.leavingSuccessor = successorMembershipId;
+    const operation = this.exit(this.leavingSuccessor).finally(() => {
       if (this.pending === operation) this.pending = null;
     });
     this.pending = operation;
@@ -321,8 +329,9 @@ export class VoiceRoomSession {
     this.clearSafetyAlerts();
     this.update({ phase: 'leaving', errorCode: null });
     try {
-      await this.media.setMicrophoneEnabled(false);
-      await this.media.disconnect();
+      // Start local shutdown immediately; server leave must not wait for media I/O.
+      void this.media.setMicrophoneEnabled(false).catch(() => undefined);
+      void this.media.disconnect().catch(() => undefined);
       if (this.state.credentialVersion !== null) {
         const result = await this.api.leave(
           this.roomId,
@@ -335,7 +344,16 @@ export class VoiceRoomSession {
       }
       this.update({ phase: 'left', members: [], credentialVersion: null, errorCode: null });
     } catch (error) {
-      this.update({ phase: 'failed', errorCode: errorCode(error) });
+      if (errorCode(error) === 'ROOM_SUCCESSOR_INVALID') {
+        this.leavingSuccessor = undefined;
+        // Refresh successor candidates without reconnecting audio or issuing credentials.
+        try {
+          this.update({ members: await this.api.members(this.roomId) });
+        } catch {
+          /* retry retains exit state */
+        }
+      }
+      this.update({ phase: 'leaveUnconfirmed', errorCode: errorCode(error) });
     }
   }
 

@@ -4,7 +4,9 @@ export type CreateMode = 'instant' | 'scheduled';
 export type RoomForm = {
   mode: CreateMode;
   topic: string;
-  cefrLevel: InstantRoomInput['cefrLevel'];
+  cefrLevel: NonNullable<InstantRoomInput['cefrLevel']>;
+  cefrLevelMin: NonNullable<InstantRoomInput['cefrLevelMin']>;
+  cefrLevelMax: NonNullable<InstantRoomInput['cefrLevelMax']>;
   capacity: number;
   visibility: 'PUBLIC' | 'LINK_ONLY';
   passwordEnabled: boolean;
@@ -19,6 +21,8 @@ export const initialRoomForm: RoomForm = {
   mode: 'instant',
   topic: '',
   cefrLevel: 'B1',
+  cefrLevelMin: 'B1',
+  cefrLevelMax: 'B2',
   capacity: 4,
   visibility: 'PUBLIC',
   passwordEnabled: false,
@@ -29,8 +33,10 @@ export const initialRoomForm: RoomForm = {
   startTime: '19:00',
   endTime: '20:00',
 };
-export type ValidationError = 'TOPIC' | 'PASSWORD' | 'DATE' | 'TIME' | null;
+export type ValidationError = 'TOPIC' | 'PASSWORD' | 'DATE' | 'TIME' | 'LEVEL' | null;
 export function validateRoomForm(form: RoomForm, now = new Date()): ValidationError {
+  const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  if (levels.indexOf(form.cefrLevelMin) > levels.indexOf(form.cefrLevelMax)) return 'LEVEL';
   const topic = form.topic.trim();
   if ([...topic].length < 2 || [...topic].length > 120) return 'TOPIC';
   if (form.passwordEnabled && !/^\d{4}$/.test(form.password)) return 'PASSWORD';
@@ -52,7 +58,9 @@ export function validateRoomForm(form: RoomForm, now = new Date()): ValidationEr
 export function instantInput(form: RoomForm): InstantRoomInput {
   return {
     topic: form.topic.trim(),
-    cefrLevel: form.cefrLevel,
+    cefrLevel: form.cefrLevelMin,
+    cefrLevelMin: form.cefrLevelMin,
+    cefrLevelMax: form.cefrLevelMax,
     capacity: form.capacity,
     visibility: form.visibility,
     sensitiveSpeechDetectionEnabled: form.sensitiveSpeechDetectionEnabled,

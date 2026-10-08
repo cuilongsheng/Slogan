@@ -40,7 +40,7 @@
 - Figma 是视觉事实来源，OpenSpec 是行为来源。不得用 Figma 推导缺失业务规则。
 - 使用语义 tokens，不在业务组件散落任意颜色、间距、字号、圆角或阴影。
 - 用户可见文本必须进入 i18n；不得在业务组件中混用未管理的中英文常量。
-- 涉及 Figma + API 的 Level 1/2 UI 变更必须使用 `$voice-room-figma-to-frontend`。
+- 涉及 Figma + API 的 Level 1/2 UI 变更必须使用 `$figma-to-frontend`。
 
 ## Verification
 

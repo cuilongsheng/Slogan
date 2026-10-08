@@ -19,6 +19,14 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
   ) {}
   async onModuleInit() {
     await this.queue.start(async (job) => {
+      if (job.kind === 'recovery') {
+        await this.recover();
+        const active =
+          (await this.rooms.recoverableRooms()).length > 0 ||
+          (await this.rooms.pendingCommands()).length > 0;
+        await this.queue.ensureRecovery(active ? 30 : 300);
+        return;
+      }
       if (job.kind === 'appointment-open' || job.kind === 'appointment-start-window') {
         await this.rooms.settleAppointment(job.id);
         return;
@@ -27,6 +35,7 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
       if (job.kind === 'expiry') await this.voice.expire(job.id);
       else await this.voice.dispatch(job.id);
     });
+    if (this.queue.managed) return;
     this.tick();
     this.timer = setInterval(() => this.tick(), 15_000);
     this.timer.unref();
@@ -56,6 +65,7 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
         this.logger.warn({ event: 'appointment_recovery_pending', roomId: room.id });
       }
     }
+    const pendingCommands = await this.rooms.pendingCommands();
     if (!mediaEnabled) return;
     for (const timer of await this.rooms.scheduledHostTimeouts()) {
       try {
@@ -77,7 +87,7 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
         this.logger.warn({ event: 'realtime_room_recovery_pending', roomId: room.id });
       }
     }
-    for (const id of await this.rooms.pendingCommands()) {
+    for (const id of pendingCommands) {
       try {
         await this.queue.enqueue({ kind: 'command', id });
       } catch {

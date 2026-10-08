@@ -1,3 +1,4 @@
+import { roomLevelRange } from '../domain/policies/room-level-range.js';
 import { loadLockedRealtimeRoom } from './locked-realtime-room.js';
 import { roomLifecycle } from '../domain/policies/room-lifecycle.js';
 import { RoomError } from '../domain/errors/room.error.js';
@@ -16,7 +17,7 @@ import type {
   RoomRecord,
   RoomShareRecord,
 } from '../domain/entities/room.js';
-import { ROOM_CEFR_LEVELS, type RoomCefrLevel } from '../domain/entities/room.js';
+import { type RoomCefrLevel } from '../domain/entities/room.js';
 import type {
   CreateRoomRepositoryInput,
   LockedRoom,
@@ -35,6 +36,8 @@ interface RoomProjection {
   hostReconnectDeadline: Date | null;
   topic: string;
   cefrLevel: string;
+  cefrLevelMin?: RoomCefrLevel | null;
+  cefrLevelMax?: RoomCefrLevel | null;
   capacity: number;
   passwordDigest: string | null;
   status: string;
@@ -110,6 +113,7 @@ export class PrismaRoomRepository implements RoomRepository {
           hostUserId: input.hostUserId,
           topic: input.topic,
           cefrLevel: input.cefrLevel,
+          ...roomLevelRange(input),
           capacity: input.capacity,
           passwordDigest: input.passwordDigest,
           status: 'OPEN',
@@ -277,9 +281,7 @@ export class PrismaRoomRepository implements RoomRepository {
         room.host.profile === null
       )
         return { status: 'UNAVAILABLE' as const };
-      if (!ROOM_CEFR_LEVELS.includes(room.cefrLevel as RoomCefrLevel)) {
-        return { status: 'UNAVAILABLE' as const };
-      }
+
       const active = new Set(room.memberships.map(({ userId }) => userId));
       const reservedCount = room.reservations.filter(({ userId }) => !active.has(userId)).length;
       const existingAttribution = attributionId
@@ -301,7 +303,8 @@ export class PrismaRoomRepository implements RoomRepository {
           status: room.status,
           visibility: room.visibility,
           topic: room.topic,
-          cefrLevel: room.cefrLevel as RoomCefrLevel,
+          cefrLevel: roomLevelRange(room).cefrLevelMin,
+          ...roomLevelRange(room),
           capacity: room.capacity,
           memberCount: active.size,
           reservedCount,
@@ -566,6 +569,7 @@ export class PrismaRoomRepository implements RoomRepository {
       hostDisplayName,
       topic: room.topic,
       cefrLevel: room.cefrLevel as RoomRecord['cefrLevel'],
+      ...roomLevelRange(room),
       capacity: room.capacity,
       passwordDigest: room.passwordDigest,
       status: room.status as RoomRecord['status'],

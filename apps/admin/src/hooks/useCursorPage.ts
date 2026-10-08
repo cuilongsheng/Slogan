@@ -4,10 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 export function useCursorPage<T>(
   key: readonly unknown[],
   load: (cursor?: string) => Promise<{ items: T[]; nextCursor: string | null }>,
+  options: { refetchInterval?: number } = {},
 ) {
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined]);
   const cursor = cursors.at(-1);
-  const query = useQuery({ queryKey: [...key, cursor], queryFn: () => load(cursor) });
+  const query = useQuery({ queryKey: [...key, cursor], queryFn: () => load(cursor), ...options });
   return {
     ...query,
     rows: query.data?.items ?? [],

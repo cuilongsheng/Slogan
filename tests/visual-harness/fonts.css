@@ -1,0 +1,26 @@
+@font-face {
+  font-family: NotoSansSC;
+  src: url('../../assets/fonts/NotoSansSC-400.ttf');
+}
+@font-face {
+  font-family: NotoSansSCMedium;
+  src: url('../../assets/fonts/NotoSansSC-500.ttf');
+}
+@font-face {
+  font-family: NotoSansSCSemibold;
+  src: url('../../assets/fonts/NotoSansSC-600.ttf');
+}
+@font-face {
+  font-family: NotoSansSCBold;
+  src: url('../../assets/fonts/NotoSansSC-700.ttf');
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+#root {
+  display: flex;
+  flex-direction: column;
+}

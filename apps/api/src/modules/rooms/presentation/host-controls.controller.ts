@@ -47,11 +47,6 @@ import { RoomIdParamsDto } from './dto/room.dto.js';
   description: 'Validation error or ROOM_SUCCESSOR_INVALID',
 })
 @ApiNotFoundResponse({ type: ErrorResponseDto })
-@ApiServiceUnavailableResponse({
-  type: ErrorResponseDto,
-  description:
-    'REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back.',
-})
 @Controller('rooms')
 export class HostControlsController {
   constructor(
@@ -66,8 +61,18 @@ export class HostControlsController {
     @Param() params: RoomIdParamsDto,
     @Body() body: LeaveRoomDto,
   ) {
-    return this.run(params.roomId, actor.userId, { kind: 'leave', ...body });
+    return this.leaveCommitted(params.roomId, actor.userId, body);
   }
+  private async leaveCommitted(roomId: string, userId: string, body: LeaveRoomDto) {
+    const committed = await this.host.execute(roomId, userId, { kind: 'leave', ...body });
+    // Durable commands are recovered by the runner. Provider I/O is not part of leaving.
+    return { ...committed, ...(await this.host.deliveryStatus(roomId)) };
+  }
+  @ApiServiceUnavailableResponse({
+    type: ErrorResponseDto,
+    description:
+      'REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back.',
+  })
   @Post(':roomId/members/:membershipId/removals')
   @HttpCode(200)
   @ApiOkResponse({ type: HostActionResultDto })
@@ -82,6 +87,11 @@ export class HostControlsController {
       ...body,
     });
   }
+  @ApiServiceUnavailableResponse({
+    type: ErrorResponseDto,
+    description:
+      'REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back.',
+  })
   @Post(':roomId/members/:membershipId/invitations')
   @HttpCode(200)
   @ApiOkResponse({ type: HostActionResultDto })
@@ -96,6 +106,11 @@ export class HostControlsController {
       ...body,
     });
   }
+  @ApiServiceUnavailableResponse({
+    type: ErrorResponseDto,
+    description:
+      'REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back.',
+  })
   @Post(':roomId/end')
   @HttpCode(200)
   @ApiOkResponse({ type: HostActionResultDto })

@@ -1,0 +1,15 @@
+model RoomTextMessage {
+  id String @id @db.Uuid
+  sequence BigInt @unique @default(autoincrement())
+  roomId String @db.Uuid
+  senderUserId String @db.Uuid
+  senderDisplayName String @db.VarChar(80)
+  clientRequestId String @db.Uuid
+  text String @db.VarChar(4000)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderUserId], references: [id], onDelete: Cascade)
+  @@unique([roomId, senderUserId, clientRequestId])
+  @@index([roomId, sequence])
+  @@index([roomId, senderUserId, createdAt])
+}

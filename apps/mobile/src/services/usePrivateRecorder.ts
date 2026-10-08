@@ -31,9 +31,10 @@ export function usePrivateRecorder() {
     stopping.current = (async () => {
       if (timer.current) clearTimeout(timer.current);
       timer.current = null;
-      if (!recorder.isRecording) return null;
-      try { await recorder.stop(); }
-      finally {
+      if (!recorder.isRecording) return clipRef.current;
+      try {
+        await recorder.stop();
+      } finally {
         setRecording(false);
         await setAudioModeAsync({ allowsRecording: false });
       }
@@ -48,7 +49,11 @@ export function usePrivateRecorder() {
       setClip(next);
       return next;
     })();
-    try { return await stopping.current; } finally { stopping.current = null; }
+    try {
+      return await stopping.current;
+    } finally {
+      stopping.current = null;
+    }
   }, [recorder]);
 
   const start = useCallback(async () => {
@@ -61,19 +66,29 @@ export function usePrivateRecorder() {
       await recorder.prepareToRecordAsync();
       recorder.record();
       setRecording(true);
-      timer.current = setTimeout(() => { void stop().catch(() => setError('PRIVATE_AUDIO_UNAVAILABLE')); }, 30000);
     } catch (error) {
       await setAudioModeAsync({ allowsRecording: false });
       throw error;
     }
-  }, [discard, recorder, stop]);
+  }, [discard, recorder]);
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-    if (recorder.isRecording) void recorder.stop();
-    void setAudioModeAsync({ allowsRecording: false });
-    clipRef.current?.release();
-  }, [recorder]);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+      if (recorder.isRecording) void recorder.stop();
+      void setAudioModeAsync({ allowsRecording: false });
+      clipRef.current?.release();
+    },
+    [recorder],
+  );
 
-  return { start, stop, discard, clip, recording, error, elapsedSeconds: Math.min(30, Math.floor(recorderState.durationMillis / 1000)) };
+  return {
+    start,
+    stop,
+    discard,
+    clip,
+    recording,
+    error,
+    elapsedSeconds: Math.min(10, Math.floor(recorderState.durationMillis / 1000)),
+  };
 }

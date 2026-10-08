@@ -8,6 +8,8 @@ const base: RoomSummary = {
   visibility: 'PUBLIC',
   topic: 'Travel',
   cefrLevel: 'B1',
+  cefrLevelMin: 'B1',
+  cefrLevelMax: 'B1',
   capacity: 6,
   memberCount: 2,
   hostReconnectDeadline: null,

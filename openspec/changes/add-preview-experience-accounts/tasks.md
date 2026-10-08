@@ -1,7 +1,7 @@
 ## 1. 认证边界与实施前置
 
 - [x] 1.1 完成本 Level 2 设计审核，逐条对照 active email change 的“用户名密码登录”“开关、配额与外部验收”、mobile email change 的注册/恢复要求及主规格 RBAC，记录只限预置来源/试用环境的例外和后续同步顺序；验证为审核记录明确普通注册仍需邮件验证、没有无邮件自助注册/恢复或扩权。
-- [ ] 1.2 在 UI 实施前用项目 `voice-room-figma-to-frontend` 技能和唯一 Desktop Bridge 核对文件及 V2 `118:2970`/`118:3001`/`118:3063`/`118:3186`，确认邮件停用状态复用原页，记录 exact frame/route/390×844 证据与允许差异；验证为可打开的目标、状态批准记录和截图，Bridge 未连接则此项 BLOCKED，不用 cloud/REST/browser 替代。
+- [ ] 1.2 在 UI 实施前用项目 `figma-to-frontend` 技能和唯一 Desktop Bridge 核对文件及 V2 `118:2970`/`118:3001`/`118:3063`/`118:3186`，确认邮件停用状态复用原页，记录 exact frame/route/390×844 证据与允许差异；验证为可打开的目标、状态批准记录和截图，Bridge 未连接则此项 BLOCKED，不用 cloud/REST/browser 替代。
 
 ## 2. 配置与凭据来源迁移
 

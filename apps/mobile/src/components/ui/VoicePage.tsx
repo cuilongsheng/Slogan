@@ -1,6 +1,7 @@
+import { AppText as Text } from './AppText';
 import type { ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export function VoicePage({ children }: { children: ReactNode }) {
@@ -16,7 +17,14 @@ export function VoicePage({ children }: { children: ReactNode }) {
           <Text style={styles.previewText}>●●● 100%</Text>
         </View>
       )}
-      {children}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={
+          Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined
+        }
+      >
+        {children}
+      </KeyboardAvoidingView>
       {Platform.OS === 'web' && <View pointerEvents="none" style={styles.homeIndicator} />}
     </SafeAreaView>
   );
@@ -26,7 +34,7 @@ export function VoicePage({ children }: { children: ReactNode }) {
 const styles = StyleSheet.create({
   canvas: { flex: 1, alignItems: 'center', backgroundColor: '#EFF4FC' },
   safe: { flex: 1, backgroundColor: '#2A1D4B', overflow: 'hidden' },
-  webFrame: { width: '100%', maxWidth: 390, minHeight: 844 },
+  webFrame: { width: '100%', maxWidth: 390 },
   previewStatus: {
     height: 43,
     paddingHorizontal: 24,

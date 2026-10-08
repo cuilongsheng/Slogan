@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import {
   Platform,
+  KeyboardAvoidingView,
   Image,
   ScrollView,
   StyleSheet,
@@ -35,13 +36,20 @@ export function AuthPage({ children, scroll = false }: { children: ReactNode; sc
           <View pointerEvents="none" style={styles.homeIndicator} />
         </>
       )}
-      {scroll ? (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={styles.content}>{children}</View>
-      )}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={
+          Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined
+        }
+      >
+        {scroll ? (
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={styles.content}>{children}</View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
   return Platform.OS === 'web' ? <View style={styles.webCanvas}>{page}</View> : page;
@@ -141,7 +149,7 @@ export function StepHeader({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: tokens.color.surface },
   webCanvas: { flex: 1, alignItems: 'center', backgroundColor: '#EFF4FC' },
-  webPage: { flex: 1, width: '100%', maxWidth: 390, minHeight: 844, paddingTop: 48 },
+  webPage: { flex: 1, width: '100%', maxWidth: 390, paddingTop: 48 },
   ambient: {
     position: 'absolute',
     top: -52,

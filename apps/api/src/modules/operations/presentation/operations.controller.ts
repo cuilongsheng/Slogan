@@ -121,6 +121,7 @@ export class OperationsController {
         ...(query.cursor ? { cursor: query.cursor } : {}),
         ...(query.q ? { q: query.q } : {}),
         ...(query.status ? { status: query.status } : {}),
+        ...(query.scope ? { scope: query.scope } : {}),
         ...(query.visibility ? { visibility: query.visibility } : {}),
         ...(query.from ? { from: new Date(query.from) } : {}),
       },

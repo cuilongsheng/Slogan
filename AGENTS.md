@@ -25,9 +25,11 @@
 
 ## Required Project Skill
 
-When a task combines a Figma target, frontend implementation, and API integration, use `$voice-room-figma-to-frontend` from `.agents/skills/voice-room-figma-to-frontend/`.
+When a task combines a Figma target, frontend implementation, and API integration, use `$figma-to-frontend` from `.agents/skills/figma-to-frontend/`.
 
-Any Level 1 or Level 2 frontend change that creates or modifies UI structure, visual appearance, or user interaction states MUST use the `voice-room-figma-to-frontend` Skill when an approved Figma design exists or is required.
+For this repository, that project-local skill is authoritative even when a same-named personal skill is available. Visual restoration defaults to 1:1 at the confirmed target viewport and requires direct original-Figma-to-running-frontend evidence; tests/builds or a reconstructed Figma frame do not establish visual acceptance.
+
+Any Level 1 or Level 2 frontend change that creates or modifies UI structure, visual appearance, or user interaction states MUST use the `figma-to-frontend` Skill when an approved Figma design exists or is required.
 
 ## Rules
 

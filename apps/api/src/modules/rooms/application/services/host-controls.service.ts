@@ -43,6 +43,12 @@ export class HostControlsService {
         if (!actor) throw new RoomError('ROOM_MEMBERSHIP_REQUIRED', 'Room membership is required');
         if (action.kind !== 'leave' && !host)
           throw new RoomError('ROOM_HOST_REQUIRED', 'Current host permission is required');
+        if (
+          action.kind === 'leave' &&
+          actor.lifecycle === 'LEFT' &&
+          actor.credentialVersion === (action.expectedCredentialVersion ?? -2) + 1
+        )
+          return this.result(ctx, actor);
         if (action.kind === 'end' && ctx.room.status !== 'OPEN') return this.result(ctx, actor);
         if (ctx.room.status !== 'OPEN' || ctx.room.endsAt <= ctx.now) {
           if (ctx.room.status === 'OPEN') await this.realtime.endLocked(ctx, 'EXPIRED');
@@ -105,7 +111,12 @@ export class HostControlsService {
           );
           successor = action.successorMembershipId
             ? candidates.find((m) => m.id === action.successorMembershipId)
-            : candidates[0];
+            : undefined;
+          if (candidates.length && !action.successorMembershipId)
+            throw new RoomError(
+              'ROOM_SUCCESSOR_INVALID',
+              'Choose an online successor before leaving',
+            );
           if (action.successorMembershipId && !successor)
             throw new RoomError(
               'ROOM_SUCCESSOR_INVALID',

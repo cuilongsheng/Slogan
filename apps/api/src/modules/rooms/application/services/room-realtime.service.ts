@@ -145,6 +145,8 @@ export class RoomRealtimeService {
           credentialVersion: m.credentialVersion,
           hostReconnectDeadline: ctx.room.hostReconnectDeadline?.toISOString() ?? null,
           displayName: m.displayName,
+          avatarUrl: m.avatarUrl ?? null,
+          nationalityCode: m.nationalityCode ?? null,
           cefrLevel: m.cefrLevel,
           role: m.role,
           position: index + 1,

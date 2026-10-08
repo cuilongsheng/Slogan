@@ -96,7 +96,7 @@ worker 改为 cleanup-only 时钟与 delivery 开关独立：无邮件配置也�
 
 直接打开注册、验证、找回、重置、绑定页时呈现统一的“当前试用暂不提供此功能”，提供返回登录，不触发网络邮件请求；从链接读到旧 token 时仍清除地址栏 fragment，并不自动确认。页面不展示“已发送”成功状态。登录方式页面能展示未邮件验证的体验来源。中英文文案使用已有 i18n，复用当前布局/组件；不创建新页面视觉体系。
 
-UI 应用项目 `voice-room-figma-to-frontend` 技能。仓库证据目标为 Figma 文件 `56nIowZmvBhb0QJvOlDQdU` 的认证 V2 登录 `118:2970`、注册 `118:3001`、验证 `118:3063`、找回 `118:3186`（390×844）；来自 `docs/acceptance/implement-mobile-email-password-auth.md`，本轮没有实时核验。Desktop Bridge status 为无活动 transport/未连接，禁止 cloud/REST/browser fallback。实现 UI 前必须恢复 Bridge、核对实际页面/frame、在原页确认停用注释/状态；本次规划不授权编辑原稿。后台已有密码/Google 表单保持原视觉，仅使用现有状态做权限验收。
+UI 应用项目 `figma-to-frontend` 技能。仓库证据目标为 Figma 文件 `56nIowZmvBhb0QJvOlDQdU` 的认证 V2 登录 `118:2970`、注册 `118:3001`、验证 `118:3063`、找回 `118:3186`（390×844）；来自 `docs/acceptance/implement-mobile-email-password-auth.md`，本轮没有实时核验。Desktop Bridge status 为无活动 transport/未连接，禁止 cloud/REST/browser fallback。实现 UI 前必须恢复 Bridge、核对实际页面/frame、在原页确认停用注释/状态；本次规划不授权编辑原稿。后台已有密码/Google 表单保持原视觉，仅使用现有状态做权限验收。
 
 ### 7. 唯一合同与证据
 

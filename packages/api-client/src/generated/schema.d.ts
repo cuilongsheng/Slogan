@@ -1813,6 +1813,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/rooms/{roomId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoomMessagesController_list"];
+        put?: never;
+        post: operations["RoomMessagesController_send"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/rooms/{roomId}/note": {
         parameters: {
             query?: never;
@@ -1927,6 +1943,8 @@ export interface components {
             capacity: number;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            cefrLevelMax: string;
+            cefrLevelMin: string;
             /** Format: date-time */
             endsAt: string;
             /** Format: uuid */
@@ -1960,6 +1978,8 @@ export interface components {
             capacity: number;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            cefrLevelMax: string;
+            cefrLevelMin: string;
             /** Format: date-time */
             endsAt: string;
             /** Format: uuid */
@@ -1992,6 +2012,8 @@ export interface components {
                 capacity: number;
                 /** @enum {string} */
                 cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                cefrLevelMax: string;
+                cefrLevelMin: string;
                 /** Format: date-time */
                 endsAt: string;
                 /** Format: uuid */
@@ -2176,7 +2198,11 @@ export interface components {
         CreateAppointmentDto: {
             capacity: number;
             /** @enum {string} */
-            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMax?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMin?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
             /** Format: date-time */
             endsAt: string;
             password?: string;
@@ -2215,7 +2241,11 @@ export interface components {
         CreateRoomDto: {
             capacity: number;
             /** @enum {string} */
-            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMax?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMin?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
             password?: string;
             /** @default false */
             postRoomKeywordsEnabled: boolean;
@@ -2533,7 +2563,7 @@ export interface components {
             expectedCredentialVersion: number;
             /**
              * Format: uuid
-             * @description Current host only; must reference an online ACTIVE member. Omit to select the earliest online member.
+             * @description Required for the current host when other online ACTIVE members remain. Must reference a valid online ACTIVE member; omit only when no successor is needed.
              */
             successorMembershipId?: string;
         };
@@ -2648,6 +2678,8 @@ export interface components {
             };
             capacity: number;
             cefrLevel: string;
+            cefrLevelMax: string | null;
+            cefrLevelMin: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -2672,6 +2704,8 @@ export interface components {
                 };
                 capacity: number;
                 cefrLevel: string;
+                cefrLevelMax: string | null;
+                cefrLevelMin: string | null;
                 /** Format: date-time */
                 createdAt: string;
                 /** Format: date-time */
@@ -2834,6 +2868,7 @@ export interface components {
             serverUrl: string;
         };
         RealtimeMemberDto: {
+            avatarUrl?: string | null;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
             credentialVersion: number;
@@ -2844,6 +2879,7 @@ export interface components {
             lifecycle: "ACTIVE";
             /** Format: uuid */
             membershipId: string;
+            nationalityCode?: string | null;
             /** Format: uuid */
             participantIdentity: string;
             position: number;
@@ -3006,6 +3042,10 @@ export interface components {
             capacity: number;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
             currentMembership: {
                 credentialVersion: number;
                 /** Format: uuid */
@@ -3051,6 +3091,10 @@ export interface components {
             capacity: number;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
             /** Format: date-time */
             endsAt: string;
             hostDisplayName: string;
@@ -3219,6 +3263,10 @@ export interface components {
                 capacity: number;
                 /** @enum {string} */
                 cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                /** @enum {string} */
+                cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                /** @enum {string} */
+                cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                 /** Format: date-time */
                 endsAt: string;
                 hostDisplayName: string;
@@ -3261,6 +3309,32 @@ export interface components {
             /** Format: uuid */
             userId: string;
         };
+        RoomMessageDto: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            senderDisplayName: string;
+            /** Format: uuid */
+            senderUserId: string;
+            sequence: string;
+            text: string;
+        };
+        RoomMessagesPageDto: {
+            hasMore: boolean;
+            items: {
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: uuid */
+                id: string;
+                senderDisplayName: string;
+                /** Format: uuid */
+                senderUserId: string;
+                sequence: string;
+                text: string;
+            }[];
+            nextCursor: string;
+        };
         RoomNoteDto: {
             content: string | null;
             /** Format: date-time */
@@ -3274,6 +3348,10 @@ export interface components {
             capacity: number;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
             /** Format: date-time */
             endsAt: string;
             hostDisplayName: string;
@@ -4039,6 +4117,11 @@ export interface components {
             content: string;
             expectedVersion: number;
         };
+        SendRoomMessageDto: {
+            /** Format: uuid */
+            clientRequestId: string;
+            text: string;
+        };
         SocialCommandDto: {
             /** Format: uuid */
             clientRequestId: string;
@@ -4159,6 +4242,8 @@ export interface operations {
                             capacity: number;
                             /** @enum {string} */
                             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                            cefrLevelMax: string;
+                            cefrLevelMin: string;
                             /** Format: date-time */
                             endsAt: string;
                             /** Format: uuid */
@@ -4283,7 +4368,11 @@ export interface operations {
                 "application/json": {
                     capacity: number;
                     /** @enum {string} */
-                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                    cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                    /** @enum {string} */
+                    cefrLevelMax?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                    /** @enum {string} */
+                    cefrLevelMin?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                     /** Format: date-time */
                     endsAt: string;
                     password?: string;
@@ -4313,6 +4402,8 @@ export interface operations {
                         capacity: number;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        cefrLevelMax: string;
+                        cefrLevelMin: string;
                         /** Format: date-time */
                         endsAt: string;
                         /** Format: uuid */
@@ -4446,6 +4537,8 @@ export interface operations {
                         capacity: number;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        cefrLevelMax: string;
+                        cefrLevelMin: string;
                         /** Format: date-time */
                         endsAt: string;
                         /** Format: uuid */
@@ -4579,6 +4672,8 @@ export interface operations {
                         capacity: number;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        cefrLevelMax: string;
+                        cefrLevelMin: string;
                         /** Format: date-time */
                         endsAt: string;
                         /** Format: uuid */
@@ -9241,6 +9336,7 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: number;
+                scope?: "CURRENT";
                 q?: string;
                 status?: "SCHEDULED" | "CANCELLED" | "OPEN" | "ENDING" | "ENDED";
                 visibility?: "PUBLIC" | "LINK_ONLY";
@@ -9266,6 +9362,8 @@ export interface operations {
                             };
                             capacity: number;
                             cefrLevel: string;
+                            cefrLevelMax: string | null;
+                            cefrLevelMin: string | null;
                             /** Format: date-time */
                             createdAt: string;
                             /** Format: date-time */
@@ -16308,6 +16406,10 @@ export interface operations {
                         capacity: number;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                         /** Format: date-time */
                         endsAt: string;
                         hostDisplayName: string;
@@ -16389,6 +16491,10 @@ export interface operations {
                             capacity: number;
                             /** @enum {string} */
                             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                            /** @enum {string} */
+                            cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                            /** @enum {string} */
+                            cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                             /** Format: date-time */
                             endsAt: string;
                             hostDisplayName: string;
@@ -16478,7 +16584,11 @@ export interface operations {
                 "application/json": {
                     capacity: number;
                     /** @enum {string} */
-                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                    cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                    /** @enum {string} */
+                    cefrLevelMax?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                    /** @enum {string} */
+                    cefrLevelMin?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                     password?: string;
                     /** @default false */
                     postRoomKeywordsEnabled?: boolean;
@@ -16503,6 +16613,10 @@ export interface operations {
                         capacity: number;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                         currentMembership: {
                             credentialVersion: number;
                             /** Format: uuid */
@@ -16616,6 +16730,10 @@ export interface operations {
                         capacity: number;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                         currentMembership: {
                             credentialVersion: number;
                             /** Format: uuid */
@@ -17585,7 +17703,7 @@ export interface operations {
                     expectedCredentialVersion: number;
                     /**
                      * Format: uuid
-                     * @description Current host only; must reference an online ACTIVE member. Omit to select the earliest online member.
+                     * @description Required for the current host when other online ACTIVE members remain. Must reference a valid online ACTIVE member; omit only when no successor is needed.
                      */
                     successorMembershipId?: string;
                 };
@@ -17700,23 +17818,6 @@ export interface operations {
                     };
                 };
             };
-            /** @description REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example VALIDATION_FAILED */
-                        code: string;
-                        details?: Record<string, never>;
-                        /** @example Request validation failed */
-                        message: string;
-                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
-                        requestId?: string;
-                    };
-                };
-            };
         };
     };
     VoiceController_members: {
@@ -17736,6 +17837,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        avatarUrl?: string | null;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                         credentialVersion: number;
@@ -17746,6 +17848,7 @@ export interface operations {
                         lifecycle: "ACTIVE";
                         /** Format: uuid */
                         membershipId: string;
+                        nationalityCode?: string | null;
                         /** Format: uuid */
                         participantIdentity: string;
                         position: number;
@@ -18167,6 +18270,10 @@ export interface operations {
                         capacity: number;
                         /** @enum {string} */
                         cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMax: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                        /** @enum {string} */
+                        cefrLevelMin: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
                         currentMembership: {
                             credentialVersion: number;
                             /** Format: uuid */
@@ -18275,6 +18382,275 @@ export interface operations {
                 };
             };
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    RoomMessagesController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasMore: boolean;
+                        items: {
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            senderDisplayName: string;
+                            /** Format: uuid */
+                            senderUserId: string;
+                            sequence: string;
+                            text: string;
+                        }[];
+                        nextCursor: string;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    RoomMessagesController_send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                    text: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: uuid */
+                        id: string;
+                        senderDisplayName: string;
+                        /** Format: uuid */
+                        senderUserId: string;
+                        sequence: string;
+                        text: string;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

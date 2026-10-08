@@ -1,3 +1,4 @@
+import { roomLevelRange } from '../domain/policies/room-level-range.js';
 import type { RoomDetail, RoomMembershipRecord, RoomRecord } from '../domain/entities/room.js';
 import type { RoomDetailDto, RoomDto, RoomMembershipDto } from './dto/room.dto.js';
 
@@ -8,7 +9,8 @@ export function presentRoom(room: RoomRecord): RoomDto {
     hostDisplayName: room.hostDisplayName,
     visibility: room.visibility,
     topic: room.topic,
-    cefrLevel: room.cefrLevel,
+    cefrLevel: roomLevelRange(room).cefrLevelMin,
+    ...roomLevelRange(room),
     capacity: room.capacity,
     memberCount: room.memberCount,
     hostReconnectDeadline: room.hostReconnectDeadline?.toISOString() ?? null,

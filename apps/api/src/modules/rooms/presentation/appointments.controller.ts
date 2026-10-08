@@ -1,3 +1,4 @@
+import { roomLevelRange } from '../domain/policies/room-level-range.js';
 import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import {
   ApiTags,
@@ -32,7 +33,8 @@ function present(room: AppointmentRecord): AppointmentDto {
     id: room.id,
     hostUserId: room.hostUserId,
     topic: room.topic,
-    cefrLevel: room.cefrLevel,
+    cefrLevel: roomLevelRange(room).cefrLevelMin,
+    ...roomLevelRange(room),
     capacity: room.capacity,
     status: room.status,
     startsAt: room.startedAt.toISOString(),

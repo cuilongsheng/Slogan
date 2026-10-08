@@ -296,3 +296,31 @@ describe('voice room admission and recovery', () => {
     expect(session.snapshot.errorCode).toBe('ROOM_OPERATION_CONFLICT');
   });
 });
+
+describe('fast leaving', () => {
+  it('does not wait for stuck media shutdown or start a second leave', async () => {
+    const { session, api, media } = setup(true);
+    await session.start(null);
+    media.disconnect.mockImplementationOnce(() => new Promise<undefined>(() => {}));
+    await session.leave();
+    await session.leave();
+    expect(api.leave).toHaveBeenCalledTimes(1);
+    expect(session.snapshot.phase).toBe('left');
+  });
+  it('retries the original generation and successor after a lost response without rejoining', async () => {
+    const { session, api } = setup(true);
+    await session.start(null);
+    api.leave.mockRejectedValueOnce(new Error('response lost'));
+    await session.leave('successor-1');
+    expect(session.snapshot.phase).toBe('leaveUnconfirmed');
+    await session.start(null);
+    await session.leave();
+    expect(api.credentials).toHaveBeenCalledTimes(1);
+    expect(api.join).not.toHaveBeenCalled();
+    expect(api.leave.mock.calls).toEqual([
+      ['room-1', 3, 'successor-1'],
+      ['room-1', 3, 'successor-1'],
+    ]);
+    expect(session.snapshot.phase).toBe('left');
+  });
+});

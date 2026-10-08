@@ -58,6 +58,22 @@ export function createApiProxy({ fetchUpstream = fetch, timeoutMs = 90_000 } = {
   return {
     async fetch(request, env) {
       const incoming = new URL(request.url);
+      const downloads = {
+        '/downloads/android': 'https://github.com/cuilongsheng/Slogan/releases/latest',
+        '/downloads/android.apk':
+          'https://github.com/cuilongsheng/Slogan/releases/latest/download/slogan.apk',
+        '/downloads/android.json':
+          'https://github.com/cuilongsheng/Slogan/releases/latest/download/android-release.json',
+      };
+      const download = downloads[incoming.pathname];
+      if (download) {
+        if (!['GET', 'HEAD'].includes(request.method))
+          return new Response(null, { status: 405, headers: { allow: 'GET, HEAD' } });
+        return new Response(null, {
+          status: 302,
+          headers: { location: download, 'cache-control': 'no-store' },
+        });
+      }
       if (!isApiPath(incoming.pathname)) return env.ASSETS.fetch(request);
       let origin;
       try {

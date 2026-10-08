@@ -33,7 +33,11 @@ export function AdminLayout() {
                     to={item.path}
                     className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
                   >
-                    <span aria-hidden="true">{item.symbol}</span>
+                    <span
+                      className="nav-icon"
+                      aria-hidden="true"
+                      style={{ maskImage: `url("${item.icon}")` }}
+                    />
                     {item.label}
                   </NavLink>
                 ))}
