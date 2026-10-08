@@ -1,6 +1,6 @@
 ## 1. 构建与可追溯产物
 
-- [ ] 1.1 固定工具链并配置只读 PR 构建、main 发布权限；验证 workflow 语法、事件边界及实际 Actions 构建。
+- [x] 1.1 固定工具链并配置只读 PR 构建、main 发布权限；验证 workflow 语法、事件边界及实际 Actions 构建。
 - [x] 1.2 接入公开提交/API 元数据和递增 Android 版本；验证 Expo config 与 APK 实际 app.config/Manifest/bundle。
 - [x] 1.3 校验稳定签名、APK 哈希、原生标志并输出 release 元数据；验证实际构建产物与失败校验测试。
 
@@ -8,11 +8,11 @@
 
 - [x] 2.1 校验三个 provider 状态与实际生产提交，拒绝失败/旧提交；验证缺少检查、失败、延迟、提交不符与旧版本测试。
 - [x] 2.2 增加固定 HTTPS 下载和元数据重定向；验证 GET/HEAD、方法限制、不转发凭证及近似路径测试。
-- [ ] 2.3 上传草稿资产完成后发布 latest，保持失败不替换；验证真实 Release 和下载文件哈希一致。
+- [x] 2.3 上传草稿资产完成后发布 latest，保持失败不替换；验证真实 Release 和下载文件哈希一致。
 
 ## 3. 交付
 
-- [ ] 3.1 执行受影响 lint/typecheck/测试/构建、OpenSpec 严格检查，记录本地与云端证据。
-- [ ] 3.2 提交并创建 PR、生产合并/部署、下载入口验收；记录提交、Release、APK 和用户负责的真机验证边界。
+- [x] 3.1 执行受影响 lint/typecheck/测试/构建、OpenSpec 严格检查，记录本地与云端证据。
+- [x] 3.2 提交并创建 PR、生产合并/部署、下载入口验收；记录提交、Release、APK 和用户负责的真机验证边界。
 
-2026-10-08：本地实际 APK 与负例、16 个 Pages/发布门槛测试、新增 API e2e 3 个测试、受影响 lint/typecheck/build、actionlint 和严格 OpenSpec 校验通过。实际 Actions、生产 Release/下载与 PR/main 合并仍未通过，不能据此归档。见 `docs/acceptance/automate-android-release-delivery/README.md`。
+2026-10-08：本地实际 APK 与负例、16 个 Pages/发布门槛测试、新增 API e2e 3 个测试、受影响 lint/typecheck/build、actionlint 和严格 OpenSpec 校验通过。PR #9 已合并为 fc7bbf8，PR/main 实际 Actions 通过；三个生产提交一致，Release 0.0.7 与固定下载哈希/实际 APK 校验通过。自动交付完成不代表房间后台清理通过；该独立业务门槛仍记录在 simplify-room-and-mobile-experience 5.3。真机由用户验证，设备证据未伪报。见 `docs/acceptance/automate-android-release-delivery/README.md`。

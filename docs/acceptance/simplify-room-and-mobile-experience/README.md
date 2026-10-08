@@ -1,8 +1,8 @@
 # 房间与手机体验修正：验收记录
 
-2026-10-07，OpenSpec `simplify-room-and-mobile-experience`。代码基线为 develop `716cc0bd0fd4e0010721f0e0ac3c77eec4522436` 加当前未提交工作区。发布分支已提交并推送，四个生产迁移已完成；尚未合并 main 或更新生产 API，以下明确区分本地、预览与生产证据。
+2026-10-08，OpenSpec `simplify-room-and-mobile-experience`。原实现基线为 develop `716cc0bd0fd4e0010721f0e0ac3c77eec4522436`；PR #9 已合并为 main `fc7bbf86cb28ee315c6e57e4d2a62a0dfc8e56d3`，四个生产迁移和三个生产部署已完成。以下区分本地、预览与生产证据，后台清理补丁基于该 main 提交。
 
-结果：后端合同、行为实现、本地故障恢复测试和 Android 构建已通过。完整视觉、真机音频/键盘和云端消费者验收未完成；本 change 未归档。不能声称全部完成、已上线或全局 `1:1 PASS`。
+结果：后端合同、行为实现、本地故障恢复测试和 Android 构建已通过。完整视觉、真机音频/键盘和云端消费者验收未完成；本 change 未归档。不能声称全部完成或全局 `1:1 PASS`。
 
 ## 原因和修正
 
@@ -22,7 +22,7 @@
 
 ## API、迁移和队列
 
-唯一合同仍由 NestJS code-first 生成到 `openapi/openapi.yaml` 和 api-client；本次没有第二份手写合同。新文字消息与等级范围本地 READY；当前生产部署尚未更新，所以生产 READY 未证明。Google 登录保持本次开始时的状态，没有开启或修改密钥。
+唯一合同仍由 NestJS code-first 生成到 `openapi/openapi.yaml` 和 api-client；本次没有第二份手写合同。新文字消息与等级范围已在 fc7bbf8 生产 API 验证；后台清理仍未通过。Google 登录保持本次开始时的状态，没有开启或修改密钥。
 
 四个增量迁移先在隔离 PostgreSQL 验证，2026-10-07 已在授权的 Neon main / neondb 执行并核对：
 
@@ -33,7 +33,7 @@
 
 验证覆盖旧 B1_B2/C1 数据回填、空字段旧写入兼容、上下限约束、消息外键级联、消息幂等及关闭清理；未改写历史迁移。
 
-Vercel 模式使用 `@vercel/queue` 发布短任务，独立 `api/realtime.func` 是私有消费者；公开 `index.func` 承接 HTTP。本地 `vercel build` 成功，触发元数据见 [vercel-local-build.json](vercel-local-build.json)。本地临时项目设置已删除。发布分支的 Vercel 和两个 Pages 预览构建已成功；生产环境仍等待 PR 合并。非 Vercel 环境保留 BullMQ；独立 Node worker 是可选部署方式，不要求另买服务器。
+Vercel 模式使用 `@vercel/queue` 发布短任务，独立 `api/realtime.func` 是私有消费者；公开 `index.func` 承接 HTTP。本地 `vercel build` 成功，触发元数据见 [vercel-local-build.json](vercel-local-build.json)。本地临时项目设置已删除。发布分支的 Vercel 和两个 Pages 预览构建已成功；PR #9 已合并，生产提交为 fc7bbf8；实际清理命令六分钟仍未执行，恢复补丁待上线复核。非 Vercel 环境保留 BullMQ；独立 Node worker 是可选部署方式，不要求另买服务器。
 
 队列失败重投递、数据库扫描恢复、重复投递和 next-scan 发布失败测试通过。平台 beta/用量/保留期、播种失败及扫描断链恢复仍需要线上验证；不能把 SDK mock 或本地构建当成持续运行证明。发布顺序和回滚见 [Vercel 队列方案](../../deployment/room-experience-vercel-queues.md)。
 
@@ -95,6 +95,12 @@ Desktop Bridge 最后一轮读取和导出已恢复；此前问题是实例后�
 
 用户明确自行执行真机测试；代理没有真机 PASS 证据。用户设备验收范围：登录/资料/创建/消息/笔记键盘；两机消息显示；旁听者听不到私人录音；松开后恢复对话；切后台/失败/取消/离房无残留采集；退出立即停本地媒体。需两台设备完成音频隔离证据。
 
-四个线上迁移已完成，见 [迁移证据](production-migrations.json)；5 个账号登录及 admin/mobile 同源浏览器 exchange、HttpOnly cookie、logout 已在线验证，见 [认证证据](production-auth-smoke.json)。Google capabilities 为 false。API/消费者和客户端生产发布、provider 恢复采样仍待完成。首次上线先更新后端再验收新版 APK，当前在线旧 API 不提供本次全部合同。
+四个线上迁移已完成，见 [迁移证据](production-migrations.json)；5 个账号登录及 admin/mobile 同源浏览器 exchange、HttpOnly cookie、logout 已在线验证，见 [认证证据](production-auth-smoke.json)。Google capabilities 为 false。API 和客户端生产发布已完成，消费者触发和 provider 恢复采样仍待完成。固定下载已指向与生产一致的 0.0.7 APK；不能把交付成功等同于后台清理验收。
 
 OpenSpec 未完成项保留未勾选；在视觉、真机、云端门槛满足前不归档，也不宣称这七项全部完成。
+
+2026-10-08 的 [真实生产房间检查](production-room-smoke.json) 证明范围、消息和快速退出；响应外清理未通过。请求内追踪播种与失败重试已补充本地验证，不能代替重新部署后的独立消费者证据。
+
+## 2026-10-08 后台恢复补丁本地验证
+
+`pnpm --filter @slogan/api verify` 完整通过：lint、typecheck、40 个 unit suites / 229 tests、38 个 integration suites / 199 tests、20 个 HTTP e2e suites / 106 tests、build 和 OpenAPI 合同检查。新增 HTTP 测试证明请求上下文保留、发布未完成时 HTTP 已返回，以及失败日志只含安全分类；队列单测覆盖首次失败重试、并发去重和五分钟后重新播种。两个 OpenSpec 严格检查、冻结依赖安装和 diff 检查通过。这些是本地证据，部署后独立清理仍需重验。
