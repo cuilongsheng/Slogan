@@ -1,0 +1,21 @@
+{
+  "commit": "ee901b415ee3e37e51f31fd03b68a1a5a1adfa4e",
+  "version": "0.0.1",
+  "versionCode": 1001,
+  "package": "com.slogan.mobile",
+  "apiOrigin": "https://slogan-api-pi.vercel.app",
+  "sha256": "ee700d160c1df748e055cfb378f556133b525e91c3a4c4bba925ed6fa108443f",
+  "bytes": 85035114,
+  "abi": ["arm64-v8a"],
+  "signing": "controlled-debug",
+  "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c",
+  "launcherResources": 15,
+  "builtAt": "2026-10-08T01:38:05.585Z",
+  "deviceVerified": false,
+  "evidence": "local actual APK; production deployment not verified",
+  "negativeChecks": ["wrong commit rejected", "wrong versionCode rejected"],
+  "gradle": "9.3.1",
+  "jdk": "Temurin 21.0.12.1",
+  "nativeTasks": 990,
+  "buildSeconds": 165
+}

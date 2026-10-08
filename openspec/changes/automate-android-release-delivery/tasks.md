@@ -1,8 +1,8 @@
 ## 1. 构建与可追溯产物
 
 - [ ] 1.1 固定工具链并配置只读 PR 构建、main 发布权限；验证 workflow 语法、事件边界及实际 Actions 构建。
-- [ ] 1.2 接入公开提交/API 元数据和递增 Android 版本；验证 Expo config 与 APK 实际 app.config/Manifest/bundle。
-- [ ] 1.3 校验稳定签名、APK 哈希、原生标志并输出 release 元数据；验证实际构建产物与失败校验测试。
+- [x] 1.2 接入公开提交/API 元数据和递增 Android 版本；验证 Expo config 与 APK 实际 app.config/Manifest/bundle。
+- [x] 1.3 校验稳定签名、APK 哈希、原生标志并输出 release 元数据；验证实际构建产物与失败校验测试。
 
 ## 2. 生产门槛与下载
 
@@ -14,3 +14,5 @@
 
 - [ ] 3.1 执行受影响 lint/typecheck/测试/构建、OpenSpec 严格检查，记录本地与云端证据。
 - [ ] 3.2 提交并创建 PR、生产合并/部署、下载入口验收；记录提交、Release、APK 和用户负责的真机验证边界。
+
+2026-10-08：本地实际 APK 与负例、16 个 Pages/发布门槛测试、新增 API e2e 3 个测试、受影响 lint/typecheck/build、actionlint 和严格 OpenSpec 校验通过。实际 Actions、生产 Release/下载与 PR/main 合并仍未通过，不能据此归档。见 `docs/acceptance/automate-android-release-delivery/README.md`。

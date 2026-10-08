@@ -17,3 +17,7 @@ GitHub main 仓库规则要求 PR。连接器未登录，Chrome 表单操作因 
 云端消费者触发、停止客户端后的清理收敛和故障恢复没有 PASS 证据。完整视觉、真机键盘、两机音频与真实 STT/AI 保留未完成状态，OpenSpec 未归档。Android 产物见 [APK 记录](2026-10-07-room-experience-android.md)，iOS 不在范围。
 
 发布与回滚顺序见 [队列方案](../deployment/room-experience-vercel-queues.md)。
+
+## 2026-10-08 自动交付续办
+
+新增同仓库 PR/codex 分支 APK 构建与 main 生产校验后的 GitHub Release 发布。Pages 提供固定下载重定向，不把超过 25 MiB 的 APK 直接放入静态产物。API 响应头、Pages release.json 和 APK 内置提交都用于核对实际版本。配置见 [自动交付方案](../deployment/android-automatic-delivery.md)，当前本地证据与云端未完成项见 [验收记录](../acceptance/automate-android-release-delivery/README.md)。
