@@ -46,6 +46,10 @@ jobs:
           node --test scripts/tests/release-delivery.test.mjs scripts/tests/pages-proxy.test.mjs
           pnpm --filter @slogan/mobile typecheck
           pnpm --filter @slogan/mobile lint
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          cmdline-tools-version: '15859902'
+          log-accepted-android-sdk-licenses: false
       - name: Prepare Android SDK and native app
         run: |
           sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006'
