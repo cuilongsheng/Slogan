@@ -35,7 +35,12 @@ const manifest = execFileSync(
 assert.match(badging, /package: name='com\.slogan\.mobile'/);
 assert.match(badging, /native-code: 'arm64-v8a'/);
 assert.doesNotMatch(badging, /application-debuggable/);
-assert.match(manifest, /windowSoftInputMode[^\n]*0x10/);
+const softInputMode = manifest.match(/windowSoftInputMode[^\n]*=0x([a-f0-9]+)/)?.[1];
+assert.equal(
+  parseInt(softInputMode ?? '', 16) & 0xf0,
+  0x10,
+  'Main activity must resize for keyboard',
+);
 const config = JSON.parse(
   execFileSync('unzip', ['-p', apk, 'assets/app.config'], { encoding: 'utf8' }),
 );
