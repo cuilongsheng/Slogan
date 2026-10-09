@@ -2,17 +2,19 @@ import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import type { StyleProp, TextStyle } from 'react-native';
 
 import { t } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { RoomProcessingConsentApi, bundledNoticeVersion, currentConsent, type ConsentItem, type RoomConsentPurpose } from './api';
 
-export function RoomConsentPanel({ safety, keywords, onReadyChange, allowRevoke = false }: {
+export function RoomConsentPanel({ safety, keywords, onReadyChange, allowRevoke = false, headingStyle }: {
   safety: boolean;
   keywords: boolean;
   onReadyChange?: (ready: boolean) => void;
   allowRevoke?: boolean;
+  headingStyle?: StyleProp<TextStyle>;
 }) {
   const { authorized } = useAuth();
   const api = useMemo(() => new RoomProcessingConsentApi(authorized), [authorized]);
@@ -62,7 +64,7 @@ export function RoomConsentPanel({ safety, keywords, onReadyChange, allowRevoke 
 
   if (required.length === 0) return null;
   return <View style={styles.panel}>
-    <Text style={styles.heading}>{t('consentHeading')}</Text>
+    <Text style={[styles.heading, headingStyle]}>{t('consentHeading')}</Text>
     {loading && !items ? <ActivityIndicator color={tokens.color.purple} /> : null}
     {error ? <View style={styles.errorRow}><Text accessibilityRole="alert" style={styles.error}>{error}</Text><TouchableOpacity accessibilityRole="button" onPress={() => void refresh()}><Text style={styles.link}>{t('retry')}</Text></TouchableOpacity></View> : null}
     {items === null ? <TouchableOpacity accessibilityRole="button" onPress={() => void refresh()}><Text style={styles.link}>{t('retry')}</Text></TouchableOpacity> : required.map((purpose) => {

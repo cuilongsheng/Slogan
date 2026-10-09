@@ -17,6 +17,10 @@
 
 ## 使用流程
 
+后端已接入 Vercel Git 自动部署。配置入口为 `slogan-api → Settings → Git / Build and Deployment`：仓库 `cuilongsheng/Slogan`，Root Directory `apps/api`，Framework Preset `NestJS`，Production Branch `main`。API 构建脚本为 `prisma generate && nest build`。环境变量按用途配置到 Production 与 Preview；修改变量后需要重新部署才能生效。推送非 main 分支产生 Preview，PR 合并到 main 后产生 Production，不需要手动点击 Deploy。依据：[Vercel Git 部署](https://vercel.com/docs/git)。
+
+这不包含数据库自动迁移：`prisma generate` 生成客户端，不执行迁移。当前生产部署没有自动运行 `prisma migrate deploy`；包含 schema 变更的发布需要先完成兼容迁移与备份，再发布依赖新 schema 的 API。Android 发布门槛核对部署提交，不能代替数据库迁移。
+
 提交 PR 后自动执行预览部署和 APK 构建。PR 包位于 Actions artifact，使用既有生产 API；在 main 生产发布完成前，不把它描述成完整可用的新合同包。合并后构建与线上提交一致的 APK，自动发布到固定下载入口。用户安装该包执行真机验证。
 
 Cloudflare Pages 每个文件最多 25 MiB，而当前 APK 约 85 MB，所以站点保存固定重定向入口，APK 保存到 GitHub Releases；不把 APK 提交到 Git，也不申请 R2 token。下载重定向只处理 GET/HEAD，目标固定，不转发会话 cookie 或 bearer token。

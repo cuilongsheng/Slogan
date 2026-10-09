@@ -22,6 +22,7 @@ export interface MediaPlatform {
   stop(): Promise<void>;
   attachRemoteAudio(track: RemoteTrack): void;
   detachRemoteAudio(track: RemoteTrack): void;
+  requestMicrophone?(): Promise<void>;
 }
 
 export class LiveKitVoiceMedia {
@@ -123,7 +124,10 @@ export class LiveKitVoiceMedia {
 
   async setMicrophoneEnabled(enabled: boolean): Promise<void> {
     if (!this.room || this.connection !== 'connected') return;
-    await this.room.localParticipant.setMicrophoneEnabled(enabled);
+    const room = this.room;
+    if (enabled) await this.platform.requestMicrophone?.();
+    if (this.room !== room || this.connection !== 'connected') return;
+    await room.localParticipant.setMicrophoneEnabled(enabled);
     this.emit();
   }
 

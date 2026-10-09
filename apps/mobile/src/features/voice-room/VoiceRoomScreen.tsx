@@ -24,6 +24,7 @@ import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { RoomDiscoveryApi } from '../room-discovery/api';
 import { useJoinDraft, type JoinDraft } from '../room-discovery/join';
+import { RoomConsentPanel } from '../room-processing-consents';
 import { remainingMinutes } from '../room-discovery/presentation';
 import { VoiceRoomApi, type RoomMember } from './api';
 import { ExpressionAssistanceApi } from './assistanceApi';
@@ -71,6 +72,9 @@ function voiceError(code: string | null): string {
       return t('voiceProviderUnavailable');
     case 'MICROPHONE_UNAVAILABLE':
       return t('joinDeviceUnavailable');
+    case 'ROOM_SPEECH_CONSENT_REQUIRED':
+    case 'POST_ROOM_KEYWORDS_CONSENT_REQUIRED':
+      return t('voiceProcessingConsentRequired');
     case 'ROOM_LEAVE_UNCONFIRMED':
       return t('voiceLeaveUnconfirmed');
     default:
@@ -117,6 +121,11 @@ function SessionState({
 }) {
   const router = useRouter();
   const [successor, setSuccessor] = useState<string | null>(null);
+  const [consentReady, setConsentReady] = useState(false);
+  const needsProcessingConsent = [
+    'ROOM_SPEECH_CONSENT_REQUIRED',
+    'POST_ROOM_KEYWORDS_CONSENT_REQUIRED',
+  ].includes(snapshot.errorCode ?? '');
   const exiting = ['leaving', 'leaveUnconfirmed'].includes(snapshot.phase);
   const chooseSuccessor = snapshot.errorCode === 'ROOM_SUCCESSOR_INVALID';
   const busy = ['joining', 'connecting', 'leaving', 'idle'].includes(snapshot.phase);
@@ -136,80 +145,114 @@ function SessionState({
     );
   return (
     <VoicePage>
-      <View style={styles.stateHeader}>
-        <Text style={styles.stateTitle}>
-          {t(exiting ? 'voiceLeave' : 'voiceReconnectingTitle')}
-        </Text>
-        <Text style={styles.stateSubtitle}>
-          {t(exiting ? 'voiceLocalAudioStopped' : 'voiceReconnectSubtitle')}
-        </Text>
-      </View>
-      <View style={styles.stateCard}>
-        {busy ? (
-          <ActivityIndicator color="#77E1D0" size="large" />
-        ) : (
-          <Text style={styles.stateIcon}>↻</Text>
+      <ScrollView contentContainerStyle={styles.entryScroll}>
+        <View style={styles.stateHeader}>
+          <Text style={styles.stateTitle}>
+            {t(
+              exiting
+                ? 'voiceLeave'
+                : snapshot.credentialVersion === null
+                  ? 'voiceJoiningTitle'
+                  : 'voiceReconnectingTitle',
+            )}
+          </Text>
+          <Text style={styles.stateSubtitle}>
+            {t(
+              exiting
+                ? 'voiceLocalAudioStopped'
+                : snapshot.credentialVersion === null
+                  ? 'voiceJoiningSubtitle'
+                  : 'voiceReconnectSubtitle',
+            )}
+          </Text>
+        </View>
+        {needsProcessingConsent && snapshot.room && (
+          <RoomConsentPanel
+            safety={snapshot.room.sensitiveSpeechDetectionEnabled}
+            keywords={snapshot.room.postRoomKeywordsEnabled}
+            onReadyChange={setConsentReady}
+            headingStyle={styles.consentHeading}
+          />
         )}
-        <Text style={styles.stateMessage}>{title}</Text>
-        {snapshot.credentialVersion !== null && snapshot.phase === 'failed' && (
-          <Text style={styles.stateHint}>{t('voiceSeatStillActive')}</Text>
-        )}
-      </View>
-      {!busy && (
-        <View style={styles.stateActions}>
-          {chooseSuccessor &&
-            snapshot.members
-              .filter((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
-              .map((member) => (
-                <TouchableOpacity
-                  key={member.membershipId}
-                  accessibilityRole="button"
-                  onPress={() => setSuccessor(member.membershipId)}
-                  style={[
-                    styles.successorOption,
-                    successor === member.membershipId && styles.successorSelected,
-                  ]}
-                >
-                  <Text style={styles.successorText}>{member.displayName}</Text>
-                </TouchableOpacity>
-              ))}
-          {snapshot.phase === 'preparationRequired' || needsEarlierStep ? (
-            <VoiceButton
-              label={t('voiceBackToPreparation')}
-              onPress={() =>
-                router.replace(
-                  snapshot.errorCode === 'ROOM_RULES_NOT_ACCEPTED'
-                    ? `/rooms/${roomId}/rules`
-                    : snapshot.errorCode?.startsWith('ROOM_PASSWORD')
-                      ? `/rooms/${roomId}/password`
-                      : `/rooms/${roomId}`,
-                )
-              }
-            />
+        <View style={[styles.stateCard, needsProcessingConsent && styles.consentStateCard]}>
+          {busy ? (
+            <ActivityIndicator color="#77E1D0" size="large" />
           ) : (
-            <VoiceButton
-              disabled={
-                chooseSuccessor &&
-                !successor &&
-                snapshot.members.some(
-                  (member) => member.role !== 'HOST' && member.presence === 'CONNECTED',
-                )
-              }
-              label={t('retry')}
-              onPress={() =>
-                exiting ? void session.leave(successor ?? undefined) : void session.start(draft)
-              }
-            />
+            <Text style={styles.stateIcon}>↻</Text>
           )}
-          {snapshot.credentialVersion !== null && !exiting && (
-            <VoiceButton
-              label={t('voiceLeave')}
-              onPress={() => void session.leave()}
-              style={styles.secondaryAction}
-            />
+          <Text style={styles.stateMessage}>{title}</Text>
+          {snapshot.credentialVersion !== null && snapshot.phase === 'failed' && (
+            <Text style={styles.stateHint}>{t('voiceSeatStillActive')}</Text>
           )}
         </View>
-      )}
+        {!busy && (
+          <View style={styles.stateActions}>
+            {chooseSuccessor &&
+              snapshot.members
+                .filter((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
+                .map((member) => (
+                  <TouchableOpacity
+                    key={member.membershipId}
+                    accessibilityRole="button"
+                    onPress={() => setSuccessor(member.membershipId)}
+                    style={[
+                      styles.successorOption,
+                      successor === member.membershipId && styles.successorSelected,
+                    ]}
+                  >
+                    <Text style={styles.successorText}>{member.displayName}</Text>
+                  </TouchableOpacity>
+                ))}
+            {snapshot.phase === 'preparationRequired' || needsEarlierStep ? (
+              <VoiceButton
+                label={t(
+                  snapshot.errorCode?.startsWith('ROOM_PASSWORD')
+                    ? 'joinPasswordTitle'
+                    : 'voiceBackToDiscover',
+                )}
+                onPress={() =>
+                  router.replace(
+                    snapshot.errorCode?.startsWith('ROOM_PASSWORD')
+                      ? `/rooms/${roomId}/password`
+                      : '/rooms',
+                  )
+                }
+              />
+            ) : (
+              <VoiceButton
+                disabled={
+                  (needsProcessingConsent && !consentReady) ||
+                  (chooseSuccessor &&
+                    !successor &&
+                    snapshot.members.some(
+                      (member) => member.role !== 'HOST' && member.presence === 'CONNECTED',
+                    ))
+                }
+                label={t('retry')}
+                onPress={() =>
+                  exiting ? void session.leave(successor ?? undefined) : void session.start(draft)
+                }
+              />
+            )}
+            {snapshot.credentialVersion !== null && !exiting && (
+              <VoiceButton
+                label={t('voiceLeave')}
+                onPress={() => void session.leave()}
+                style={styles.secondaryAction}
+              />
+            )}
+            {snapshot.credentialVersion === null &&
+              snapshot.phase !== 'preparationRequired' &&
+              !needsEarlierStep && (
+                <VoiceButton
+                  label={t('voiceBackToDiscover')}
+                  onPress={() => router.replace('/rooms')}
+                  style={styles.secondaryAction}
+                />
+              )}
+          </View>
+        )}
+      </ScrollView>
     </VoicePage>
   );
 }
@@ -847,6 +890,9 @@ export function VoiceRoomScreen({ roomId }: { roomId: string }) {
 }
 
 const styles = StyleSheet.create({
+  entryScroll: { flexGrow: 1 },
+  consentHeading: { color: '#fff' },
+  consentStateCard: { marginTop: 24 },
   messages: { maxHeight: 120, marginVertical: 8 },
   avatarPhoto: { width: 48, height: 48, borderRadius: 24 },
   speakerPhoto: { width: 72, height: 72, borderRadius: 36 },

@@ -9,6 +9,7 @@ export interface JoinDraft {
 interface JoinContextValue {
   draft: JoinDraft | null;
   begin(roomId: string, invitationId?: string): void;
+  beginDirect(roomId: string, invitationId?: string): void;
   password(value: string): void;
   acceptRules(value: boolean): void;
   clear(): void;
@@ -18,7 +19,11 @@ export function validRoomPassword(value: string) {
   return /^\d{4}$/.test(value);
 }
 
-export function beginJoin(previous: JoinDraft | null, roomId: string, invitationId?: string): JoinDraft {
+export function beginJoin(
+  previous: JoinDraft | null,
+  roomId: string,
+  invitationId?: string,
+): JoinDraft {
   return previous?.roomId === roomId && previous.invitationId === invitationId
     ? previous
     : { roomId, password: '', rulesAccepted: false, ...(invitationId ? { invitationId } : {}) };
@@ -28,6 +33,14 @@ export function updateJoinPassword(previous: JoinDraft | null, input: string): J
   return previous
     ? { ...previous, password: input.replace(/\D/g, '').slice(0, 4), rulesAccepted: false }
     : null;
+}
+
+export function beginDirectJoin(
+  previous: JoinDraft | null,
+  roomId: string,
+  invitationId?: string,
+): JoinDraft {
+  return { ...beginJoin(previous, roomId, invitationId), rulesAccepted: true };
 }
 
 export function updateJoinRules(previous: JoinDraft | null, accepted: boolean): JoinDraft | null {
@@ -43,6 +56,9 @@ export function JoinProvider({ children }: { children: ReactNode }) {
       draft,
       begin(roomId, invitationId) {
         setDraft((previous) => beginJoin(previous, roomId, invitationId));
+      },
+      beginDirect(roomId, invitationId) {
+        setDraft((previous) => beginDirectJoin(previous, roomId, invitationId));
       },
       password(input) {
         setDraft((previous) => updateJoinPassword(previous, input));

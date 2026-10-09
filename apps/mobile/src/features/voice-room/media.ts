@@ -1,4 +1,5 @@
 import { AudioSession, registerGlobals } from '@livekit/react-native';
+import { requestRecordingPermissionsAsync } from 'expo-audio';
 
 import { LiveKitVoiceMedia } from './mediaCore';
 
@@ -14,5 +15,9 @@ export function createVoiceMedia(): LiveKitVoiceMedia {
     stop: () => AudioSession.stopAudioSession(),
     attachRemoteAudio() {},
     detachRemoteAudio() {},
+    async requestMicrophone() {
+      const permission = await requestRecordingPermissionsAsync();
+      if (!permission.granted) throw new Error('MICROPHONE_UNAVAILABLE');
+    },
   });
 }
