@@ -20,5 +20,5 @@ export function roomLevelLabel(room: {
 }) {
   const min = room.cefrLevelMin ?? room.cefrLevel.split('_')[0];
   const max = room.cefrLevelMax ?? room.cefrLevel.split('_').at(-1);
-  return min === max ? min : `${min}–${max}`;
+  return min === max ? (min ?? room.cefrLevel) : `${min}–${max}`;
 }

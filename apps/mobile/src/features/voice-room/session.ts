@@ -1,6 +1,6 @@
 import type { RoomDetail } from '../room-discovery/api';
 import { RoomApiError } from '../room-discovery/api';
-import type { JoinDraft } from '../room-discovery/join';
+import { validRoomPassword, type JoinDraft } from '../room-discovery/join';
 import type { MediaSnapshot, LiveKitVoiceMedia } from './mediaCore';
 import type { RoomMember, RoomSafetyAlert, VoiceRoomApi } from './api';
 
@@ -45,7 +45,8 @@ type Media = Pick<
   | 'setMicrophoneEnabled'
   | 'startAudio'
   | 'disconnect'
->;
+> &
+  Partial<Pick<LiveKitVoiceMedia, 'checkDevices'>>;
 
 function errorCode(error: unknown): string {
   return error instanceof RoomApiError ? error.code : 'NETWORK_ERROR';
@@ -71,6 +72,7 @@ export class VoiceRoomSession {
   private safetyUnsubscribe: () => void;
   private safetyGeneration = 0;
   private roomRefreshGeneration = 0;
+  private refreshPending: Promise<void> | null = null;
   private disposed = false;
   private leavingSuccessor: string | undefined;
 
@@ -195,14 +197,19 @@ export class VoiceRoomSession {
       const membership = room.currentMembership;
       const active = membership?.lifecycle === 'ACTIVE';
       if (!active) {
-        if (draft?.roomId !== this.roomId || !draft.rulesAccepted) {
-          this.update({ phase: 'preparationRequired' });
+        if (
+          room.passwordProtected &&
+          !validRoomPassword(draft?.roomId === this.roomId ? draft.password : '')
+        ) {
+          this.update({ phase: 'failed', errorCode: 'ROOM_PASSWORD_REQUIRED' });
           return;
         }
         const joined = await this.api.join(this.roomId, {
           rulesAccepted: true,
-          ...(room.passwordProtected ? { password: draft.password } : {}),
-          ...(draft.invitationId ? { invitationId: draft.invitationId } : {}),
+          ...(room.passwordProtected ? { password: draft?.password ?? '' } : {}),
+          ...(draft?.roomId === this.roomId && draft.invitationId
+            ? { invitationId: draft.invitationId }
+            : {}),
         });
         if (joined.currentMembership?.lifecycle !== 'ACTIVE') {
           throw new RoomApiError(409, 'ROOM_MEMBER_NOT_ACTIVE');
@@ -239,7 +246,16 @@ export class VoiceRoomSession {
     }
   }
 
-  async refresh(): Promise<void> {
+  refresh(): Promise<void> {
+    if (this.refreshPending) return this.refreshPending;
+    const pending = this.refreshRoom().finally(() => {
+      if (this.refreshPending === pending) this.refreshPending = null;
+    });
+    this.refreshPending = pending;
+    return pending;
+  }
+
+  private async refreshRoom(): Promise<void> {
     if (
       this.disposed ||
       ['left', 'ended', 'leaving', 'leaveUnconfirmed'].includes(this.state.phase)
@@ -302,6 +318,10 @@ export class VoiceRoomSession {
     } catch {
       this.update({ errorCode: 'MICROPHONE_UNAVAILABLE' });
     }
+  }
+
+  async recheckDevices(): Promise<void> {
+    if (this.state.phase === 'active') await this.media.checkDevices?.();
   }
 
   async enableAudioPlayback(): Promise<void> {

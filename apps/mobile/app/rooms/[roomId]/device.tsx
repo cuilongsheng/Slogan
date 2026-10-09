@@ -1,13 +1,20 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 
 import { Gate } from '../../../src/features/auth';
-import { JoinDeviceScreen } from '../../../src/features/room-discovery/JoinScreens';
 
-export default function DeviceRoute() {
-  const { roomId } = useLocalSearchParams<{ roomId: string }>();
+export default function RoomEntryRoute() {
+  const { roomId, invitationId } = useLocalSearchParams<{
+    roomId: string;
+    invitationId?: string;
+  }>();
   return (
     <Gate allow="ELIGIBLE">
-      <JoinDeviceScreen roomId={roomId} />
+      <Redirect
+        href={{
+          pathname: '/rooms/[roomId]/session',
+          params: { roomId, ...(invitationId ? { invitationId } : {}) },
+        }}
+      />
     </Gate>
   );
 }

@@ -32,7 +32,7 @@ describe('room detail availability', () => {
 
   it.each([
     ['open', false, '/rooms/room-a/session'],
-    ['password', true, '/rooms/room-a/password'],
+    ['password', true, '/rooms/room-a/session'],
   ])(
     'routes an available %s room directly to entry or the required password input',
     async (_, passwordProtected, path) => {

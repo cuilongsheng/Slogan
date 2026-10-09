@@ -134,11 +134,7 @@ export function RoomListScreen() {
                 if (entering.current) return;
                 entering.current = true;
                 beginDirect(item.id);
-                router.push(
-                  item.passwordProtected
-                    ? `/rooms/${item.id}/password`
-                    : `/rooms/${item.id}/session`,
-                );
+                router.push(`/rooms/${item.id}/session`);
               }}
             />
           )}

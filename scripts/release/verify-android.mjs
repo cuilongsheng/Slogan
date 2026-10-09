@@ -77,6 +77,10 @@ const bundle = execFileSync('unzip', ['-p', apk, 'assets/index.android.bundle'],
   maxBuffer: 32 * 1024 * 1024,
 });
 assert(bundle.includes(Buffer.from(API_ORIGIN)), 'APK bundle API does not match production');
+assert(
+  bundle.includes(Buffer.from('voice-room-direct-entry-v2')),
+  'APK is missing the current room UI',
+);
 const bytes = await readFile(apk);
 const digest = createHash('sha256').update(bytes).digest('hex');
 const metadata = {
@@ -91,6 +95,7 @@ const metadata = {
   signing: 'controlled-debug',
   certificateSha256: certificate,
   launcherResources,
+  roomUiRevision: 'direct-entry-v2',
   builtAt: new Date().toISOString(),
   deviceVerified: false,
 };

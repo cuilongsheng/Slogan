@@ -3,7 +3,6 @@ import { roomLevelLabel } from '../room-discovery/presentation';
 import { useRoomMessages } from './useRoomMessages';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   AppState,
@@ -23,7 +22,8 @@ import { t, tf } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { RoomDiscoveryApi } from '../room-discovery/api';
-import { useJoinDraft, type JoinDraft } from '../room-discovery/join';
+import { beginDirectJoin, useJoinDraft, type JoinDraft } from '../room-discovery/join';
+import { RoomPasswordDialog } from '../room-discovery/RoomPasswordDialog';
 import { RoomConsentPanel } from '../room-processing-consents';
 import { remainingMinutes } from '../room-discovery/presentation';
 import { VoiceRoomApi, type RoomMember } from './api';
@@ -33,6 +33,7 @@ import { RoomControls } from './RoomControls';
 import { RoomExtensionSheet } from './RoomExtensionSheet';
 import { RoomSafetyAlertsSheet } from './RoomSafetyAlertsSheet';
 import { createVoiceMedia } from './media';
+import { RoomDeviceNotice } from './RoomDeviceNotice';
 import { VoiceRoomSession, type VoiceSessionSnapshot } from './session';
 import profileIcon from '../../../assets/icons/profile.png';
 import micIcon from '../../../assets/icons/mic.png';
@@ -45,7 +46,6 @@ import hostIcon from '../../../assets/icons/voice-host.png';
 import sendIcon from '../../../assets/icons/voice-send.png';
 import roomMicIcon from '../../../assets/icons/voice-mic.png';
 import micOffIcon from '../../../assets/icons/voice-mic-off.png';
-import burstIcon from '../../../assets/icons/speech-burst.png';
 import gbFlag from '../../../assets/icons/flag-gb.png';
 import jpFlag from '../../../assets/icons/flag-jp.png';
 import usFlag from '../../../assets/icons/flag-us.png';
@@ -113,15 +113,20 @@ function SessionState({
   session,
   roomId,
   draft,
+  onPassword,
 }: {
   snapshot: VoiceSessionSnapshot;
   session: VoiceRoomSession;
   roomId: string;
   draft: JoinDraft | null;
+  onPassword: (password: string) => void;
 }) {
   const router = useRouter();
   const [successor, setSuccessor] = useState<string | null>(null);
   const [consentReady, setConsentReady] = useState(false);
+  const needsPassword =
+    snapshot.credentialVersion === null &&
+    ['ROOM_PASSWORD_REQUIRED', 'ROOM_PASSWORD_INVALID'].includes(snapshot.errorCode ?? '');
   const needsProcessingConsent = [
     'ROOM_SPEECH_CONSENT_REQUIRED',
     'POST_ROOM_KEYWORDS_CONSENT_REQUIRED',
@@ -142,6 +147,16 @@ function SessionState({
     snapshot.credentialVersion === null &&
     ['ROOM_PASSWORD_INVALID', 'ROOM_PASSWORD_REQUIRED', 'ROOM_RULES_NOT_ACCEPTED'].includes(
       snapshot.errorCode ?? '',
+    );
+  if (needsPassword)
+    return (
+      <VoicePage>
+        <RoomPasswordDialog
+          invalid={snapshot.errorCode === 'ROOM_PASSWORD_INVALID'}
+          onCancel={() => router.replace('/rooms')}
+          onSubmit={onPassword}
+        />
+      </VoicePage>
     );
   return (
     <VoicePage>
@@ -292,38 +307,73 @@ function MemberSeat({
   member,
   snapshot,
   onPress,
+  onRemove,
 }: {
   member: RoomMember;
   snapshot: VoiceSessionSnapshot;
   onPress: () => void;
+  onRemove: (() => void) | undefined;
 }) {
   const media = snapshot.media.participants.find(
     (participant) => participant.identity === member.participantIdentity,
   );
   return (
-    <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityLabel={member.displayName}
-      onPress={onPress}
-      style={styles.seat}
-    >
-      <View style={[styles.avatar, media?.speaking && styles.avatarSpeaking]}>
-        <Image
-          source={member.avatarUrl ? { uri: member.avatarUrl } : profileIcon}
-          style={styles.avatarPhoto}
-        />
-        {member.nationalityCode && countryFlags[member.nationalityCode] && (
-          <Image source={countryFlags[member.nationalityCode]} style={styles.countryFlag} />
-        )}
-        {!media?.microphoneEnabled && <Image source={micOffIcon} style={styles.seatMic} />}
-      </View>
-      <View style={styles.seatIdentity}>
-        {member.role === 'HOST' && <Image source={hostIcon} style={styles.hostIcon} />}
-        <Text numberOfLines={1} style={styles.seatName}>
-          {member.displayName}
-        </Text>
-      </View>
-    </TouchableOpacity>
+    <View style={styles.seat}>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={member.displayName}
+        onPress={onPress}
+        style={styles.seatPress}
+      >
+        <View
+          style={[
+            styles.avatar,
+            member.role === 'HOST' && styles.avatarHost,
+            media?.speaking && styles.avatarSpeaking,
+          ]}
+        >
+          <Image
+            source={member.avatarUrl ? { uri: member.avatarUrl } : profileIcon}
+            style={styles.avatarPhoto}
+          />
+          {member.nationalityCode && countryFlags[member.nationalityCode] && (
+            <View style={styles.flagBadge}>
+              <Image source={countryFlags[member.nationalityCode]} style={styles.countryFlag} />
+            </View>
+          )}
+          {!media?.microphoneEnabled && (
+            <View style={styles.seatMuted}>
+              <Image source={micOffIcon} style={styles.seatMic} />
+            </View>
+          )}
+        </View>
+        <View style={styles.seatIdentity}>
+          <View style={[styles.roleBadge, member.role === 'HOST' && styles.hostBadge]}>
+            {member.role === 'HOST' ? (
+              <Image source={hostIcon} style={styles.hostIcon} />
+            ) : (
+              <>
+                <View style={styles.roleHead} />
+                <View style={styles.roleShoulders} />
+              </>
+            )}
+          </View>
+          <Text numberOfLines={1} style={styles.seatName}>
+            {member.displayName}
+          </Text>
+        </View>
+      </TouchableOpacity>
+      {onRemove && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={`${t('roomRemoveMember')} ${member.displayName}`}
+          onPress={onRemove}
+          style={styles.removeBadge}
+        >
+          <View style={styles.removeMark} />
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
@@ -358,10 +408,10 @@ function VoiceRoomBody({
     await session.setMicrophoneEnabled(true);
     if (!session.snapshot.media.microphoneEnabled) throw new Error('ROOM_MIC_RESTORE_FAILED');
   }, [session]);
-  const [rulesOpen, setRulesOpen] = useState(false);
   const [endConfirm, setEndConfirm] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<RoomMember | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
   const [assistanceOpen, setAssistanceOpen] = useState(false);
@@ -372,11 +422,6 @@ function VoiceRoomBody({
   } | null>(null);
   const [successorMembershipId, setSuccessorMembershipId] = useState<string | null>(null);
   const members = [...snapshot.members].sort((a, b) => a.position - b.position);
-  const speaker = members.find((member) =>
-    snapshot.media.participants.some(
-      (participant) => participant.identity === member.participantIdentity && participant.speaking,
-    ),
-  );
   const room = snapshot.room;
   if (!room) return null;
   return (
@@ -405,7 +450,7 @@ function VoiceRoomBody({
             {room.memberCount} / {room.capacity} {t('voiceOnline')} ·{' '}
             {tf('roomRemainingMinutes', { minutes: remainingMinutes(room.endsAt) })}
           </Text>
-          <Text style={styles.headerLevel}>{roomLevelLabel(room)}</Text>
+          <Text style={styles.headerLevel}>{roomLevelLabel(room).replace('–', ' · ')}</Text>
         </View>
         {
           <TouchableOpacity
@@ -434,22 +479,16 @@ function VoiceRoomBody({
         </TouchableOpacity>
         <Text style={styles.live}>● LIVE</Text>
       </View>
-      <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={() => setRulesOpen(!rulesOpen)}
-          style={[styles.rulesBanner, rulesOpen && styles.rulesExpanded]}
-        >
+      <ScrollView style={styles.memberScroll} contentContainerStyle={styles.bodyContent}>
+        <View style={styles.rulesBanner}>
           <View style={styles.rulesIcon}>
             <Image source={rulesIcon} style={styles.rulesImage} />
           </View>
           <View style={styles.rulesText}>
             <Text style={styles.rulesTitle}>{t('voiceRoomRules')}</Text>
-            <Text numberOfLines={rulesOpen ? undefined : 3} style={styles.rulesPreview}>
-              {rules.join(' ')}
-            </Text>
+            <Text style={styles.rulesPreview}>{rules.join(' ')}</Text>
           </View>
-        </TouchableOpacity>
+        </View>
         {snapshot.role === 'HOST' &&
           room.sensitiveSpeechDetectionEnabled &&
           !snapshot.safetyAlertsDenied && (
@@ -477,122 +516,95 @@ function VoiceRoomBody({
             )}
           </View>
         )}
-        <LinearGradient
-          colors={['#5B3BCB', '#8A55E8']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.speakerCard}
-        >
-          <View pointerEvents="none" style={styles.speakerDecorTop} />
-          <View pointerEvents="none" style={styles.speakerDecorRing} />
-          <Image source={burstIcon} style={styles.speakerBurst} />
-          {speaker && (
-            <View pointerEvents="none" style={styles.speakerWave}>
-              {[8, 15, 22, 8, 15, 22].map((height, index) => (
-                <View key={index} style={[styles.speakerWaveBar, { height }]} />
-              ))}
-            </View>
-          )}
-          <Text style={styles.speakingPill}>
-            {speaker ? t('voiceSpeakingNow') : t('voiceWaitingForSpeech')}
-          </Text>
-          <View style={styles.speakerMain}>
-            <View style={styles.speakerAvatar}>
-              <Image
-                source={speaker?.avatarUrl ? { uri: speaker.avatarUrl } : profileIcon}
-                style={styles.speakerPhoto}
+        <View style={styles.participantStrip}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => setControlsOpen(true)}>
+            <Text style={styles.membersHeading}>
+              {t('voiceRoomMembers')} · {members.length} / {room.capacity} {t('voicePeople')}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.membersGrid}>
+            {members.map((member) => (
+              <MemberSeat
+                key={member.membershipId}
+                member={member}
+                snapshot={snapshot}
+                onPress={() => setControlsOpen(true)}
+                onRemove={
+                  snapshot.role === 'HOST' && member.role !== 'HOST'
+                    ? () => {
+                        setRemoveTarget(member);
+                        setControlsOpen(true);
+                      }
+                    : undefined
+                }
               />
-            </View>
-            <View>
-              <Text style={styles.speakerName}>
-                {speaker ? tf('voiceSpeakingName', { name: speaker.displayName }) : t('voiceQuiet')}
-              </Text>
-              <Text style={styles.speakerMeta}>
-                {speaker
-                  ? `${speaker.role === 'HOST' ? t('roomHost') : t('roomMember')} · ${speaker.cefrLevel.replace('_', '–')}`
-                  : t('voiceMutedByDefault')}
-              </Text>
-            </View>
+            ))}
+            {Array.from({ length: Math.max(0, room.capacity - members.length) }, (_, index) => (
+              <TouchableOpacity
+                key={`empty-${index}`}
+                accessibilityRole="button"
+                accessibilityLabel={t('voiceEmptySeat')}
+                onPress={() => setShareOpen(true)}
+                style={[styles.seat, styles.inviteSeat]}
+              >
+                <View style={styles.emptySeat}>
+                  <Text style={styles.emptyPlus}>+</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
-        </LinearGradient>
-        <TouchableOpacity accessibilityRole="button" onPress={() => setControlsOpen(true)}>
-          <Text style={styles.membersHeading}>
-            {t('voiceRoomMembers')} · {members.length} / {room.capacity}
-          </Text>
-        </TouchableOpacity>
-        <View style={styles.membersGrid}>
-          {members.map((member) => (
-            <MemberSeat
-              key={member.membershipId}
-              member={member}
-              snapshot={snapshot}
-              onPress={() => setControlsOpen(true)}
-            />
-          ))}
-          {Array.from({ length: Math.max(0, room.capacity - members.length) }, (_, index) => (
-            <TouchableOpacity
-              key={`empty-${index}`}
-              accessibilityRole="button"
-              accessibilityLabel={t('voiceEmptySeat')}
-              onPress={() => setShareOpen(true)}
-              style={[styles.seat, styles.inviteSeat]}
-            >
-              <View style={styles.emptySeat}>
-                <Text style={styles.emptyPlus}>+</Text>
-              </View>
-              <Text style={styles.emptyLabel}>{t('voiceEmptySeat')}</Text>
-            </TouchableOpacity>
-          ))}
         </View>
       </ScrollView>
+      <View style={styles.chatArea}>
+        <View pointerEvents="none" style={styles.chatAmbientGold} />
+        <View pointerEvents="none" style={styles.chatAmbientCoral} />
+        <View style={styles.chatRow}>
+          <ScrollView
+            ref={messageScroll}
+            style={styles.messages}
+            contentContainerStyle={styles.messagesContent}
+            onContentSizeChange={() => {
+              if (messageAtBottom.current) messageScroll.current?.scrollToEnd({ animated: true });
+            }}
+            onScroll={({ nativeEvent }) => {
+              messageAtBottom.current =
+                nativeEvent.contentOffset.y + nativeEvent.layoutMeasurement.height >=
+                nativeEvent.contentSize.height - 24;
+            }}
+            scrollEventThrottle={100}
+            keyboardShouldPersistTaps="handled"
+          >
+            {chat.messages.map((message) => (
+              <View key={message.id} style={styles.message}>
+                <Text style={styles.messageName}>{message.senderDisplayName}</Text>
+                <Text selectable style={styles.messageText}>
+                  {message.text}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t('voiceAssistanceLater')}
+            onPress={() => setAssistanceOpen(true)}
+            style={styles.assistanceButton}
+          >
+            <Image source={sparklesIcon} style={styles.sparklesIcon} />
+          </TouchableOpacity>
+        </View>
+      </View>
       <View style={styles.composer}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={() => {
-            setAssistanceOpen(true);
-          }}
-          style={styles.assistanceDisabled}
-        >
-          <Image source={sparklesIcon} style={styles.sparklesIcon} />
-          <Text style={styles.assistanceText}>{t('voiceAssistanceLater')}</Text>
-        </TouchableOpacity>
-        <ScrollView
-          ref={messageScroll}
-          style={styles.messages}
-          onContentSizeChange={() => {
-            if (messageAtBottom.current) messageScroll.current?.scrollToEnd({ animated: true });
-          }}
-          onScroll={({ nativeEvent }) => {
-            messageAtBottom.current =
-              nativeEvent.contentOffset.y + nativeEvent.layoutMeasurement.height >=
-              nativeEvent.contentSize.height - 24;
-          }}
-          scrollEventThrottle={100}
-          keyboardShouldPersistTaps="handled"
-        >
-          {chat.messages.map((message) => (
-            <View key={message.id} style={styles.message}>
-              <Text style={styles.messageName}>{message.senderDisplayName}</Text>
-              <Text selectable style={styles.messageText}>
-                {message.text}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
         {(chat.error || chat.tooLong) && (
           <Text accessibilityRole="alert" style={styles.messageError}>
             {t(chat.tooLong ? 'roomMessageTooLong' : 'roomMessageFailed')}
           </Text>
         )}
-        {!snapshot.media.audioPlaybackAllowed ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-            onPress={() => void session.enableAudioPlayback()}
-            style={styles.soundNotice}
-          >
-            <Text style={styles.soundNoticeText}>{t('voiceEnableSound')}</Text>
-          </TouchableOpacity>
-        ) : null}
+        <RoomDeviceNotice
+          media={snapshot.media}
+          errorCode={snapshot.errorCode}
+          onRetry={() => session.recheckDevices()}
+          onEnableAudio={() => session.enableAudioPlayback()}
+        />
         <View style={styles.controls}>
           <View style={styles.messageEntry}>
             <TextInput
@@ -606,16 +618,16 @@ function VoiceRoomBody({
               onSubmitEditing={() => void chat.send()}
               returnKeyType="send"
             />
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={t('roomSendMessage')}
-              disabled={chat.sending || chat.tooLong || !chat.text.trim()}
-              onPress={() => void chat.send()}
-              style={styles.sendButton}
-            >
-              <Image source={sendIcon} style={styles.sendImage} />
-            </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t('roomSendMessage')}
+            disabled={chat.sending || chat.tooLong || !chat.text.trim()}
+            onPress={() => void chat.send()}
+            style={styles.sendButton}
+          >
+            <Image source={sendIcon} style={styles.sendImage} />
+          </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={
@@ -802,7 +814,11 @@ function VoiceRoomBody({
           isHost={snapshot.role === 'HOST'}
           api={api}
           refresh={() => session.refresh()}
-          onClose={() => setControlsOpen(false)}
+          {...(removeTarget ? { initialRemoveTarget: removeTarget } : {})}
+          onClose={() => {
+            setControlsOpen(false);
+            setRemoveTarget(null);
+          }}
         />
       )}
       {assistanceOpen && (
@@ -829,11 +845,24 @@ function VoiceRoomBody({
   );
 }
 
-export function VoiceRoomScreen({ roomId }: { roomId: string }) {
+export function VoiceRoomScreen({
+  roomId,
+  invitationId,
+}: {
+  roomId: string;
+  invitationId?: string;
+}) {
   const router = useRouter();
   const { authorized } = useAuth();
   const { draft, clear } = useJoinDraft();
-  const initialDraft = useRef(draft);
+  const [entryDraft, setEntryDraft] = useState(() =>
+    beginDirectJoin(
+      draft,
+      roomId,
+      invitationId ?? (draft?.roomId === roomId ? draft.invitationId : undefined),
+    ),
+  );
+  const initialDraft = useRef(entryDraft);
   const api = useMemo(() => new VoiceRoomApi(authorized), [authorized]);
   const assistanceApi = useMemo(() => new ExpressionAssistanceApi(authorized), [authorized]);
   const session = useMemo(
@@ -861,8 +890,29 @@ export function VoiceRoomScreen({ roomId }: { roomId: string }) {
 
   useEffect(() => {
     if (snapshot.phase !== 'active') return;
-    const interval = setInterval(() => void session.refresh(), 15_000);
-    return () => clearInterval(interval);
+    let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
+    const interval = setInterval(() => {
+      if (foreground) void session.refresh();
+    }, 15_000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      const wasForeground = foreground;
+      foreground = state === 'active';
+      if (foreground && !wasForeground) {
+        void session.refresh();
+        const check = session.snapshot.media.deviceCheck;
+        if (
+          check &&
+          (check.microphone === 'blocked' ||
+            check.microphone === 'unavailable' ||
+            check.playback === 'unavailable')
+        )
+          void session.recheckDevices();
+      }
+    });
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
   }, [session, snapshot.phase]);
 
   const participantIdentities = snapshot.media.participants
@@ -871,7 +921,8 @@ export function VoiceRoomScreen({ roomId }: { roomId: string }) {
     .join('|');
   useEffect(() => {
     if (snapshot.phase === 'active' && snapshot.media.connection === 'connected') {
-      void session.refresh();
+      if (AppState.currentState !== 'background' && AppState.currentState !== 'inactive')
+        void session.refresh();
     }
   }, [session, snapshot.phase, snapshot.media.connection, participantIdentities]);
 
@@ -886,39 +937,166 @@ export function VoiceRoomScreen({ roomId }: { roomId: string }) {
       />
     );
   }
-  return <SessionState snapshot={snapshot} session={session} roomId={roomId} draft={draft} />;
+  return (
+    <SessionState
+      snapshot={snapshot}
+      session={session}
+      roomId={roomId}
+      draft={entryDraft}
+      onPassword={(password) => {
+        const nextDraft = { ...entryDraft, password };
+        setEntryDraft(nextDraft);
+        void session.start(nextDraft);
+      }}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
+  assistanceButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 20,
+    backgroundColor: '#443263',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarHost: { borderColor: '#6546EC' },
+  seatPress: { width: 76, height: 74, alignItems: 'center' },
+  participantStrip: {
+    minHeight: 191,
+    marginTop: 8,
+    marginLeft: -3,
+    marginRight: 2,
+    backgroundColor: '#38295B',
+    paddingBottom: 9,
+  },
+  memberScroll: { flexGrow: 0, flexShrink: 1 },
+  removeMark: { width: 10, height: 2.5, borderRadius: 1.25, backgroundColor: '#FFFFFF' },
+  removeBadge: {
+    position: 'absolute',
+    right: 0,
+    top: -3,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#9B355B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleShoulders: {
+    position: 'absolute',
+    bottom: 4,
+    width: 9,
+    height: 5,
+    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+  },
+  roleHead: {
+    position: 'absolute',
+    top: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+  },
+  hostBadge: { backgroundColor: '#7353E9' },
+  roleBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#59A9F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seatMuted: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#22222BD6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flagBadge: {
+    position: 'absolute',
+    left: -9,
+    top: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatAmbientCoral: {
+    position: 'absolute',
+    right: -48,
+    bottom: 46,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#FF6F70',
+    opacity: 0.13,
+  },
+  chatAmbientGold: {
+    position: 'absolute',
+    left: -130,
+    bottom: -157,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#5C3FA0',
+  },
+  chatRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingLeft: 16,
+    paddingRight: 11,
+    paddingBottom: 6,
+    gap: 5,
+  },
+  chatArea: { flex: 1, minHeight: 44, overflow: 'hidden' },
+  messagesContent: { flexGrow: 1, justifyContent: 'flex-end', gap: 6 },
   entryScroll: { flexGrow: 1 },
   consentHeading: { color: '#fff' },
   consentStateCard: { marginTop: 24 },
-  messages: { maxHeight: 120, marginVertical: 8 },
+  messages: { flex: 1 },
   avatarPhoto: { width: 48, height: 48, borderRadius: 24 },
-  speakerPhoto: { width: 72, height: 72, borderRadius: 36 },
   message: {
-    backgroundColor: '#493274',
+    backgroundColor: '#503589',
     borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginBottom: 0,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 4,
   },
-  messageName: { color: '#C7BADF', fontSize: 11, lineHeight: 15 },
-  messageText: { color: '#FFFFFF', fontSize: 13, lineHeight: 18 },
+  messageName: { color: '#C8BBFF', fontSize: 11, lineHeight: 18, maxWidth: 76, minWidth: 34 },
+  messageText: { flex: 1, color: '#C8BBFF', fontSize: 13, lineHeight: 18 },
   messageError: { color: '#FF9C9F', fontSize: 12, marginBottom: 6 },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginLeft: 6,
     backgroundColor: tokens.color.purple,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendImage: { width: 24, height: 24 },
-  countryFlag: { position: 'absolute', left: -3, top: 2, width: 14, height: 10 },
-  seatMic: { position: 'absolute', width: 17, height: 17, left: 16, top: 16 },
-  seatIdentity: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  countryFlag: { width: 14, height: 10 },
+  seatMic: { width: 16, height: 16 },
+  seatIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+    paddingLeft: 5,
+  },
   hostIcon: { width: 12, height: 12 },
   action: {
     minHeight: 54,
@@ -986,14 +1164,17 @@ const styles = StyleSheet.create({
   endedMeta: { color: tokens.color.muted, fontSize: 12, marginTop: 18 },
   header: {
     height: 88,
+    flexShrink: 0,
     marginHorizontal: 16,
+    backgroundColor: '#30204E',
+    borderRadius: 12,
   },
   backHit: { position: 'absolute', left: -6, top: -2, width: 36, height: 38 },
   backIcon: { position: 'absolute', left: 9, top: 5, width: 24, height: 24 },
   headerMiddle: { position: 'absolute', left: 36, top: 3, width: 232 },
   headerTopic: { color: '#fff', fontSize: 18, lineHeight: 25, fontWeight: '700', height: 31 },
-  headerMeta: { color: '#C1B6D9', fontSize: 12, lineHeight: 17, marginTop: 5, height: 24 },
-  headerLevel: { color: '#C1B6D9', fontSize: 11, lineHeight: 15, fontWeight: '500', marginTop: 2 },
+  headerMeta: { color: '#C8BBFF', fontSize: 12, lineHeight: 17, marginTop: 5, height: 24 },
+  headerLevel: { color: '#C8BBFF', fontSize: 11, lineHeight: 15, fontWeight: '500', marginTop: 2 },
   exitHit: { position: 'absolute', left: 270, top: 0, width: 34, height: 34 },
   exitIcon: { position: 'absolute', left: 13, top: 3, width: 18, height: 18 },
   moreHit: { position: 'absolute', right: 0, top: -2, width: 46, height: 42 },
@@ -1001,36 +1182,37 @@ const styles = StyleSheet.create({
   live: {
     position: 'absolute',
     left: 283,
+    width: 68,
+    textAlign: 'right',
     top: 40,
     color: '#71E8CD',
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '500',
   },
-  body: { flex: 1 },
-  bodyContent: { paddingBottom: 16 },
+  bodyContent: { paddingBottom: 0 },
   rulesBanner: {
     marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: 4,
     minHeight: 76,
-    height: 76,
     borderRadius: 18,
     backgroundColor: '#150F29',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 12,
+    paddingVertical: 9,
     gap: 10,
   },
   rulesIcon: {
+    alignSelf: 'center',
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#6943DF',
+    backgroundColor: '#7353E9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   rulesImage: { width: 20, height: 20 },
-  rulesExpanded: { height: 'auto', paddingVertical: 12 },
   rulesText: { flex: 1 },
   safetyAlertsBanner: {
     marginHorizontal: 16,
@@ -1047,162 +1229,67 @@ const styles = StyleSheet.create({
   safetyAlertsTitle: { color: '#fff', fontSize: 12, fontWeight: '700' },
   safetyAlertsHint: { color: '#C7B8E4', fontSize: 10, marginTop: 5 },
   safetyAlertsCount: { color: '#77E5D4', fontSize: 14, fontWeight: '700' },
-  rulesTitle: { color: '#fff', fontSize: 11, lineHeight: 14, fontWeight: '500' },
-  rulesPreview: { color: '#fff', fontSize: 11, lineHeight: 17, marginTop: 1 },
-  speakerCard: {
-    marginHorizontal: 16,
-    marginTop: 6,
-    height: 172,
-    borderRadius: 24,
-    backgroundColor: '#6542D4',
-    overflow: 'hidden',
-  },
-  speakerDecorTop: {
-    position: 'absolute',
-    left: 255,
-    top: -85,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: '#FF907E',
-    opacity: 0.35,
-  },
-  speakerDecorRing: {
-    position: 'absolute',
-    left: -55,
-    top: 92,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 16,
-    borderColor: '#FFFFFF',
-    opacity: 0.18,
-  },
-  speakerBurst: { position: 'absolute', left: 298, top: 14, width: 34, height: 34 },
-  speakerWave: {
-    position: 'absolute',
-    right: 19,
-    top: 88,
-    height: 22,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  speakerWaveBar: { width: 3, borderRadius: 2, backgroundColor: '#89F6E3' },
-  speakingPill: {
-    position: 'absolute',
-    left: 16,
-    top: 13,
-    minWidth: 100,
-    height: 25,
-    color: '#fff',
-    backgroundColor: '#3E2987',
-    alignSelf: 'flex-start',
-    borderRadius: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    overflow: 'hidden',
-    fontSize: 11,
-  },
-  speakerMain: {
-    position: 'absolute',
-    left: 15,
-    top: 53,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 15,
-  },
-  speakerAvatar: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    borderWidth: 3,
-    borderColor: '#6EECD6',
-    backgroundColor: '#A888E9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  speakerInitial: { color: '#fff', fontSize: 29, fontWeight: '700' },
-  speakerName: { color: '#fff', fontSize: 18, lineHeight: 24, fontWeight: '700', marginTop: 5 },
-  speakerMeta: { color: '#E8DFFF', fontSize: 12, lineHeight: 16, fontWeight: '500', marginTop: 6 },
+  rulesTitle: { color: '#FFFFFF', fontSize: 11, lineHeight: 16, fontWeight: '500' },
+  rulesPreview: { color: '#FFFFFF', fontSize: 11, lineHeight: 17 },
   membersHeading: {
-    color: '#E9E3F4',
+    color: '#D7CFF0',
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 22,
     fontWeight: '500',
     marginHorizontal: 16,
-    marginTop: 22,
+    marginTop: 9,
   },
   membersGrid: {
     marginHorizontal: 16,
-    marginTop: 13,
+    marginTop: 3,
     flexDirection: 'row',
     flexWrap: 'wrap',
     columnGap: 14,
-    rowGap: 10,
+    rowGap: 18,
     justifyContent: 'center',
   },
-  seat: { width: 76, height: 82, alignItems: 'center' },
-  inviteSeat: { height: 96 },
+  seat: { width: 76, height: 74, alignItems: 'center' },
+  inviteSeat: { height: 56, justifyContent: 'flex-start', paddingTop: 2 },
   avatar: {
-    width: 51,
-    height: 51,
+    width: 52,
+    height: 52,
     borderRadius: 26,
     borderWidth: 2,
-    borderColor: '#8880A6',
+    borderColor: 'transparent',
     backgroundColor: '#B4A7D9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarSpeaking: { borderColor: '#66E6D1' },
-  avatarText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  seatName: { color: '#fff', fontSize: 12, lineHeight: 15, fontWeight: '500', maxWidth: 58 },
+  avatarSpeaking: { borderColor: '#23C8BE' },
+  seatName: { color: '#FFFFFF', fontSize: 12, lineHeight: 20, fontWeight: '500', maxWidth: 58 },
   emptySeat: {
-    width: 51,
-    height: 51,
-    borderRadius: 26,
-    borderWidth: 2,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: '#B8A9D4',
+    backgroundColor: '#463864',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyPlus: { color: '#fff', fontSize: 31, lineHeight: 37 },
-  emptyLabel: { color: '#C2B5D8', fontSize: 12, marginTop: 7 },
+  emptyPlus: { color: '#FFFFFF', fontSize: 29, lineHeight: 40, fontWeight: '500' },
   composer: {
-    backgroundColor: '#24183F',
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-    paddingTop: 19,
+    backgroundColor: '#271D3E',
+    paddingBottom: Platform.OS === 'web' ? 17 : 8,
+    paddingLeft: 16,
+    paddingRight: 24,
+    paddingTop: 8,
+    flexShrink: 0,
   },
-  assistanceDisabled: {
-    height: 60,
-    borderRadius: 20,
-    backgroundColor: '#49336D',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  sparklesIcon: { width: 20, height: 20 },
-  assistanceText: { color: '#C7B8E4', fontSize: 12 },
-  soundNotice: {
-    height: 46,
-    borderRadius: 14,
-    marginTop: 4,
-    backgroundColor: '#5A3D95',
-    justifyContent: 'center',
-    paddingHorizontal: 15,
-  },
-  soundNoticeText: { color: '#E4DDF4', fontSize: 11, fontWeight: '700' },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  sparklesIcon: { width: 20, height: 20, marginTop: 6, marginLeft: 7 },
+  controls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   messageEntry: {
     flex: 1,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#34264F',
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#2C2545',
+    justifyContent: 'center',
   },
   composerInput: {
     flex: 1,
@@ -1212,12 +1299,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  composerText: { fontFamily: 'NotoSansSC', color: '#C3B8DB', fontSize: 13 },
+  composerText: { fontFamily: 'NotoSansSC', color: '#FFFFFF', fontSize: 14 },
   micButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: tokens.color.coral,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#4F407A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1286,13 +1373,6 @@ const styles = StyleSheet.create({
   handoffAction: { height: 48, minHeight: 48, borderRadius: 24, backgroundColor: '#6D4DE3' },
   handoffActionText: { fontWeight: '500' },
   confirmBody: { color: tokens.color.muted, fontSize: 13, marginTop: 17, marginBottom: 32 },
-  roomTools: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 22,
-    marginTop: 14,
-  },
-  roomToolText: { color: '#D9C9FF', fontSize: 13, fontWeight: '700', paddingVertical: 8 },
   extensionNotice: {
     marginHorizontal: 16,
     marginTop: 8,

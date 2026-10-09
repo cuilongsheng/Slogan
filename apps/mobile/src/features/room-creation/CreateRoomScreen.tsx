@@ -8,9 +8,9 @@ import { tokens } from '../../styles/tokens';
 import burstIcon from '../../../assets/icons/speech-burst.png';
 import { useAuth } from '../auth';
 import { CreateRoomError, RoomCreationApi } from './api';
-import { RoomConsentPanel } from '../room-processing-consents/RoomConsentPanel';
 import {
   initialRoomForm,
+  roomLevelRanges,
   instantInput,
   scheduledInput,
   validateRoomForm,
@@ -18,7 +18,6 @@ import {
   type ValidationError,
 } from './form';
 
-const levels: RoomForm['cefrLevel'][] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const validationText: Record<
   Exclude<ValidationError, null>,
   | 'createRoomTopicInvalid'
@@ -74,7 +73,6 @@ export function CreateRoomScreen() {
   const [form, setForm] = useState<RoomForm>(initialRoomForm);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [consentReady, setConsentReady] = useState(false);
   const submitting = useRef(false);
   function update(patch: Partial<RoomForm>) {
     setForm((current) => ({ ...current, ...patch }));
@@ -85,10 +83,6 @@ export function CreateRoomScreen() {
     const invalid = validateRoomForm(form);
     if (invalid) {
       setError(t(validationText[invalid]));
-      return;
-    }
-    if ((form.sensitiveSpeechDetectionEnabled || form.postRoomKeywordsEnabled) && !consentReady) {
-      setError(t('createRoomConsentRequired'));
       return;
     }
     submitting.current = true;
@@ -156,41 +150,15 @@ export function CreateRoomScreen() {
                 : `${form.cefrLevelMin}–${form.cefrLevelMax}`}
             </Text>
           </View>
-          <Text style={[styles.helper, styles.firstBoundary]}>{t('createRoomLevelFrom')}</Text>
           <View style={styles.levelChoices}>
-            {levels.map((level) => (
+            {roomLevelRanges.map((range) => (
               <Chip
-                key={level}
+                key={range.min}
                 soft
-                label={level}
-                selected={form.cefrLevelMin === level}
+                label={range.label}
+                selected={form.cefrLevelMin === range.min && form.cefrLevelMax === range.max}
                 onPress={() =>
-                  update({
-                    cefrLevel: level,
-                    cefrLevelMin: level,
-                    ...(levels.indexOf(level) > levels.indexOf(form.cefrLevelMax)
-                      ? { cefrLevelMax: level }
-                      : {}),
-                  })
-                }
-              />
-            ))}
-          </View>
-          <Text style={[styles.helper, styles.nextBoundary]}>{t('createRoomLevelTo')}</Text>
-          <View style={styles.levelChoices}>
-            {levels.map((level) => (
-              <Chip
-                key={level}
-                soft
-                label={level}
-                selected={form.cefrLevelMax === level}
-                onPress={() =>
-                  update({
-                    cefrLevelMax: level,
-                    ...(levels.indexOf(level) < levels.indexOf(form.cefrLevelMin)
-                      ? { cefrLevel: level, cefrLevelMin: level }
-                      : {}),
-                  })
+                  update({ cefrLevel: range.min, cefrLevelMin: range.min, cefrLevelMax: range.max })
                 }
               />
             ))}
@@ -236,57 +204,7 @@ export function CreateRoomScreen() {
               style={styles.passwordInput}
             />
           )}
-          <View style={styles.visibilityRow}>
-            <Text style={styles.helper}>{t('createRoomVisibility')}</Text>
-            <TouchableOpacity
-              onPress={() =>
-                update({ visibility: form.visibility === 'PUBLIC' ? 'LINK_ONLY' : 'PUBLIC' })
-              }
-              accessibilityRole="button"
-            >
-              <Text style={styles.visibilityLink}>
-                {t(form.visibility === 'PUBLIC' ? 'createRoomPublic' : 'createRoomLinkOnly')} ▾
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
-        <View style={styles.processingCard}>
-          <Text style={styles.label}>{t('createRoomProcessingTitle')}</Text>
-          <Text style={styles.helper}>{t('createRoomProcessingHint')}</Text>
-          <TouchableOpacity
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: form.sensitiveSpeechDetectionEnabled }}
-            onPress={() =>
-              update({ sensitiveSpeechDetectionEnabled: !form.sensitiveSpeechDetectionEnabled })
-            }
-            style={styles.processingRow}
-          >
-            <Text style={styles.processingName}>{t('consentSafetyTitle')}</Text>
-            <Text style={styles.processingValue}>
-              {form.sensitiveSpeechDetectionEnabled
-                ? t('createRoomProcessingOn')
-                : t('createRoomProcessingOff')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: form.postRoomKeywordsEnabled }}
-            onPress={() => update({ postRoomKeywordsEnabled: !form.postRoomKeywordsEnabled })}
-            style={styles.processingRow}
-          >
-            <Text style={styles.processingName}>{t('consentKeywordsTitle')}</Text>
-            <Text style={styles.processingValue}>
-              {form.postRoomKeywordsEnabled
-                ? t('createRoomProcessingOn')
-                : t('createRoomProcessingOff')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <RoomConsentPanel
-          safety={form.sensitiveSpeechDetectionEnabled}
-          keywords={form.postRoomKeywordsEnabled}
-          onReadyChange={setConsentReady}
-        />
         <View style={styles.scheduleCard}>
           <View style={styles.modeRow}>
             <Chip
@@ -374,22 +292,11 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 14,
     paddingTop: 12,
-    minHeight: 350,
+    minHeight: 207,
   },
-  cardTop: { flexDirection: 'row', gap: 6, alignItems: 'center', height: 20 },
-  whiteTag: {
-    alignSelf: 'flex-start',
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    color: tokens.color.purple,
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
+  cardTop: { flexDirection: 'row', gap: 6, alignItems: 'center', minHeight: 28 },
   burst: { width: 25, height: 25, marginLeft: 'auto' },
-  label: { fontSize: 14, fontWeight: '700', color: tokens.color.foreground },
+  label: { fontSize: 14, lineHeight: 24, fontWeight: '700', color: tokens.color.foreground },
   topicInput: {
     height: 56,
     marginTop: 18,
@@ -409,9 +316,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 1,
   },
   helper: { color: tokens.color.muted, fontSize: 12, lineHeight: 22 },
-  firstBoundary: { marginTop: 17 },
-  nextBoundary: { marginTop: 15 },
-  levelChip: { backgroundColor: '#EEE8FF', borderColor: '#EEE8FF' },
+  levelChip: { flex: 1, minHeight: 44, backgroundColor: '#EEE8FF', borderColor: '#EEE8FF' },
   levelChipText: { color: tokens.color.purple },
   levelValue: {
     width: 64,
@@ -420,33 +325,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 22,
   },
-  levelChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  levelChoices: { flexDirection: 'row', gap: 8, marginTop: 14 },
   accessCard: {
     marginHorizontal: 16,
     marginTop: 13,
     backgroundColor: tokens.color.blueSoft,
     borderRadius: 24,
     padding: 14,
-    minHeight: 193,
+    minHeight: 173,
   },
-  processingCard: {
-    marginHorizontal: 16,
-    marginTop: 13,
-    padding: 14,
-    borderRadius: 24,
-    backgroundColor: tokens.color.panel,
-    borderWidth: 1,
-    borderColor: tokens.color.border,
-    gap: 9,
-  },
-  processingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    minHeight: 34,
-  },
-  processingName: { color: tokens.color.foreground, fontSize: 13 },
-  processingValue: { color: tokens.color.purple, fontSize: 12, fontWeight: '700' },
   capacityLabel: { marginTop: 13 },
   chipRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 11 },
   chip: {
@@ -480,13 +367,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 12,
   },
-  visibilityRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  visibilityLink: { fontSize: 12, color: tokens.color.purple, fontWeight: '700' },
   scheduleCard: {
     marginHorizontal: 16,
     marginTop: 13,

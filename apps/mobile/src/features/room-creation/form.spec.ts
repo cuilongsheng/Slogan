@@ -1,4 +1,10 @@
-import { initialRoomForm, instantInput, scheduledInput, validateRoomForm } from './form';
+import {
+  initialRoomForm,
+  roomLevelRanges,
+  instantInput,
+  scheduledInput,
+  validateRoomForm,
+} from './form';
 
 describe('room creation input', () => {
   const now = new Date('2026-09-28T08:00:00.000Z');
@@ -22,10 +28,14 @@ describe('room creation input', () => {
         topic: ' Travel ',
         passwordEnabled: true,
         password: '1234',
-        visibility: 'LINK_ONLY',
       }),
-    ).toMatchObject({ topic: 'Travel', visibility: 'LINK_ONLY', password: '1234', sensitiveSpeechDetectionEnabled: false, postRoomKeywordsEnabled: false });
-    expect(instantInput({ ...initialRoomForm, topic: 'Travel', postRoomKeywordsEnabled: true }).postRoomKeywordsEnabled).toBe(true);
+    ).toMatchObject({
+      topic: 'Travel',
+      visibility: 'PUBLIC',
+      password: '1234',
+      sensitiveSpeechDetectionEnabled: false,
+      postRoomKeywordsEnabled: false,
+    });
   });
   it('checks the actual calendar date and appointment order', () => {
     const form = {
@@ -43,3 +53,26 @@ describe('room creation input', () => {
     expect(validateRoomForm({ ...form, date: '2026-09-27' }, now)).toBe('TIME');
   });
 });
+
+it.each(roomLevelRanges)(
+  'preserves the selected $label for instant and scheduled creation',
+  (range) => {
+    const form = {
+      ...initialRoomForm,
+      topic: 'Travel',
+      cefrLevelMin: range.min,
+      cefrLevelMax: range.max,
+      date: '2026-10-20',
+    };
+    for (const input of [instantInput(form), scheduledInput(form)]) {
+      expect(input).toMatchObject({
+        cefrLevel: range.min,
+        cefrLevelMin: range.min,
+        cefrLevelMax: range.max,
+        visibility: 'PUBLIC',
+        sensitiveSpeechDetectionEnabled: false,
+        postRoomKeywordsEnabled: false,
+      });
+    }
+  },
+);

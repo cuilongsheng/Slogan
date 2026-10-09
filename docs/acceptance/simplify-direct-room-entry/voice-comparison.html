@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="utf-8" />
+  <title>Slogan 语音房原稿与运行对照</title>
+  <style>
+    body {
+      margin: 24px;
+      font: 16px system-ui;
+      background: #f1f4fb;
+      color: #251d3b;
+    }
+    .pair {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    figure {
+      margin: 0;
+    }
+    figcaption {
+      margin: 12px 0;
+    }
+    img {
+      width: 390px;
+      height: 844px;
+      display: block;
+    }
+    .overlay {
+      position: relative;
+      width: 390px;
+      height: 844px;
+    }
+    .overlay img:last-child {
+      position: absolute;
+      inset: 0;
+      opacity: 0.5;
+    }
+    label {
+      display: block;
+      margin: 16px 0;
+    }
+  </style>
+  <h1>原始 Figma 与真实运行组件</h1>
+  <p>02 UI · 115:1425 · 390×844；Web fixture 对照，Android 真机另行验证。两张图片原样显示。</p>
+  <div class="pair">
+    <figure>
+      <figcaption>Desktop Bridge 原稿</figcaption>
+      <img src="voice-original-figma.png" alt="原始语音房设计" />
+    </figure>
+    <figure>
+      <figcaption>最终运行组件，明确的 fixture 数据</figcaption>
+      <img src="voice-runtime-web-fixture.png" alt="最终语音房运行" />
+    </figure>
+  </div>
+  <h2>透明叠图</h2>
+  <label>运行图透明度 <input id="opacity" type="range" min="0" max="100" value="50" /></label>
+  <div class="overlay">
+    <img src="voice-original-figma.png" alt="原稿底图" /><img
+      id="runtime"
+      src="voice-runtime-web-fixture.png"
+      alt="运行叠图"
+    />
+  </div>
+  <script>
+    document.getElementById('opacity').addEventListener('input', (event) => {
+      document.getElementById('runtime').style.opacity = event.target.value / 100;
+    });
+  </script>
+</html>
