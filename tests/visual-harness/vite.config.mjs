@@ -42,9 +42,10 @@ export default {
       resolveId(source, importer) {
         if (
           importer?.endsWith('/VoiceRoomScreen.tsx') &&
-          ['../auth', '../room-discovery/join', './session', './media'].includes(source)
+          ['../auth', './session', './media'].includes(source)
         )
           return mock;
+        if (source === '../auth') return mock;
         if (source.endsWith('/services/usePrivateRecorder')) return mock;
       },
     },

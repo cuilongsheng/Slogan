@@ -7,8 +7,7 @@ const mockAuthorized = jest.fn();
 const mockList = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
-  useFocusEffect: (effect: () => void) =>
-    jest.requireActual('react').useEffect(effect, [effect]),
+  useFocusEffect: (effect: () => void) => jest.requireActual('react').useEffect(effect, [effect]),
 }));
 jest.mock('../auth', () => ({ useAuth: () => ({ authorized: mockAuthorized }) }));
 jest.mock('./join', () => ({ useJoinDraft: () => ({ beginDirect: mockBeginDirect }) }));
@@ -54,5 +53,5 @@ test('a protected room goes only to the password input', async () => {
   const page = await render(<RoomListScreen />);
   await waitFor(() => expect(page.getByText('Travel')).toBeTruthy());
   await fireEvent.press(page.getByText('Travel'));
-  expect(mockPush).toHaveBeenCalledWith('/rooms/room-a/password');
+  expect(mockPush).toHaveBeenCalledWith('/rooms/room-a/session');
 });

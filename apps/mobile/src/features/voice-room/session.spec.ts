@@ -202,12 +202,41 @@ describe('voice room admission and recovery', () => {
     expect(session.snapshot.safetyAlerts).toEqual([]);
   });
 
-  it('does not reserve a seat without active rule confirmation', async () => {
+  it('asks for a missing protected-room password without reserving a seat', async () => {
     const { session, api, media } = setup();
     await session.start(null);
-    expect(session.snapshot.phase).toBe('preparationRequired');
+    expect(session.snapshot.phase).toBe('failed');
+    expect(session.snapshot.errorCode).toBe('ROOM_PASSWORD_REQUIRED');
     expect(api.join).not.toHaveBeenCalled();
     expect(media.connect).not.toHaveBeenCalled();
+  });
+
+  it('direct entry of a public room needs no in-memory preparation draft', async () => {
+    const { session, room, api, media } = setup();
+    room.passwordProtected = false;
+    await session.start(null);
+    expect(api.join).toHaveBeenCalledWith('room-1', { rulesAccepted: true });
+    expect(media.connect).toHaveBeenCalledTimes(1);
+    expect(session.snapshot.phase).toBe('active');
+  });
+
+  it('a wrong password can be corrected without re-entering a preparation page', async () => {
+    const { session, api } = setup();
+    api.join.mockRejectedValueOnce(new RoomApiError(403, 'ROOM_PASSWORD_INVALID'));
+    await session.start({ roomId: 'room-1', password: '1111', rulesAccepted: true });
+    expect(session.snapshot.errorCode).toBe('ROOM_PASSWORD_INVALID');
+    await session.start({
+      roomId: 'room-1',
+      password: '1234',
+      rulesAccepted: true,
+      invitationId: 'invite-1',
+    });
+    expect(api.join).toHaveBeenLastCalledWith('room-1', {
+      password: '1234',
+      rulesAccepted: true,
+      invitationId: 'invite-1',
+    });
+    expect(session.snapshot.phase).toBe('active');
   });
 
   it('can leave an admitted seat when the provider is unavailable', async () => {

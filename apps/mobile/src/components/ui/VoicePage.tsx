@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export function VoicePage({ children }: { children: ReactNode }) {
   const page = (
     <SafeAreaView
+      testID="voice-room-direct-entry-v2"
       edges={['top', 'bottom']}
       style={[styles.safe, Platform.OS === 'web' && styles.webFrame]}
     >
@@ -33,17 +34,17 @@ export function VoicePage({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   canvas: { flex: 1, alignItems: 'center', backgroundColor: '#EFF4FC' },
-  safe: { flex: 1, backgroundColor: '#2A1D4B', overflow: 'hidden' },
+  safe: { flex: 1, backgroundColor: '#2A2149', overflow: 'hidden' },
   webFrame: { width: '100%', maxWidth: 390 },
   previewStatus: {
-    height: 43,
+    height: 44,
     paddingHorizontal: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingTop: 11,
   },
-  previewText: { color: '#fff', fontSize: 13 },
+  previewText: { color: '#fff', fontSize: 14, fontWeight: '500', lineHeight: 20 },
   homeIndicator: {
     position: 'absolute',
     width: 100,

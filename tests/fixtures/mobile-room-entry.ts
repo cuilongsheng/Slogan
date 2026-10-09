@@ -50,7 +50,8 @@ export async function mockRoomEntry(
     const body = route.request().postDataJSON();
     joins.push(body);
     expect(body.rulesAccepted).toBe(true);
-    if (options.password) expect(body.password).toBe('1234');
+    if (options.password && body.password !== '1234')
+      return route.fulfill({ status: 403, json: { code: 'ROOM_PASSWORD_INVALID' } });
     if (options.processing && accepted.size < 2)
       return route.fulfill({ status: 403, json: { code: 'ROOM_SPEECH_CONSENT_REQUIRED' } });
     return route.fulfill({

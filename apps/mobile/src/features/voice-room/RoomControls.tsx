@@ -32,6 +32,7 @@ export function RoomControls({
   api,
   refresh,
   onClose,
+  initialRemoveTarget,
 }: {
   roomId: string;
   members: RoomMember[];
@@ -40,9 +41,12 @@ export function RoomControls({
   api: VoiceRoomApi;
   refresh: () => Promise<void>;
   onClose: () => void;
+  initialRemoveTarget?: RoomMember;
 }) {
-  const [mode, setMode] = useState<Mode>('members');
-  const [target, setTarget] = useState<RoomMember | null>(null);
+  const [mode, setMode] = useState<Mode>(initialRemoveTarget && isHost ? 'remove' : 'members');
+  const [target, setTarget] = useState<RoomMember | null>(
+    isHost ? (initialRemoveTarget ?? null) : null,
+  );
   const [category, setCategory] = useState<Category | null>(null);
   const [description, setDescription] = useState('');
   const [requestId, setRequestId] = useState(() => randomUUID());
@@ -67,7 +71,8 @@ export function RoomControls({
         cursor ? Promise.resolve(null) : api.friends(),
       ]);
       const candidates = [
-        ...(friends?.items.map((item) => ({ ...item.friend, isAvailable: item.isAvailable })) ?? []),
+        ...(friends?.items.map((item) => ({ ...item.friend, isAvailable: item.isAvailable })) ??
+          []),
         ...page.items,
       ].filter(
         (person, index, all) => all.findIndex((item) => item.userId === person.userId) === index,
@@ -424,40 +429,40 @@ export function RoomControls({
         {mode === 'report' && (
           <>
             <ScrollView style={styles.reportScroll} keyboardShouldPersistTaps="handled">
-            <Text style={styles.body}>{t('roomReportHint')}</Text>
-            <Text style={styles.label}>{t('roomReportTarget')}</Text>
-            <Text style={styles.selected}>{target?.displayName}</Text>
-            <Text style={styles.label}>{t('roomReportCategory')}</Text>
-            <View style={styles.categories}>
-              {categories.map((item) => (
-                <TouchableOpacity
-                  key={item.value}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: category === item.value }}
-                  style={[styles.category, category === item.value && styles.categorySelected]}
-                  onPress={() => {
-                    setCategory(item.value);
-                    setRequestId(randomUUID());
-                  }}
-                >
-                  <Text style={styles.categoryText}>{t(item.label)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.label}>{t('roomReportDescription')}</Text>
-            <TextInput
-              accessibilityLabel={t('roomReportDescription')}
-              multiline
-              maxLength={2000}
-              placeholder={t('roomReportPlaceholder')}
-              placeholderTextColor="#A69BB7"
-              style={styles.textarea}
-              value={description}
-              onChangeText={(value) => {
-                setDescription(value);
-                setRequestId(randomUUID());
-              }}
-            />
+              <Text style={styles.body}>{t('roomReportHint')}</Text>
+              <Text style={styles.label}>{t('roomReportTarget')}</Text>
+              <Text style={styles.selected}>{target?.displayName}</Text>
+              <Text style={styles.label}>{t('roomReportCategory')}</Text>
+              <View style={styles.categories}>
+                {categories.map((item) => (
+                  <TouchableOpacity
+                    key={item.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: category === item.value }}
+                    style={[styles.category, category === item.value && styles.categorySelected]}
+                    onPress={() => {
+                      setCategory(item.value);
+                      setRequestId(randomUUID());
+                    }}
+                  >
+                    <Text style={styles.categoryText}>{t(item.label)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.label}>{t('roomReportDescription')}</Text>
+              <TextInput
+                accessibilityLabel={t('roomReportDescription')}
+                multiline
+                maxLength={2000}
+                placeholder={t('roomReportPlaceholder')}
+                placeholderTextColor="#A69BB7"
+                style={styles.textarea}
+                value={description}
+                onChangeText={(value) => {
+                  setDescription(value);
+                  setRequestId(randomUUID());
+                }}
+              />
             </ScrollView>
             <TouchableOpacity
               accessibilityRole="button"

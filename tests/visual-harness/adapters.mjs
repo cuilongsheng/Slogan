@@ -13,6 +13,7 @@ export const useRouter = () => ({
 });
 const auth = { authorized: (request) => request('visual-fixture') };
 export const useAuth = () => auth;
+export const useFocusEffect = (effect) => React.useEffect(effect, [effect]);
 export const useJoinDraft = () => ({ draft: null, clear() {} });
 export const createVoiceMedia = () => ({});
 export const StatusBar = () => null;

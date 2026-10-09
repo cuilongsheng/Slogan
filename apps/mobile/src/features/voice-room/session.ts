@@ -1,6 +1,6 @@
 import type { RoomDetail } from '../room-discovery/api';
 import { RoomApiError } from '../room-discovery/api';
-import type { JoinDraft } from '../room-discovery/join';
+import { validRoomPassword, type JoinDraft } from '../room-discovery/join';
 import type { MediaSnapshot, LiveKitVoiceMedia } from './mediaCore';
 import type { RoomMember, RoomSafetyAlert, VoiceRoomApi } from './api';
 
@@ -195,14 +195,19 @@ export class VoiceRoomSession {
       const membership = room.currentMembership;
       const active = membership?.lifecycle === 'ACTIVE';
       if (!active) {
-        if (draft?.roomId !== this.roomId || !draft.rulesAccepted) {
-          this.update({ phase: 'preparationRequired' });
+        if (
+          room.passwordProtected &&
+          !validRoomPassword(draft?.roomId === this.roomId ? draft.password : '')
+        ) {
+          this.update({ phase: 'failed', errorCode: 'ROOM_PASSWORD_REQUIRED' });
           return;
         }
         const joined = await this.api.join(this.roomId, {
           rulesAccepted: true,
-          ...(room.passwordProtected ? { password: draft.password } : {}),
-          ...(draft.invitationId ? { invitationId: draft.invitationId } : {}),
+          ...(room.passwordProtected ? { password: draft?.password ?? '' } : {}),
+          ...(draft?.roomId === this.roomId && draft.invitationId
+            ? { invitationId: draft.invitationId }
+            : {}),
         });
         if (joined.currentMembership?.lifecycle !== 'ACTIVE') {
           throw new RoomApiError(409, 'ROOM_MEMBER_NOT_ACTIVE');

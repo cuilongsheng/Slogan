@@ -40,6 +40,7 @@ const mockSession = {
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) }));
 jest.mock('../auth', () => ({ useAuth: () => ({ authorized: mockAuthorized }) }));
 jest.mock('../room-discovery/join', () => ({
+  ...jest.requireActual('../room-discovery/join'),
   useJoinDraft: () => ({ draft: null, clear: mockClear }),
 }));
 jest.mock('../../services/usePrivateRecorder', () => ({ usePrivateRecorder: jest.fn() }));
@@ -133,4 +134,20 @@ test('a host alone exits directly; a host with an online member must select the 
   await fireEvent.press(host.getAllByRole('button', { name: 'Alex' }).at(-1)!);
   await fireEvent.press(host.getByRole('button', { name: 'Transfer host and leave' }));
   await waitFor(() => expect(mockSession.leave).toHaveBeenCalledWith('successor'));
+});
+
+test('password rejection stays in a dialog and retries the same session with invitation preserved', async () => {
+  mockSnapshot.phase = 'failed';
+  mockSnapshot.credentialVersion = null;
+  mockSnapshot.errorCode = 'ROOM_PASSWORD_INVALID';
+  const screen = await render(<VoiceRoomScreen roomId="room" invitationId="invite-a" />);
+  await fireEvent.changeText(screen.getByTestId('room-password'), '1234');
+  await fireEvent.press(screen.getByRole('button', { name: 'Enter voice room' }));
+  expect(mockSession.start).toHaveBeenLastCalledWith({
+    roomId: 'room',
+    password: '1234',
+    rulesAccepted: true,
+    invitationId: 'invite-a',
+  });
+  expect(mockReplace).not.toHaveBeenCalled();
 });

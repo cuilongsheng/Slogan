@@ -11,8 +11,8 @@ test('real voice component sends text and renders hold/release English using exp
       id: 'fixture-message',
       sequence: '1',
       senderUserId: 'user-0',
-      senderDisplayName: 'Luna',
-      text: '上次旅行我坐错了车…',
+      senderDisplayName: '系统',
+      text: 'Mika 刚刚加入房间',
       createdAt: '2026-09-28T09:00:00Z',
     },
   ];
@@ -60,9 +60,9 @@ test('real voice component sends text and renders hold/release English using exp
       json: { primary: { text: 'I missed the train, but the detour led me to a great café.' } },
     });
   });
-  await page.goto('/');
+  await page.goto('/?role=host');
   await expect(page.getByText('聊聊旅行中的意外收获')).toBeVisible();
-  await expect(page.getByText('上次旅行我坐错了车…')).toBeVisible();
+  await expect(page.getByText('Mika 刚刚加入房间')).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
     path: 'docs/acceptance/simplify-room-and-mobile-experience/voice-runtime-component-fixture.png',
@@ -70,7 +70,7 @@ test('real voice component sends text and renders hold/release English using exp
   await page.getByRole('textbox').fill('Hello room');
   await page.getByRole('button', { name: '发送消息' }).click();
   await expect(page.getByText('Hello room', { exact: true })).toBeVisible();
-  await page.getByText('用母语找英文表达 · 仅自己可见').click();
+  await page.getByRole('button', { name: '用母语找英文表达 · 仅自己可见' }).click();
   await expect(page.getByRole('button', { name: '按着开始说' })).toBeVisible();
   await page.screenshot({
     path: 'docs/acceptance/simplify-room-and-mobile-experience/translation-hold-runtime-component-fixture.png',
@@ -105,7 +105,7 @@ test('real voice component sends text and renders hold/release English using exp
   });
   await page.getByRole('button', { name: '关闭' }).click();
   consentStatus = 'REQUIRED';
-  await page.getByText('用母语找英文表达 · 仅自己可见').click();
+  await page.getByRole('button', { name: '用母语找英文表达 · 仅自己可见' }).click();
   await expect(page.getByRole('button', { name: '同意并继续' })).toBeVisible();
   await page.screenshot({
     path: 'docs/acceptance/simplify-room-and-mobile-experience/translation-consent-runtime-component-fixture.png',

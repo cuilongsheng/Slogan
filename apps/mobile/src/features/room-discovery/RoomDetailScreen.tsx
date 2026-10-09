@@ -137,9 +137,7 @@ export function RoomDetailScreen({
                 }
                 if (invitationId) beginDirect(roomId, invitationId);
                 else beginDirect(roomId);
-                router.push(
-                  room.passwordProtected ? `/rooms/${roomId}/password` : `/rooms/${roomId}/session`,
-                );
+                router.push(`/rooms/${roomId}/session`);
               }}
             />
           </View>
