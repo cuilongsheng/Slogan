@@ -196,7 +196,8 @@ a:focus-visible {
 }
 .page-content {
   padding: 0 32px 64px 36px;
-  max-width: 1440px;
+  width: 100%;
+  min-width: 0;
 }
 .page-heading {
   padding: 7px 0 24px;

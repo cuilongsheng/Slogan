@@ -8,15 +8,18 @@ export type RoomForm = {
   cefrLevelMin: NonNullable<InstantRoomInput['cefrLevelMin']>;
   cefrLevelMax: NonNullable<InstantRoomInput['cefrLevelMax']>;
   capacity: number;
-  visibility: 'PUBLIC' | 'LINK_ONLY';
   passwordEnabled: boolean;
   password: string;
-  sensitiveSpeechDetectionEnabled: boolean;
-  postRoomKeywordsEnabled: boolean;
   date: string;
   startTime: string;
   endTime: string;
 };
+export const roomLevelRanges = [
+  { min: 'A1', max: 'A2', label: 'A1～A2' },
+  { min: 'B1', max: 'B2', label: 'B1～B2' },
+  { min: 'C1', max: 'C2', label: 'C1～C2' },
+] as const;
+
 export const initialRoomForm: RoomForm = {
   mode: 'instant',
   topic: '',
@@ -24,11 +27,8 @@ export const initialRoomForm: RoomForm = {
   cefrLevelMin: 'B1',
   cefrLevelMax: 'B2',
   capacity: 4,
-  visibility: 'PUBLIC',
   passwordEnabled: false,
   password: '',
-  sensitiveSpeechDetectionEnabled: false,
-  postRoomKeywordsEnabled: false,
   date: '',
   startTime: '19:00',
   endTime: '20:00',
@@ -62,9 +62,9 @@ export function instantInput(form: RoomForm): InstantRoomInput {
     cefrLevelMin: form.cefrLevelMin,
     cefrLevelMax: form.cefrLevelMax,
     capacity: form.capacity,
-    visibility: form.visibility,
-    sensitiveSpeechDetectionEnabled: form.sensitiveSpeechDetectionEnabled,
-    postRoomKeywordsEnabled: form.postRoomKeywordsEnabled,
+    visibility: 'PUBLIC',
+    sensitiveSpeechDetectionEnabled: false,
+    postRoomKeywordsEnabled: false,
     ...(form.passwordEnabled ? { password: form.password } : {}),
   };
 }

@@ -45,7 +45,8 @@ type Media = Pick<
   | 'setMicrophoneEnabled'
   | 'startAudio'
   | 'disconnect'
->;
+> &
+  Partial<Pick<LiveKitVoiceMedia, 'checkDevices'>>;
 
 function errorCode(error: unknown): string {
   return error instanceof RoomApiError ? error.code : 'NETWORK_ERROR';
@@ -71,6 +72,7 @@ export class VoiceRoomSession {
   private safetyUnsubscribe: () => void;
   private safetyGeneration = 0;
   private roomRefreshGeneration = 0;
+  private refreshPending: Promise<void> | null = null;
   private disposed = false;
   private leavingSuccessor: string | undefined;
 
@@ -244,7 +246,16 @@ export class VoiceRoomSession {
     }
   }
 
-  async refresh(): Promise<void> {
+  refresh(): Promise<void> {
+    if (this.refreshPending) return this.refreshPending;
+    const pending = this.refreshRoom().finally(() => {
+      if (this.refreshPending === pending) this.refreshPending = null;
+    });
+    this.refreshPending = pending;
+    return pending;
+  }
+
+  private async refreshRoom(): Promise<void> {
     if (
       this.disposed ||
       ['left', 'ended', 'leaving', 'leaveUnconfirmed'].includes(this.state.phase)
@@ -307,6 +318,10 @@ export class VoiceRoomSession {
     } catch {
       this.update({ errorCode: 'MICROPHONE_UNAVAILABLE' });
     }
+  }
+
+  async recheckDevices(): Promise<void> {
+    if (this.state.phase === 'active') await this.media.checkDevices?.();
   }
 
   async enableAudioPlayback(): Promise<void> {

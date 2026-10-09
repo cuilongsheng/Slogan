@@ -1,0 +1,121 @@
+{
+  "evidence": "actual local admin layout with explicit HTTP fixtures; no production validation",
+  "results": [
+    {
+      "width": 1440,
+      "path": "/rooms",
+      "mainWidth": 1208,
+      "contentWidth": 1208,
+      "viewportWidth": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "width": 1440,
+      "path": "/safety/cases",
+      "mainWidth": 1208,
+      "contentWidth": 1208,
+      "panelWidth": 1140,
+      "panelRight": 1408,
+      "viewportWidth": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "width": 1440,
+      "path": "/safety/appeals",
+      "mainWidth": 1208,
+      "contentWidth": 1208,
+      "panelWidth": 1140,
+      "panelRight": 1408,
+      "viewportWidth": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "width": 1440,
+      "path": "/safety/incidents",
+      "mainWidth": 1208,
+      "contentWidth": 1208,
+      "panelWidth": 1140,
+      "panelRight": 1408,
+      "viewportWidth": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "width": 1440,
+      "path": "/roles",
+      "mainWidth": 1208,
+      "contentWidth": 1208,
+      "panelWidth": 1140,
+      "panelRight": 1408,
+      "viewportWidth": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "width": 1440,
+      "path": "/audit",
+      "mainWidth": 1208,
+      "contentWidth": 1208,
+      "panelWidth": 1140,
+      "panelRight": 1408,
+      "viewportWidth": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "width": 2549,
+      "path": "/rooms",
+      "mainWidth": 2317,
+      "contentWidth": 2317,
+      "viewportWidth": 2549,
+      "scrollWidth": 2549
+    },
+    {
+      "width": 2549,
+      "path": "/safety/cases",
+      "mainWidth": 2317,
+      "contentWidth": 2317,
+      "panelWidth": 2249,
+      "panelRight": 2517,
+      "viewportWidth": 2549,
+      "scrollWidth": 2549
+    },
+    {
+      "width": 2549,
+      "path": "/safety/appeals",
+      "mainWidth": 2317,
+      "contentWidth": 2317,
+      "panelWidth": 2249,
+      "panelRight": 2517,
+      "viewportWidth": 2549,
+      "scrollWidth": 2549
+    },
+    {
+      "width": 2549,
+      "path": "/safety/incidents",
+      "mainWidth": 2317,
+      "contentWidth": 2317,
+      "panelWidth": 2249,
+      "panelRight": 2517,
+      "viewportWidth": 2549,
+      "scrollWidth": 2549
+    },
+    {
+      "width": 2549,
+      "path": "/roles",
+      "mainWidth": 2317,
+      "contentWidth": 2317,
+      "panelWidth": 2249,
+      "panelRight": 2517,
+      "viewportWidth": 2549,
+      "scrollWidth": 2549
+    },
+    {
+      "width": 2549,
+      "path": "/audit",
+      "mainWidth": 2317,
+      "contentWidth": 2317,
+      "panelWidth": 2249,
+      "panelRight": 2517,
+      "viewportWidth": 2549,
+      "scrollWidth": 2549
+    }
+  ]
+}

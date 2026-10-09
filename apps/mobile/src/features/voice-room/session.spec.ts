@@ -353,3 +353,25 @@ describe('fast leaving', () => {
     expect(session.snapshot.phase).toBe('left');
   });
 });
+
+test('participant events and the fallback timer share one in-flight room refresh', async () => {
+  const { rooms, room, api, session } = setup(true);
+  await session.start(null);
+  rooms.detail.mockClear();
+  api.members.mockClear();
+  let finish!: (value: typeof room) => void;
+  rooms.detail.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const first = session.refresh();
+  const second = session.refresh();
+  expect(first).toBe(second);
+  expect(rooms.detail).toHaveBeenCalledTimes(1);
+  finish(room);
+  await Promise.all([first, second]);
+  expect(api.members).toHaveBeenCalledTimes(1);
+  await session.dispose();
+});

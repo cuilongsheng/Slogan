@@ -67,7 +67,10 @@ export class VoiceRoomSession {
     if (new URL(location.href).searchParams.get('role') === 'host') {
       this.state.role = 'HOST';
       this.state.room.currentMembership.id = 'member-0';
-      this.state.media.participants[1].speaking = true;
+    this.state.media.participants[1].speaking = true;
+    }
+    if (new URL(location.href).searchParams.get('device') === 'blocked') {
+      this.state.media.deviceCheck = { microphone: 'blocked', playback: 'ready' };
     }
   }
   state = {
@@ -113,6 +116,10 @@ export class VoiceRoomSession {
   }
   async start() {}
   async refresh() {}
+  async recheckDevices() {
+    this.state = { ...this.state, media: { ...this.state.media, deviceCheck: { microphone: 'ready', playback: 'ready' } } };
+    this.listeners.forEach((listener) => listener(this.state));
+  }
   async dispose() {}
   async setMicrophoneEnabled(enabled) {
     this.state = { ...this.state, media: { ...this.state.media, microphoneEnabled: enabled } };

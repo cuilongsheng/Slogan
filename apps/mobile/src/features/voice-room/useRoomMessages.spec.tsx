@@ -133,3 +133,44 @@ test('a pending send cannot leak into the next room', async () => {
   expect(page.queryByText('Old room')).toBeNull();
   expect(page.getByLabelText('Message').props.value).toBe('');
 });
+
+test('idle message polling backs off, drains backlog immediately, and speeds up after new messages', async () => {
+  jest.useFakeTimers();
+  const api = {
+    messages: jest.fn(async () => ({
+      items: [] as RoomTextMessage[],
+      nextCursor: 'cursor',
+      hasMore: false,
+    })),
+    sendMessage: jest.fn(),
+  };
+  const screen = await render(<Harness api={api as never} />);
+  await act(async () => {});
+  expect(api.messages).toHaveBeenCalledTimes(1);
+  for (const delay of [2000, 4000, 8000, 10000]) {
+    const before = api.messages.mock.calls.length;
+    await act(async () => {
+      jest.advanceTimersByTime(delay - 1);
+    });
+    expect(api.messages).toHaveBeenCalledTimes(before);
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+    });
+    expect(api.messages).toHaveBeenCalledTimes(before + 1);
+  }
+  api.messages.mockResolvedValueOnce({
+    items: [message('received', '1')],
+    nextCursor: 'new',
+    hasMore: false,
+  });
+  await act(async () => {
+    jest.advanceTimersByTime(10000);
+  });
+  expect(screen.getByText('received')).toBeTruthy();
+  const before = api.messages.mock.calls.length;
+  await act(async () => {
+    jest.advanceTimersByTime(2000);
+  });
+  expect(api.messages).toHaveBeenCalledTimes(before + 1);
+  await screen.unmount();
+});

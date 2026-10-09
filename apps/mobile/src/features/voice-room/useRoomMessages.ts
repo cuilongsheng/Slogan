@@ -32,6 +32,7 @@ export function useRoomMessages(api: VoiceRoomApi, roomId: string) {
   const roomGeneration = useRef(0);
   const pending = useRef(false);
   const draft = useRef<{ text: string; id: string } | null>(null);
+  const wakePoll = useRef<(() => void) | null>(null);
   useEffect(() => {
     live.current = true;
     const scopeGeneration = ++roomGeneration.current;
@@ -42,8 +43,12 @@ export function useRoomMessages(api: VoiceRoomApi, roomId: string) {
     let generation = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let abort: AbortController | undefined;
+    let inFlight = false;
+    let delay = 2000;
+    let idlePages = 0;
     async function poll() {
-      if (!active || !live.current) return;
+      if (!active || !live.current || inFlight) return;
+      inFlight = true;
       const current = generation;
       abort = new AbortController();
       try {
@@ -51,16 +56,33 @@ export function useRoomMessages(api: VoiceRoomApi, roomId: string) {
         if (generation !== current || !active || !live.current) return;
         setMessages((items) => mergeMessages(items, page.items));
         cursor = page.nextCursor;
-        timer = setTimeout(() => void poll(), page.hasMore ? 0 : 2000);
+        idlePages = page.items.length ? 0 : idlePages + 1;
+        delay = Math.min(10_000, 2000 * 2 ** Math.max(0, idlePages - 1));
+        timer = setTimeout(() => void poll(), page.hasMore ? 0 : delay);
       } catch {
         if (generation === current && active && live.current)
-          timer = setTimeout(() => void poll(), 4000);
+          timer = setTimeout(
+            () => void poll(),
+            (delay = Math.min(30_000, Math.max(4000, delay * 2))),
+          );
+      } finally {
+        if (generation === current) inFlight = false;
       }
     }
+    wakePoll.current = () => {
+      idlePages = 0;
+      delay = 2000;
+      if (timer) clearTimeout(timer);
+      // Never overlap a current GET. Its response will schedule the next one.
+      if (active && !inFlight) void poll();
+    };
     void poll();
     const subscription = AppState.addEventListener('change', (next) => {
       active = next === 'active';
       generation++;
+      inFlight = false;
+      idlePages = 0;
+      delay = 2000;
       if (timer) clearTimeout(timer);
       abort?.abort();
       if (active) void poll();
@@ -73,6 +95,7 @@ export function useRoomMessages(api: VoiceRoomApi, roomId: string) {
       if (timer) clearTimeout(timer);
       abort?.abort();
       subscription.remove();
+      wakePoll.current = null;
     };
   }, [api, roomId]);
   const send = useCallback(async () => {
@@ -89,6 +112,7 @@ export function useRoomMessages(api: VoiceRoomApi, roomId: string) {
       setMessages((items) => mergeMessages(items, [message]));
       setText((value) => (value.trim() === content ? '' : value));
       draft.current = null;
+      wakePoll.current?.();
     } catch {
       if (live.current && generation === roomGeneration.current) setError(true);
     } finally {

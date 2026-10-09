@@ -33,6 +33,7 @@ import { RoomControls } from './RoomControls';
 import { RoomExtensionSheet } from './RoomExtensionSheet';
 import { RoomSafetyAlertsSheet } from './RoomSafetyAlertsSheet';
 import { createVoiceMedia } from './media';
+import { RoomDeviceNotice } from './RoomDeviceNotice';
 import { VoiceRoomSession, type VoiceSessionSnapshot } from './session';
 import profileIcon from '../../../assets/icons/profile.png';
 import micIcon from '../../../assets/icons/mic.png';
@@ -598,15 +599,12 @@ function VoiceRoomBody({
             {t(chat.tooLong ? 'roomMessageTooLong' : 'roomMessageFailed')}
           </Text>
         )}
-        {!snapshot.media.audioPlaybackAllowed ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-            onPress={() => void session.enableAudioPlayback()}
-            style={styles.soundNotice}
-          >
-            <Text style={styles.soundNoticeText}>{t('voiceEnableSound')}</Text>
-          </TouchableOpacity>
-        ) : null}
+        <RoomDeviceNotice
+          media={snapshot.media}
+          errorCode={snapshot.errorCode}
+          onRetry={() => session.recheckDevices()}
+          onEnableAudio={() => session.enableAudioPlayback()}
+        />
         <View style={styles.controls}>
           <View style={styles.messageEntry}>
             <TextInput
@@ -892,8 +890,29 @@ export function VoiceRoomScreen({
 
   useEffect(() => {
     if (snapshot.phase !== 'active') return;
-    const interval = setInterval(() => void session.refresh(), 15_000);
-    return () => clearInterval(interval);
+    let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
+    const interval = setInterval(() => {
+      if (foreground) void session.refresh();
+    }, 15_000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      const wasForeground = foreground;
+      foreground = state === 'active';
+      if (foreground && !wasForeground) {
+        void session.refresh();
+        const check = session.snapshot.media.deviceCheck;
+        if (
+          check &&
+          (check.microphone === 'blocked' ||
+            check.microphone === 'unavailable' ||
+            check.playback === 'unavailable')
+        )
+          void session.recheckDevices();
+      }
+    });
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
   }, [session, snapshot.phase]);
 
   const participantIdentities = snapshot.media.participants
@@ -902,7 +921,8 @@ export function VoiceRoomScreen({
     .join('|');
   useEffect(() => {
     if (snapshot.phase === 'active' && snapshot.media.connection === 'connected') {
-      void session.refresh();
+      if (AppState.currentState !== 'background' && AppState.currentState !== 'inactive')
+        void session.refresh();
     }
   }, [session, snapshot.phase, snapshot.media.connection, participantIdentities]);
 
@@ -1263,15 +1283,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   sparklesIcon: { width: 20, height: 20, marginTop: 6, marginLeft: 7 },
-  soundNotice: {
-    height: 46,
-    borderRadius: 14,
-    marginTop: 4,
-    backgroundColor: '#5A3D95',
-    justifyContent: 'center',
-    paddingHorizontal: 15,
-  },
-  soundNoticeText: { color: '#E4DDF4', fontSize: 11, fontWeight: '700' },
   controls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   messageEntry: {
     flex: 1,

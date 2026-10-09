@@ -76,6 +76,7 @@ describe('LiveKit voice media', () => {
         }),
     );
     const enabling = media.setMicrophoneEnabled(true);
+    await Promise.resolve(); // Permission has opened, but its answer is still pending.
     await media.disconnect();
     allow();
     await enabling;
@@ -120,4 +121,117 @@ describe('LiveKit voice media', () => {
     handlers.get('dataReceived')?.(payload, undefined, undefined, 'slogan.room-safety-alert.v1');
     expect(listener).toHaveBeenCalledTimes(1);
   });
+});
+
+function deviceFixture(
+  checkMicrophone: (signal: AbortSignal) => Promise<'ready' | 'denied' | 'blocked' | 'unavailable'>,
+) {
+  const localParticipant = {
+    identity: 'self',
+    isSpeaking: false,
+    isMicrophoneEnabled: false,
+    setMicrophoneEnabled: jest.fn(async () => {}),
+  };
+  const room = {
+    localParticipant,
+    remoteParticipants: new Map(),
+    on: jest.fn(),
+    connect: jest.fn(async () => {}),
+    disconnect: jest.fn(async () => {}),
+  };
+  (Room as unknown as jest.Mock).mockImplementation(() => room);
+  const platform = {
+    start: jest.fn(async () => {}),
+    stop: jest.fn(async () => {}),
+    attachRemoteAudio: jest.fn(),
+    detachRemoteAudio: jest.fn(),
+    checkMicrophone: jest.fn(checkMicrophone),
+    checkAudioOutput: jest.fn(async () => true),
+    requestMicrophone: jest.fn(async () => {}),
+  };
+  return { room, platform, media: new LiveKitVoiceMedia(platform) };
+}
+const deviceCredential = {
+  serverUrl: 'wss://example.invalid',
+  participantToken: 'temporary',
+} as never;
+it.each(['denied', 'blocked', 'unavailable'] as const)(
+  'automatically detects %s while admitting muted, then permits a device retry',
+  async (status) => {
+    const { media, room, platform } = deviceFixture(async () => status);
+    platform.checkAudioOutput.mockResolvedValue(false);
+    await media.connect(deviceCredential);
+    await media.checkDevices();
+    expect(media.snapshot).toMatchObject({
+      connection: 'connected',
+      microphoneEnabled: false,
+      deviceCheck: { microphone: status, playback: 'unavailable' },
+    });
+    expect(platform.checkMicrophone).toHaveBeenCalledTimes(1);
+    expect(room.localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
+    platform.checkMicrophone.mockResolvedValue('ready');
+    platform.checkAudioOutput.mockResolvedValue(true);
+    await media.checkDevices();
+    expect(media.snapshot.deviceCheck).toEqual({ microphone: 'ready', playback: 'ready' });
+    expect(room.localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
+    await media.disconnect();
+  },
+);
+it('a late probe after disconnect cannot update the room or open its microphone', async () => {
+  let finish!: (status: 'ready') => void;
+  const { media, room, platform } = deviceFixture(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await media.connect(deviceCredential);
+  const checking = media.checkDevices();
+  const enabling = media.setMicrophoneEnabled(true);
+  const signal = platform.checkMicrophone.mock.calls[0]![0];
+  await media.disconnect();
+  expect(signal.aborted).toBe(true);
+  finish('ready');
+  await checking;
+  await enabling;
+  expect(media.snapshot.connection).toBe('disconnected');
+  expect(media.snapshot.deviceCheck).toBeUndefined();
+  expect(platform.requestMicrophone).not.toHaveBeenCalled();
+  expect(room.localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
+});
+it('publishing waits for the unpublished device probe to finish', async () => {
+  let finish!: (status: 'ready') => void;
+  const { media, room } = deviceFixture(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await media.connect(deviceCredential);
+  const enabling = media.setMicrophoneEnabled(true);
+  expect(room.localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
+  finish('ready');
+  await enabling;
+  expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(true);
+  await media.disconnect();
+});
+
+it('exit during a pending LiveKit connection never starts a device probe or restores connected state', async () => {
+  const { media, room, platform } = deviceFixture(async () => 'ready');
+  let connected!: () => void;
+  room.connect.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        connected = resolve;
+      }),
+  );
+  const connecting = media.connect(deviceCredential);
+  await Promise.resolve();
+  await Promise.resolve();
+  await media.disconnect();
+  connected();
+  await connecting;
+  expect(media.snapshot.connection).toBe('disconnected');
+  expect(platform.checkMicrophone).not.toHaveBeenCalled();
+  expect(room.disconnect).toHaveBeenCalled();
 });

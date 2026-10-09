@@ -1,5 +1,17 @@
 # 房间与手机体验修正：验收记录
 
+## 最新状态：2026-10-09 排队修改，尚未发布
+
+通过 Desktop Bridge 再核对创建原稿111:979、预约121:3613和后台案件114:1655。用户明确授权把旧上下限选择改成 A1～A2 / B1～B2 / C1～C2 三个按钮，取消可发现性和房间音频处理 UI；请求默认 PUBLIC、两个处理开关 false，旧房间与服务端能力保留。主题行从固定20px改为 minHeight28、文字行高24，避免 Android 中文字体裁切。`create-three-ranges-runtime.png` 是390×844真实创建组件，已验证点击 C1～C2 后真实生成客户端 POST /v1/rooms 字段和成功导航；HTTP/账号为明确 fixture，不是生产创建。
+
+后台空白原因是共享 `.page-content` 的 max-width1440。移除上限后，六个业务页在1440和2549宽度下都占满侧栏右侧；保持设计页左右36/32边距，案件表格宽分别1140/2249，不产生横向整页溢出。截图 `admin-full-width-1440.png`、`admin-full-width-2549.png` 及 `admin-full-width-measurements.json` 记录真实 DOM；账号和空列表为 HTTP fixture。1440原稿与运行保持相同 sidebar232、contentX268、right32、table1140；大屏伸展为用户批准变化。没有重画原稿作为验证。
+
+接口持续请求是受控轮询：旧聊天每2秒，房间/成员每15秒；LiveKit 2.22.3 的 RegionUrlProvider 按服务端 maxAgeInMs 刷新 regions，属于供应商 SDK。现在聊天连续空页按2/4/8/10秒退避，新消息恢复2秒，本地发送立即显示并唤醒同步；故障退避最多30秒。后台暂停、前台立即补齐、离房取消；房间刷新只在前台兜底，并合并在途详情/成员请求。保持数据库鉴权和消息事实，没有引入客户端直发或关闭 SDK 区域恢复。代价是空闲房间收到别人第一条消息最多等约10秒；不宣称提供实时推送。
+
+验证：mobile 50 suites/162 tests 与 lint/typecheck通过；admin lint/typecheck/test3/build通过；管理浏览器6项、房内/创建/设备提示浏览器3项、实际Expo路由10项通过。Pages mobile构建和Android bundle导出通过，两个OpenSpec change strict通过。真机键盘、字体裁切和实际音频/两机隔离由用户验证。按用户要求暂停发布，没有推送本次修改、创建新PR或更新正式APK。
+
+以下为此前各批次的历史记录，当前补充行为和发布边界以本节为准。
+
 2026-10-08，OpenSpec `simplify-room-and-mobile-experience`。原实现基线为 develop `716cc0bd0fd4e0010721f0e0ac3c77eec4522436`；PR #9 已合并为 main `fc7bbf86cb28ee315c6e57e4d2a62a0dfc8e56d3`，四个生产迁移和三个生产部署已完成。以下区分本地、预览与生产证据，后台清理补丁基于该 main 提交。
 
 结果：后端合同、行为实现、本地故障恢复测试和 Android 构建已通过。完整视觉、真机音频/键盘和云端消费者验收未完成；本 change 未归档。不能声称全部完成或全局 `1:1 PASS`。
