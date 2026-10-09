@@ -43,6 +43,7 @@ describe('LiveKit voice media', () => {
       stop: jest.fn(async () => undefined),
       attachRemoteAudio: jest.fn(),
       detachRemoteAudio: jest.fn(),
+      requestMicrophone: jest.fn(async (): Promise<void> => undefined),
     };
     const media = new LiveKitVoiceMedia(platform);
     await media.connect({
@@ -56,11 +57,29 @@ describe('LiveKit voice media', () => {
     expect(media.snapshot.connection).toBe('connected');
     expect(media.snapshot.microphoneEnabled).toBe(false);
     expect(localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
+    expect(platform.requestMicrophone).not.toHaveBeenCalled();
+
+    platform.requestMicrophone.mockRejectedValueOnce(new Error('MICROPHONE_UNAVAILABLE'));
+    await expect(media.setMicrophoneEnabled(true)).rejects.toThrow('MICROPHONE_UNAVAILABLE');
+    expect(media.snapshot.microphoneEnabled).toBe(false);
+    expect(localParticipant.setMicrophoneEnabled).not.toHaveBeenCalled();
 
     await media.setMicrophoneEnabled(true);
     expect(localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(true);
     expect(media.snapshot.microphoneEnabled).toBe(true);
+    expect(platform.requestMicrophone).toHaveBeenCalledTimes(2);
+    let allow!: () => void;
+    platform.requestMicrophone.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          allow = resolve;
+        }),
+    );
+    const enabling = media.setMicrophoneEnabled(true);
     await media.disconnect();
+    allow();
+    await enabling;
+    expect(localParticipant.setMicrophoneEnabled).toHaveBeenCalledTimes(1);
     expect(room.disconnect).toHaveBeenCalledTimes(1);
     expect(platform.stop).toHaveBeenCalledTimes(1);
   });

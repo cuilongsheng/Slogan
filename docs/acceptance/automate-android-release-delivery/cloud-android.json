@@ -1,0 +1,33 @@
+{
+  "verifiedAt": "2026-10-08T02:20:23.281223+00:00",
+  "pr": "https://github.com/cuilongsheng/Slogan/pull/9",
+  "mergeCommit": "fc7bbf86cb28ee315c6e57e4d2a62a0dfc8e56d3",
+  "actions": "https://github.com/cuilongsheng/Slogan/actions/runs/37715522066",
+  "release": "https://github.com/cuilongsheng/Slogan/releases/tag/android-fc7bbf86cb28ee315c6e57e4d2a62a0dfc8e56d3",
+  "fixedDownload": "https://slogan-preview-mobile.pages.dev/downloads/android.apk",
+  "downloadRouteStatus": 302,
+  "downloadHashVerified": true,
+  "actualApkContentVerified": true,
+  "productionCommitMatches": {
+    "api": true,
+    "admin": true,
+    "mobile": true
+  },
+  "metadata": {
+    "commit": "fc7bbf86cb28ee315c6e57e4d2a62a0dfc8e56d3",
+    "version": "0.0.7",
+    "versionCode": 1007,
+    "package": "com.slogan.mobile",
+    "apiOrigin": "https://slogan-api-pi.vercel.app",
+    "sha256": "f6576724782af52d2376b18cb0687fed8fcd092dc8f6ef64e6fe3ece622873a4",
+    "bytes": 85035110,
+    "abi": ["arm64-v8a"],
+    "signing": "controlled-debug",
+    "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c",
+    "launcherResources": 15,
+    "builtAt": "2026-10-08T02:13:29.436Z",
+    "deviceVerified": false
+  },
+  "deviceVerified": false,
+  "independentRealtimeCleanupVerified": false
+}

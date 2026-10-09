@@ -1,6 +1,30 @@
-import { beginJoin, updateJoinPassword, updateJoinRules, validRoomPassword } from './join';
+import {
+  beginDirectJoin,
+  beginJoin,
+  updateJoinPassword,
+  updateJoinRules,
+  validRoomPassword,
+} from './join';
 
 describe('join preparation', () => {
+  it('records direct entry intent without carrying another room password or invitation', () => {
+    const previous = {
+      roomId: 'room-a',
+      password: '1234',
+      rulesAccepted: false,
+      invitationId: 'old',
+    };
+    expect(beginDirectJoin(previous, 'room-b', 'new')).toEqual({
+      roomId: 'room-b',
+      password: '',
+      rulesAccepted: true,
+      invitationId: 'new',
+    });
+    expect(beginDirectJoin(previous, 'room-a', 'old')).toEqual({
+      ...previous,
+      rulesAccepted: true,
+    });
+  });
   it('keeps only four digits and resets agreement when the password changes', () => {
     const started = beginJoin(null, 'room-a');
     const agreed = updateJoinRules(started, true);
@@ -28,7 +52,15 @@ describe('join preparation', () => {
   it('retains an invitation only for the matching room preparation', () => {
     const invited = beginJoin(null, 'room-a', 'invite-a');
     expect(beginJoin(invited, 'room-a', 'invite-a')).toBe(invited);
-    expect(beginJoin(invited, 'room-a')).toEqual({ roomId: 'room-a', password: '', rulesAccepted: false });
-    expect(beginJoin(invited, 'room-b')).toEqual({ roomId: 'room-b', password: '', rulesAccepted: false });
+    expect(beginJoin(invited, 'room-a')).toEqual({
+      roomId: 'room-a',
+      password: '',
+      rulesAccepted: false,
+    });
+    expect(beginJoin(invited, 'room-b')).toEqual({
+      roomId: 'room-b',
+      password: '',
+      rulesAccepted: false,
+    });
   });
 });

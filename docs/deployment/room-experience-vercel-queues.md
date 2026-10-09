@@ -1,6 +1,6 @@
 # 房间体验修正：Vercel 队列发布方案
 
-适用 OpenSpec：`simplify-room-and-mobile-experience`。当前状态：本地实现与构建已验证；2026-10-07 已备份线上数据库并成功执行四个迁移，API 与队列云端发布正在进行。
+适用 OpenSpec：`simplify-room-and-mobile-experience`。当前状态：2026-10-07 已备份线上数据库并成功执行四个迁移；2026-10-08 的 fc7bbf8 已部署，但真实云端清理检查失败。下述请求内播种恢复补丁已通过本地完整 API 检查，待部署重验。
 
 ## 问题和处理
 
@@ -10,14 +10,15 @@
 
 ## 拓扑和恢复
 
-- 公开 Nest API：`apps/api/src/main.ts`；Vercel 模式在初始化后播种恢复扫描消息。
+- 公开 Nest API：`apps/api/src/main.ts`；Vercel 模式在请求上下文内播种恢复扫描消息，平台 `waitUntil` 追踪发布，不阻塞 HTTP 返回。
 - 私有消费者：`apps/api/api/realtime.ts`；`apps/api/vercel.json` 绑定 `queue/v2beta` 和主题 `slogan-realtime`。独立函数很重要：队列触发函数在 Vercel 上不是公开 HTTP API。
 - 适配器：`RealtimeQueue` 在 `VERCEL=1` 时发布托管队列消息，不启动 BullMQ Worker；其他环境沿用 Redis/BullMQ。
 - 消费者读取 PostgreSQL 的持久命令，执行撤销身份、删除房间、到期及预约任务。数据库和下一次扫描发布失败向 SDK 抛错，按退避重投递。
 - 有待清理命令或活跃房间时，下一次扫描延迟 30 秒；空闲时 300 秒。消息只包含任务类型和标识，不包含消息正文、音频或凭证。
+- 并发 HTTP 请求共用一个在途播种；只有成功发送才进入五分钟冷却，失败在下一请求重试。后续请求也能重新播种中断的扫描链。启动阶段不发送恢复消息，避免缺少请求 OIDC 上下文。
 - 即使单次命令发布失败，扫描仍会再次读取 PostgreSQL。重复投递由既有事务、命令代次和状态检查吸收；不回退已退出成员的业务状态。
 
-Vercel Queues 当前为 beta，有用量限制及按操作计费规则；本实现不能承诺无限免费或与服务故障无关的即时撤销。SDK 保留期设为 7 天，过期消息不能承担无限期恢复。如果首轮播种失败、扫描链停止或停机超过保留期，应检查日志、恢复数据库/队列并重新播种（例如重新部署启动 API），从数据库重建任务；命令本身不因队列过期而删除。上线须验证该恢复路径，不能用本地 SDK mock 代替。
+Vercel Queues 当前为 beta，有用量限制及按操作计费规则；本实现不能承诺无限免费或与服务故障无关的即时撤销。SDK 保留期设为 7 天，过期消息不能承担无限期恢复。如果首轮播种失败、扫描链停止或停机超过保留期，应检查日志、恢复数据库/队列并重新播种（部署后或冷却到期后的 HTTP 请求），从数据库重建任务；命令本身不因队列过期而删除。上线须验证该恢复路径，不能用本地 SDK mock 代替。
 
 ## 发布顺序
 
@@ -36,3 +37,5 @@ Vercel Queues 当前为 beta，有用量限制及按操作计费规则；本实�
 本地 `vercel build` 成功产出公开 `index.func` 与独立 `api/realtime.func`，后者具有 `queue/v2beta` / `slogan-realtime` 触发配置。托管 runner 与 queue adapter 的测试覆盖响应外处理、失败重投递、扫描重建、延迟及播种去重；PostgreSQL 集成覆盖 provider 故障和恢复。四个迁移已于 2026-10-07 成功应用到已确认的 Neon main / neondb，共 25 个完成迁移、0 个失败；现有 5 个用户和 4 个房间保留，等级字段及消息外键已核对。见 [迁移证据](../acceptance/simplify-room-and-mobile-experience/production-migrations.json)。云端队列实际触发仍待发布后验证，因此 OpenSpec 5.3 保持未完成。
 
 依据：[Vercel Queues](https://vercel.com/docs/queues)、[SDK](https://vercel.com/docs/queues/sdk)。这些文档证明平台能力，不能证明本项目已经上线运行。
+
+2026-10-08 实际生产检查发现清理命令六分钟仍未执行。请求内播种补丁与日志安全分类已有本地测试；云端触发未通过前，5.3 不勾选，具体错误仍需对照线上日志。

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
   ActivityIndicator,
@@ -21,10 +21,13 @@ import messagesIcon from '../../../assets/icons/messages.png';
 import profileIcon from '../../../assets/icons/profile.png';
 import { RoomDiscoveryApi, RoomListPager, type RoomSummary } from './api';
 import { RoomCard } from './RoomCard';
+import { useJoinDraft } from './join';
 
 export function RoomListScreen() {
   const router = useRouter();
   const { authorized } = useAuth();
+  const { beginDirect } = useJoinDraft();
+  const entering = useRef(false);
   const pager = useMemo(() => new RoomListPager(new RoomDiscoveryApi(authorized)), [authorized]);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -56,6 +59,7 @@ export function RoomListScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      entering.current = false;
       void refresh();
     }, [refresh]),
   );
@@ -123,7 +127,20 @@ export function RoomListScreen() {
           data={rooms}
           keyExtractor={(room) => room.id}
           renderItem={({ item, index }) => (
-            <RoomCard room={item} index={index} onPress={() => router.push(`/rooms/${item.id}`)} />
+            <RoomCard
+              room={item}
+              index={index}
+              onPress={() => {
+                if (entering.current) return;
+                entering.current = true;
+                beginDirect(item.id);
+                router.push(
+                  item.passwordProtected
+                    ? `/rooms/${item.id}/password`
+                    : `/rooms/${item.id}/session`,
+                );
+              }}
+            />
           )}
           contentContainerStyle={styles.list}
           refreshing={refreshing}
@@ -155,7 +172,12 @@ export function RoomListScreen() {
           <Image source={messagesIcon} style={styles.navIcon} />
           <Text style={styles.navInactive}>{t('navMessages')}</Text>
         </View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('navProfile')} style={styles.navItem} onPress={() => router.push('/me')}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t('navProfile')}
+          style={styles.navItem}
+          onPress={() => router.push('/me')}
+        >
           <Image source={profileIcon} style={styles.navIcon} />
           <Text style={styles.navInactive}>{t('navProfile')}</Text>
         </TouchableOpacity>

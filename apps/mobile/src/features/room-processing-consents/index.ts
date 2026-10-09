@@ -1,0 +1,1 @@
+export { RoomConsentPanel } from './RoomConsentPanel';

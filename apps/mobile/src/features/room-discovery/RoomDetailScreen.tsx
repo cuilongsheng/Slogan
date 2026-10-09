@@ -26,7 +26,7 @@ export function RoomDetailScreen({
 }) {
   const router = useRouter();
   const { room, loading, error, reload } = useRoomDetail(roomId);
-  const { begin } = useJoinDraft();
+  const { beginDirect } = useJoinDraft();
   const availability = room ? roomAvailability(room) : null;
   const available = availability === 'available';
   const state =
@@ -124,7 +124,7 @@ export function RoomDetailScreen({
             <RoomAction
               label={
                 available
-                  ? t('roomViewPreparation')
+                  ? t('joinDeviceEnterRoom')
                   : availability === 'scheduled'
                     ? t('roomScheduled')
                     : t('roomRetry')
@@ -135,10 +135,10 @@ export function RoomDetailScreen({
                   void reload();
                   return;
                 }
-                if (invitationId) begin(roomId, invitationId);
-                else begin(roomId);
+                if (invitationId) beginDirect(roomId, invitationId);
+                else beginDirect(roomId);
                 router.push(
-                  room.passwordProtected ? `/rooms/${roomId}/password` : `/rooms/${roomId}/rules`,
+                  room.passwordProtected ? `/rooms/${roomId}/password` : `/rooms/${roomId}/session`,
                 );
               }}
             />

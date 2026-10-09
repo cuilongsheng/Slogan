@@ -22,7 +22,7 @@ import { useJoinDraft, validRoomPassword } from './join';
 import { roomAvailability, remainingMinutes } from './presentation';
 import { useRoomDetail } from './useRoomDetail';
 import type { MicrophoneStatus } from './microphone';
-import { RoomConsentPanel } from '../room-processing-consents/RoomConsentPanel';
+import { RoomConsentPanel } from '../room-processing-consents';
 
 function Expired({ roomId }: { roomId: string }) {
   const router = useRouter();
@@ -38,7 +38,7 @@ function Expired({ roomId }: { roomId: string }) {
 
 export function JoinPasswordScreen({ roomId }: { roomId: string }) {
   const router = useRouter();
-  const { draft, password } = useJoinDraft();
+  const { draft, password, acceptRules } = useJoinDraft();
   const { room, loading } = useRoomDetail(roomId);
   const [touched, setTouched] = useState(false);
   const valid = validRoomPassword(draft?.password ?? '');
@@ -117,17 +117,16 @@ export function JoinPasswordScreen({ roomId }: { roomId: string }) {
               <Text style={styles.privacy}>{t('joinPasswordPrivacy')}</Text>
               {touched && !valid && <Text style={styles.error}>{t('joinPasswordInvalid')}</Text>}
             </View>
-            <View style={styles.reminder}>
-              <Text style={styles.pill}>{t('joinRulesReminder')}</Text>
-              <Text style={styles.helperLeft}>{t('joinRulesReminderBody')}</Text>
-            </View>
             <Text style={styles.disclosure}>{t('joinPasswordNotVerified')}</Text>
           </ScrollView>
           <View style={roomPageStyles.footer}>
             <RoomAction
-              label={t('continue')}
+              label={t('joinDeviceEnterRoom')}
               disabled={!valid}
-              onPress={() => router.push(`/rooms/${roomId}/rules`)}
+              onPress={() => {
+                acceptRules(true);
+                router.replace(`/rooms/${roomId}/session`);
+              }}
             />
           </View>
         </>

@@ -1,0 +1,59 @@
+{
+  "checkedAt": "2026-10-08T02:00:22.590Z",
+  "commit": "fc7bbf86cb28ee315c6e57e4d2a62a0dfc8e56d3",
+  "checks": {
+    "googleDisabled": true,
+    "rangeAndShare": true,
+    "realLiveKitCredentials": true,
+    "twoAccountMessagesAndDeduplication": true,
+    "leaveIdempotent": true,
+    "leftMemberCannotRead": true,
+    "lastHostImmediateBusinessLeave": true
+  },
+  "leave": [
+    {
+      "elapsedMs": 249,
+      "roomStatus": "OPEN",
+      "providerStatus": "PENDING"
+    },
+    {
+      "elapsedMs": 231,
+      "roomStatus": "OPEN",
+      "providerStatus": "PENDING"
+    },
+    {
+      "elapsedMs": 276,
+      "roomStatus": "ENDING",
+      "providerStatus": "PENDING"
+    }
+  ],
+  "queue": {
+    "status": "WAITING",
+    "elapsedMs": 348108,
+    "roomStatus": "ENDING",
+    "commands": [
+      {
+        "type": "REVOKE_IDENTITY",
+        "status": "PENDING",
+        "attempts": 0
+      },
+      {
+        "type": "REVOKE_IDENTITY",
+        "status": "PENDING",
+        "attempts": 0
+      },
+      {
+        "type": "REVOKE_IDENTITY",
+        "status": "PENDING",
+        "attempts": 0
+      },
+      {
+        "type": "DELETE_ROOM",
+        "status": "PENDING",
+        "attempts": 0
+      }
+    ],
+    "messagesRemaining": 0
+  },
+  "error": "Independent cloud consumer did not finish within six minutes\n\n'WAITING' !== 'PASS'\n"
+}

@@ -5,8 +5,10 @@ import { useJoinDraft } from './join';
 import { useRoomDetail } from './useRoomDetail';
 
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
+const mockAcceptRules = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn() }),
 }));
 jest.mock('./useRoomDetail', () => ({ useRoomDetail: jest.fn() }));
 jest.mock('./join', () => ({ ...jest.requireActual('./join'), useJoinDraft: jest.fn() }));
@@ -33,20 +35,24 @@ describe('joining preparation pages', () => {
     (useJoinDraft as jest.Mock).mockReturnValue({
       draft: { roomId: 'room-a', password: '123', rulesAccepted: false },
       password: jest.fn(),
+      acceptRules: mockAcceptRules,
     });
     const page = await render(<JoinPasswordScreen roomId="room-a" />);
-    expect(page.getByRole('button', { name: 'Continue' }).props.accessibilityState.disabled).toBe(
-      true,
-    );
+    expect(
+      page.getByRole('button', { name: 'Enter voice room' }).props.accessibilityState.disabled,
+    ).toBe(true);
     await page.unmount();
 
     (useJoinDraft as jest.Mock).mockReturnValue({
       draft: { roomId: 'room-a', password: '1234', rulesAccepted: false },
       password: jest.fn(),
+      acceptRules: mockAcceptRules,
     });
     const valid = await render(<JoinPasswordScreen roomId="room-a" />);
-    await fireEvent.press(valid.getByRole('button', { name: 'Continue' }));
-    expect(mockPush).toHaveBeenCalledWith('/rooms/room-a/rules');
+    await fireEvent.press(valid.getByRole('button', { name: 'Enter voice room' }));
+    expect(mockAcceptRules).toHaveBeenCalledWith(true);
+    expect(mockReplace).toHaveBeenCalledWith('/rooms/room-a/session');
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('requires active rule consent and rejects a draft for another room', async () => {

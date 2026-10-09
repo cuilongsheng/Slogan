@@ -64,3 +64,30 @@ test('callback processing propagates transient failure for redelivery and reject
   expect(handler).toHaveBeenCalledTimes(1);
   await queue.onModuleDestroy();
 });
+
+test('a failed request seed retries; concurrent requests share a send and successful seeds renew after five minutes', async () => {
+  const now = jest.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
+  const queue = new RealtimeQueue(new ConfigService(testEnvironment()), {
+    warn: jest.fn(),
+  } as never);
+  try {
+    await queue.start(async () => undefined);
+    send.mockRejectedValueOnce(new Error('missing startup request context'));
+    await expect(queue.seedRecoveryFromRequest()).rejects.toThrow(
+      'missing startup request context',
+    );
+    const first = queue.seedRecoveryFromRequest();
+    const concurrent = queue.seedRecoveryFromRequest();
+    expect(concurrent).toBe(first);
+    await first;
+    expect(send).toHaveBeenCalledTimes(2);
+    await queue.seedRecoveryFromRequest();
+    expect(send).toHaveBeenCalledTimes(2);
+    now.mockReturnValue(1_800_000_300_000);
+    await queue.seedRecoveryFromRequest();
+    expect(send).toHaveBeenCalledTimes(3);
+  } finally {
+    await queue.onModuleDestroy();
+    jest.restoreAllMocks();
+  }
+});

@@ -27,14 +27,14 @@ describe('room detail availability', () => {
   const reload = jest.fn();
   beforeEach(() => {
     jest.clearAllMocks();
-    (useJoinDraft as jest.Mock).mockReturnValue({ begin });
+    (useJoinDraft as jest.Mock).mockReturnValue({ beginDirect: begin });
   });
 
   it.each([
-    ['open', false, '/rooms/room-a/rules'],
+    ['open', false, '/rooms/room-a/session'],
     ['password', true, '/rooms/room-a/password'],
   ])(
-    'routes an available %s room through its appropriate preparation page',
+    'routes an available %s room directly to entry or the required password input',
     async (_, passwordProtected, path) => {
       (useRoomDetail as jest.Mock).mockReturnValue({
         room: { ...base, passwordProtected },
@@ -43,7 +43,7 @@ describe('room detail availability', () => {
         reload,
       });
       const page = await render(<RoomDetailScreen roomId="room-a" />);
-      await fireEvent.press(page.getByRole('button', { name: 'Review joining steps' }));
+      await fireEvent.press(page.getByRole('button', { name: 'Enter voice room' }));
       expect(begin).toHaveBeenCalledWith('room-a');
       expect(mockPush).toHaveBeenCalledWith(path);
     },
@@ -83,5 +83,17 @@ describe('room detail availability', () => {
     const page = await render(<RoomDetailScreen roomId="room-a" />);
     await fireEvent.press(page.getByText('Reload room'));
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+  it('preserves invitation authorization when directly entering from details', async () => {
+    (useRoomDetail as jest.Mock).mockReturnValue({
+      room: base,
+      loading: false,
+      error: false,
+      reload,
+    });
+    const page = await render(<RoomDetailScreen roomId="room-a" invitationId="invite-a" />);
+    await fireEvent.press(page.getByRole('button', { name: 'Enter voice room' }));
+    expect(begin).toHaveBeenCalledWith('room-a', 'invite-a');
+    expect(mockPush).toHaveBeenCalledWith('/rooms/room-a/session');
   });
 });

@@ -24,6 +24,8 @@ export class RealtimeQueue implements OnModuleDestroy {
   private consumer: Redis | undefined;
   private vercel: QueueClient | undefined;
   private handler: ((job: RealtimeJob) => Promise<void>) | undefined;
+  private recoverySeed: Promise<void> | undefined;
+  private recoverySeededAt: number | undefined;
   get managed() {
     return process.env.VERCEL === '1';
   }
@@ -108,6 +110,22 @@ export class RealtimeQueue implements OnModuleDestroy {
       { kind: 'recovery', id: 'scan' },
       new Date(Date.now() + delaySeconds * 1000),
     );
+  }
+  seedRecoveryFromRequest(): Promise<void> {
+    if (!this.managed) return Promise.resolve();
+    if (this.recoverySeed) return this.recoverySeed;
+    if (this.recoverySeededAt !== undefined && Date.now() - this.recoverySeededAt < 300_000)
+      return Promise.resolve();
+    // Queue OIDC credentials belong to the active Vercel request context.
+    // Only a successful send starts the cooldown; a failed seed is retried by the next request.
+    this.recoverySeed = this.ensureRecovery()
+      .then(() => {
+        this.recoverySeededAt = Date.now();
+      })
+      .finally(() => {
+        this.recoverySeed = undefined;
+      });
+    return this.recoverySeed;
   }
   async onModuleDestroy() {
     await this.worker?.close();
