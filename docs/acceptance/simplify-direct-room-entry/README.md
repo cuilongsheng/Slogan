@@ -26,7 +26,7 @@ Reproduce browser test: `pnpm exec playwright test --config tests/direct-entry.p
 
 ## Figma and running evidence
 
-Read Slogan `02 UI`, Section `115:1196`, List Frame `115:1197`, and Room Frame `115:1425` through the connected Figma Desktop Bridge. Original screenshot `list-original-figma.png` is retained as is. The user approved the interaction path change this round and did not require the list to be redrawn.
+Read Slogan `02 UI`, Section `115:1196`, List Frame `115:1197`, and Room Frame `115:1425` through the connected Figma Desktop Bridge. Original screenshot `../assets/implement-mobile-room-discovery-join-rooms-list-v2.png` is retained as is. The user approved the interaction path change this round and did not require the list to be redrawn.
 
 | Evidence                             | range/result                                                                                                                                                             |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

@@ -1,6 +1,6 @@
 # README image notes
 
-Both project README entry points use English text and images.
+The project README uses English text and images.
 
 ## Runtime screenshots
 
@@ -17,7 +17,7 @@ The documentation capture uses the application's existing English locale. A Vite
 | [In-app invitation](images/invite.png)                    | Actual empty-seat action and available-people selection sheet           |
 | [Reconnecting](images/reconnecting.png)                   | Actual recovery component with a fixture host deadline                  |
 
-These images are UI documentation, not Android device, production account, LiveKit, or AI-provider acceptance evidence. The admin is currently primarily Chinese and is described in the READMEs without presenting a fabricated English admin screenshot.
+These images are UI documentation, not Android device, production account, LiveKit, or AI-provider acceptance evidence. The admin is currently primarily Chinese and is described in the README without presenting a fabricated English admin screenshot.
 
 To regenerate after installing workspace dependencies:
 
@@ -33,4 +33,4 @@ The capture starts a local server at `localhost:8094`, writes only these six ima
 - [Architecture](architecture.svg): hand-authored SVG showing current runtime boundaries and optional providers.
 - [Delivery](delivery.svg): hand-authored SVG showing the preview / production distinction and APK release gate.
 
-Diagram labels are English and are shared by both language versions. They are documentation illustrations, not exports from or replacements for the original Figma designs.
+Diagram labels are English and are used by the project README. They are documentation illustrations, not exports from or replacements for the original Figma designs.

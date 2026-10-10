@@ -13,7 +13,7 @@ Shared implementation is `scripts/pages-api-proxy.mjs`, build is `scripts/build-
 | Admin      | `VITE_API_BASE_URL`: This website is complete HTTPS origin        | `API_UPSTREAM_ORIGIN`: Actual controlled Render HTTPS origin | `pnpm build:pages:admin`  | `apps/admin/dist`        |
 | Mobile Web | `EXPO_PUBLIC_API_BASE_URL`: This website is complete HTTPS origin | Same as left                                                 | `pnpm build:pages:mobile` | `apps/mobile/dist-pages` |
 
-The public API base does not contain `/v1`, and the build fails when it is missing or illegal. Upstream does not contain paths, credentials, queries or fragments, restricted to Render single-tier platform domains. Two Pages Functions compatibility date set `2026-10-04`. No new secret variables are added; existing keys such as Google public client ID, API CORS/Google allowlist, etc. are still set as [Deployment Guide](../deployment/free-preview-deployment.md).
+The public API base does not contain `/v1`, and the build fails when it is missing or illegal. Upstream does not contain paths, credentials, queries or fragments, restricted to Render single-tier platform domains. Two Pages Functions compatibility date set `2026-10-04`. No new secret variables are added; existing keys such as Google public client ID, API CORS/Google allowlist, etc. are still set as [deployment runbook](../runbooks/deployment.md).
 
 ## Evidence executed
 

@@ -235,6 +235,8 @@ API builds do not automatically apply Prisma migrations. Schema releases require
 
 ## Documentation
 
+Start with the [documentation index](docs/README.md) for current guides and dated evidence.
+
 | Topic                        | References                                                                                                                                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Current product requirements | [OpenSpec specifications](openspec/specs/) / [ongoing changes](openspec/changes/)                                                                                                           |
