@@ -1,0 +1,13 @@
+PASS native Yoga viewport=320 ratio=1 four columns height=74
+PASS native Yoga viewport=360 ratio=1 four columns height=74
+PASS native Yoga viewport=390 ratio=1 four columns height=74
+PASS native Yoga viewport=412 ratio=1 four columns height=74
+PASS native Yoga viewport=320 ratio=2 four columns height=74
+PASS native Yoga viewport=360 ratio=2 four columns height=74
+PASS native Yoga viewport=390 ratio=2 four columns height=74
+PASS native Yoga viewport=412 ratio=2 four columns height=74
+PASS native Yoga viewport=320 ratio=3 four columns height=74
+PASS native Yoga viewport=360 ratio=3 four columns height=74
+PASS native Yoga viewport=390 ratio=3 four columns height=74
+PASS native Yoga viewport=412 ratio=3 four columns height=74
+REPRODUCED old 360px viewport: fourth seat wraps to y=74

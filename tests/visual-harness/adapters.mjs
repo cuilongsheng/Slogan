@@ -32,19 +32,19 @@ export const LinearGradient = ({ children, style, colors }) =>
 
 const portraits = {
   luna: new URL(
-    '../../docs/acceptance/simplify-room-and-mobile-experience/fixture-avatars/luna.png',
+    '../../docs/acceptance/voice-room-four-column-fidelity/fixture-avatars/luna.png',
     import.meta.url,
   ).href,
   mika: new URL(
-    '../../docs/acceptance/simplify-room-and-mobile-experience/fixture-avatars/mika.png',
+    '../../docs/acceptance/voice-room-four-column-fidelity/fixture-avatars/mika.png',
     import.meta.url,
   ).href,
   yuki: new URL(
-    '../../docs/acceptance/simplify-room-and-mobile-experience/fixture-avatars/yuki.png',
+    '../../docs/acceptance/voice-room-four-column-fidelity/fixture-avatars/yuki.png',
     import.meta.url,
   ).href,
   ravi: new URL(
-    '../../docs/acceptance/simplify-room-and-mobile-experience/fixture-avatars/ravi.png',
+    '../../docs/acceptance/voice-room-four-column-fidelity/fixture-avatars/ravi.png',
     import.meta.url,
   ).href,
 };
@@ -64,10 +64,28 @@ const members = ['Luna', 'Mika', 'Yuki', 'Ravi'].map((name, index) => ({
 }));
 export class VoiceRoomSession {
   constructor() {
+    const query = new URL(location.href).searchParams;
+    const count = Math.min(6, Math.max(0, Number(query.get('count') ?? 4)));
+    this.state.room.capacity = Math.min(6, Math.max(count, Number(query.get('capacity') ?? 6)));
+    this.state.members = Array.from({ length: count }, (_, index) => ({
+      ...members[index % members.length],
+      membershipId: `member-${index}`,
+      participantIdentity: `identity-${index}`,
+      position: index + 1,
+      ...(query.has('longNames')
+        ? { displayName: `Preview member ${index} with a long name` }
+        : {}),
+    }));
+    this.state.room.memberCount = count;
+    this.state.media.participants = this.state.members.map((member, index) => ({
+      identity: member.participantIdentity,
+      speaking: false,
+      microphoneEnabled: index !== 2,
+    }));
     if (new URL(location.href).searchParams.get('role') === 'host') {
       this.state.role = 'HOST';
       this.state.room.currentMembership.id = 'member-0';
-    this.state.media.participants[1].speaking = true;
+      this.state.media.participants[1].speaking = true;
     }
     if (new URL(location.href).searchParams.get('device') === 'blocked') {
       this.state.media.deviceCheck = { microphone: 'blocked', playback: 'ready' };
@@ -117,7 +135,10 @@ export class VoiceRoomSession {
   async start() {}
   async refresh() {}
   async recheckDevices() {
-    this.state = { ...this.state, media: { ...this.state.media, deviceCheck: { microphone: 'ready', playback: 'ready' } } };
+    this.state = {
+      ...this.state,
+      media: { ...this.state.media, deviceCheck: { microphone: 'ready', playback: 'ready' } },
+    };
     this.listeners.forEach((listener) => listener(this.state));
   }
   async dispose() {}
