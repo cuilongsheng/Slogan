@@ -1,45 +1,45 @@
 ## MODIFIED Requirements
 
-### Requirement: 房主主动退出时移交权限
+### Requirement: Room host transfers permissions when exiting actively
 
-系统 MUST 在房主主动退出且仍有可接任在线成员时提供当前在线成员选择器并要求明确选择接任成员；选择完成后服务端 MUST 先提交权限移交再完成原房主退出。没有可接任成员时 MUST 关闭业务房间并允许直接退出，不等待外部媒体房间删除。
+The system MUST provide the current online member selector and require explicit selection of the successor member when the room host actively exits and there are still available online members; after the selection is completed, the server MUST submit the permission transfer first and then complete the exit of the original room host. When there is no takeover member, the business room MUST be closed and allowed to exit directly without waiting for the external media room to be deleted.
 
-#### Scenario: 指定接任成员
+#### Scenario: Designated successor member
 
-- **WHEN** 房主主动退出并选择一名在线成员
-- **THEN** 系统先将房主权限移交给该成员，再完成原房主退出
+- **WHEN** Room host actively logs out and selects an online member
+- **THEN** The system first transfers the room host permission to the member, and then completes the exit of the original room host.
 
-#### Scenario: 未指定接任成员
+#### Scenario: No successor designated
 
-- **WHEN** 房主主动退出但未选择成员且存在其他在线成员
-- **THEN** 页面要求选择接任成员，服务端不静默移交给默认第二麦
+- **WHEN** Room host actively exited but did not select members and there are other online members
+- **THEN** The page requires selecting a successor member, and the server does not silently hand over to the default second microphone.
 
-#### Scenario: 没有接任成员
+#### Scenario: No successor members
 
-- **WHEN** 房主主动退出且房间内没有其他在线成员
-- **THEN** 系统关闭业务房间并完成退出，媒体清理由后端异步处理
+- **WHEN** Room host actively exited and there are no other online members in the room
+- **THEN** The system closes the business room and completes the exit. Media cleanup is handled asynchronously by the backend.
 
 ## ADDED Requirements
 
-### Requirement: 普通退出不复用加入或重连页面
+### Requirement: Normal exit does not reuse the join or reconnect page
 
-普通成员 MUST 能直接执行退出且无需房主移交选择或重复确认。成员退出后 MUST 返回房间发现页面，不展示入房、重新连接或重新加入流程。
+Ordinary members MUST be able to exit directly without room host handover selection or repeated confirmation. After a member logs out, he or she MUST return to the room discovery page without showing room entry, reconnection or rejoining processes.
 
-#### Scenario: 普通成员退出
+#### Scenario: Ordinary members exit
 
-- **WHEN** 普通成员点击退出
-- **THEN** 本地房间音频停止，完成退出后返回发现页面且不出现加入状态界面
+- **WHEN** Ordinary members click to exit
+- **THEN** The local room audio stops. After exiting, the discovery page returns and the joining status interface does not appear.
 
-### Requirement: 业务退出不等待媒体清理
+### Requirement: Business exit does not wait for media cleanup
 
-系统 MUST 在持久提交成员退出、房主移交及适用的业务房间关闭后返回业务成功。LiveKit 清理失败或暂不可用 MUST 不把已提交退出改成失败，后端 MUST 负责持久重试及一致性收敛；退出前的旧凭证不得恢复业务成员资格。
+The system MUST return business success after a persistent commit member exits, room host transfer, and applicable business room closure. LiveKit cleanup failed or is temporarily unavailable. The submitted exit MUST not be changed to failure. The backend MUST be responsible for persistent retries and consistency convergence; the old credentials before exit MUST not restore business membership.
 
-#### Scenario: 最后一人退出且 LiveKit 不可用
+#### Scenario: Last person logged out and LiveKit is unavailable
 
-- **WHEN** 最后一名成员退出且 LiveKit 删除操作超时或失败
-- **THEN** 用户得到业务退出成功并离开页面，业务房间不再可加入，后端继续清理
+- **WHEN** The last member exited and the LiveKit delete operation timed out or failed
+- **THEN** The user gets the business exit successfully and leaves the page. The business room can no longer be joined, and the backend continues to clean up.
 
-#### Scenario: 业务响应丢失
+#### Scenario: Business response lost
 
-- **WHEN** 退出事务完成但响应丢失且客户端以原成员代次重试
-- **THEN** 返回原退出事实且不影响该用户之后新代次的成员资格
+- **WHEN** Exit transaction completed but response lost and client retried with original member generation
+- **THEN** Returns the original exit fact and does not affect the user's membership in subsequent generations.

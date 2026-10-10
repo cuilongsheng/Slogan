@@ -1,12 +1,12 @@
 ## 1. API
 
-- [x] 1.1 接入社交及本人邀请 API，验证分页和幂等请求参数
+- [x] 1.1 Access social and personal invitation API, verify paging and idempotent request parameters
 
-## 2. 页面
+## 2. Page
 
-- [x] 2.1 完成好友、可用用户、请求和屏蔽的本人页面
-- [x] 2.2 完成收到的房间邀请及拒绝/查看房间流程
+- [x] 2.1 Complete friends, available users, requested and blocked personal pages
+- [x] 2.2 Complete the received room invitation and reject/view the room process
 
-## 3. 验收
+## 3. Acceptance
 
-- [x] 3.1 lint/typecheck/test/iOS export、390×844 夹具与真实账号/设备边界
+- [x] 3.1 lint/typecheck/test/iOS export, 390×844 fixture and real account/device boundary

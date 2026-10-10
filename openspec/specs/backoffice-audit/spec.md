@@ -2,82 +2,102 @@
 
 ## Purpose
 
-定义后台高权限数据查看和状态修改的持久审计边界，使操作者、当时角色、目标、原因、时间和结果可以追溯，同时避免审计记录扩大敏感数据暴露。
+Define persistent audit boundaries for background high-privilege data viewing and status modification, so that operators, current roles, goals, causes, times and results can be traced, while avoiding audit records from expanding sensitive data exposure.
 
 ## Requirements
 
-### Requirement: 后台敏感访问和操作必须审计
-系统 MUST 为 bootstrap、角色查看、角色授予、角色撤销、后台审计查看、安全案件列表与详情查看、证据包查看、案件分配、领取与状态推进、案件结论、临时限制、自动到期、提前解除、申诉查看与处理以及永久禁用记录后台审计事件。事件 MUST 包含操作者类型、可用时的操作者用户标识、操作时角色快照、动作、目标、原因或查询范围、结果、服务端时间和请求关联标识；自动恢复动作 MUST 使用明确的系统操作者类型，不得伪造普通用户。
+### Requirement: Sensitive background access and operations must be audited
 
-#### Scenario: 角色修改成功
-- **WHEN** 平台管理员成功授予或撤销一个后台角色
-- **THEN** 系统保存与角色结果可关联的成功审计，且角色修改和审计全部提交或全部失败
+System MUST support bootstrap, role viewing, role granting, role revocation, administrative audit viewing, security case list and detail viewing, evidence package viewing, case assignment, collection and status advancement, case conclusion, temporary restrictions, automatic expiration, early release, appeal viewing and processing, and permanent disabling of recording administrative audit events. The event MUST contains the operator type, operator user ID when available, role snapshot at the time of operation, action, target, cause or query scope, result, server time and request association ID; automatic recovery actions MUST use a clear system operator type and MUST not forge ordinary users.
 
-#### Scenario: 最后管理员保护拒绝操作
-- **WHEN** 已通过身份和角色校验的管理员请求会导致没有有效平台管理员
-- **THEN** 系统保留角色并记录包含稳定拒绝结果的审计事件
+#### Scenario: Role modified successfully
 
-#### Scenario: 后台敏感列表被查看
-- **WHEN** 有权限的用户查看角色分配、后台审计、案件列表、案件详情、证据包或申诉列表
-- **THEN** 系统记录查看者、操作时角色、查询类型、时间和成功或失败结果；审计写入失败时不得返回敏感数据
+- **WHEN** The platform administrator successfully granted or revoked a administrative role
+- **THEN** The system saves successful audits that can be associated with role results, and role modifications and audits are all submitted or all fail.
 
-#### Scenario: bootstrap 操作
-- **WHEN** 一次性运维入口建立首个后台账号
-- **THEN** 系统以明确的系统操作者类型记录目标用户、授予角色、时间和结果，不伪造普通用户 actor
+#### Scenario: Last administrator protection denied operation
 
-#### Scenario: 安全处置成功
-- **WHEN** 安全员成功结案、施加或提前解除限制、处理申诉或永久禁用账号
-- **THEN** 系统保存与业务结果可关联的成功审计，且业务状态和成功审计全部提交或全部失败
+- **WHEN** An administrator request that has passed identity and role verification will result in no valid platform administrator.
+- **THEN** The system retains roles and logs audit events with stable denial results
 
-#### Scenario: 安全处置被拒绝
-- **WHEN** 已认证后台用户因角色、案件状态、申诉窗口或并发冲突而无法完成安全处置
-- **THEN** 系统不改变业务状态，并记录不含举报正文或完整证据的稳定拒绝结果
+#### Scenario: The background sensitive list was viewed
 
-#### Scenario: 自动分配或限制到期
-- **WHEN** 系统恢复流程自动分配案件、重新分配失效处理人或收敛已到期限制
-- **THEN** 系统以明确的系统操作者类型记录动作、目标、时间和结果，不伪造安全员 actor
+- **WHEN** Users with permissions can view role assignments, background audits, case lists, case details, evidence packages or appeal lists
+- **THEN** The system records the viewer, operation role, query type, time and success or failure results; sensitive data must not be returned when the audit write fails
 
-### Requirement: 后台审计保持最小化和不可经业务 API 修改
-系统 MUST 将后台审计保存为追加事实，不提供修改或删除后台审计的业务 API。审计内容 MUST 使用字段白名单，不得保存 access/refresh token、provider secret、密码、完整举报正文、SQL、stack 或任意请求体快照。
+#### Scenario: bootstrap operation
 
-#### Scenario: 审计角色管理请求
-- **WHEN** 系统记录一条角色授予、撤销或拒绝事件
-- **THEN** 事件只保存动作所需的标识、角色、原因、结果和关联字段，不复制认证 header 或完整请求对象
+- **WHEN** Create the first backend account for one-time operation and maintenance portal
+- **THEN** The system records the target user, granted role, time and result with a clear system operator type, and does not forge ordinary user actors.
 
-#### Scenario: 请求审计修改接口
-- **WHEN** 调用者尝试通过公开 API 修改或删除既有后台审计
-- **THEN** 系统不存在该业务路由且既有审计保持不变
+#### Scenario: Safe disposal successful
 
-#### Scenario: 用户后续失去角色
-- **WHEN** 审计事件的操作者之后被撤销角色
-- **THEN** 既有事件仍保留操作发生时的角色快照，不被当前角色状态改写
+- **WHEN** safety officer successfully closes case, imposes or early lifts restrictions, handles appeals, or permanently bans account
+- **THEN** The system saves successful audits that can be associated with business results, and the business status and successful audits are all submitted or all fail.
 
-### Requirement: 后台审计查询遵循最小权限
-系统 MUST 只允许当前持有 `PLATFORM_ADMIN` 或 `AUDITOR` 的用户分页查询后台审计。查询 MUST 使用稳定游标，并只提供明确支持的时间、actor、action、target 和 result 过滤；安全员或运营分析员没有额外角色时不得浏览全量审计。
+#### Scenario: Safe disposal denied
 
-#### Scenario: 审计员查看审计
-- **WHEN** 当前审计员使用有效过滤和分页参数查询后台审计
-- **THEN** 系统返回稳定顺序的最小事件投影和下一页游标，不提供任何修改动作
+- **WHEN** The authenticated backend user cannot complete security processing due to role, case status, appeal window or concurrency conflict
+- **THEN** The system does not change the business status and records a stable rejection result that does not contain the report text or complete evidence.
 
-#### Scenario: 管理员查看审计
-- **WHEN** 当前平台管理员查询后台审计
-- **THEN** 系统允许读取并为本次查看追加访问审计
+#### Scenario: Automatic allocation or limit expiration
 
-#### Scenario: 安全员尝试查看全量审计
-- **WHEN** 只持有安全员角色的用户直接请求全量后台审计
-- **THEN** 系统返回稳定的后台权限拒绝且不返回事件内容
+- **WHEN** System recovery process automatically assigns cases, reassigns failure handlers, or converges expired limits
+- **THEN** The system records actions, goals, times and results with a clear system operator type, without forging safety officer actors
 
-#### Scenario: 非法过滤和游标
-- **WHEN** 调用者提交非法时间、未知 action、过长标识或损坏游标
-- **THEN** 系统返回稳定校验错误，不执行查询且错误响应不回显敏感输入
+### Requirement: Backend auditing remains minimal and cannot be modified by business APIs
 
-### Requirement: 后台审计失败不泄露内部信息
-系统 MUST 对客户端返回稳定错误，并在技术日志中只记录固定事件名、请求标识和稳定结果码。持久化或查询失败不得向客户端或日志暴露 SQL、stack、凭证或受保护审计内容。
+The system MUST save the administrative audit as an append fact and does not provide a business API to modify or delete the administrative audit. Audit content MUST use a field whitelist, and access/refresh tokens, provider secrets, passwords, complete report text, SQL, stack, or any request body snapshots MUST not be saved.
 
-#### Scenario: 审计持久化失败
-- **WHEN** 角色修改或敏感读取所需的审计写入失败
-- **THEN** 系统不返回成功业务结果，并返回不含数据库细节的稳定服务端错误
+#### Scenario: Audit role management request
 
-#### Scenario: 捕获实际日志和错误响应
-- **WHEN** 后台鉴权、校验或持久化失败被记录
-- **THEN** 捕获到的日志及响应不包含认证凭证、原始请求体、SQL、stack 或非必要用户资料
+- **WHEN** The system records a role grant, revoke or deny event
+- **THEN** The event only saves the identification, role, reason, result and related fields required for the action, and does not copy the authentication header or complete request object.
+
+#### Scenario: Request audit modification interface
+
+- **WHEN** The caller tried to modify or delete the existing administrative audit through the public API
+- **THEN** The service route does not exist in the system and the existing audit remains unchanged.
+
+#### Scenario: The user subsequently loses his role
+
+- **WHEN** The operator of the audit event was later revoked from the role
+- **THEN** Existing events still retain the character snapshot when the operation occurred and will not be overwritten by the current character status.
+
+### Requirement: Background audit query follows least privileges
+
+The system MUST only allow users who currently hold `PLATFORM_ADMIN` or `AUDITOR` to query the administrative audit by page. Queries MUST use stable cursors and provide only explicitly supported time, actor, action, target, and result filtering; safety officers or operations analysts without additional roles MUST not browse the full audit.
+
+#### Scenario: Auditor View Audit
+
+- **WHEN** The current auditor uses valid filtering and paging parameters to query the administrative audit
+- **THEN** The system returns the minimum event projection and next page cursor in stable order, without providing any modification actions.
+
+#### Scenario: Administrator views audit
+
+- **WHEN** Current platform administrator queries administrative audit
+- **THEN** The system allows reading and adds access audit for this view.
+
+#### Scenario: safety officer Try to view the full audit
+
+- **WHEN** Users who only hold the role of safety officer directly request full administrative audit
+- **THEN** The system returns stable background permission denial and does not return event content
+
+#### Scenario: Illegal filter and cursor
+
+- **WHEN** The caller submitted illegal time, unknown action, too long identifier or damaged cursor
+- **THEN** The system returns a stable verification error, does not execute the query and does not echo sensitive input in the error response.
+
+### Requirement: Backend audit failure does not reveal internal information
+
+The system MUST return a stable error to the client and record only the fixed event name, request identifier and stable result code in the technical log. Persistence or query failures must not expose SQL, stack, credentials, or protected audit content to the client or logs.
+
+#### Scenario: Audit persistence failed
+
+- **WHEN** Audit write required for role modification or sensitive read failed
+- **THEN** The system does not return successful business results and returns a stable server error without database details.
+
+#### Scenario: Capture actual logs and error responses
+
+- **WHEN** Background authentication, verification or persistence failure is recorded
+- **THEN** The captured logs and responses do not contain authentication credentials, original request body, SQL, stack or unnecessary user data

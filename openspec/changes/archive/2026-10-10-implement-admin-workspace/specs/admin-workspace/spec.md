@@ -1,66 +1,66 @@
 ## ADDED Requirements
 
-### Requirement: 后台浏览器会话和实时权限边界
+### Requirement: Background browser sessions and real-time permission boundaries
 
-管理端 MUST 使用现有浏览器认证接口建立和恢复会话，并使用 `/v1/backoffice/me` 判断当前后台角色。access token MUST 只保存在运行内存。没有后台角色或会话失效时 MUST 不展示后台数据，直接访问受保护路由亦如此。
+The admin app MUST use the existing browser authentication interface to establish and restore sessions, and use `/v1/backoffice/me` to determine the current administrative role. access token MUST only be stored in running memory. Backend data MUST not be displayed when there is no backend role or the session is invalid, and the same is true for direct access to protected routes.
 
-#### Scenario: 刷新后恢复后台会话
+#### Scenario: Restore background session after refresh
 
-- **WHEN** 已登录后台用户刷新页面且 HttpOnly 刷新 Cookie 仍有效
-- **THEN** 管理端恢复 access token、重新读取当前角色并打开其有权访问的页面
+- **WHEN** The logged in admin user refreshes the page and the HttpOnly refresh cookie is still valid
+- **THEN** The admin app restores the access token, re-reads the current role and opens the page it has access to.
 
-#### Scenario: 普通账号访问后台
+#### Scenario: Ordinary account access backend
 
-- **WHEN** 有效普通账号没有后台角色并打开任一后台路由
-- **THEN** 管理端展示无权限状态，且服务端不返回后台数据
+- **WHEN** A valid ordinary account has no administrative role and opens any admin route
+- **THEN** The admin app displays a no permission status, and the server does not return admin data
 
-### Requirement: 六个后台页面使用真实数据
+### Requirement: Six admin pages use real data
 
-管理端 MUST 根据批准的 1440×900 Figma 页面显示房间、安全案件、限制申诉、安全降级事件、后台角色和操作审计，并使用生成客户端查询对应 API。列表 MUST 处理加载、空态、错误、权限拒绝和服务端游标分页；只有合同支持的筛选才能作为完整筛选展示。
+The admin app MUST display rooms, safety cases, restriction appeals, safety degradation events, administrative roles, and operation audits based on the approved 1440×900 Figma designs, querying their APIs through the generated client. Lists MUST handle loading, empty states, errors, permission denial, and server-side cursor pagination. Only contract-supported filters may be presented as complete filtering.
 
-#### Scenario: 有权限用户浏览列表
+#### Scenario: Browse list of authorized users
 
-- **WHEN** 当前角色有对应权限且列表 API 返回数据和下一页游标
-- **THEN** 页面展示服务端数据，支持进入下一页并能回到前一页
+- **WHEN** The current role has corresponding permissions and the list API returns data and next page cursor
+- **THEN** The page displays server data, supports entering the next page and returning to the previous page
 
-#### Scenario: 接口拒绝或失败
+#### Scenario: Interface rejected or failed
 
-- **WHEN** 列表请求返回 403 或可恢复错误
-- **THEN** 页面分别展示权限拒绝或可重试错误，不展示设计稿示例记录
+- **WHEN** List request returns 403 or recoverable error
+- **THEN** The page displays permission denial or retry errors respectively, and does not display design draft sample records.
 
-### Requirement: 后台高权限命令显式确认
+### Requirement: Explicit confirmation of background high-privilege command
 
-案件、申诉和角色变更仅在现有 API 允许时可操作，MUST 二次确认、提交服务端要求的请求标识和原因，并在服务端确认后刷新相关列表。房间管理在缺少处置 API 时 MUST 保持只读。
+Case, appeal, and role mutations may execute only when permitted by the existing API. They MUST require an explicit confirmation step, submit the server-required request identifier and reason, and refresh related lists after server confirmation. Room management MUST remain read-only in the absence of a disposal API.
 
-#### Scenario: 撤销角色前确认
+#### Scenario: Confirm before revoking role
 
-- **WHEN** 平台管理员选择撤销角色但取消确认
-- **THEN** 管理端不发送撤销请求，角色状态保持原样
+- **WHEN** The platform administrator chose to revoke the role but canceled the confirmation
+- **THEN** The admin app sends no revocation request, and the role state remains unchanged.
 
-#### Scenario: 处置请求冲突
+#### Scenario: Handling request conflicts
 
-- **WHEN** 案件或申诉在操作期间发生状态冲突
-- **THEN** 管理端展示服务端错误并刷新当前记录，不声明操作成功
+- **WHEN** A case or appeal changes state during the operation, causing a conflict.
+- **THEN** The admin app displays the server error and refreshes the current record without claiming success.
 
-### Requirement: 案件与申诉统计使用全量服务端计数
+### Requirement: Case and appeal statistics use full server-side counts
 
-案件和申诉页的统计卡 MUST 使用独立的服务端全量计数，不得把当前游标页的记录数冒充总数。案件统计 MUST 遵守与列表相同的管理员或安全员可见范围；申诉统计 MUST 仅允许安全员读取。计数查询失败时 MUST 显示未知状态，不得把失败当成零。
+Case and appeal statistics cards MUST use separate server-side counts across the full dataset. The number of records on the current cursor page MUST never be presented as the total. Case statistics MUST comply with the same administrator or safety officer visibility scope as the list; appeal statistics MUST be readable only by the safety officer. If the count query fails, the UI MUST display an unknown state; failure MUST not be interpreted as zero.
 
-#### Scenario: 安全员查看统计
+#### Scenario: safety officer View statistics
 
-- **WHEN** 安全员打开案件或申诉页
-- **THEN** 页面显示服务端当前可见的待处理、高风险已判定、已结案案件或待处理、维持、解除申诉数量
+- **WHEN** A safety officer opens the case or appeal page.
+- **THEN** The page displays the number of pending, high-risk judged, closed cases or pending, maintained, and released appeals that are currently visible on the server.
 
-#### Scenario: 统计查询失败
+#### Scenario: Statistics query failed
 
-- **WHEN** 统计 API 请求失败
-- **THEN** 统计卡显示未知状态和错误提示，列表仍可独立查询
+- **WHEN** Statistics API request failed
+- **THEN** The statistics card displays an unknown state and error feedback; the list can still be queried independently.
 
-### Requirement: 房间运营明细合同完整
+### Requirement: Room operation details contract is complete
 
-房间运营明细的成功响应 MUST 在唯一 OpenAPI 合同中声明房间标识、主题、类型、可见性、状态、等级、容量、时间、聚合计数及下一页游标。客户端 MUST 只依赖合同声明的字段。
+Successful response for room operation details MUST declare the room ID, topic, type, visibility, status, level, capacity, time, aggregate count, and next page cursor in a unique OpenAPI contract. The client MUST depend only on fields declared by the contract.
 
-#### Scenario: 查询房间运营明细
+#### Scenario: Query room operation details
 
-- **WHEN** 当前有权角色请求房间运营明细
-- **THEN** 返回与 OpenAPI 结构一致的房间条目和下一页游标
+- **WHEN** The current authorized role requests room operation details
+- **THEN** Returns room entry and next page cursor consistent with OpenAPI structure

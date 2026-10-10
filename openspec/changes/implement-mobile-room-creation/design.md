@@ -1,17 +1,17 @@
 ## Context
 
-即时创建 API 接受单一 CEFR 等级 A1–C2，而 Figma 用 B1–B2 示例范围；前端必须让用户选择具体等级，不能暗中替用户降格。Figma 将“公开房间/4 位密码”作为加入方式，OpenAPI 的 visibility 与 password 独立。
+The instant creation API accepts a single CEFR level A1–C2, while Figma uses the B1–B2 example range; the front end must let the user select a specific level and cannot secretly downgrade the user. Figma uses "public room/4-digit password" as the joining method, and OpenAPI's visibility and password are independent.
 
 ## Decisions
 
-1. 保留 Figma 的页面层级、浅紫/浅蓝/浅桃设置卡、容量胶囊和底部紫色操作按钮。等级使用具体 A1–C2 选项；可见性和密码分开选择，并在验收中记录与原稿的差异。
-2. 即时模式调用 /v1/rooms，预约模式调用 /v1/appointment-rooms，预约时间先在前端检验先后，再由服务端最终确认。安全语音识别和会后关键词保持 API 默认关闭，不暗中开启。
-3. API 请求由 features/room-creation/api.ts 通过现有授权包装及生成客户端提交；不重复定义 DTO。提交期间禁用按钮，失败保留表单。成功结果来自服务端，不凭本地猜测房间 ID。
-4. 即时房主创建成功有当前 HOST 成员资格，导航到语音房；预约成功导航到预约房间详情，经 /v1/appointment-rooms/{roomId} 重取真实结果。该详情暂无独立 Figma 帧，使用已确认房间页面视觉语言，记录设计覆盖差异。返程即时房间列表的 focus refresh 能读取服务端状态。
-5. 预约详情向房主提供二次确认的取消命令，成功后重取服务端状态。分享码路径 `/r/{shareCode}` 先调用公开的 `/v1/room-links/{shareCode}`，再依据房间种类打开即时或预约详情；本机 `ROOM_SHARE_BASE_URL` 指向该路径。
+1. Retain Figma’s page hierarchy, light purple/light blue/light peach setting card, capacity capsule and bottom purple operation button. Levels use specific A1–C2 options; visibility and password are selected separately, and differences from the original are recorded in acceptance.
+2. The real-time mode calls /v1/rooms, and the reservation mode calls /v1/appointment-rooms. The reservation time is first checked on the front end, and then finally confirmed by the server. Secure speech recognition and post-meeting keyword keeping API are turned off by default and not enabled secretly.
+3. API requests are submitted by features/room-creation/api.ts through existing authorization packaging and generation clients; DTOs are not repeatedly defined. Button disabled during submission, form retained on failure. The successful result comes from the server, and the room ID is not guessed locally.
+4. The instant room host is created successfully and has current HOST membership, and navigates to the voice room; the reservation is successfully navigated to the reservation room details, and the real result is retrieved via /v1/appointment-rooms/{roomId}. There is currently no independent Figma frame for this detail. Use the visual language of the confirmed room page to record the design coverage differences. The focus refresh of the return instant room list can read the server status.
+5. The reservation details provide a second confirmation cancellation command to the room host, and the server status is retrieved after success. The shared code path `/r/{shareCode}` first calls the public `/v1/room-links/{shareCode}`, and then opens the instant or reservation details according to the room type; the local `ROOM_SHARE_BASE_URL` points to this path.
 
 ## Risks and rollback
 
-- 预约时间的本地时区与服务端 UTC 不一致：表单在客户端转 ISO，服务端仍进行资格与时间窗口校验；错误原样保留输入。
-- API 已创建但网络响应丢失：禁止自动重试非幂等 POST；提示用户回房间列表确认，不宣称一定失败。回滚只移除入口和页面，不迁移数据。
-- Web 预览可验证表单与 API；语音连接和麦克风仍需开发构建/真机证明。
+- The local time zone of the reservation time is inconsistent with the UTC of the server: the form is converted to ISO on the client, and the server still performs qualification and time window verification; the error remains as is.
+- The API has been created but the network response is lost: automatic retry of non-idempotent POST is prohibited; the user is prompted to return to the room list for confirmation, and does not declare that it must fail. Rollback only removes entries and pages, but does not migrate data.
+- Web preview verifies form and API; voice connection and microphone still need to be developed and built/physical device proven.

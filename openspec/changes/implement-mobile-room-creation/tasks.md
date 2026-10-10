@@ -1,12 +1,12 @@
-## 1. 创建表单
+## 1. Create a form
 
-- [x] 1.1 建立即时/预约房间真实 API 客户端和输入校验
-- [x] 1.2 按两张 Figma frame 实现创建页面、错误/加载/成功导航
-- [x] 1.3 启用发现页创建入口并加入路由
-- [x] 1.4 提供房主预约取消与真实分享码链接解析入口
+- [x] 1.1 Establish real-time/booked room real API client and input verification
+- [x] 1.2 Press two Figma frames to realize page creation, error/loading/success navigation
+- [x] 1.3 Enable the discovery page to create an entrance and add routing
+- [x] 1.4 provides room host reservation cancellation and real sharing code link analysis entrance
 
-## 2. 验证
+## 2. Verification
 
-- [x] 2.1 验证表单校验、重复提交保护、即时/预约请求和错误保留
-- [x] 2.2 在 390×844 浏览器预览对比两张设计稿并记录差异
-- [ ] 2.3 记录真实 API 与原生设备证据边界，运行移动端受影响范围检查
+- [x] 2.1 Authentication form validation, duplicate submission protection, instant/scheduled requests and error retention
+- [x] 2.2 Preview and compare the two design drafts in a 390×844 browser and record the differences
+- [ ] 2.3 Record the boundary between the real API and the native device evidence, and run the affected range check on the mobile terminal

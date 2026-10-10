@@ -1,27 +1,27 @@
-## 1. 合同、设计与依赖
+## 1. Contract, design and dependencies
 
-- [x] 1.1 通过 Desktop Bridge 保存语音房 V2、重连、结束和房主结束确认原稿截图，记录关键坐标及不能由 API 支撑的元素；核对截图与节点信息一致。
-- [x] 1.2 对照生成客户端列出加入、成员、凭证、离开、结束的请求/响应与错误码；在验收记录中标记可用字段和缺口。
-- [x] 1.3 安装固定版本的 Web/原生 LiveKit SDK 与 Expo plugins，分离平台入口；用 Web 导出和原生配置生成/构建检查验证依赖可用。
+- [x] 1.1 Save voice room V2, reconnection, end and room host end confirmation screenshots through Desktop Bridge, record key coordinates and elements that cannot be supported by API; check that the screenshots are consistent with the node information.
+- [x] 1.2 Compare the generated client's list of request/response and error codes for joining, members, credentials, leaving, and ending; mark available fields and gaps in the acceptance record.
+- [x] 1.3 Install fixed version of Web/native LiveKit SDK and Expo plugins, separate platform entry; use Web export and native configuration generation/build check to verify that dependencies are available.
 
-## 2. 入房业务与恢复
+## 2. Check-in business and recovery
 
-- [x] 2.1 通过现有认证 API 客户端实现 membership、凭证、成员、离开和结束调用；用客户端测试验证路径、请求体、错误分类及敏感值不进入 URL/日志。
-- [x] 2.2 实现仅用户主动触发的加入状态机，并在设备页接入；用测试验证密码/规则、重复点击、加入失败及加入成功后凭证失败的重试/退出路径。
-- [x] 2.3 实现刷新后按服务端 membership 恢复和失效会话收敛；用测试验证 ACTIVE、LEFT、REMOVED、结束和凭证更新。
+- [x] 2.1 Implement membership, credentials, membership, leave and end calls through the existing authentication API client; use client testing to verify that the path, request body, error classification and sensitive values ​​do not enter the URL/log.
+- [x] 2.2 Implement the join state machine that is only triggered by the user and access it on the device page; use tests to verify passwords/rules, repeated clicks, join failures, and retry/exit paths for failed credentials after joining successfully.
+- [x] 2.3 Implement server-side membership recovery and invalid session convergence after refresh; use tests to verify ACTIVE, LEFT, REMOVED, end and credential update.
 
-## 3. 实时音频与成员
+## 3. Real-time audio and members
 
-- [x] 3.1 实现 Web/原生媒体适配器与默认静音连接、主动麦克风切换、断开释放；用适配器测试和平台打包验证本机不自动发布音频。
-- [x] 3.2 合并 API 成员事实与实时 presence/说话/麦克风事件并定期重拉；用测试验证顺序、房主变更、离线及成员移除后的更新。
-- [x] 3.3 实现重连、终止和退出处理；用测试验证主动退出的 `expectedCredentialVersion`、退出失败反馈、服务端结束后旧凭证不能重入。
+- [x] 3.1 Implement Web/native media adapters with muted-by-default connections, explicit microphone toggling, and resource release on disconnect. Adapter tests and platform builds verify that the local device never publishes audio automatically.
+- [x] 3.2 Merge API member facts with real-time presence/talk/microphone events and re-pull periodically; use tests to verify updates after ordering, room host changes, offline and member removal.
+- [x] 3.3 Implement reconnection, termination and exit processing; use tests to verify the `expectedCredentialVersion` that actively exited, the exit failure feedback, and the old credentials cannot be re-entered after the server ends.
 
-## 4. 页面与设计核对
+## 4. Page and design verification
 
-- [x] 4.1 按 V2 原稿实现房间主体与麦克风、成员、退出操作；在 390×844 Web 截图对照原稿，未交付功能保持清楚的不可用状态。
-- [x] 4.2 实现重连、退出确认、结束页面并对照对应 Figma；用路由测试确认刷新、退出及结束导航。
-- [x] 4.3 用两名本地合格测试账号完成 API 与浏览器会话走查，验证默认静音、成员状态、离开和无敏感日志；清理测试数据并保存运行截图。
+- [x] 4.1 According to the V2 original, the room subject, microphone, member, and exit operations are implemented; compared with the original in the 390×844 Web screenshot, the undelivered functions remain clearly unavailable.
+- [x] 4.2 Implement reconnection, exit confirmation, end page and compare with corresponding Figma; use routing test to confirm refresh, exit and end navigation.
+- [x] 4.3 Use two local qualified test accounts to complete the API and browser session walkthrough, verify the default mute, member status, leave and no sensitive logs; clean the test data and save the running screenshots.
 
-## 5. 验收
+## 5. Acceptance
 
-- [x] 5.1 运行移动端 lint、typecheck、受影响测试、Web/iOS/Android 构建或导出、OpenSpec strict 与格式检查；记录真实双设备 LiveKit 音频和断线验收状态，不能以模拟媒体替代。
+- [x] 5.1 Run mobile lint, typecheck, affected tests, Web/iOS/Android build or export, OpenSpec strict and format check; record real dual-device LiveKit audio and disconnection acceptance status, cannot be replaced by simulated media.

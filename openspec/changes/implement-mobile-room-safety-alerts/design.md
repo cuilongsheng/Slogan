@@ -1,23 +1,23 @@
 ## Context
 
-Figma `Slogan / 02 UI / Voice Room / Pilot V2 · review` 节点 `115:1425` 是 390×844 语音房视觉基准；原稿没有安全提醒状态。用户此前允许缺少独立帧的手机页面沿用 V2 样式。服务端 `GET /v1/rooms/{roomId}/safety-alerts` 只授权当前房主，返回无内容的风险元数据和 keyset 游标。LiveKit topic 为 `slogan.room-safety-alert.v1`，内部 envelope `version: 1`、`type: ROOM_SAFETY_ALERT`。
+Figma `Slogan / 02 UI / Voice Room / Pilot V2 · review` node `115:1425` is a 390×844 speech room visual benchmark; the original does not have a security alert status. Users previously allowed mobile pages that lacked independent frames to inherit the V2 style. The server `GET /v1/rooms/{roomId}/safety-alerts` only authorizes the current room host and returns risk metadata and keyset cursor without content. The LiveKit topic is `slogan.room-safety-alert.v1`, and the internal envelopes are `version: 1` and `type: ROOM_SAFETY_ALERT`.
 
 ## Goals / Non-Goals
 
-**Goals:** 当前房主看到受控风险类别、严重度、成员、时间和人工核实提示；在线事件触发查询；入房、重连、接任补齐；失去房主权限时清除数据。
+**Goals:** The current room host sees the controlled risk category, severity, members, time and manual verification prompts; online events trigger queries; room entry, reconnection, and takeover are completed; data is cleared when room host permissions are lost.
 
-**Non-Goals:** 不展示命中语句或录音，不自动举报/移除/静音，不改变后端投递策略，不把提醒提供给普通成员。
+**Non-Goals:** does not display hit statements or recordings, does not automatically report/remove/mute, does not change the backend delivery strategy, and does not provide reminders to ordinary members.
 
 ## Decisions
 
-1. 实时包只作刷新信号。客户端校验 topic、版本、类型和 roomId，随后查询服务端的当前授权列表；不把包内字段直接当作可信展示数据。未知版本直接忽略。
-2. 会话层拥有提醒状态。只有 `phase=active`、`role=HOST`、房间开关开启且媒体连接可用时查询。列表由 HTTP 合同生成类型表示；分页以服务端游标为准，按 id 去重。普通成员不发送提醒查询。
-3. 房主角色变更、离房、结束、重连期间或 403 拒绝时清空提醒，并让仍为房主的客户端可重试。异步结果需再次检查会话代次和当前角色，避免旧请求回填。
-4. 在房间规则下方增加房主专属提醒入口，列表以与 V2 房间相同的深色面板呈现。展示受控元数据和“请人工核实”；错误给出重试，不把风险信号写成已确认违规。无提醒时入口仍可查看空态。
+1. The real-time packet is only used as a refresh signal. The client verifies the topic, version, type and roomId, and then queries the current authorization list of the server; the fields in the package are not directly regarded as trusted display data. Unknown versions are ignored.
+2. The session layer has reminder status. Query only when `phase=active`, `role=HOST`, room switch is on and media connection is available. The list is represented by the HTTP contract generation type; paging is based on the server cursor and is deduplicated by id. Ordinary members do not send reminder inquiries.
+3. Clear the reminder when the room host role changes, leaves the room, ends, reconnects, or is rejected by 403, and allows the client that is still the room host to try again. Asynchronous results need to check the session generation and current role again to avoid backfilling of old requests.
+4. Add a room host exclusive reminder entrance under the room rules, and the list is presented in the same dark panel as the V2 room. Display controlled metadata and "please manually verify"; give retry for errors, and do not write the risk signal as a confirmed violation. The entrance can still view the empty status when there is no reminder.
 
 ## Risks / Rollback
 
-- [接任竞态] → 服务端作为权限源，客户端对角色变动清空并废弃旧请求；403 同样清空。
-- [实时包丢失] → 入房、重连和低频房间刷新时从 HTTP 补齐。
-- [未画提醒状态] → 使用已确认的 V2 token 和布局，记录相对原稿的新增状态与截图，不声称该状态 1:1 出自 Figma。
-- 回滚手机端版本即可移除入口与事件监听；后端提醒事实仍按既有保留策略处理。
+- [Take over competition] → The server serves as the authority source, and the client clears role changes and discards old requests; 403 is also cleared.
+- [Real-time packet loss] → Completion from HTTP during room entry, reconnection and low-frequency room refresh.
+- [Not drawn reminder status] → Use the confirmed V2 token and layout to record the new status and screenshots relative to the original, and do not claim that the status is 1:1 from Figma.
+- Rolling back the mobile version can remove the portal and event monitoring; backend reminder facts are still processed according to the existing retention policy.

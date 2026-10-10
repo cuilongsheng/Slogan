@@ -1,12 +1,12 @@
-## 1. 客户端
+## 1. Client
 
-- [x] 1.1 接入本人限制分页与申诉 API，验证认证请求、失败保留和同内容稳定重试
+- [x] 1.1 Access personal restricted paging and appeal API to verify authentication requests, failed retention and stable retries with the same content
 
-## 2. 页面
+## 2. Page
 
-- [x] 2.1 增加个人入口和限制路由，验证已登录用户可到达且未登录用户受门禁保护
-- [x] 2.2 沿用 V2 视觉实现限制卡片、状态、分页、刷新、申诉和错误态，验证空态与窗口关闭
+- [x] 2.1 Add personal entrance and restricted routing to verify that logged in users can reach and non-logged in users are protected by access control
+- [x] 2.2 follows V2 visual implementation to limit cards, status, paging, refresh, appeal and error status, verify empty status and window closing
 
-## 3. 验收
+## 3. Acceptance
 
-- [x] 3.1 运行移动端 lint/typecheck/test/export 与 390×844 运行时截图，记录无独立 Figma/真实账号/设备证据边界
+- [x] 3.1 Run mobile terminal lint/typecheck/test/export and 390×844 runtime screenshot, record no independent Figma/real account/device evidence boundary

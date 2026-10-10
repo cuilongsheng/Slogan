@@ -2,66 +2,82 @@
 
 ## Purpose
 
-定义当前版本即时语音房的发现、创建、容量和加入资格，使已完成资料的成年用户能够形成可运行的小房间交流入口。
+Define the discovery, creation, capacity and joining qualifications of the current version of the instant voice room, so that adult users who have completed the information can form a runnable small room communication entrance.
 
 ## Requirements
 
-### Requirement: 创建即时房间
-系统 MUST 允许已完成资料、年满 18 岁且未处于平台限制状态的用户创建即时房间；房主必须设置 CEFR、主题和 2 至 6 人的人数上限，可以选择 `PUBLIC` 或 `LINK_ONLY` 可见性，可以在创建时明确选择是否启用敏感语音识别，房间默认时长为 2 小时。未提交可见性的现有客户端请求 MUST 按 `PUBLIC` 处理；未提交敏感语音识别字段的现有客户端请求 MUST 按关闭处理。敏感语音识别选择在创建后 MUST 不可变。
+### Requirement: Create instant room
 
-#### Scenario: 合格用户创建房间
-- **WHEN** 合格用户提交有效的即时房间配置且没有指定可见性或指定 `PUBLIC`
-- **THEN** 系统立即创建并开放公开房间，同时生成明确的结束时间和稳定分享入口
+The system MUST allow users who have completed the profile, are over 18 years old, and are not in a platform restricted state to create instant rooms; the room host MUST set CEFR, theme, and a maximum number of 2 to 6 people, you can choose `PUBLIC` or `LINK_ONLY` visibility, you can explicitly choose whether to enable sensitive speech recognition when creating, and the default room duration is 2 hours. Existing client requests that do not submit visibility MUST be processed as `PUBLIC`; existing client requests that do not submit sensitive speech recognition fields MUST be processed as close. Sensitive speech recognition selections MUST be immutable after creation.
 
-#### Scenario: 合格用户创建链接房间
-- **WHEN** 合格用户提交有效配置并指定 `LINK_ONLY`
-- **THEN** 系统立即创建并开放链接房间、生成稳定分享入口，且该房间不出现在公开发现列表
+#### Scenario: Qualified users create rooms
 
-#### Scenario: 创建启用敏感语音识别的房间
-- **WHEN** 合格用户在有效创建请求中明确启用敏感语音识别
-- **THEN** 系统保存不可变的启用状态并使加入前的房间信息明确展示该处理条件
+- **WHEN** Qualified user submitted a valid live room configuration without specifying visibility or specifying `PUBLIC`
+- **THEN** The system immediately creates and opens a public room, and generates a clear end time and stable sharing entrance.
 
-#### Scenario: 不合格用户创建房间
-- **WHEN** 用户未完成资料、未满 18 岁、处于平台限制状态或提交未知可见性
-- **THEN** 系统拒绝创建房间并返回对应原因
+#### Scenario: Qualified users create linked rooms
 
-### Requirement: 公开房间和密码房间
-系统 MUST 支持 `PUBLIC` 和 `LINK_ONLY` 两种即时房间可见性，并分别允许不设置密码或设置 4 位数字密码。可见性只决定公开发现方式，密码继续作为独立入房条件；系统 MUST 在允许的房间信息中明确展示可见性和密码状态。
+- **WHEN** Qualified user submits valid configuration and specifies `LINK_ONLY`
+- **THEN** The system immediately creates and opens the linked room, generates a stable sharing entrance, and the room does not appear in the public discovery list
 
-#### Scenario: 加入公开房间
-- **WHEN** 合格用户加入未满员且未结束的无密码公开房间
-- **THEN** 系统不要求房主逐一批准并继续执行入房流程
+#### Scenario: Create a room with sensitive speech recognition enabled
 
-#### Scenario: 通过分享入口访问链接房间
-- **WHEN** 用户使用有效分享入口打开未结束的链接房间
-- **THEN** 系统返回最小房间信息并允许用户继续登录及执行既有入房校验
+- **WHEN** Qualified user explicitly enabled sensitive speech recognition in a valid create request
+- **THEN** The system saves the immutable enabled status and makes the room information before joining clearly display the processing conditions
 
-#### Scenario: 加入密码房间
-- **WHEN** 合格用户为任一可见性的密码房间提交正确的 4 位数字密码
-- **THEN** 系统继续执行入房流程
+#### Scenario: Unqualified user creates a room
 
-#### Scenario: 密码错误
-- **WHEN** 用户提交错误的房间密码
-- **THEN** 系统拒绝加入且不得泄露正确密码
+- **WHEN** The user has not completed the profile, is under 18 years old, is in platform restricted status, or submitted with unknown visibility
+- **THEN** The system refuses to create a room and returns the corresponding reason
 
-### Requirement: 房间列表和详情
-系统 MUST 提供公开即时房间列表和允许访问的房间详情，至少展示房间可见性、主题、CEFR、当前人数与上限、开始时间、结束时间、房主昵称、密码状态和敏感语音识别启用状态。公开列表 MUST 支持 CEFR 精确筛选和规范化主题查询，并排除 `LINK_ONLY` 房间；详情 MUST 为合法分享操作提供稳定分享入口。
+### Requirement: Public rooms and password rooms
 
-#### Scenario: 浏览可加入房间
-- **WHEN** 合格用户打开未提交筛选条件的即时房间列表或允许访问的房间详情
-- **THEN** 系统展示当前可用的公开房间信息、实时容量和敏感语音识别状态，并保持既有默认分页行为
+The system MUST support both `PUBLIC` and `LINK_ONLY` instant room visibility, allowing no password or a 4-digit password, respectively. Visibility only determines the public discovery method, and passwords continue to be used as independent room entry conditions; the system MUST clearly display visibility and password status in allowed room information.
 
-#### Scenario: 按 CEFR 和主题筛选
-- **WHEN** 合格用户提交有效 CEFR 和非空主题查询浏览即时房间
-- **THEN** 系统只返回同时匹配 CEFR 与规范化主题条件的当前公开房间，并给出与筛选条件绑定的稳定分页结果
+#### Scenario: Join a public room
 
-#### Scenario: 链接房间不进入公开列表
-- **WHEN** 合格用户浏览即时房间公开列表且存在符合其他条件的链接房间
-- **THEN** 系统不返回该链接房间，但持有有效分享入口的用户仍可解析包含敏感语音识别状态的最小信息
+- **WHEN** Qualified users join a password-less public room that is not full and has not ended.
+- **THEN** The system does not require the room host to approve one by one and continue the room check-in process.
 
-### Requirement: 并发容量边界
-系统 MUST 保证并发加入成功人数不会超过房主设置的人数上限。
+#### Scenario: Access the linked room through the sharing portal
 
-#### Scenario: 只剩一个名额时并发加入
-- **WHEN** 两个或更多符合条件的加入请求同时竞争最后一个名额
-- **THEN** 最多只有一个请求成功，其余请求收到房间已满结果
+- **WHEN** The user uses a valid sharing entrance to open an unfinished link room
+- **THEN** The system returns the minimum room information and allows the user to continue logging in and performing existing room entry verification
+
+#### Scenario: Join password room
+
+- **WHEN** Qualified user submits correct 4-digit password for any visibility password room
+- **THEN** The system continues to execute the check-in process
+
+#### Scenario: Wrong password
+
+- **WHEN** User submitted wrong room password
+- **THEN** The system refuses to join and the correct password must not be revealed
+
+### Requirement: Room list and details
+
+The system MUST provide a public live room list and room details that allow access, showing at least room visibility, theme, CEFR, current number of people and upper limit, start time, end time, room host nickname, password status, and sensitive speech recognition enabled status. The public list MUST support CEFR precise filtering and standardized subject query, and exclude `LINK_ONLY` rooms; details MUST provide a stable sharing entrance for legal sharing operations.
+
+#### Scenario: Browse to join the room
+
+- **WHEN** Qualified user opens instant room list or allowed room details without submitting filter criteria
+- **THEN** The system displays currently available public room information, real-time capacity and sensitive speech recognition status, and maintains the existing default paging behavior
+
+#### Scenario: Filter by CEFR and subject
+
+- **WHEN** Qualified users submit valid CEFR and non-empty topic queries to browse instant rooms
+- **THEN** The system only returns the current public rooms that match both CEFR and standardized theme conditions, and provides stable paging results bound to the filter conditions.
+
+#### Scenario: The linked room does not enter the public list
+
+- **WHEN** Qualified users browse the real-time room public list and there are linked rooms that meet other conditions
+- **THEN** The system does not return the linked room, but users with valid sharing entries can still parse minimal information containing sensitive voice recognition status
+
+### Requirement: Concurrency capacity boundary
+
+The system MUST ensure that the number of people who successfully join concurrently will not exceed the upper limit set by the room host.
+
+#### Scenario: Join concurrently when there is only one quota left
+
+- **WHEN** Two or more eligible join requests compete for the last spot at the same time
+- **THEN** At most one request is successful, and the remaining requests receive the result that the room is full.

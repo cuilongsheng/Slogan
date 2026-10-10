@@ -1,6 +1,8 @@
 node_modules/
 dist/
 dist-pages/
+dist-web/
+dist-ios/
 coverage/
 .expo/
 expo-env.d.ts

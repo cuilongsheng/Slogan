@@ -1,29 +1,29 @@
-# Slogan 后台管理原型覆盖
+# Slogan background management prototype coverage
 
-状态：**产品评审稿**。Figma 画布是视觉原型，功能以 `openspec/specs/` 为准；示例数据均为虚构标识。
+Status: **Product Review Draft**. The Figma canvas is a visual prototype, and the functions are based on `openspec/specs/`; the sample data are fictitious identifier.
 
-文件：[Slogan / Admin Prototype / V1](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2007)。画布位于 `01 Prototype` 页，不覆盖移动端原型。桌面框尺寸为 1440 × 900。
+File: [Slogan / Admin Prototype / V1](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2007). The canvas is located on page `01 Prototype` and does not cover the mobile prototype. Desktop frame size is 1440 × 900.
 
-| 页面 | Figma 节点 | 类型 | 需求依据与边界 |
-| --- | --- | --- | --- |
-| 房间管理 | [102:2010](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2010) | 卡片 | 用户指定卡片形式。当前主规格没有后台房间处置命令；卡片和筛选为待确认的信息架构。 |
-| 安全案件 | [102:2041](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2041) | 表格 + [详情抽屉](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2642) | `safety-case-management`：分页、状态/时间/用户筛选、角色可见范围、人工处置与证据边界。 |
-| 限制申诉 | [102:2072](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2072) | 表格 + [决定抽屉](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2671) | `safety-restriction-appeals`：安全员查看待处理申诉，维持/解除均需理由。 |
-| 安全降级事件 | [102:2103](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2103) | 表格 | `room-sensitive-speech-detection`：按房间、时间、组件、状态只读查询。 |
-| 后台角色 | [102:2134](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2134) | 表格 + [授予抽屉](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2692) | `backoffice-access-control`：多角色、原因、角色分离、最后管理员保护。撤销表单待下一轮细化。 |
-| 操作审计 | [102:2165](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2165) | 只读表格 | `backoffice-audit`：按时间、操作者、动作、目标、结果分页查询；不提供编辑或删除。 |
+| page                     | Figma node                                                                              | Type                                                                                                       | Requirement basis and boundary                                                                                                                                                |
+| ------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Room management          | [102:2010](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2010) | Card                                                                                                       | User specified card format. There is no background room processing command in the current main specification; cards and filters are information structures to be confirmed.   |
+| Security Case            | [102:2041](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2041) | Table + [Details drawer](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2642)      | `safety-case-management`: paging, status/time/user filtering, role visibility range, manual processing and evidence boundaries.                                               |
+| Limit appeals            | [102:2072](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2072) | Table + [Deciding on drawers](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2671) | `safety-restriction-appeals`: Safety officer checks the pending appeals and requires reasons for maintenance/dismissal.                                                       |
+| Security downgrade event | [102:2103](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2103) | Table                                                                                                      | `room-sensitive-speech-detection`: Read-only query by room, time, component, and status.                                                                                      |
+| Admin role               | [102:2134](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2134) | Table + [Grant drawer](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2692)        | `backoffice-access-control`: Multiple roles, reasons, role separation, and final administrator protection. The cancellation form is pending for the next round of refinement. |
+| Operational audit        | [102:2165](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2165) | Read-only table                                                                                            | `backoffice-audit`: Paging query by time, operator, action, target, and result; no editing or deletion is provided.                                                           |
 
-## 可点击路径
+## Clickable path
 
-- 原型入口：`后台管理 / 案件入口`，从安全案件页开始。
-- 六个页面的左侧导航互相连接；分组、细选中态参考用户给出的后台截图，但布局与业务结构由 Slogan 定义。
-- 安全案件表中的 `CASE-1041`、申诉表中的 `APL-302`、角色页的“授予角色”可以打开对应抽屉；抽屉可关闭，决定按钮进入[二次确认示意](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2714)。
-- 筛选、搜索、分页、表单输入和真实提交目前是结构示意，没有数据联动。其他示例行不应被理解为已经实现独立详情数据。
+- Prototype entrance: `后台管理 / 案件入口`, starting from the security case page.
+- The left navigation of the six pages are connected to each other; the grouping and fine-tuning status refer to the background screenshot given by the user, but the layout and business structure are defined by Slogan.
+- `CASE-1041` in the security case table, `APL-302` in the appeal table, and "Grant role" on the role page can open the corresponding drawer; the drawer can be closed, and the decision button enters [Second confirmation indication](https://www.figma.com/design/56nIowZmvBhb0QJvOlDQdU/Slogan?node-id=102-2714).
+- Filtering, search, paging, form input and actual submission are currently structural representations without data linkage. Other example lines should not be interpreted as having independent detail data implemented.
 
-## 产品评审点
+## Product Review Point
 
-1. 房间管理需要哪些后台权限和动作？当前仅能评审卡片信息与筛选，禁用、解散、移交等动作不能从参考图推导。
-2. 案件列表和申诉列表是否需要额外列？角色专属可见范围需按当前会话验证。
-3. 案件详情是否采用抽屉；证据缺失/降级/无风险信号等状态是否足够清晰。
-4. 角色撤销与审计详情是否需要独立抽屉，或继续由表格行内操作承载。
-5. 运营指标与治理视图属于活动中的后端变更，未纳入当前主规格原型；批准范围后再设计对应页面。
+1. What background permissions and actions are required for room management? Currently, only card information and filtering can be reviewed, and actions such as banning, disbanding, and handover cannot be deduced from the reference picture.
+2. Do the case list and appeal list need additional columns? The role-specific visible range needs to be verified based on the current session.
+3. Whether drawers are used for case details; whether the status of missing evidence/downgraded/no risk signal is clear enough.
+4. Whether role revocation and audit details need to be independent drawers, or continue to be carried by table row operations.
+5. Operation indicators and governance views are back-end changes during activities and are not included in the current main specification prototype; the corresponding pages will be designed after the scope is approved.

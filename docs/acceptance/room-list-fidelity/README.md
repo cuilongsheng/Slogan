@@ -1,52 +1,52 @@
-# 房间列表布局核对
+# Room list layout check
 
-## 范围和授权
+## Scope and Authorization
 
-2026-10-10 用户确认截图为“开启畅聊”的房间发现列表，并选择“这次只调整布局，暂不增加语言和分类”。本次为既有 `implement-mobile-room-discovery-join` 的视觉修正，保留当前 `direct-room-entry` 的行为，不增加产品功能、合同字段或持久化模型。
+2026-10-10 The user confirmed that the screenshot was the room discovery list of "Open Chat", and selected "Only adjust the layout this time, and do not add languages and categories for the time being". This is a visual correction of the existing `implement-mobile-room-discovery-join`. It retains the behavior of the current `direct-room-entry` and does not add product functions, contract fields or persistence models.
 
 - Figma Desktop Bridge：Slogan / `56nIowZmvBhb0QJvOlDQdU` / 02 UI / `115:1197` / `02 UI / Rooms / Pilot V2 · review`。
-- 原稿尺寸：390×844；原稿保持不变。
-- 产品路由：合格已登录用户默认房间列表；组件 `RoomListScreen`。
-- 运行证据：`tests/visual-harness` 中真实 React Native 组件在 RN Web 下运行；HTTP 为明确的 OpenAPI 合同内 fixture，不是生产接口或 Android 真机。
-- 代码基线：`0152ba27c22b20ec70109ab7e68c203230225d11` 加本地工作区修改。
+- Original size: 390×844; original remains unchanged.
+- Product routing: Default room list for qualified logged-in users; component `RoomListScreen`.
+- Running evidence: The real React Native component in `tests/visual-harness` is running under RN Web; HTTP is a clear fixture within the OpenAPI contract, not a production interface or Android physical device.
+- Code baseline: `0152ba27c22b20ec70109ab7e68c203230225d11` plus local workspace modifications.
 
-## 核对与修改
+## Check and modify
 
-| 区域       | 原稿依据                                                    | 实现与结果                                                                                                        |
-| ---------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 页头       | 标题 x16/y51，24/32 Noto Sans SC Bold；品牌32×32，创建42×42 | 使用实际静态字体和原稿导出的图标；删除旧副标题，去掉创建按钮半透明                                                |
-| 筛选与数量 | 筛选行 y95，列表起点 y142                                   | 保留“全部”与合同真实已加载数量；语言筛选与分类依用户决定暂不增加。游标未结束时仍明确“已加载”，不假称总数          |
-| 卡片       | x15、宽358、高132，y142/279/416/553，间隔5、圆角24          | 浏览器测量四张普通房间卡片逐项一致；配色依原稿紫/蓝/紫/薄荷；启用处理的房间保留额外说明行，不能为截图隐藏处理事实 |
-| 文字       | 主题16/24、房主13/18、剩余时间11/15、等级12/16              | 统一使用 AppText 对应原稿真实字体粗细；保留实际等级范围和剩余时间                                                 |
-| 状态与人数 | 可加入绿色、满员红色、密码锁、42×36容量标记                 | 来自真实合同属性；密码锁为原稿导出。普通卡片删除未启用处理的冗余两行；启用时继续明确展示                          |
-| 底部导航   | y764、高80、图标24、选中圆48                                | 重新导出四个原始图标，校正所有图标及标签坐标；“创建”和“我的”保留真实路由                                          |
+| Area                        | Original manuscript basis                                                   | Implementation and results                                                                                                                                                                                                                                                               |
+| --------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header                      | Title x16/y51, 24/32 Noto Sans SC Bold; Brand 32×32, Create 42×42           | Use actual static fonts and original exported icons; remove old subtitles, remove create button translucency                                                                                                                                                                             |
+| Screening and Quantity      | Filter line y95, list start y142                                            | Keep "All" and the actual number of loaded contracts; language filtering and classification will not be increased temporarily according to the user's decision. When the cursor is not over, it is still clearly "loaded" and the total number is not false.                             |
+| Card                        | x15, width 358, height 132, y142/279/416/553, spacing 5, rounded corners 24 | The browser measures the four ordinary room cards to be consistent one by one; the color matching is purple/blue/purple/mint according to the original; extra description lines are reserved for rooms with processing enabled, and the processing fact cannot be hidden for screenshots |
+| Text                        | Topic 16/24, room host 13/18, remaining time 11/15, level 12/16             | Use AppText uniformly to correspond to the original font thickness; retain the actual grade range and remaining time                                                                                                                                                                     |
+| Status and number of people | Can add green, full red, password lock, 42×36 capacity mark                 | From the real contract attributes; the password lock is exported from the original. Ordinary cards delete the redundant two lines that are not processed; continue to display clearly when enabled                                                                                       |
+| Bottom navigation           | y764, height 80, icon 24, selected circle 48                                | Re-export the four original icons, correct all icon and label coordinates; "Create" and "My" retain the real routes                                                                                                                                                                      |
 
-## API 与未解决差异
+## API and unresolved differences
 
-`GET /v1/rooms` 与生成客户端继续复用，无合同变更。
+`GET /v1/rooms` continues to be reused with the generated client without contract changes.
 
-- READY：主题、等级与范围、房主昵称、人数/容量、结束时间、密码、房主重连、处理启用状态、游标分页。
-- 用户明确暂缓：房间语言及“英语/中文”筛选、话题分类及分类标签。
-- MISSING：房主头像、成员头像预览、服务端总数。未把 Figma 的示例人物写进生产代码；仍保留已有首字母回退，没有伪造成员头像。
-- 既有产品缺口：独立“找伙伴”和私聊列表未完成，两个导航入口仍为静态项；本次没有把房间列表修正冒充这些功能完成。
-- 其他内容差异：实际数量与后端已加载项目一致，不写死 12；实际房间的等级范围不退化成设计示例的单等级；满员仍显示实际剩余时间。
+- READY: topic, level and scope, room host nickname, number of people/capacity, end time, password, room host reconnection, processing enable status, cursor paging.
+- User clear suspension: room language and "English/Chinese" filtering, topic classification and classification tags.
+- MISSING: room host avatar, member avatar preview, total number of servers. Figma's sample characters are not written into the production code; the existing initials are still retained, and no member avatars are forged.
+- Existing product gaps: the independent "find partners" and private chat lists are not completed, and the two navigation entries are still static items; this time, the room list has not been revised to pretend that these functions are completed.
+- Other content differences: the actual number is consistent with the projects loaded in the backend, and 12 is not hard-coded; the level range of the actual room does not degenerate into the single level of the design example; the actual remaining time is still displayed when full.
 
-## 验证
+## Verification
 
-- 手机端 typecheck、lint：通过。
-- 手机端完整测试：51 suites / 167 tests 通过。
-- 浏览器：2 tests 通过，覆盖真实组件的卡片位置与尺寸、认证生成客户端请求、直接入房导航、错误重试、创建及个人页导航。无页面异常，无水平溢出。
-- Android Hermes export：通过，`/tmp/slogan-room-list-layout-final`；这是资源/代码打包，不是 APK 或真机验收。
-- [原始 Figma](figma-original.png)、[当前运行截图](runtime-390.png)。两张原图均为1170×2532，没有裁掉或修改页面差异；本轮已直接查看两图。独立叠加文件尚未生成。
+- Mobile typecheck, lint: passed.
+- Complete test on mobile phone: 51 suites / 167 tests passed.
+- Browser: 2 tests passed, covering the card position and size of real components, authentication to generate client requests, direct room navigation, error retry, creation and personal page navigation. No page exception, no horizontal overflow.
+- Android Hermes export: passed, `/tmp/slogan-room-list-layout-final`; this is resource/code packaging, not APK or physical device acceptance.
+- [Original Figma](figma-original.png)、[Screenshot of current operation](runtime-390.png)。 The two original pictures are both 1170×2532, and the page differences have not been cropped or modified; the two pictures have been viewed directly in this round. The independent overlay file has not been generated yet.
 
-## 结论
+## Conclusion
 
-已完成本次可由现有合同支持的布局修正。整体视觉结果为 PARTIAL：头像预览仍缺合同，语言/分类为明确暂缓；不能宣称整页 1:1 PASS。Web 证据不认证 Android 真机渲染，真机验证由用户执行。
+This layout modification that can be supported by existing contracts has been completed. Overall visual result is PARTIAL: avatar preview still lacks contract, language/category is clearly on hold; full page 1:1 PASS cannot be claimed. Web evidence does not authenticate Android physical device rendering, physical device verification is performed by the user.
 
-本次未推送、提 PR、发布或更新公共 APK。前一批本地邀请/在线状态修改仍独立保留，不将其未完成的伙伴、私聊功能算作本次已交付项。
+No public APKs have been pushed, proposed, released or updated this time. The previous batch of local invitations/online status modifications are still retained independently, and their unfinished partner and private chat functions are not counted as delivered items this time.
 
-用户随后要求“先不要做测试和部署，后面还有任务”。上述检查是在该要求到达前完成的记录；后续暂停追加测试、部署和 APK 更新，待排队任务汇总后再统一验证。
+The user then requested "Don't do testing and deployment now, there are still tasks later." The above check is a record completed before the request arrives; subsequent additional tests, deployments and APK updates will be suspended until the queued tasks are summarized before unified verification.
 
-## 2026-10-10 发布前复核
+## 2026-10-10 Review before publishing
 
-用户已恢复测试与发布授权。本批完整手机端 typecheck/lint、51 suites / 170 tests、浏览器 harness 14/14（含本功能路径）、Android Hermes export 与两个 Pages 构建通过。原有功能、视觉及 provider/设备缺口保留，不因打包发布被记为完成。生产提交和 APK 将通过既有发布门槛核对；未将本地测试当成线上双账号或原生设备证据。
+The user has resumed testing and release authorization. This batch of complete mobile version typecheck/lint, 51 suites / 170 tests, browser harness 14/14 (including this function path), Android Hermes export and two Pages were built and passed. The original functions, visuals and provider/device gaps are retained and will not be recorded as completed due to packaging and release. Production submissions and APKs will be checked against existing release thresholds; local testing will not be considered as evidence of online dual accounts or native devices.

@@ -1,49 +1,49 @@
-# 重连页面布局修正
+# Reconnect page layout correction
 
-## 目标与范围
+## Goals and Scope
 
-2026-10-10 用户提供 `02 UI / Connection / Reconnecting · V1` 截图，要求仔细核对页面布局与 UI；同时要求先不做测试和部署。此次只修改前端显示，保留已有会话恢复和服务端退出规则。
+2026-10-10 The user provided a screenshot of `02 UI / Connection / Reconnecting · V1` and requested to carefully check the page layout and UI; at the same time, he requested not to do testing and deployment first. This time only the front-end display is modified, and the existing session recovery and server exit rules are retained.
 
-- 产品路由：`/rooms/{roomId}/session` 的已加入、LiveKit 自动重连状态。
-- 当前行为依据：`openspec/specs/voice-session/spec.md` 的网络重连反馈、`openspec/specs/host-controls/spec.md` 的房主 60 秒恢复窗口；既有 change `implement-mobile-voice-room-session` 已确认本帧。
-- 原始文件：Slogan / `56nIowZmvBhb0QJvOlDQdU` / 02 UI / `114:2511`，390×844。
-- [用户此次截图](user-reference.png) 是布局位置基准。当前连接的 Figma 中卡片为 x14/y138、退出为 y519，与截图有差异；已向用户说明本次以其截图为准。截图中的卡片对应约 x16/y173，退出约 y564。
-- [Desktop Bridge 原始导出](figma-original.png) 保留原样，未修改 Figma 文件。
+- Product routing: `/rooms/{roomId}/session` has been added and LiveKit automatically reconnects.
+- Current behavior basis: `openspec/specs/voice-session/spec.md`'s network reconnection feedback, `openspec/specs/host-controls/spec.md`'s room host 60-second recovery window; existing change `implement-mobile-voice-room-session` has confirmed this frame.
+- Original file: Slogan / `56nIowZmvBhb0QJvOlDQdU` / 02 UI / `114:2511`, 390×844.
+- [User’s screenshot](user-reference.png) is the layout position reference. The card in the currently connected Figma is x14/y138 and the exit is y519, which is different from the screenshot; it has been explained to the user that the screenshot shall prevail this time. The card in the screenshot corresponds to approximately x16/y173, and exits approximately y564.
+- [Desktop Bridge original export](figma-original.png) Leave the Figma file as is, unmodified.
 
-## 已确认问题和代码修改
+## Confirmed problem and code modification
 
-旧 `SessionState` 使用通用连接/错误卡片。卡片的 marginTop138 叠加状态栏和页头，退出区域又增加 marginTop104，不能等同于设计的绝对位置。旧页还缺返回箭头、116 圆环、90 图标底色、计时和恢复说明，图标为文字箭头，颜色、字体和按钮均有差异。
+Old `SessionState` uses universal connection/error card. The card's marginTop138 overlaps the status bar and page header, and the exit area adds marginTop104, which cannot be equal to the absolute position of the design. The old page still lacks the return arrow, 116 rings, 90 icon background colors, timing and recovery instructions. The icon is a text arrow, and the color, font and button are different.
 
-新增 `ReconnectingScreen`，由实际已加入会话的 `active + media.reconnecting` 状态进入：
+Add `ReconnectingScreen`, enter from the `active + media.reconnecting` state that has actually joined the session:
 
-| 区域       | 采用的测量与资产                                                                              |
-| ---------- | --------------------------------------------------------------------------------------------- |
-| 页头       | 返回40×40、原稿白色返回图标24；标题28/39 Bold、左64；副标题12/17、左64                        |
-| 页面与卡片 | 页面背景沿用 #2A2149；普通卡片358×345、圆角24、#3A2B5A；位置以用户本次截图为准                |
-| 图标       | 原稿导出 refresh 图标28；紫色底90、#6247E8；青色圆环116、内边框3、#23C8BE                     |
-| 文字       | 标题21/29 Bold；计时18/25 Regular；说明12/18 Regular、#C9BEE5，使用实际 Noto Sans SC 静态字重 |
-| 退出       | 宽350、高56、圆角14、#EEE8FF、文字14/20 Medium #5538D8；卡片后间距46                          |
+| Area            | Measurements and assets used                                                                                                              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Header          | Return 40×40, original white return icon 24; title 28/39 Bold, left 64; subtitle 12/17, left 64                                           |
+| Pages and Cards | The page background follows #2A2149; the ordinary card is 358×345, rounded 24, #3A2B5A; the location is subject to the user’s screenshot. |
+| icon            | Original export refresh icon 28; purple background 90, #6247E8; cyan ring 116, inner border 3, #23C8BE                                    |
+| Text            | Title 21/29 Bold; timing 18/25 Regular; description 12/18 Regular, #C9BEE5, using actual Noto Sans SC static font weight                  |
+| Exit            | width 350, height 56, rounded corners 14, #EEE8FF, text 14/20 Medium #5538D8; spacing behind the card 46                                  |
 
-`VoicePage` 新增可选 connection 外观，重连页采用其原稿较小的预览状态栏字重字号；其余语音页面保留原外观。
+`VoicePage` adds an optional connection appearance. The reconnection page uses the preview status bar font weight and font size that is smaller than the original version; the remaining voice pages retain the original appearance.
 
-## 数据与动作
+## Data and Actions
 
-- 返回箭头和退出按钮都调用既有 `session.leave()`，不只切换页面而遗留 membership。需要房主接任、退出失败或正在退出时仍进入原有退出状态处理。
-- 计时不写死00:42。房主且存在有效服务端 `RoomDetail.hostReconnectDeadline` 时显示真实剩余时间；否则只显示该重连页面已用时，不伪造60秒服务器期限。
-- 到零不自动夺取、移交或结束房间，最终结果继续由服务器确认。
-- 计时在后台暂停更新，回到前台恢复，页面卸载清理定时器和 AppState 监听。
-- 保留已有 LiveKit 自动恢复、失败重试、退出和成员事实同步，不新增 endpoint、合同字段、数据库或 Redis 改动。
+- Both the return arrow and the exit button call the existing `session.leave()`, not only switching pages but leaving membership behind. The room host needs to take over, the exit fails, or the original exit status is still entered when exiting.
+- Don’t write down the timer to 00:42. When the room host and there is a valid server `RoomDetail.hostReconnectDeadline`, the real remaining time is displayed; otherwise, only the elapsed time of the reconnection page is displayed, and the 60-second server period is not forged.
+- Reaching zero does not automatically capture, hand over or end the room, the final result continues to be confirmed by the server.
+- Timing to pause updates in the background and resume when returning to the foreground, page uninstall cleanup timer and AppState monitoring.
+- Keep the existing LiveKit automatic recovery, failure retry, exit and member fact synchronization, and do not add new endpoints, contract fields, database or Redis changes.
 
-## 初次修改时的验证状态
+## Verification status at first modification
 
-本次未运行 lint、typecheck、单元测试、Playwright、构建、APK 打包或部署，也未推送或创建 PR，遵循用户暂停测试和部署的指示。只有设计读取、源代码核对、代码修改及格式化。
+No lint, typecheck, unit tests, Playwright, build, APK packaging or deployment was run at this time, and no PR was pushed or created, following user instructions to pause testing and deployment. Only design reading, source code verification, code modification and formatting.
 
-代码修改已完成，尚未验证。等待排队任务结束后统一补：390×844 实际运行截图对照、真实重连/恢复/退出行为、计时与前后台生命周期、共享 VoicePage 回归及 Android 真机核对。当前不宣称1:1 PASS或已上线。
+The code modification has been completed and has not yet been verified. After waiting for the queued tasks to be completed, unified supplement: 390×844 actual running screenshot comparison, real reconnection/recovery/exit behavior, timing and front and backend life cycle, shared VoicePage regression and Android physical device verification. Currently does not claim 1:1 PASS or is online.
 
-## 2026-10-10 恢复验证
+## 2026-10-10 Resume verification
 
-用户随后授权测试、推送、部署及 APK 更新。手机端 typecheck/lint 和 51 suites / 170 tests 通过；新增重连回归覆盖两个退出入口、真实房主期限、后台暂停、到零不擅自退出和恢复后的监听清理。完整浏览器 harness 14/14 通过，其中重连 3 个流程分别验证布局、恢复和两个退出动作。媒体和 HTTP 仍是明确的测试适配器，不能替代物理断网或真实 LiveKit 证明。
+The user then authorizes testing, push, deployment and APK updates. The mobile version typecheck/lint and 51 suites / 170 tests passed; the new reconnection regression covers two exit entrances, real room host period, background suspension, no unauthorized exit to zero and monitoring cleanup after recovery. The complete browser harness passed 14/14. Its 3 reconnection flows verify layout, recovery, and both exit actions. Media and HTTP are still explicitly test adapters and are not a substitute for physical disconnection or real LiveKit proof.
 
-390×844、DPR3 实测：卡片 x16/y173/358×345，按钮 x18/y564/350×56，与本次用户截图位置基准一致。[运行截图](runtime-390.png)、[左原稿右运行对照](comparison.png)、[叠加](overlay.png) 已查看，页头、圆环、图标、计时、说明和退出按钮对齐。对照只移除了用户截图的外部白画布与标题，将完整应用 frame 等比例缩放到运行截图；未裁掉、拉伸或重绘应用差异。原图保留。
+390×844, DPR3 actual measurement: card x16/y173/358×345, button x18/y564/350×56, consistent with the position benchmark of this user’s screenshot. [Running screenshot](runtime-390.png), [Left original and right running comparison](comparison.png), [Overlay](overlay.png) Viewed, header, ring, icon, timing, description and exit button aligned. Scaled the full app frame proportionally to the running screenshot compared to the external white canvas and title with only the user screenshot removed; no app differences were cropped, stretched, or redrawn. The original image is retained.
 
-Android Hermes export 与两个 Pages 构建通过。当前 Web 布局及适配器行为通过；Android 真机渲染、实际前后台与音频恢复由用户安装后核对，不宣称跨平台 1:1 PASS。线上状态以本次发布核对为准。
+Android Hermes export with two Pages build passes. The current web layout and adapter behavior pass; Android physical device rendering, actual front and backend and audio recovery are checked by the user after installation, and cross-platform 1:1 PASS is not claimed. The online status is subject to verification by this release.

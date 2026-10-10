@@ -1,57 +1,57 @@
 ## Why
 
-当前 API 只有可运行的 NestJS 外壳，尚未具备账号、会话、资料或成年访问能力；房间、语音和安全模块都无法建立可信的用户身份与准入边界。先实现 `identity-and-profile` 的后端闭环，同时确定首批 API、数据库和认证架构，可以为后续房间控制面提供稳定基础。
+The current API only has a working NestJS shell and does not yet have account, session, profile or adult access capabilities; the room, voice and security modules are unable to establish trusted user identities and access boundaries. First implement the back-end closed loop of `identity-and-profile`, and at the same time determine the first batch of API, database and authentication architecture, which can provide a stable foundation for subsequent room control surfaces.
 
 ## What Changes
 
-- 实现现有 `identity-and-profile` capability 的后端：Google/微信第三方身份登录、同一 issuer + subject 幂等关联、首次资料初始化、当前用户资料读取与修改、资料完成状态和 18 岁准入判断。
-- 建立 PostgreSQL + Prisma 的首批持久化模型与 migration，覆盖平台用户、第三方身份、资料和可撤销会话。
-- 在 Architecture 阶段确定并落实唯一 OpenAPI contract 的生成方式；本变更建议采用 NestJS code-first generation，由确定性验证脚本生成并校验 `openapi/openapi.yaml`，有 CI 后执行同一命令，不得并行维护手写 contract。
-- 建立移动端可用的 access token + rotating refresh token 会话模型；refresh token 仅保存不可逆摘要，并支持轮换、撤销和重放检测。
-- 通过 provider adapter 隔离 Google 与微信认证；自动化测试使用确定性 fake adapter，真实 provider 验收必须使用各自合法配置，不以模拟结果冒充线上认证成功。
-- 为首批公开 API 接入配置校验、结构化日志、安全响应头、CORS allowlist、认证/刷新接口限流、统一错误 code 和请求关联 ID。
-- 为 domain policy、Prisma repository、会话轮换和关键 HTTP 流程提供单元、集成与 API e2e 证据，并生成可审阅的 OpenAPI contract。
+- Implement the backend of the existing `identity-and-profile` capability: Google/WeChat third-party identity login, same issuer + subject idempotent association, first data initialization, current user data reading and modification, data completion status and 18-year-old access judgment.
+- Establish the first persistence model and migration of PostgreSQL + Prisma, covering platform users, third-party identities, materials and revocable sessions.
+- Determine and implement the unique OpenAPI contract generation method in the Architecture stage; this change recommends using NestJS code-first generation, which generates and verifies `openapi/openapi.yaml` by a deterministic verification script. The same command is executed after CI is available, and handwritten contracts are not allowed to be maintained in parallel.
+- Establish an access token + rotating refresh token session model available on mobile terminals; refresh token only saves irreversible digests and supports rotation, revocation and replay detection.
+- Isolate Google and WeChat authentication through provider adapter; automated testing uses deterministic fake adapter, real provider acceptance must use their respective legal configurations, and simulation results must not be used to pretend that online authentication is successful.
+- Configure verification, structured logs, security response headers, CORS allowlist, authentication/refresh interface current limit, unified error code and request correlation ID for the first batch of public API access.
+- Provide unit, integration and API e2e evidence for domain policy, Prisma repository, session rotation and key HTTP processes, and generate reviewable OpenAPI contracts.
 
 ### Confirmed Scope
 
-- 本变更实现 `openspec/specs/identity-and-profile/spec.md` 已确认的行为，不改变其产品要求。
-- 年龄依据用户自报的出生年月计算；本批次不声称完成证件级年龄核验。
-- 同一 `provider + providerSubject` 必须映射回同一平台账号。
-- 资料未完成或未满 18 岁的身份可以登录及维护自己的资料，但不能取得房间业务准入资格。
+- This change implements the confirmed behavior of `openspec/specs/identity-and-profile/spec.md` and does not change its product requirements.
+- Age is calculated based on the year and month of birth reported by the user; this batch does not claim to have completed document-level age verification.
+- The same `provider + providerSubject` must be mapped back to the same platform account.
+- Those whose information is not completed or who are under 18 years old can log in and maintain their own information, but they cannot obtain room business access qualifications.
 
 ### Non-goals
 
-- 不实现房间、Redis 并发容量、LiveKit、房主控制、举报处罚、STT、AI、好友或管理员后台。
-- 不实现手机号自主注册、短信验证码或证件级年龄核验。
-- 不实现不同 OAuth provider 账号之间的自动合并或手动绑定。
-- 不提供公开用户资料查询接口，避免在资料可见性未决前扩大数据暴露面。
-- 不实现前端页面或真实设备 UI 验收。
+- Does not implement rooms, Redis concurrent capacity, LiveKit, room host control, reporting penalties, STT, AI, friend or administrator background.
+- Does not implement independent registration of mobile phone number, SMS verification code or document-level age verification.
+- Does not implement automatic merging or manual binding between different OAuth provider accounts.
+- Does not provide a public user data query interface to avoid expanding data exposure before data visibility is determined.
+- Does not implement front-end page or real device UI acceptance.
 
 ### Future Roadmap
 
-- 0.0.1 后端按交付切片推进：身份与资料 7 个开发日；房间控制面 6–8 日；LiveKit 语音与房主控制 6–9 日；安全举报与审计 4–6 日；联调与发布加固 3–5 日。合计约 26–35 个纯开发工作日，不含 Figma、平台审核、凭证等待和产品 review。
-- 后续每个切片独立建立或更新 OpenSpec change，不让一个大 change 同时占用全部模块。
-- 手机号注册、账号合并和更强年龄核验保留给后续版本决策。
+- 0.0.1 backend is promoted according to delivery slices: identity and data 7 development days; room control surface 6-8 days; LiveKit voice and room host control 6-9 days; security reporting and auditing 4-6 days; integration verification and release reinforcement 3-5 days. A total of about 26–35 pure development working days, excluding Figma, platform review, voucher waiting and product review.
+- Subsequently, each slice will create or update OpenSpec change independently to prevent a large change from occupying all modules at the same time.
+- Mobile phone number registration, account merging and stronger age verification are reserved for subsequent version decisions.
 
 ### Unresolved Decisions
 
-- Google 与微信的正式应用凭证、redirect URI 和各环境配置尚需在实施前由项目所有者提供。
-- hosted CI provider 尚未选择，当前先保证所有验证可由单一仓库命令重复执行；初始化 Git 并确定托管平台后再接入对应 pipeline。
+- The official application credentials, redirect URIs and environment configurations of Google and WeChat still need to be provided by the project owner before implementation.
+- The hosted CI provider has not been selected. Currently, ensure that all verifications can be repeatedly executed by a single repository command; initialize Git and determine the hosting platform before connecting to the corresponding pipeline.
 
 ## Capabilities
 
 ### New Capabilities
 
-<!-- 无。本变更实现已有 current requirements，不引入新的产品 capability。 -->
+<!-- None. This change implements existing current requirements and does not introduce new product capabilities. -->
 
 ### Modified Capabilities
 
-<!-- 无。identity-and-profile 的 requirements 不变，skip_specs=true。 -->
+<!-- None. identity-and-profile requirements unchanged, skip_specs=true. -->
 
 ## Impact
 
 - Impacted delivery stages: Architecture、Backend / API、Test / Acceptance。
-- 主要影响 `apps/api/src/modules/auth`、`users`、`profiles`、`apps/api/src/infrastructure/oauth`、`database`、`observability`、`apps/api/prisma`、`openapi/openapi.yaml` 和 API 测试。
-- 将新增 Prisma、PostgreSQL 驱动、JWT/密码学、OpenAPI、日志和 HTTP 安全相关依赖；不引入 Redis 或 LiveKit。
-- 数据库从无业务 schema 进入首个 schema；migration 必须可在空库升级，并提供开发环境恢复方案。
-- API contract 一经生成即成为唯一发布契约，后续前端只能通过 generated client 消费。
+- Mainly affects `apps/api/src/modules/auth`, `users`, `profiles`, `apps/api/src/infrastructure/oauth`, `database`, `observability`, `apps/api/prisma`, `openapi/openapi.yaml` and API testing.
+- Prisma, PostgreSQL driver, JWT/cryptography, OpenAPI, logging and HTTP security-related dependencies will be added; Redis or LiveKit will not be introduced.
+- The database enters the first schema from a no-business schema; migration must be upgradeable in an empty database, and a development environment recovery solution must be provided.
+- Once generated, the API contract becomes the only publishing contract, and subsequent front-end consumption can only be done through generated client.

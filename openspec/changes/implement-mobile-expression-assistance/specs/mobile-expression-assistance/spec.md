@@ -1,33 +1,33 @@
 ## ADDED Requirements
 
-### Requirement: 当前房间成员可以主动请求私人表达辅助
+### Requirement: Current room members can actively request private expression assistance
 
-手机端 MUST 为当前有效语音房成员提供文字和短语音入口，提交到现有表达辅助 API，并仅向请求者展示返回的英文表达、可选表达和 AI 可能出错提示；MUST NOT 自动播放或将结果发布到房间。
+The mobile terminal MUST provide text and short voice entries for currently active voice room members, submit them to the existing expression auxiliary API, and only display the returned English expressions, optional expressions, and AI possible error prompts to the requester; MUST NOT automatically play or publish the results to the room.
 
-#### Scenario: 文字请求成功
+#### Scenario: Text request successful
 
-- **WHEN** 当前成员提交有效母语文字且服务端成功返回表达
-- **THEN** 页面只在该成员的弹层展示结果，并保持房间与麦位状态
+- **WHEN** The current member submitted a valid native language text and the server successfully returned the expression
+- **THEN** The page only displays the results on the member's pop-up layer and maintains the room and wheat position status.
 
-### Requirement: 私人短语音遵守同意及媒体隔离
+### Requirement: Private short voice messages comply with consent and media isolation
 
-客户端 MUST 在录音前取得有效的用途同意，并在每次音频提交前让用户确认本次处理。录音前 MUST 关闭本地房间麦克风，录音最多 30 秒，取消或离开时 MUST 停止并释放录音资源。
+The client MUST obtain valid consent before recording, and ask the user to confirm this processing before each audio submission. MUST turn off the local room microphone before recording, and record for up to 30 seconds. MUST stop and release recording resources when canceling or leaving.
 
-#### Scenario: 用户首次录音
+#### Scenario: User's first recording
 
-- **WHEN** 当前同意状态为 REQUIRED 或 REVOKED，且用户打开短语音入口
-- **THEN** 页面展示处理用途并允许用户主动接受或取消，取消不启动录音
+- **WHEN** The current consent status is REQUIRED or REVOKED, and the user opens the short voice portal
+- **THEN** The page displays the processing purpose and allows the user to actively accept or cancel. Cancellation does not start recording.
 
-#### Scenario: 用户录音时仍在房间
+#### Scenario: The user is still in the room when recording
 
-- **WHEN** 用户开始私人录音
-- **THEN** 客户端先确认房间麦克风关闭，再启动本地录音，音频只通过私人请求上传
+- **WHEN** User starts private recording
+- **THEN** The client first confirms that the room microphone is turned off before starting local recording. Audio is only uploaded through private requests.
 
-### Requirement: 错误及重试保持请求一致性
+### Requirement: Errors and retries maintain request consistency
 
-客户端 MUST 为每次输入分配 UUID，同一输入失败重试沿用原 UUID，输入改变或重新录音后使用新 UUID。权限、配额、provider 和网络失败 MUST 给出可恢复状态且不影响真人语音。
+The client MUST assign a UUID to each input. If the same input fails and retries, the original UUID will be used. If the input is changed or re-recorded, a new UUID will be used. Permissions, quotas, provider and network failures MUST give a recoverable status without affecting human speech.
 
-#### Scenario: 网络响应丢失后重试
+#### Scenario: Retry after lost network response
 
-- **WHEN** 用户重试同一段文字或录音
-- **THEN** 客户端使用原请求 UUID 和原内容重新请求，不生成第二个业务请求
+- **WHEN** User retries the same text or recording
+- **THEN** The client re-requests using the original request UUID and original content, and does not generate a second business request.

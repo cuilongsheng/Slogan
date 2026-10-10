@@ -2,48 +2,48 @@
 
 ## Architecture
 
-- PC 管理端与移动端都采用 feature-first；按业务能力组织代码，不按文件类型把全部业务平铺到全局目录。
-- 路由层只组合页面和 feature，不承载复杂业务规则、网络请求或持久状态。
-- 跨 feature 依赖必须通过目标 feature 的公开入口；禁止深层导入其他 feature 的内部文件。
-- 依赖方向为 `route/view -> feature -> shared frontend infrastructure`。Feature 不得反向依赖 route/view。
-- 循环依赖必须通过重新划分所有权、抽取 port 或移动纯共享逻辑解决，不以 barrel、路径别名或运行时技巧隐藏。
+- Both desktop admin and mobile use a feature-first structure. Organize code by business capability rather than placing all business code in global directories by file type.
+- Routes compose pages and features; they do not own complex business rules, network requests, or persistent state.
+- Cross-feature dependencies must use the target feature's public entry point. Do not import another feature's internal files directly.
+- Dependencies flow `route/view -> feature -> shared frontend infrastructure`. Features must not depend on routes or views.
+- Resolve circular dependencies by redefining ownership, extracting ports, or moving pure shared logic. Do not hide them behind barrels, path aliases, or runtime tricks.
 
 ## Directory Ownership
 
-- `api/`：HTTP client 配置、认证注入、错误映射和 OpenAPI generated client。业务请求组合归对应 feature。
-- `features/<domain>/api/`：围绕一个业务能力组合 generated client，不重新定义 endpoint 或 DTO。
-- `features/<domain>/components/`：只服务该业务域的 UI。
-- `features/<domain>/hooks/`：只服务该业务域的状态和交互编排。
-- 根 `components/`：两个以上 feature 复用且不包含领域规则的 UI primitives。
-- 根 `hooks/`：两个以上 feature 复用的技术性 Hook；业务 Hook 留在 feature。
-- 根 `types/`：真正跨 feature 的前端类型；不得复制 OpenAPI DTO 或后端 domain model。
-- 根 `utils/`：确定性、无状态、无网络和无业务流程的纯函数。
-- 根 `styles/`：全局 reset、theme、tokens 和字体；局部样式与组件共置。
-- 不建立全局 `interfaces/`。类型跟随拥有它的 API、feature 或模块。
+- `api/`: HTTP client configuration, authentication injection, error mapping, and the generated OpenAPI client. Business request orchestration belongs to its feature.
+- `features/<domain>/api/`: compose the generated client for a business capability; do not redefine endpoints or DTOs.
+- `features/<domain>/components/`: UI specific to that business domain.
+- `features/<domain>/hooks/`: state and interaction orchestration specific to that domain.
+- Root `components/`: UI primitives shared by at least two features, without domain rules.
+- Root `hooks/`: technical hooks shared by at least two features; business hooks stay in their feature.
+- Root `types/`: genuinely cross-feature frontend types; never duplicate OpenAPI DTOs or backend domain models.
+- Root `utils/`: deterministic, stateless pure functions without networking or business workflows.
+- Root `styles/`: global reset, theme, tokens, and fonts; colocate local styles with components.
+- Do not create a global `interfaces/` directory. Types belong with their owning API, feature, or module.
 
 ## API Contract
 
-- `openapi/openapi.yaml` 是唯一 API contract；前端通过 `packages/api-client` 或应用内 `api/generated/` 消费生成结果。
-- Generated 文件不得手工修改。页面和组件不得拼接 URL、裸调 `fetch` 或维护第二份接口类型。
-- API-first 与 NestJS code-first generated OpenAPI 由 Architecture 决定，不影响前端唯一消费边界。
-- API 缺失时必须标记 `MISSING/PARTIAL/BLOCKED`，不得用静态成功数据伪装完成，除非用户明确批准 mock。
+- `openapi/openapi.yaml` is the sole API contract. Frontends consume generated output through `packages/api-client` or application-local `api/generated/`.
+- Never edit generated files manually. Pages and components must not concatenate URLs, call raw `fetch`, or maintain a second set of API types.
+- Architecture decides between API-first and NestJS code-first generated OpenAPI; the single frontend consumption boundary remains the same.
+- Label missing APIs `MISSING/PARTIAL/BLOCKED`. Never disguise incomplete work with static success data unless the user explicitly approves a mock.
 
 ## Components and State
 
-- 组件只接收完成渲染和交互所需的数据与回调；领域权限和状态转换由 feature 层处理。
-- 异步界面按适用情况明确处理 loading、success、empty、permission denied、recoverable error 和 offline/reconnecting。
-- Server state、local UI state 和 form state 分开管理；不要把服务端缓存复制到全局客户端 store。
-- 共享组件修改必须保持向后兼容，或在同一 change 中更新所有消费者。
+- Components receive only the data and callbacks needed for rendering and interaction. Features handle domain permissions and state transitions.
+- Handle applicable asynchronous states explicitly: loading, success, empty, permission denied, recoverable error, and offline/reconnecting.
+- Manage server state, local UI state, and form state separately. Do not copy server caches into a global client store.
+- Shared component changes must remain backward compatible or update all consumers in the same change.
 
 ## Visual and Localization
 
-- Figma 是视觉事实来源，OpenSpec 是行为来源。不得用 Figma 推导缺失业务规则。
-- 使用语义 tokens，不在业务组件散落任意颜色、间距、字号、圆角或阴影。
-- 用户可见文本必须进入 i18n；不得在业务组件中混用未管理的中英文常量。
-- 涉及 Figma + API 的 Level 1/2 UI 变更必须使用 `$figma-to-frontend`。
+- Figma owns visual truth; OpenSpec owns behavior. Do not infer missing business rules from Figma.
+- Use semantic tokens rather than scattering arbitrary colors, spacing, font sizes, radii, or shadows throughout business components.
+- User-visible text belongs in i18n. Do not mix unmanaged Chinese and English constants in business components.
+- Level 1/2 UI changes involving Figma and APIs must use `$figma-to-frontend`.
 
 ## Verification
 
-- 至少运行项目已有的 lint、typecheck、相关 tests 和 build。
-- Tests/CI 是 verification evidence；视觉、运行时和设备相关行为仍需对应证据。
-- 不得把未执行检查报告为 PASS，必须区分本次引入、既有和环境阻塞的失败。
+- Run at least the existing project lint, typecheck, relevant tests, and build.
+- Tests/CI provide verification evidence; visual, runtime, and device behavior still require the corresponding evidence.
+- Never report unexecuted checks as PASS. Distinguish newly introduced failures from existing failures and environment blockers.

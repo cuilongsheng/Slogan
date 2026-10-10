@@ -1,6 +1,7 @@
 ## REMOVED Requirements
 
-### Requirement: 入房前安全规则确认
-**Reason**: 用户明确要求取消入房中间步骤，普通房间点击即可加入，不再强制进入独立规则确认页面。
+### Requirement: Confirm safety rules before entering the room
 
-**Migration**: 采用 direct-room-entry 的直接入房操作。兼容现有 rulesAccepted 字段以表示入房意图，不伪称逐字阅读；用户只浏览而未点击加入时不建立 membership。现有房间内规则入口和中英文内容保留。
+**Reason**: The user explicitly requests to cancel the intermediate steps of entering the room. You can join the ordinary room by clicking on it, and you are no longer forced to enter the independent rule confirmation page.
+
+**Migration**: Direct room entry operation using direct-room-entry. Compatible with the existing rulesAccepted field to indicate the intention to enter the room, and does not pretend to read verbatim; membership will not be established when the user only browses but does not click to join. The existing room rules entrance and Chinese and English content are retained.

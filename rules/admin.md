@@ -2,34 +2,34 @@
 
 ## Stack and Routing
 
-- PC 管理端使用 React + TypeScript + Vite + React Router；路由只由 `src/app/router` 统一持有。
-- PC 样式使用 Tailwind CSS 和 semantic theme tokens。产品 UI primitives 在批准的 Figma 设计出现后按 feature 需要创建，不预装第二套样式或组件体系。
-- `src/app/` 负责 bootstrap、router 和 providers；路由定义不得分散到 feature 内。
-- `src/views/` 是路由级页面，只组合 layout、feature 和页面状态，不直接调用 generated API client。
-- `src/layouts/` 负责应用壳、导航、页头和内容区域，不持有房间、举报或用户领域规则。
+- The desktop admin uses React, TypeScript, Vite, and React Router. `src/app/router` centrally owns routing.
+- Desktop styles use Tailwind CSS and semantic theme tokens. Create product UI primitives as features need them after approved Figma designs exist; do not preinstall another styling or component system.
+- `src/app/` owns bootstrap, routing, and providers. Do not distribute route definitions across features.
+- `src/views/` contains route-level pages that compose layouts, features, and page state; they do not call the generated API client directly.
+- `src/layouts/` owns the application shell, navigation, header, and content area, not room, report, or user domain rules.
 
 ## Feature Ownership
 
-- 管理后台按 `auth`、`dashboard`、`rooms`、`moderation`、`users`、`settings` 等业务 feature 组织。
-- 表格列、筛选条件、业务表单、详情面板和权限动作归对应 feature，不进入根 `components/`。
-- 根 `components/` 只放 Button、Input、Modal、Table shell、EmptyState 等跨 feature primitives。
-- Feature 对外只暴露路由组合真正需要的 components、hooks 和 types；禁止跨 feature 深层导入。
+- Organize the admin into business features such as `auth`, `dashboard`, `rooms`, `moderation`, `users`, and `settings`.
+- Table columns, filters, business forms, detail panels, and permission actions belong to their feature, not root `components/`.
+- Root `components/` contains only cross-feature primitives such as Button, Input, Modal, Table shell, and EmptyState.
+- Expose only the components, hooks, and types needed for route composition. Do not import other features' internals.
 
 ## Data-heavy States
 
-- 列表必须按适用情况定义筛选、分页、排序、loading、empty、error、permission denied 和刷新行为。
-- 有破坏性或高权限影响的操作必须二次确认，并展示服务端返回的最终结果。
-- 前端权限控制只改善体验；服务端必须再次鉴权。隐藏按钮不能作为安全边界。
-- Server state 使用统一查询缓存方案；表单和瞬时 UI state 不得无理由进入全局 store。
+- Lists define applicable filtering, pagination, sorting, loading, empty, error, permission-denied, and refresh behavior.
+- Destructive or privileged operations require confirmation and must display the final server result.
+- Frontend permission checks improve usability; the server must authorize again. Hidden buttons are not a security boundary.
+- Server state uses the unified query cache. Do not place form or transient UI state in a global store without a reason.
 
 ## Visual and Responsive Behavior
 
-- 以批准的 Figma frame、组件状态和 viewport 为视觉依据。
-- 管理后台至少支持 Architecture 指定的桌面宽度；未经设计确认，不自行承诺完整移动端适配。
-- 表格、弹窗、抽屉、下拉菜单和 Toast 必须覆盖键盘焦点、关闭、滚动和错误状态。
+- Approved Figma frames, component states, and viewports establish the visual target.
+- Support at least the desktop widths specified by Architecture. Do not promise full mobile adaptation without design confirmation.
+- Tables, dialogs, drawers, dropdowns, and toasts cover keyboard focus, dismissal, scrolling, and error states.
 
 ## Testing
 
-- 使用 Playwright 覆盖关键管理流程、权限拒绝、表单校验和高风险操作确认。
-- 组件或业务规则需要快速反馈时增加更低层测试；Playwright 不替代 API 权限测试。
-- Figma 页面必须补充浏览器截图或视觉对比证据，不能只以 DOM 存在作为验收。
+- Use Playwright for key administration workflows, permission denial, form validation, and confirmation of high-risk operations.
+- Add lower-level tests when components or business rules need faster feedback. Playwright does not replace API authorization tests.
+- Figma pages require browser screenshots or visual comparison evidence; DOM presence alone is insufficient for acceptance.

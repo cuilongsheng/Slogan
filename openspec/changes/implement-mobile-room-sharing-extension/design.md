@@ -1,16 +1,16 @@
 ## Context
 
-`/v1/rooms/{roomId}/extensions` 接受 1–60 整数分钟及 UUID，返回新的 `endsAt`、剩余次数与 `providerStatus`。相同请求标识和内容可以安全重试。即时与预约详情均提供服务端 `shareUrl`，分享码路由 `/r/{shareCode}` 已接。
+`/v1/rooms/{roomId}/extensions` accepts 1–60 integer minutes and UUID, and returns the new `endsAt`, remaining times and `providerStatus`. The same request ID and content can be safely retried. Both instant and reservation details are provided on the server `shareUrl`, and the shared code route `/r/{shareCode}` has been received.
 
 ## Decisions
 
-1. 分享使用详情中服务端返回的 URL；Web 写入剪贴板，原生打开系统分享面板。URL 在页面中继续可选中，失败明确提示。
-2. 延长操作只在已连接语音房且当前角色为 HOST 时显示。打开确认层生成请求 UUID；改变分钟数换新 UUID；网络失败后重试同一选择保持 UUID。
-3. 成功显示服务端返回的结束时间和 `providerStatus`。`PENDING`/`UNAVAILABLE` 只表示实时同步尚未完成，不把已提交的业务延长说成失败。随后从房间详情 API 重取时间。
-4. 页面隐藏规则只是体验；后端继续验证当前房主、房间状态、分钟数和最多三次限制。冲突保留错误并刷新房间状态。
+1. Share the URL returned by the server in the usage details; write the Web to the clipboard and open the system sharing panel natively. The URL can continue to be selected on the page, and failure will be clearly prompted.
+2. The extension operation is only displayed when the voice room is connected and the current role is HOST. Open the confirmation layer to generate the request UUID; change the minutes to get a new UUID; retry the same choice after network failure to keep the UUID.
+3. Successfully displays the end time and `providerStatus` returned by the server. `PENDING`/`UNAVAILABLE` only indicates that the real-time synchronization has not been completed, and does not describe the submitted business extension as a failure. Subsequent retrieval of time from room details API.
+4. The page hiding rule is just for experience; the backend continues to verify the current room host, room status, minutes and maximum three times limit. Conflict retain error and refresh room status.
 
 ## Risks and rollback
 
-- 浏览器剪贴板权限可能被拒：保留页面上可选中的 URL 和失败反馈，不生成新链接。
-- 业务写入成功但网络响应丢失：固定 UUID 允许同一命令重试，不自动换新请求内容。
-- 房主身份可能在弹层期间移交：服务端拒绝后刷新当前状态，前端不乐观更新结束时间。
+- Browser clipboard permission may be denied: Keep selectable URLs on the page and failure feedback, do not generate new links.
+- The business is written successfully but the network response is lost: the fixed UUID allows the same command to be retried without automatically updating the request content.
+- The room host identity may be transferred during the elastic layer: the server will refresh the current status after rejection, and the front end is not optimistic about the update end time.

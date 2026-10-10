@@ -1,32 +1,40 @@
 ## MODIFIED Requirements
 
-### Requirement: 后台敏感访问和操作必须审计
-系统 MUST 为 bootstrap、角色查看、角色授予、角色撤销、后台审计查看、安全案件列表与详情查看、证据包查看、案件分配、领取与状态推进、案件结论、临时限制、自动到期、提前解除、申诉查看与处理以及永久禁用记录后台审计事件。事件 MUST 包含操作者类型、可用时的操作者用户标识、操作时角色快照、动作、目标、原因或查询范围、结果、服务端时间和请求关联标识；自动恢复动作 MUST 使用明确的系统操作者类型，不得伪造普通用户。
+### Requirement: Sensitive background access and operations must be audited
 
-#### Scenario: 角色修改成功
-- **WHEN** 平台管理员成功授予或撤销一个后台角色
-- **THEN** 系统保存与角色结果可关联的成功审计，且角色修改和审计全部提交或全部失败
+System MUST support bootstrap, role viewing, role granting, role revocation, administrative audit viewing, security case list and detail viewing, evidence package viewing, case assignment, collection and status advancement, case conclusion, temporary restrictions, automatic expiration, early release, appeal viewing and processing, and permanent disabling of recording administrative audit events. The event MUST contains the operator type, operator user ID when available, role snapshot at the time of operation, action, target, cause or query scope, result, server time and request association ID; automatic recovery actions MUST use a clear system operator type and MUST not forge ordinary users.
 
-#### Scenario: 最后管理员保护拒绝操作
-- **WHEN** 已通过身份和角色校验的管理员请求会导致没有有效平台管理员
-- **THEN** 系统保留角色并记录包含稳定拒绝结果的审计事件
+#### Scenario: Role modified successfully
 
-#### Scenario: 后台敏感列表被查看
-- **WHEN** 有权限的用户查看角色分配、后台审计、案件列表、案件详情、证据包或申诉列表
-- **THEN** 系统记录查看者、操作时角色、查询类型、时间和成功或失败结果；审计写入失败时不得返回敏感数据
+- **WHEN** The platform administrator successfully granted or revoked a administrative role
+- **THEN** The system saves successful audits that can be associated with role results, and role modifications and audits are all submitted or all fail.
 
-#### Scenario: bootstrap 操作
-- **WHEN** 一次性运维入口建立首个后台账号
-- **THEN** 系统以明确的系统操作者类型记录目标用户、授予角色、时间和结果，不伪造普通用户 actor
+#### Scenario: Last administrator protection denied operation
 
-#### Scenario: 安全处置成功
-- **WHEN** 安全员成功结案、施加或提前解除限制、处理申诉或永久禁用账号
-- **THEN** 系统保存与业务结果可关联的成功审计，且业务状态和成功审计全部提交或全部失败
+- **WHEN** An administrator request that has passed identity and role verification will result in no valid platform administrator.
+- **THEN** The system retains roles and logs audit events with stable denial results
 
-#### Scenario: 安全处置被拒绝
-- **WHEN** 已认证后台用户因角色、案件状态、申诉窗口或并发冲突而无法完成安全处置
-- **THEN** 系统不改变业务状态，并记录不含举报正文或完整证据的稳定拒绝结果
+#### Scenario: The background sensitive list was viewed
 
-#### Scenario: 自动分配或限制到期
-- **WHEN** 系统恢复流程自动分配案件、重新分配失效处理人或收敛已到期限制
-- **THEN** 系统以明确的系统操作者类型记录动作、目标、时间和结果，不伪造安全员 actor
+- **WHEN** Users with permissions can view role assignments, background audits, case lists, case details, evidence packages or appeal lists
+- **THEN** The system records the viewer, operation role, query type, time and success or failure results; sensitive data must not be returned when the audit write fails
+
+#### Scenario: bootstrap operation
+
+- **WHEN** Create the first backend account for one-time operation and maintenance portal
+- **THEN** The system records the target user, granted role, time and result with a clear system operator type, and does not forge ordinary user actors.
+
+#### Scenario: Safe disposal successful
+
+- **WHEN** safety officer successfully closes case, imposes or early lifts restrictions, handles appeals, or permanently bans account
+- **THEN** The system saves successful audits that can be associated with business results, and the business status and successful audits are all submitted or all fail.
+
+#### Scenario: Safe disposal denied
+
+- **WHEN** The authenticated backend user cannot complete security processing due to role, case status, appeal window or concurrency conflict
+- **THEN** The system does not change the business status and records a stable rejection result that does not contain the report text or complete evidence.
+
+#### Scenario: Automatic allocation or limit expiration
+
+- **WHEN** System recovery process automatically assigns cases, reassigns failure handlers, or converges expired limits
+- **THEN** The system records actions, goals, times and results with a clear system operator type, without forging safety officer actors

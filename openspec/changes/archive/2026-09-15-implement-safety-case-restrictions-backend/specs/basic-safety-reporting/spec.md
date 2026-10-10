@@ -1,21 +1,25 @@
 ## MODIFIED Requirements
 
-### Requirement: 提交基础举报
-系统 MUST 允许房间成员提交包含房间、举报人、被举报人、时间、类别和文字说明的基础举报记录。举报、唯一安全案件和可用时的初始分配 MUST 在同一数据库事务中提交；无可用安全员不得导致举报丢失。成功响应 MUST 保持现有举报受理字段兼容，并返回可用于后续追踪的案件标识。
+### Requirement: Submit a basic report
 
-#### Scenario: 成员提交有效举报
-- **WHEN** 房间成员选择举报对象、类别并提交说明
-- **THEN** 系统保存举报记录和唯一 `OPEN` 安全案件，并返回举报及案件的提交结果
+The system MUST allow room members to submit basic report records containing room, reporter, reportee, time, category and text description. Reports, unique safety cases, and initial assignments when available MUST be submitted in the same database transaction; unavailability of a safety officer MUST not cause reports to be lost. A successful response MUST maintain compatibility with existing report acceptance fields and return a case ID that can be used for follow-up tracking.
 
-#### Scenario: 提交时没有可用安全员
-- **WHEN** 有效举报提交时没有账号可用且持有安全员角色的用户
-- **THEN** 系统原子保存举报和未分配案件并返回成功，不因分配暂时不可用丢弃举报
+#### Scenario: A member submitted a valid report
 
-#### Scenario: 案件创建失败
-- **WHEN** 举报记录可以写入但其安全案件或必要关联无法提交
-- **THEN** 整个受理事务失败且系统不留下没有案件的已受理举报
+- **WHEN** Room members select the reporting object, category and submit instructions
+- **THEN** The system saves the report record and the unique `OPEN` security case, and returns the report and case submission results
 
-#### Scenario: 相同请求安全重试
-- **WHEN** 举报人使用相同请求标识和相同规范化内容重试已经成功的举报
-- **THEN** 系统返回原举报和原案件标识，不创建重复举报、案件或初始分配
+#### Scenario: No safety officer available at time of submission
 
+- **WHEN** A user who has no account available and holds the role of safety officer when submitting a valid report
+- **THEN** The system atomically saves reports and unallocated cases and returns success, and does not discard reports due to temporary unavailability of allocations.
+
+#### Scenario: Case creation failed
+
+- **WHEN** The report record can be written but the security case or necessary association cannot be submitted.
+- **THEN** The entire acceptance transaction failed and the system does not leave accepted reports without cases.
+
+#### Scenario: Safe retry of the same request
+
+- **WHEN** The reporter retries a successful report using the same request ID and the same canonical content
+- **THEN** The system returns the original report and original case identification and does not create duplicate reports, cases or initial assignments

@@ -1,66 +1,66 @@
 ## Purpose
 
-定义移动端合格用户从公开即时房间列表了解房间和完成入房前检查的可观察流程，确保页面只展示服务端真实信息，并在语音会话尚未接通时不占用成员名额。
+Define the observable process for qualified mobile users to learn about the room from the public real-time room list and complete the pre-check-in check, ensuring that the page only displays real information from the server, and does not occupy member quotas when the voice session has not been connected.
 
 ## ADDED Requirements
 
-### Requirement: 合格用户浏览公开即时房间
+### Requirement: Qualified users can browse public real-time rooms
 
-系统 MUST 让已完成资料且符合年龄资格的用户从默认入口浏览服务端返回的公开即时房间。列表 MUST 支持刷新和既有游标分页，区分加载中、空列表、可重试错误和有结果状态；未完成资料或年龄受限用户 MUST 无法访问该入口。
+The system MUST allow users who have completed their profile and meet age qualifications to browse the public instant rooms returned from the server through the default entrance. The list MUST support refreshing and existing cursor paging, distinguishing between loading, empty list, retryable error and result status; users with incomplete information or age restrictions MUST not be able to access this entry.
 
-#### Scenario: 列表加载成功
+#### Scenario: List loaded successfully
 
-- **WHEN** 合格用户打开房间列表且服务端返回公开房间
-- **THEN** 页面展示真实主题、CEFR、房主昵称、人数/容量、剩余时间、密码状态和敏感语音识别状态，不展示静态样例房间
+- **WHEN** The qualified user opens the room list and the server returns the public room
+- **THEN** The page displays the real theme, CEFR, room host nickname, number of people/capacity, remaining time, password status and sensitive speech recognition status, and does not display static sample rooms
 
-#### Scenario: 列表为空或加载失败
+#### Scenario: List is empty or loading failed
 
-- **WHEN** 服务端返回空列表或请求失败
-- **THEN** 页面分别展示可理解的空状态或可重试错误，不伪造房间数量
+- **WHEN** The server returned an empty list or the request failed
+- **THEN** The page displays understandable empty status or retryable errors respectively, and does not forge the number of rooms.
 
-#### Scenario: 刷新与分页
+#### Scenario: Refresh and paging
 
-- **WHEN** 用户刷新列表或加载下一页
-- **THEN** 页面使用当前查询上下文重新请求或传回对应游标，不重复现有房间且不把已加载数量称作服务端总数
+- **WHEN** The user refreshes the list or loads the next page
+- **THEN** The page uses the current query context to re-request or return the corresponding cursor, does not repeat the existing rooms and does not refer to the loaded number as the total number of servers.
 
-### Requirement: 入房前查看房间详情
+### Requirement: View room details before checking in
 
-系统 MUST 让合格用户查看允许访问的房间详情并依据最新服务端结果展示加入条件。页面 MUST 将满员、结束、密码和房主重连中的状态与可继续操作的状态区分；未取得的成员身份或头像 MUST 不得以虚构内容填充。
+The system MUST allow qualified users to view the details of rooms they are allowed to access and display the joining conditions based on the latest server results. The page MUST distinguish the status of full membership, end, password and room host reconnecting from the status of continued operation; unacquired membership or avatar MUST not be filled with fictitious content.
 
-#### Scenario: 查看可用房间
+#### Scenario: View available rooms
 
-- **WHEN** 用户从列表打开可访问的房间
-- **THEN** 页面读取房间详情，展示真实房间属性和当前人数，并根据密码状态进入对应的入房前流程
+- **WHEN** User opens accessible room from list
+- **THEN** The page reads room details, displays the real room attributes and current number of people, and enters the corresponding pre-room entry process based on the password status.
 
-#### Scenario: 房间在查看期间不可用
+#### Scenario: Room is unavailable during viewing
 
-- **WHEN** 详情读取显示房间不存在、结束、满员或暂不可加入
-- **THEN** 页面说明原因并提供返回列表或重试入口，不声称用户已经加入
+- **WHEN** Detailed reading shows that the room does not exist, is over, is full, or is temporarily unavailable to join.
+- **THEN** The page explains the reason and provides a return list or retry entry, without claiming that the user has joined.
 
-### Requirement: 密码和规则的入房前准备
+### Requirement: Preparation for passwords and rules before entering the room
 
-系统 MUST 对密码房间收集恰好 4 位数字作为当前入房流程的临时输入；非密码房间 MUST 跳过密码页。系统 MUST 用当前界面语言展示完整入房规则，要求用户主动勾选后才能继续设备检查。尚未向服务端提交加入请求时，页面 MUST 不声称密码已验证或规则已被服务端接受。
+The system MUST collect exactly 4 digits for password rooms as temporary input for the current room entry process; the password page MUST be skipped for non-password rooms. The system MUST display the complete room entry rules in the current interface language and require the user to actively check before continuing the equipment check. The page MUST not claim that the password has been verified or that the rules have been accepted by the server when a join request has not been submitted to the server.
 
-#### Scenario: 密码房间填写密码
+#### Scenario: Fill in the password for the password room
 
-- **WHEN** 用户为密码房间输入非 4 位数字或有效格式的 4 位数字
-- **THEN** 页面分别阻止继续或允许进入规则页，密码不出现在 URL、日志或持久化存储中
+- **WHEN** The user entered a non-4-digit number or a 4-digit number in a valid format for the password room
+- **THEN** The page blocks continuation or allows entry to the rules page respectively, and the password does not appear in the URL, logs or persistent storage
 
-#### Scenario: 主动确认规则
+#### Scenario: Actively confirm rules
 
-- **WHEN** 用户未勾选规则确认或主动勾选确认
-- **THEN** 页面分别阻止继续或进入设备检查；更换目标房间后先前的确认不再适用
+- **WHEN** The user did not check the rule confirmation or actively checked the confirmation
+- **THEN** The page prevents continuing or entering the device check respectively; the previous confirmation no longer applies after changing the target room
 
-### Requirement: 设备检查不提前加入房间
+### Requirement: Equipment check does not allow joining the room in advance
 
-系统 MUST 在用户明确请求检查时读取或申请麦克风权限，并区分允许、拒绝和设备不可用状态。当前批次没有可用语音房客户端时，设备检查页 MUST 明确告知实际入房暂不可用，MUST 不调用创建 membership 或实时凭证的接口。
+The system MUST read or request microphone permission when the user explicitly requests a check, and distinguish between allowed, denied, and device unavailable states. When there is no available voice room client in the current batch, the device check page MUST clearly inform that actual room entry is temporarily unavailable, and MUST not call the interface for creating membership or real-time credentials.
 
-#### Scenario: 麦克风可用
+#### Scenario: Microphone available
 
-- **WHEN** 用户主动完成麦克风权限与设备检查且结果可用
-- **THEN** 页面展示已准备状态，并明确说明尚未进入语音房或占用名额
+- **WHEN** The user actively completes the microphone permission and device check and the results are available
+- **THEN** The page shows the ready status and clearly states that it has not yet entered the voice room or occupied the quota.
 
-#### Scenario: 麦克风被拒绝或设备不可用
+#### Scenario: Microphone rejected or device unavailable
 
-- **WHEN** 麦克风权限被拒绝、永久拒绝或无法检测到可用输入
-- **THEN** 页面展示对应恢复路径，不把设备状态误报为已准备好
+- **WHEN** Microphone permission denied, permanently denied, or available input cannot be detected
+- **THEN** The page displays the corresponding recovery path and does not falsely report the device status as ready.

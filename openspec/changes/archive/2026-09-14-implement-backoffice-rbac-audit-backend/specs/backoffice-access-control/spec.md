@@ -1,89 +1,110 @@
 ## Purpose
 
-定义后台账号复用现有身份认证后的多角色授权、首个管理员建立和服务端权限边界，使后续安全案件与运营能力只能由当前仍持有明确角色的用户访问。
+Define multi-role authorization after back-end account reuses existing identity authentication, first administrator establishment and server-side permission boundaries, so that subsequent security cases and operational capabilities can only be accessed by users who still hold clear roles.
 
 ## ADDED Requirements
 
-### Requirement: 后台角色采用持久多角色授权
-系统 MUST 支持 `PLATFORM_ADMIN`、`SAFETY_OFFICER`、`OPERATIONS_ANALYST` 和 `AUDITOR` 四种后台角色，并允许同一用户同时持有多个角色。后台访问 MUST 同时要求有效普通会话、可用账号状态和当前仍有效的后台角色，不得只信任客户端声明或旧 token 中的角色信息。
+### Requirement: The administrative role uses persistent multi-role authorization
 
-#### Scenario: 管理员同时担任安全员
-- **WHEN** 一个有效用户同时持有平台管理员和安全员角色
-- **THEN** 系统返回两个当前角色，并允许其分别访问这两个角色已实现且明确授权的能力
+The system MUST support four administrative roles: `PLATFORM_ADMIN`, `SAFETY_OFFICER`, `OPERATIONS_ANALYST` and `AUDITOR`, and allow the same user to hold multiple roles at the same time. Backend access MUST also require a valid normal session, available account status and a currently valid backend role. You MUST not only trust the role information in the client statement or the old token.
 
-#### Scenario: 普通用户直接调用后台接口
-- **WHEN** 只有有效普通会话但没有任何后台角色的用户直接请求后台接口
-- **THEN** 系统返回稳定的后台访问拒绝且不返回后台数据
+#### Scenario: The administrator also serves as safety officer
 
-#### Scenario: 会话或账号失效
-- **WHEN** 后台角色持有者的会话失效，或账号不再处于可用状态
-- **THEN** 系统按现有身份认证边界拒绝请求，后台角色不得绕过会话和账号状态
+- **WHEN** A valid user holds both the platform administrator and safety officer roles
+- **THEN** The system returns the two current roles and allows them to access the implemented and explicitly authorized capabilities of these two roles.
 
-#### Scenario: 一个角色不隐含另一个角色
-- **WHEN** 平台管理员没有安全员角色，或安全员没有平台管理员角色
-- **THEN** 系统分别拒绝其执行安全员专属动作或角色管理动作，不因其拥有其他高权限角色而自动放宽
+#### Scenario: Ordinary users directly call the background interface
 
-### Requirement: 首个后台管理员通过受控 bootstrap 建立
-系统 MUST 提供受控的一次性运维入口，使用已有且可用的平台用户标识建立首个后台账号，并同时授予 `PLATFORM_ADMIN` 和 `SAFETY_OFFICER`。该入口 MUST 不使用邮箱、昵称或 provider 返回资料作为唯一身份，也不得把真实账号或凭证写入仓库。
+- **WHEN** Users who only have valid normal sessions but do not have any administrative roles directly request the background interface.
+- **THEN** The system returns a stable background access rejection and does not return admin data.
 
-#### Scenario: 建立首个后台账号
-- **WHEN** 尚不存在有效平台管理员，运维入口收到一个已存在且可用的用户标识
-- **THEN** 系统原子授予平台管理员和安全员角色，并记录可追踪的系统 bootstrap 审计
+#### Scenario: Session or account invalid
 
-#### Scenario: 对相同账号安全重试
-- **WHEN** 首个账号已完整持有上述两个角色且同一 bootstrap 操作再次执行
-- **THEN** 系统返回同一最终状态，不创建重复角色或重复成功审计
+- **WHEN** The administrative role holder's session has expired, or the account is no longer available.
+- **THEN** The system rejects the request based on existing authentication boundaries. Background roles must not bypass session and account status.
 
-#### Scenario: 非法目标或已经完成初始化
-- **WHEN** 目标用户不存在、账号不可用，或已有其他有效平台管理员后尝试再次使用 bootstrap 改变角色
-- **THEN** 系统拒绝操作且不部分授予角色
+#### Scenario: One character does not imply another character
 
-### Requirement: 平台管理员管理后台角色
-系统 MUST 只允许当前持有 `PLATFORM_ADMIN` 的用户查看、授予和撤销后台角色。目标必须是已存在用户，角色变更必须携带原因和调用者生成的 UUID 请求标识，并返回最小角色分配结果。
+- **WHEN** The platform administrator does not have the role of safety officer, or the safety officer does not have the role of platform administrator.
+- **THEN** The system refuses to perform safety officer exclusive actions or role management actions respectively, and will not automatically relax it because it has other high-privilege roles.
 
-#### Scenario: 管理员授予安全员角色
-- **WHEN** 平台管理员为有效用户授予安全员角色并提供有效原因和请求标识
-- **THEN** 系统保存角色分配并返回目标、角色和生效时间，不返回目标的认证凭证或非必要资料
+### Requirement: The first backend administrator is established via controlled bootstrap
 
-#### Scenario: 非管理员绕过界面修改角色
-- **WHEN** 普通用户、安全员、运营分析员或审计员直接请求授予或撤销角色且未同时持有平台管理员角色
-- **THEN** 系统拒绝请求且角色集合保持不变
+The system MUST provide a controlled one-time operation and maintenance entrance, use the existing and available platform user ID to establish the first backend account, and grant `PLATFORM_ADMIN` and `SAFETY_OFFICER` at the same time. This portal MUST not use email, nickname, or provider return data as the unique identity, and MUST not write real account numbers or credentials into the repository.
 
-#### Scenario: 重试相同角色命令
-- **WHEN** 同一管理员使用相同请求标识和相同规范化内容重试角色命令
-- **THEN** 系统返回原操作结果且不重复修改角色或生成重复成功审计
+#### Scenario: Create your first backend account
 
-#### Scenario: 重用请求标识修改内容
-- **WHEN** 同一管理员使用既有请求标识请求不同目标、角色、动作或原因
-- **THEN** 系统返回稳定冲突且不改变原操作结果
+- **WHEN** There is no valid platform administrator yet, and the operation and maintenance portal received an existing and available user ID.
+- **THEN** System Atomic grants platform administrator and safety officer roles and records traceable system bootstrap audits
 
-#### Scenario: 并发修改同一角色
-- **WHEN** 多个有效请求并发授予或撤销同一用户的同一角色
-- **THEN** 系统串行化最终角色状态，并为每个接受的命令返回与持久结果一致的响应
+#### Scenario: Safely retry on the same account
 
-### Requirement: 系统始终保留有效平台管理员
-系统 MUST 阻止角色管理操作撤销最后一个有效 `PLATFORM_ADMIN`。用户可以先向另一个有效账号授予平台管理员角色，再撤销原账号的角色，以完成可审计的管理权转移。
+- **WHEN** The first account has fully held the above two characters and the same bootstrap operation is executed again
+- **THEN** The system returns to the same final state without creating duplicate roles or repeating successful audits
 
-#### Scenario: 撤销最后一个管理员
-- **WHEN** 管理员尝试撤销当前唯一有效平台管理员的管理员角色
-- **THEN** 系统返回稳定冲突，保留原角色并记录拒绝结果
+#### Scenario: Illegal target or initialization has been completed
 
-#### Scenario: 转移管理员权限
-- **WHEN** 已存在另一个有效平台管理员后撤销原管理员的管理员角色
-- **THEN** 系统允许撤销，同时保证事务完成后仍至少存在一个有效平台管理员
+- **WHEN** The target user does not exist, the account is unavailable, or there is another valid platform administrator and you try to use bootstrap again to change the role.
+- **THEN** The system denied the operation without partially granting the role
 
-#### Scenario: 并发撤销多个管理员
-- **WHEN** 并发请求试图撤销全部有效平台管理员
-- **THEN** 系统最多执行不会使有效管理员数量降为零的操作，其余请求稳定失败
+### Requirement: Platform administrator manages administrative roles
 
-### Requirement: 后台用户可查看当前最小身份
-系统 MUST 为持有任一后台角色的用户返回其平台用户标识和当前有效角色集合；响应不得包含 token、provider subject、密码、手机号、邮箱或其他不必要的个人资料。
+The system MUST only allow users currently holding `PLATFORM_ADMIN` to view, grant, and revoke administrative roles. The target must be an existing user, the role change must carry the reason and the UUID request identification generated by the caller, and the minimum role assignment result must be returned.
 
-#### Scenario: 获取当前后台身份
-- **WHEN** 已认证且持有后台角色的用户请求当前后台身份
-- **THEN** 系统返回用户标识及按稳定顺序排列的当前有效角色
+#### Scenario: The administrator granted the safety officer role
 
-#### Scenario: 角色撤销立即生效
-- **WHEN** 某用户的后台角色已提交撤销但其旧 access token 仍在有效期内
-- **THEN** 下一次后台请求使用最新持久角色判断，不再授予已撤销权限
+- **WHEN** The platform administrator grants the safety officer role to a valid user and provides a valid reason and request ID.
+- **THEN** The system saves the role assignment and returns the target, role and effective time, but does not return the target's authentication credentials or non-essential information.
 
+#### Scenario: Non-administrators bypass the interface to modify roles
+
+- **WHEN** An ordinary user, safety officer, operations analyst or auditor directly requests to grant or revoke a role and does not also hold the platform administrator role.
+- **THEN** The system rejected the request and the role collection remains unchanged
+
+#### Scenario: Retry same character command
+
+- **WHEN** The same administrator retries the role command using the same request ID and the same canonical content
+- **THEN** The system returns the original operation results and does not repeatedly modify the role or generate repeated successful audits
+
+#### Scenario: Reuse request identification modification content
+
+- **WHEN** The same administrator requested different goals, roles, actions, or reasons using an existing request ID.
+- **THEN** The system returns a stable conflict and does not change the original operation result.
+
+#### Scenario: Concurrently modify the same role
+
+- **WHEN** Multiple valid requests to grant or revoke the same role to the same user concurrently
+- **THEN** The system serializes the final role state and returns a response consistent with the persistent result for each accepted command
+
+### Requirement: The system always retains a valid platform administrator
+
+The system MUST prevent role management operations from undoing the last valid `PLATFORM_ADMIN`. Users can first grant the platform administrator role to another valid account, and then revoke the role of the original account to complete the auditable transfer of management rights.
+
+#### Scenario: Remove the last administrator
+
+- **WHEN** The administrator attempted to revoke the administrator role of the only currently valid platform administrator.
+- **THEN** The system returns a stable conflict, retains the original role and records the rejection result
+
+#### Scenario: Transfer administrator rights
+
+- **WHEN** The administrator role of the original administrator is revoked after another valid platform administrator already exists.
+- **THEN** The system allows revocation and ensures that there is still at least one valid platform administrator after the transaction is completed.
+
+#### Scenario: Concurrently revoke multiple administrators
+
+- **WHEN** Concurrent request attempts to revoke all valid platform administrators
+- **THEN** The system can perform at most operations that will not reduce the number of effective administrators to zero, and the remaining requests fail stably.
+
+### Requirement: Backend users can view the current minimum identity
+
+The system MUST return the platform user ID and currently valid role set for users holding any administrative role; the response MUST not contain token, provider subject, password, mobile phone number, email address or other unnecessary personal data.
+
+#### Scenario: Get the current background identity
+
+- **WHEN** An authenticated user who holds a administrative role requests the current background identity
+- **THEN** The system returns the user ID and currently valid roles in stable order.
+
+#### Scenario: Role revocation takes effect immediately
+
+- **WHEN** A user's administrative role has been submitted for revocation but his old access token is still valid.
+- **THEN** The next background request will use the latest persistent role judgment and the revoked permission will no longer be granted.

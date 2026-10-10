@@ -2,72 +2,90 @@
 
 ## Purpose
 
-定义房主向好友或当前空闲用户发送普通房间邀请、受邀人处理邀请及加入时重新校验的闭环，使邀请可发现但不能绕过房间和账号规则。
+Define a closed loop in which room host sends ordinary room invitations to friends or currently idle users, invitees process the invitations, and re-verify when joining, so that the invitations can be discovered but cannot bypass room and account rules.
 
 ## Requirements
 
-### Requirement: 只有当前房主可以发送普通房间邀请
-系统 MUST 只允许房间当前房主邀请自己的好友或当前出现在可邀请用户列表中的用户。目标不得是房主本人或当前房间成员；双方存在任一方向屏蔽、目标账号或资料不可用、未达到年龄要求、受当前安全限制，或房间已取消、结束、进入结束中时，系统 MUST 拒绝邀请。
+### Requirement: Only the current room host can send ordinary room invitations
 
-#### Scenario: 邀请空闲好友
-- **WHEN** 当前房主邀请一名合格且当前空闲的好友进入可加入房间
-- **THEN** 系统保存一条目标明确的待处理邀请并向房主返回最小结果
+The system MUST only allow the current room host of the room to invite its own friends or users who currently appear in the list of inviteable users. The target MUST not be the room host or the current room member; the system MUST reject the invitation when both parties are blocked in either direction, the target account or information is unavailable, does not meet age requirements, is subject to current security restrictions, or the room has been canceled, ended, or is entering the end stage.
 
-#### Scenario: 非房主直接邀请
-- **WHEN** 普通成员绕过客户端直接请求邀请用户
-- **THEN** 系统拒绝请求且不创建邀请
+#### Scenario: Invite idle friends
 
-#### Scenario: 邀请不可用目标
-- **WHEN** 房主邀请受限、未成年、资料未完成、已在房间或与其存在屏蔽关系的用户
-- **THEN** 系统返回一致的目标不可邀请结果且不泄露具体隐私状态
+- **WHEN** The current room host invites a qualified and currently idle friend to join the room.
+- **THEN** The system saves a well-targeted pending invitation and returns minimal results to the room host
 
-### Requirement: 普通邀请不替代被移除成员重新邀请
-系统 MUST 将普通社交邀请与 `host-controls` 的被移除成员重新邀请分开。曾在目标房间处于 `REMOVED` lifecycle 的用户不能通过普通邀请恢复资格，房主 MUST 使用既有重新邀请流程。
+#### Scenario: Non-room host direct invitation
 
-#### Scenario: 普通邀请目标曾被移除
-- **WHEN** 房主通过普通邀请入口邀请该房间中已被移除的成员
-- **THEN** 系统拒绝普通邀请且成员仍不能使用旧凭证或普通加入入口重入
+- **WHEN** Ordinary members bypass the client and directly request to invite users
+- **THEN** The system rejects the request and does not create an invitation
 
-### Requirement: 受邀用户只能读取和处理自己的邀请
-系统 MUST 以有限游标分页向调用者返回发给本人的待处理邀请及最小房间、房主资料，并允许本人拒绝。房主和其他用户不得代替受邀人读取或拒绝；房间取消、结束、进入结束中或双方发生屏蔽后，邀请 MUST 不再作为可用邀请返回。
+#### Scenario: Invite unavailable target
 
-#### Scenario: 查询本人邀请
-- **WHEN** 已认证用户分页查询自己的房间邀请
-- **THEN** 系统只返回仍可处理且目标为本人的邀请
+- **WHEN** Room host invites users who are restricted, underage, have incomplete information, are already in the room, or have a blocked relationship with them
+- **THEN** The system returns a consistent result that the target cannot be invited and does not reveal the specific privacy status.
 
-#### Scenario: 拒绝邀请
-- **WHEN** 受邀人拒绝自己的待处理邀请
-- **THEN** 邀请进入拒绝终态且不能再用于加入
+### Requirement: Ordinary invitation does not replace the removed member’s re-invitation
 
-### Requirement: 邀请不预占名额且加入时重新校验
-系统 MUST 不因创建邀请预留房间容量。受邀用户通过现有加入入口使用邀请时，系统 MUST 在同一加入事务中重新校验邀请目标、房间状态、容量、密码、规则确认、账号、年龄、安全限制和屏蔽关系；全部通过后才建立或恢复允许的 membership 并消费邀请。失败的加入不得错误消费邀请。
+The system MUST separate regular social invitations from `host-controls`'s removed member re-invitations. Users who were in the `REMOVED` lifecycle in the target room cannot be reinstated through a normal invitation. The room host MUST use the existing re-invite process.
 
-#### Scenario: 邀请后房间已满
-- **WHEN** 受邀用户加入时房间容量已满
-- **THEN** 系统拒绝加入且不创建 membership，邀请不赋予超额名额
+#### Scenario: Normal invitation target has been removed
 
-#### Scenario: 密码房间邀请
-- **WHEN** 受邀用户使用有效邀请加入仍受密码保护的房间但未提供正确密码
-- **THEN** 系统拒绝加入，邀请不能绕过密码校验
+- **WHEN** Room host invites members who have been removed from the room through the normal invitation portal
+- **THEN** The system rejects ordinary invitations and members still cannot re-enter using old credentials or ordinary joining entrances.
 
-#### Scenario: 合格受邀用户加入
-- **WHEN** 受邀用户提交有效邀请并通过全部现有加入校验
-- **THEN** 系统原子建立 membership、消费邀请并返回现有房间加入结果
+### Requirement: Invited users can only read and process their own invitations
 
-### Requirement: 邀请写操作可安全重试
-系统 MUST 要求发送和拒绝邀请携带调用者生成的 UUID 请求标识。同一调用者以相同标识和内容重试 MUST 返回原邀请或原终态；改变房间、目标或动作复用标识 MUST 返回稳定冲突。相同房间、房主和目标同时只能存在一条待处理普通邀请。
+The system MUST return to the caller the pending invitations sent to me and the minimum room and room host information using limited cursor paging, and allow me to refuse. The room host and other users may not read or reject on behalf of the invitee; invitations MUST no longer be returned as available invitations after the room is canceled, ended, entry is ending, or both parties are blocked.
 
-#### Scenario: 并发重复邀请
-- **WHEN** 房主并发重复邀请同一目标进入同一房间
-- **THEN** 系统只保留一条待处理邀请并为相同幂等命令返回同一结果
+#### Scenario: Check my invitation
 
-#### Scenario: 重用请求标识改变目标
-- **WHEN** 房主使用既有请求标识邀请另一用户或另一房间
-- **THEN** 系统返回冲突且不改变原邀请
+- **WHEN** Authenticated users check their room invitations by page
+- **THEN** The system only returns invitations that can still be processed and target me.
 
-### Requirement: 邀请不泄露私密关系或房间凭据
-系统 MUST 只向邀请双方返回完成流程所需的最小信息，不公开双方好友关系、屏蔽方向、房间密码摘要、LiveKit 凭证或其他成员资料。邀请本身不得生成实时语音凭证或自动加入房间。
+#### Scenario: Decline invitation
 
-#### Scenario: 发送邀请成功
-- **WHEN** 房主成功创建普通房间邀请
-- **THEN** 响应不包含目标用户的精确在线信息、屏蔽信息或房间敏感凭据
+- **WHEN** The invitee declined his pending invitation
+- **THEN** The invitation entered the rejection final state and can no longer be used to join.
+
+### Requirement: The invitation does not reserve a quota and must be re-verified when joining.
+
+The system MUST not reserve room capacity for creating invitations. When an invited user uses the invitation through the existing joining portal, the system MUST re-verify the invitation target, room status, capacity, password, rule confirmation, account, age, security restrictions and blocking relationship in the same joining transaction; only after all are passed, the allowed membership is established or restored and the invitation is consumed. Failed joins must not consume invitations by mistake.
+
+#### Scenario: The room is full after invitation
+
+- **WHEN** The room capacity is full when the invited user joins
+- **THEN** The system refuses to join and does not create a membership. The invitation does not grant excess quota.
+
+#### Scenario: Password room invitation
+
+- **WHEN** The invited user joined a still password-protected room using a valid invitation but did not provide the correct password
+- **THEN** The system refuses to join. The invitation cannot bypass password verification.
+
+#### Scenario: Qualified invited users to join
+
+- **WHEN** The invited user submitted a valid invitation and passed all existing join verifications
+- **THEN** The system atomically establishes membership, consumes invitations and returns existing room joining results
+
+### Requirement: The invitation write operation is safe to retry
+
+The system MUST require sending and rejecting invitations to carry the caller-generated UUID request identifier. The same caller retries with the same identification and content MUST return the original invitation or original final state; changing the room, target or action reuse identification MUST return a stable conflict. There can only be one pending ordinary invitation for the same room, room host and target at the same time.
+
+#### Scenario: Concurrent duplicate invitations
+
+- **WHEN** Room host concurrently and repeatedly invites the same target to the same room
+- **THEN** The system keeps only one pending invitation and returns the same result for the same idempotent command
+
+#### Scenario: Reuse request identifier change target
+
+- **WHEN** Room host invites another user or another room using an existing request ID
+- **THEN** The system returns a conflict and does not change the original invitation.
+
+### Requirement: Invitations do not reveal private relationships or room credentials
+
+The system MUST only return the minimum information required to complete the process to the inviting parties, and does not disclose the friend relationship, blocking direction, room password digest, LiveKit credentials or other member information. The invitation itself must not generate live voice credentials or automatically join the room.
+
+#### Scenario: Invitation sent successfully
+
+- **WHEN** Room host successfully created a normal room invitation
+- **THEN** The response does not contain the target user's precise presence information, blocking information, or room-sensitive credentials

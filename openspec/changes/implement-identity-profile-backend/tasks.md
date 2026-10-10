@@ -1,38 +1,38 @@
-## 1. API 与运行时基础（计划 1 天）
+## 1. API and runtime basics (planned for 1 day)
 
-- [x] 1.1 安装并固定 Prisma/PostgreSQL、OpenAPI、validation、JWT、日志、Helmet 和限流依赖，更新 toolchain registry，并通过 `pnpm install --frozen-lockfile` 与 direct-dependency audit 验证依赖闭环
-- [x] 1.2 扩展 Zod 环境配置与 `.env.example`，覆盖 database、JWT/session、CORS 和 Google/微信 provider 配置，并用 bootstrap tests 验证缺失 secret、非法 TTL、非法 origin 会阻止启动
-- [x] 1.3 建立 `/v1` prefix、全局 validation、稳定 error body、request ID、Helmet、CORS、Pino/pino-http 和认证限流，使用 API e2e 验证错误不泄露 stack/token 且安全响应头存在
+- [x] 1.1 Install and fix Prisma/PostgreSQL, OpenAPI, validation, JWT, log, Helmet and rate limiting dependencies, update the toolchain registry, and verify dependency closure through `pnpm install --frozen-lockfile` and direct-dependency audit
+- [x] 1.2 Extended Zod environment configuration and `.env.example`, covering database, JWT/session, CORS and Google/WeChat provider configuration, and used bootstrap tests to verify that missing secret, illegal TTL, and illegal origin will prevent startup
+- [x] 1.3 Establish `/v1` prefix, global validation, stable error body, request ID, Helmet, CORS, Pino/pino-http and authentication current limit, use API e2e to verify that errors do not leak stack/token and the security response header exists
 
-## 2. PostgreSQL 与持久化边界（计划 1 天）
+## 2. PostgreSQL and persistence boundaries (planned for 1 day)
 
-- [x] 2.1 定义 `User`、`OAuthIdentity`、`AuthSession` 和 `UserProfile` Prisma schema 及首个 additive migration，并在全新测试数据库运行 migration 后用 schema inspection 验证表、外键和唯一索引
-- [x] 2.2 实现 database module、Prisma lifecycle 和 transaction boundary，确保 Prisma 类型不越过 infrastructure，并通过 dependency-cruiser 与 repository integration smoke test 验证
-- [x] 2.3 实现 identity 并发 find-or-create 和 session/profile repositories，通过集成测试验证同一 `(issuer, subject)` 并发请求只产生一个账号、失败事务不残留半成品
+- [x] 2.1 Define `User`, `OAuthIdentity`, `AuthSession` and `UserProfile` Prisma schema and the first additive migration, and use schema inspection to verify tables, foreign keys and unique indexes after running migration on a new test database
+- [x] 2.2 Implement the database module, Prisma lifecycle and transaction boundary, ensure that the Prisma type does not cross the infrastructure, and verify it through dependency-cruiser and repository integration smoke test
+- [x] 2.3 Implement identity concurrent find-or-create and session/profile repositories, and verify through integration testing that the same `(issuer, subject)` concurrent request only generates one account, and no semi-finished products remain in failed transactions
 
-## 3. 资料与成年准入领域（计划 1 天）
+## 3. Information and Adult Access Areas (Planned for 1 day)
 
-- [x] 3.1 实现 profile 值对象和字段校验，包括头像、名称、性别 code、国籍或城市、interest codes、CEFR、出生年/月，并以表驱动单元测试覆盖必填、边界长度、重复兴趣和非法枚举
-- [x] 3.2 实现 `PROFILE_REQUIRED`、`AGE_RESTRICTED`、`ELIGIBLE` policy 和保守月份算法，通过冻结时钟测试验证跨年、闰年、18 岁当月及次月边界
-- [x] 3.3 实现 profiles application use cases 和本人资料 repository adapter，通过集成测试验证完整提交幂等、出生年月变更会重新计算状态且不会暴露他人资料
+- [x] 3.1 Implement profile value object and field verification, including avatar, name, gender code, nationality or city, interest codes, CEFR, birth year/month, and use table-driven unit testing to cover required fields, boundary length, repeated interests, and illegal enumerations
+- [x] 3.2 Implement the `PROFILE_REQUIRED`, `AGE_RESTRICTED`, `ELIGIBLE` policy and conservative month algorithm, and verify the boundaries of new years, leap years, the 18th month and the next month through the frozen clock test
+- [x] 3.3 Implement profiles application use cases and personal information repository adapter, and verify complete submission of idempotent through integration testing. Changes in birth date will recalculate the status and will not expose other people's information.
 
-## 4. OAuth 身份与平台会话（计划 2 天）
+## 4. OAuth Identity and Platform Sessions (Planned for 2 days)
 
-- [x] 4.1 定义 `OAuthProviderPort`、provider identity 和稳定 provider error mapping，并用 deterministic fake adapter 验证成功、取消、无效 code、超时和 provider unavailable 路径
-- [x] 4.2 实现首次/再次 OAuth 登录 use case，通过 application/integration tests 验证首次创建账号、后续返回同一账号、provider 建议资料不自动完成 profile
-- [x] 4.3 实现 access JWT 与 rotating opaque refresh token，使用事务更新 digest，并通过安全单元/集成测试验证签发、过期、撤销、并发刷新和 refresh token 重放后 session 失效
-- [x] 4.4 实现 Google adapter 的授权码交换与 issuer/subject 校验，通过 mock HTTP contract tests 验证请求参数、超时、错误映射和日志脱敏；有测试应用凭证时补真实 runtime evidence
-- [x] 4.5 实现微信 adapter 的授权码交换与稳定 identity 映射，通过 mock HTTP contract tests 验证请求参数、超时、错误映射和日志脱敏；有测试应用凭证时补真实 runtime evidence
+- [x] 4.1 Define `OAuthProviderPort`, provider identity and stable provider error mapping, and use deterministic fake adapter to verify success, cancellation, invalid code, timeout and provider unavailable path
+- [x] 4.2 Implement the first/second OAuth login use case, verify the first creation of an account through application/integration tests, subsequent returns to the same account, and provider recommended information will not automatically complete the profile
+- [x] 4.3 Implement access JWT and rotating opaque refresh token, use transactions to update digest, and verify issuance, expiration, revocation, concurrent refresh, and session invalidation after refresh token replay through security unit/integration tests
+- [x] 4.4 Implement Google adapter’s authorization code exchange and issuer/subject verification, verify request parameters, timeout, error mapping and log desensitization through mock HTTP contract tests; supplement real runtime evidence when test application credentials are available
+- [x] 4.5 Implement authorization code exchange and stable identity mapping of WeChat adapter, verify request parameters, timeout, error mapping and log desensitization through mock HTTP contract tests; supplement real runtime evidence when test application credentials are available
 
-## 5. HTTP API 与唯一 OpenAPI Contract（计划 1 天）
+## 5. HTTP API with the only OpenAPI Contract (planned for 1 day)
 
-- [x] 5.1 实现 `POST /v1/auth/oauth/{provider}/exchange`、`refresh`、`logout` controller/DTO/guard，并通过 HTTP e2e 验证 token lifecycle、未认证访问和稳定错误 code
-- [x] 5.2 实现 `GET /v1/me` 与 `PUT /v1/me/profile`，通过 HTTP e2e 对应验证 identity-and-profile 的首次登录、资料未完成、资料完成、未满 18 岁和已满 18 岁 scenarios
-- [x] 5.3 建立确定性 NestJS code-first OpenAPI 生成与 drift check，生成 `openapi/openapi.yaml`，并通过 OpenAPI validation 和二次生成零 diff 验证其为唯一发布 contract
+- [x] 5.1 implements `POST /v1/auth/oauth/{provider}/exchange`, `refresh`, `logout` controller/DTO/guard, and verifies token lifecycle, unauthenticated access and stable error code through HTTP e2e
+- [x] 5.2 Implement `GET /v1/me` and `PUT /v1/me/profile`, and authenticate identity-and-profile's first login, data incomplete, data completed, under 18 years old and over 18 years old scenarios through HTTP e2e correspondence
+- [x] 5.3 Establish deterministic NestJS code-first OpenAPI generation and drift check, generate `openapi/openapi.yaml`, and verify that it is the only released contract through OpenAPI validation and secondary generation of zero diff
 
-## 6. 综合验收与交付（计划 1 天）
+## 6. Comprehensive acceptance and delivery (planned for 1 day)
 
-- [x] 6.1 建立独立测试数据库初始化/清理流程，运行 clean migration、repository integration 和 HTTP e2e，验证测试可重复执行且不依赖真实凭证或个人数据
-- [x] 6.2 增加 provider-neutral 的 API verification 命令并执行 workspace format、lint、typecheck、build、unit/integration/e2e、dependency boundary 和 OpenAPI drift 全套检查，在 acceptance evidence 中逐项记录 PASS、FAIL 或 BLOCKED；若 hosted CI 已确定则接入同一命令
-- [x] 6.3 使用 Google 与微信测试应用分别验证成功、取消授权和无效 code；若凭证或平台审核未就绪，在 acceptance evidence 中明确 BLOCKED 原因且不阻止其余自动化证据完成
-- [ ] 6.4 对照 `openspec/specs/identity-and-profile/spec.md` 和本 change 的 design/risks 完成 product-owner review，确认 criteria、runtime、migration 与 contract evidence 后再决定 archive
+- [x] 6.1 Establish an independent test database initialization/cleaning process, run clean migration, repository integration and HTTP e2e to verify that the test is repeatable and does not rely on real credentials or personal data
+- [x] 6.2 Add provider-neutral API verification command and perform a full set of checks on workspace format, lint, typecheck, build, unit/integration/e2e, dependency boundary and OpenAPI drift. Record PASS, FAIL or BLOCKED item by item in acceptance evidence; if the hosted CI has been determined, access the same command
+- [x] 6.3 Use Google and WeChat test applications to verify success, cancellation of authorization and invalid code respectively; if the certificate or platform audit is not ready, clarify the BLOCKED reason in the acceptance evidence and do not prevent the completion of other automated evidence
+- [ ] 6.4 Compare the design/risks of `openspec/specs/identity-and-profile/spec.md` and this change to complete the product-owner review, confirm the criteria, runtime, migration and contract evidence before deciding to archive

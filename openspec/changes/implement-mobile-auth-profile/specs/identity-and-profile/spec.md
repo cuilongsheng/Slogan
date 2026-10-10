@@ -1,49 +1,49 @@
 ## MODIFIED Requirements
 
-### Requirement: 第三方账号登录
+### Requirement: Third-party account login
 
-系统 MUST 支持用户通过微信或 Google 账号登录；首次成功认证时创建平台账号，后续认证关联回同一第三方身份。浏览器 Google 登录成功后，系统 MUST 在同一浏览器会话内于页面刷新时恢复登录，并在退出时清除浏览器会话；刷新凭据 MUST 由后端通过 `HttpOnly` Cookie 管理，不得存入浏览器普通持久存储。
+The system MUST support users to log in through WeChat or Google accounts; create a platform account when successfully authenticating for the first time, and associate it back to the same third-party identity for subsequent authentications. After the browser Google login is successful, the system MUST resume login when the page is refreshed within the same browser session, and clear the browser session when exiting; the refresh credentials MUST be managed by the backend through the `HttpOnly` Cookie and MUST not be stored in the browser's ordinary persistent storage.
 
-#### Scenario: 首次第三方登录
+#### Scenario: First third-party login
 
-- **WHEN** 用户首次通过微信或 Google 完成认证
-- **THEN** 系统创建平台账号并引导用户完成首次资料初始化
+- **WHEN** User completes authentication through WeChat or Google for the first time
+- **THEN** The system creates a platform account and guides the user to complete the first data initialization
 
-#### Scenario: 已存在第三方身份再次登录
+#### Scenario: There is already a third-party identity to log in again
 
-- **WHEN** 已关联的第三方身份再次完成认证
-- **THEN** 系统登录对应的平台账号且不得创建重复账号
+- **WHEN** The associated third-party identity has been authenticated again.
+- **THEN** The system logs in to the corresponding platform account and no duplicate accounts are allowed to be created.
 
-#### Scenario: 浏览器刷新后恢复登录
+#### Scenario: Restore login after refreshing the browser
 
-- **WHEN** 浏览器 Google 登录成功后在同一浏览器会话内刷新页面
-- **THEN** 系统通过服务端受保护的刷新会话恢复身份并导航至该用户的当前资料状态
+- **WHEN** Browser Google refreshes the page within the same browser session after successful login
+- **THEN** The system restores identity and navigates to the user's current profile status via a server-side protected refresh session
 
-#### Scenario: 首次资料预填在浏览器刷新后保留
+#### Scenario: The first data pre-fill is retained after the browser is refreshed
 
-- **WHEN** 首次登录返回 Google 名称或头像建议，且用户在同一标签页刷新资料页
-- **THEN** 系统只对同一平台账号恢复非凭据的资料建议，不将另一账号的建议展示给当前用户
+- **WHEN** Google name or avatar suggestions are returned when logging in for the first time, and the user refreshes the profile page in the same tab
+- **THEN** The system only restores non-credential information suggestions for accounts on the same platform, and does not display suggestions from another account to the current user.
 
-#### Scenario: 浏览器退出
+#### Scenario: Browser exit
 
-- **WHEN** 已登录用户在浏览器预览中退出
-- **THEN** 系统撤销服务端会话并清除浏览器刷新 Cookie，刷新页面后仍保持退出
+- **WHEN** Logged-in user logged out in browser preview
+- **THEN** The system revokes the server session and clears the browser refresh cookie. The system remains logged out after refreshing the page.
 
-### Requirement: 首次资料初始化
+### Requirement: First data initialization
 
-系统 MUST 要求首次登录用户填写头像、名称、性别、国籍或城市、兴趣爱好、CEFR 英语等级区间和出生年月；资料未完成时不得浏览、创建或加入房间。新提交的资料 MUST 支持 A1–A2、B1–B2、C1–C2 三个等级区间；历史单级资料 MUST 保持可读。
+The system MUST require users who log in for the first time to fill in their avatar, name, gender, nationality or city, interests and hobbies, CEFR English level range and date of birth; they are not allowed to browse, create or join rooms without completing the information. Newly submitted data MUST support the three level ranges A1–A2, B1–B2, and C1–C2; historical single-level data MUST remain readable.
 
-#### Scenario: 资料未完成
+#### Scenario: Data not completed
 
-- **WHEN** 已登录用户尚未完成必填资料
-- **THEN** 系统只允许其继续完善资料，不允许进入房间业务
+- **WHEN** The logged in user has not completed the required information.
+- **THEN** The system only allows him to continue to complete the information and does not allow him to enter the room business.
 
-#### Scenario: 资料完成
+#### Scenario: Data completed
 
-- **WHEN** 用户提交的所有必填资料通过校验，且 CEFR 为受支持的等级区间
-- **THEN** 系统将其标记为资料已完成并允许继续执行符合资格的房间操作
+- **WHEN** All required information submitted by the user passes verification, and CEFR is a supported level range
+- **THEN** The system marks this as profile complete and allows qualifying room operations to proceed
 
-#### Scenario: 历史单级资料
+#### Scenario: Historical single-level data
 
-- **WHEN** 用户在本 change 之前保存了 A1、A2、B1、B2、C1 或 C2 单级资料
-- **THEN** 系统仍能读取其资料与资格状态，不得因引入区间值而丢失原值
+- **WHEN** The user saved A1, A2, B1, B2, C1 or C2 single-level data before this change
+- **THEN** The system can still read its information and qualification status, and the original value must not be lost due to the introduction of interval values.

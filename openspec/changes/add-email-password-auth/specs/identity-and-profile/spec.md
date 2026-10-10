@@ -1,83 +1,104 @@
 ## ADDED Requirements
 
-### Requirement: 邮箱验证的用户名密码注册
-系统 MUST 在注册界面要求用户填写唯一用户名、有效邮箱和密码；用户名由 3–20 位英文字母、数字或下划线组成，密码长度为 8–128 个字符；提交后进入邮箱待验证状态。
+### Requirement: Username and password registration for email verification
 
-#### Scenario: 提交可用的注册信息
-- **WHEN** 用户提交未被占用的用户名、未被占用的有效邮箱和符合安全策略的密码
-- **THEN** 系统展示“验证邮件已发送”状态、目标邮箱和重新发送入口
+The system MUST require a unique username, valid email address, and password on registration. Usernames contain 3–20 Latin letters, digits, or underscores; passwords contain 8–128 characters. Submission leads to the email-verification-pending state.
 
-#### Scenario: 完成邮箱验证
-- **WHEN** 用户使用仍然有效的邮箱验证信息完成验证
-- **THEN** 系统引导用户进入首次资料初始化
+#### Scenario: Submit available registration information
 
-#### Scenario: 用户名或邮箱已被使用
-- **WHEN** 用户使用已经注册的用户名或邮箱提交注册
-- **THEN** 系统在对应字段附近展示可恢复的占用错误
+- **WHEN** The user submits an unoccupied user name, an unoccupied valid email address and a password that complies with the security policy
+- **THEN** The system displays the "Verification email has been sent" status, target email address and resend entry
 
-#### Scenario: 未验证账号尝试继续
-- **WHEN** 未完成邮箱验证的账号尝试进入首次资料初始化之后的房间业务
-- **THEN** 系统拒绝访问并允许用户重新发送验证邮件
+#### Scenario: Email verification completed
 
-### Requirement: 用户名密码登录
-系统 MUST 允许已完成邮箱验证的账号使用用户名和密码登录，并且不得通过错误提示泄露用户名是否存在。
+- **WHEN** The user completed verification using email verification information that is still valid
+- **THEN** The system guides the user to enter the first data initialization
 
-#### Scenario: 使用正确凭据登录
-- **WHEN** 已验证账号提交正确的用户名和密码
-- **THEN** 系统建立登录会话，并根据资料完成状态进入首次资料初始化或房间业务
+#### Scenario: Username or email address has been used
 
-#### Scenario: 使用错误凭据登录
-- **WHEN** 用户提交不存在的用户名或错误密码
-- **THEN** 系统拒绝登录并展示不区分用户名或密码错误的统一提示
+- **WHEN** The user submits registration using the registered username or email address
+- **THEN** The system displays a recoverable occupancy error near the corresponding field.
 
-#### Scenario: 未验证邮箱的账号登录
-- **WHEN** 用户名和密码正确但邮箱尚未验证
-- **THEN** 系统不建立完整登录会话，并提供重新发送验证邮件的入口
+#### Scenario: Unverified account trying to continue
 
-### Requirement: 通过邮箱找回密码
-系统 MUST 提供通过注册邮箱找回密码的界面，并让用户能够从受理结果返回登录页。
+- **WHEN** An account that has not completed email verification attempts to enter the room service after the first data initialization.
+- **THEN** The system denies access and allows the user to resend the verification email
 
-#### Scenario: 请求重置密码
-- **WHEN** 用户提交一个邮箱地址请求找回密码
-- **THEN** 系统展示不暴露邮箱是否已注册的统一受理结果
+### Requirement: Login with username and password
 
-#### Scenario: 使用有效凭据重置密码
-- **WHEN** 用户使用仍然有效且未使用过的重置凭据提交符合安全策略的新密码
-- **THEN** 系统展示密码已更新结果并允许用户返回登录
+The system MUST allow accounts that have completed email verification to log in using usernames and passwords, and MUST not reveal whether the username exists through error prompts.
 
-#### Scenario: 使用无效或过期的重置凭据
-- **WHEN** 用户提交无效、已使用或已过期的密码重置凭据
-- **THEN** 系统展示链接无效或已过期状态，并允许用户重新发起找回密码
+#### Scenario: Log in with correct credentials
+
+- **WHEN** Verified account submitted correct username and password
+- **THEN** The system establishes a login session and enters the first data initialization or room service according to the data completion status.
+
+#### Scenario: Login using incorrect credentials
+
+- **WHEN** User submitted a non-existent username or wrong password
+- **THEN** The system refuses to log in and displays a unified prompt that does not distinguish between wrong user names or passwords.
+
+#### Scenario: Account login with unverified email address
+
+- **WHEN** The username and password are correct but the email address has not been verified yet
+- **THEN** The system does not establish a complete login session and provides an entrance to resend the verification email.
+
+### Requirement: Retrieve password via email
+
+The system MUST provide an interface for retrieving passwords through registered email addresses, and allow users to return to the login page from the acceptance results.
+
+#### Scenario: Request to reset password
+
+- **WHEN** The user submits an email address to request password retrieval.
+- **THEN** The system displays unified acceptance results that do not reveal whether the email address has been registered.
+
+#### Scenario: Reset password using valid credentials
+
+- **WHEN** User submitted a new security policy compliant password using reset credentials that are still valid and unused
+- **THEN** The system displays the result that the password has been updated and allows the user to return to login.
+
+#### Scenario: Invalid or expired reset credentials used
+
+- **WHEN** User submitted invalid, used, or expired password reset credentials
+- **THEN** The system displays that the link is invalid or expired, and allows the user to re-initiate password retrieval.
 
 ## MODIFIED Requirements
 
-### Requirement: 第三方账号登录
-系统 MUST 支持用户通过微信或 Google 账号登录；移动端微信登录使用供另一台设备扫描的二维码并处理等待、成功、过期和刷新状态，Google 登录使用账户选择界面并处理选择、取消和失败；首次成功认证时创建平台账号，后续认证关联回同一第三方身份。
+### Requirement: Third-party account login
 
-#### Scenario: 生成微信登录二维码
-- **WHEN** 用户在移动端选择微信登录
-- **THEN** 系统展示供另一台设备扫描的限时二维码、使用说明和当前等待状态
+The system MUST support users logging in through WeChat or Google accounts; WeChat login on the mobile side uses a QR code for scanning by another device and handles waiting, success, expiration, and refresh status; Google login uses the account selection interface and handles selection, cancellation, and failure; a platform account is created when the first successful authentication is performed, and subsequent authentications are linked back to the same third-party identity.
 
-#### Scenario: 微信二维码登录成功
-- **WHEN** 用户在二维码有效期内通过另一台设备完成确认
-- **THEN** 系统完成对应微信身份认证，并根据账号状态创建账号或登录已有账号
+#### Scenario: Generate WeChat login QR code
 
-#### Scenario: 微信二维码过期
-- **WHEN** 微信登录二维码超过有效期仍未完成确认
-- **THEN** 系统停止等待并允许用户刷新二维码或返回其他登录方式
+- **WHEN** The user chooses WeChat to log in on the mobile terminal
+- **THEN** The system displays the limited-time QR code for scanning by another device, instructions for use, and the current waiting status.
 
-#### Scenario: 选择 Google 账号
-- **WHEN** 用户选择 Google 登录并在账户选择界面确认一个账号
-- **THEN** 系统完成对应 Google 身份认证，并根据账号状态创建账号或登录已有账号
+#### Scenario: WeChat QR code login successful
 
-#### Scenario: 取消或无法完成 Google 登录
-- **WHEN** 用户取消账户选择或 Google 授权失败
-- **THEN** 系统返回登录页并展示可重试反馈，不创建登录会话
+- **WHEN** The user completed the confirmation through another device within the validity period of the QR code
+- **THEN** The system completes the corresponding WeChat identity authentication and creates an account or logs in to an existing account according to the account status
 
-#### Scenario: 首次第三方登录
-- **WHEN** 用户首次通过微信或 Google 完成认证
-- **THEN** 系统创建平台账号并引导用户完成首次资料初始化
+#### Scenario: WeChat QR code expired
 
-#### Scenario: 已存在第三方身份再次登录
-- **WHEN** 已关联的第三方身份再次完成认证
-- **THEN** 系统登录对应的平台账号且不得创建重复账号
+- **WHEN** The WeChat login QR code has expired and the confirmation has not been completed.
+- **THEN** The system stops waiting and allows the user to refresh the QR code or return to other login methods.
+
+#### Scenario: Select Google Account
+
+- **WHEN** The user selects Google login and confirms an account on the account selection screen
+- **THEN** The system completes the corresponding Google identity authentication and creates an account or logs in to an existing account according to the account status
+
+#### Scenario: Google sign-in canceled or unable to complete
+
+- **WHEN** User canceled account selection or Google authorization failed
+- **THEN** The system returns to the login page and displays the retry feedback without creating a login session.
+
+#### Scenario: First third-party login
+
+- **WHEN** User completes authentication through WeChat or Google for the first time
+- **THEN** The system creates a platform account and guides the user to complete the first data initialization
+
+#### Scenario: There is already a third-party identity to log in again
+
+- **WHEN** The associated third-party identity has been authenticated again.
+- **THEN** The system logs in to the corresponding platform account and no duplicate accounts are allowed to be created.

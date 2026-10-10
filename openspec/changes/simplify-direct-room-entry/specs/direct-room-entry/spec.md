@@ -1,54 +1,66 @@
 ## Purpose
 
-让已登录且具备加入资格的用户从房间列表一次操作进入普通语音房，取消固定的详情、规则勾选与设备检查链路；同时明确密码、语音处理授权、房间状态变化和系统麦克风权限等必要条件的恢复边界。
+Allow users who are logged in and qualified to join to enter the ordinary voice room from the room list in one operation, cancel the fixed details, rule check and device check links; at the same time, clarify the recovery boundaries of necessary conditions such as passwords, voice processing authorization, room status changes, and system microphone permissions.
 
 ## ADDED Requirements
 
-### Requirement: 点击普通房间直接加入
-系统 MUST 在用户点击无密码即时房间卡片后直接进入实际加入和连接流程，不再要求经过详情、独立规则确认或设备检查页面。系统 MUST 保留后端资格、状态和容量校验，避免重复点击造成重复导航。
+### Requirement: Click on the ordinary room to join directly
 
-#### Scenario: 一次点击加入
-- **WHEN** 合格用户点击可加入的无密码房间卡片
-- **THEN** 系统直接执行加入、获取实时凭证和连接，成功后展示语音房且麦克风默认关闭
+The system MUST enter the actual joining and connection process directly after the user clicks on the passwordless instant room card, no longer requiring details, independent rules confirmation, or equipment check pages. The system MUST retain backend qualification, status and capacity verification to avoid repeated navigation caused by repeated clicks.
 
-#### Scenario: 状态变化或网络失败
-- **WHEN** 点击后房间已满、结束或请求失败
-- **THEN** 系统展示对应结果和重试或返回列表操作，不显示加入成功或重新经过固定准备页面
+#### Scenario: One click to join
 
-### Requirement: 只保留必要的入房条件
-系统 MUST 为密码房在当前入房页弹出密码输入；输入后直接加入，不再经过规则和设备页面。缺少房间语音处理授权时 MUST 复用明确的授权操作，不得静默替用户接受。已有有效授权不应重复要求。系统 MUST 在入房连接时自动检查麦克风权限、可用输入与音频播放状态，不作为默认静音入房的固定前置页面；实际开麦仍须确认权限。
+- **WHEN** An eligible user clicks a joinable room card that requires no password.
+- **THEN** The system directly joins, obtains real-time credentials and connects. After success, the voice room is displayed and the microphone is turned off by default.
 
-#### Scenario: 密码入房
-- **WHEN** 用户为密码房输入四位数字并点击加入
-- **THEN** 系统直接请求加入并让后端验证密码，错误密码可修正后重试
+#### Scenario: Status change or network failure
 
-#### Scenario: 缺少处理授权
-- **WHEN** 后端拒绝加入并说明房间所需语音处理授权缺失
-- **THEN** 当前入房状态展示相应授权入口，授权成功后可直接重试加入，拒绝授权可返回列表
+- **WHEN** The room is full, ended or the request failed after clicking
+- **THEN** The system displays the relevant result with retry or return-to-list actions. It neither claims a successful join nor sends the user through fixed preparation pages again.
 
-#### Scenario: 首次开启麦克风
-- **WHEN** 已进入房间的用户第一次开启麦克风
-- **THEN** 系统处理平台权限，拒绝或设备不可用时保持静音并给出错误提示
+### Requirement: Only keep necessary entry conditions
 
-### Requirement: 所有即时房间入口采用同一路径
-系统 MUST 将即时房间详情深链、分享、邀请及遗留规则/设备/密码路径统一到直接入房会话，保留邀请标识，不呈现固定准备页面。系统 MUST 不因页面刷新或草稿缺失要求重新查看详情或确认规则。
+The system MUST pop up the password input on the current room entry page for the password room; join directly after input, without going through the rules and equipment page. If required room-speech processing consent is missing, the system MUST reuse the explicit consent flow and MUST not silently consent on the user’s behalf. Existing valid consent must not be requested again. The system MUST automatically check microphone permission, available input devices, and audio playback while connecting. These checks do not introduce a fixed prerequisite page for muted entry; enabling the microphone still requires permission confirmation.
 
-#### Scenario: 遗留深链与分享
-- **WHEN** 合格用户打开即时房间分享、邀请、详情或旧准备路径
-- **THEN** 系统直接尝试加入，无密码时没有额外确认，有密码时仅显示密码弹窗
+#### Scenario: Password to enter the room
 
-#### Scenario: 错误密码
-- **WHEN** 后端拒绝输入的密码
-- **THEN** 系统在同一弹窗显示错误并允许修改重试，不导航规则或设备页面
+- **WHEN** The user enters four digits for the password room and clicks to join
+- **THEN** The system directly requests to join and let the backend verify the password. The wrong password can be corrected and tried again.
 
-### Requirement: 直入房自动检查设备并提示问题
+#### Scenario: Missing processing authorization
 
-系统 MUST 自动检查麦克风与音频，不要求用户手动经过准备页。临时探测音频 MUST 不发布、不录制、不上传且结束/取消时释放；入房默认静音。拒绝权限、设备缺失或播放不可用 MUST 展示可恢复提示。
+- **WHEN** The backend refused to join and stated that the required voice processing authorization for the room was missing.
+- **THEN** The current check-in status displays the corresponding authorization entrance. After successful authorization, you can directly retry to join. If you refuse authorization, you can return to the list.
 
-#### Scenario: 检测到权限或音频问题
-- **WHEN** 用户直入房且设备检查发现权限拒绝、永久拒绝、无可用输入/输出或播放被阻止
-- **THEN** 房内展示对应问题及重试或打开设置操作，不宣称检查通过，不导航准备页
+#### Scenario: Turning on the microphone for the first time
 
-#### Scenario: 检查期间退房
-- **WHEN** 用户在异步权限或探测未完成时退房
-- **THEN** 旧结果不写入新会话，获得的临时轨道释放且不发布麦克风
+- **WHEN** The user who has entered the room turns on the microphone for the first time
+- **THEN** The system handles platform permissions, remains silent and gives an error message when denied or the device is unavailable.
+
+### Requirement: All instant room entrances use the same path
+
+The system MUST route instant-room detail deep links, shares, invitations, and legacy rules/device/password paths into the same direct-entry session, preserving the invitation identifier without displaying fixed preparation pages. The system MUST not require re-viewing details or confirming rules due to page refresh or missing drafts.
+
+#### Scenario: Legacy deep linking and sharing
+
+- **WHEN** Qualified user opens instant room sharing, invitation, details or old preparation path
+- **THEN** The system directly attempts to join. There is no additional confirmation when there is no password. Only the password pop-up window is displayed when there is a password.
+
+#### Scenario: Wrong password
+
+- **WHEN** The backend rejected the entered password
+- **THEN** The system displays an error in the same pop-up window and allows modification and retry, without navigating the rules or device page.
+
+### Requirement: Direct entry automatically checks devices and reports problems
+
+The system MUST automatically check the microphone and audio without requiring manual preparation pages. Temporary audio probes MUST never be published, recorded, or uploaded, and their resources MUST be released on completion or cancellation. Members enter rooms muted by default. Permission denied, device missing, or playback unavailable MUST display a recoverable prompt.
+
+#### Scenario: Permissions or audio issues detected
+
+- **WHEN** User enters the room directly and device check finds permission denied, permanently denied, no input/output available, or playback blocked
+- **THEN** Display corresponding problems and retry or open setting operations in the room, do not declare that the inspection has passed, and do not navigate to the preparation page
+
+#### Scenario: Leave during a device check
+
+- **WHEN** The user leaves while an asynchronous permission request or audio probe is still pending.
+- **THEN** Results from the previous session are not written into a new session; temporary tracks are released and microphone audio is never published.

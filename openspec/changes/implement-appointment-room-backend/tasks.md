@@ -1,28 +1,28 @@
-## 1. 数据与共享容量
+## 1. Data and shared capacity
 
-- [x] 1.1 核验前置六段迁移与 rooms/voice 公共入口，在验收记录列出实际基线和 Cloud 保留项。
-- [x] 1.2 添加预约类型、状态、首次房主标记及独立 RoomReservation 的 additive migration，通过空库和历史数据升级测试验证原即时房间与举报历史保留。
-- [x] 1.3 在 Room 行锁内统一 ACTIVE 与未用预约的席位预算，通过最后一席并发预约、普通 join、重进和邀请检查验证不抢位、不双计。
+- [x] 1.1 Verify the pre-six-segment migration with the rooms/voice public entry, and list the actual baseline and Cloud reservations in the acceptance record.
+- [x] 1.2 Add the additive migration of reservation type, status, first room host mark and independent RoomReservation, and verify the original real-time room and report history retention through empty database and historical data upgrade tests.
+- [x] 1.3 Unify the seat budgets of ACTIVE and unused reservations in the Room row lock, and verify that there is no seat grabbing or double counting through the last seat concurrent reservation, ordinary join, re-entry and invitation check.
 
-## 2. 预约业务与 API
+## 2. Reservation business and API
 
-- [x] 2.1 实现创建、分页发现和本人详情，创建者占一席但不创建 membership；以日期、资格、密码和隐私测试验证。
-- [x] 2.2 实现预约、版本化取消与再次预约，通过重放、迟到旧请求及事务回滚测试验证席位和版本一致。
-- [x] 2.3 实现开始前整房取消及预约失效，以权限、重复取消和开始边界竞争测试验证。
-- [x] 2.4 接入实际 join 的预约原子消耗与角色判定，通过失败保留预约、迟到旧房主为 MEMBER、预约不能获取 token 或举报测试验证。
-- [x] 2.5 提供设计中的六个预约 HTTP 入口和稳定错误，生成唯一 OpenAPI；以 HTTP 鉴权、字段校验和 contract 检查验证。
+- [x] 2.1 Implement creation, paging discovery and personal details. The creator takes a seat but does not create membership; verify by date, qualification, password and privacy test.
+- [x] 2.2 Implement reservation, versioned cancellation and re-appointment, and verify that the seat and version are consistent through replay, late old requests and transaction rollback testing.
+- [x] 2.3 Implement the entire room cancellation and reservation invalidation before the start, and test and verify with permission, repeated cancellation and start boundary competition.
+- [x] 2.4 Access the actual join reservation atomic consumption and role determination, retain the reservation through failure, be late, the old room host is MEMBER, the reservation cannot obtain token, or report test verification.
+- [x] 2.5 provides six reservation HTTP entries and stable errors in the design, generating a unique OpenAPI; verified with HTTP authentication, field verification and contract check.
 
-## 3. 时间与房主生命周期
+## 3. Time and room host life cycle
 
-- [x] 3.1 实现统一时间结算：先到期结束、再开放；以开始/结束前后 1 毫秒、停机跨过全时段和请求时恢复测试验证。
-- [x] 3.2 实现满 5 分钟房主首次缺席由最早在线成员接任，兼容旧房主无 membership；以首次未连媒体、已到场后断线、迟到事件及角色审计测试验证。
-- [x] 3.3 实现满 5 分钟当前空房结束，以及之后末人 leave/remove/断线即结束；以边界、曾上线后为空、房主按时到场后为空及不额外等待 60 秒测试验证。
-- [x] 3.4 结束时失效预约并复用 revoke/delete；仅无 provider/identity 历史时直接 ENDED，通过失败恢复和旧 token/事件不能复活测试验证。
-- [x] 3.5 复用现有队列与数据库恢复扫描，加入开始和 5 分钟检查；以丢任务、重启、重复任务、Redis 不可用及 REALTIME_ENABLED=false 场景验证业务时间不依赖 Cloud。
+- [x] 3.1 Achieve unified time settlement: first expire and end, then open; test and verify with 1 millisecond before and after the start/end, shutdown across the entire period and recovery on request.
+- [x] 3.2 Achieve full 5 minutes. If the room host is absent for the first time, the earliest online member will take over. It is compatible with the old room host without membership. It is verified by not connecting to the media for the first time, being disconnected after arriving, late events and role audit tests.
+- [x] 3.3 Achieve the end of the current vacancy after 5 minutes, and then end when the last person leaves/remove/disconnect; use the boundary, it will be empty after being online, the room host will be empty after arriving on time, and it will not wait for an additional 60 seconds for test verification.
+- [x] Expire the reservation at the end of 3.4 and reuse revoke/delete; only directly ENDED when there is no provider/identity history, and verify through failed recovery and old token/event cannot be revived test.
+- [x] 3.5 reuses existing queues and database recovery scans, adds start and 5-minute checks; verifies that business time does not depend on Cloud based on lost tasks, restarts, repeated tasks, Redis unavailability and REALTIME_ENABLED=false scenarios.
 
-## 4. 综合验证与交付
+## 4. Comprehensive verification and delivery
 
-- [x] 4.1 使用真实 PostgreSQL/Redis 与本地 fake provider 验证预约到实际会话闭环，回归即时房间、房主管理、举报和身份历史，并保存脱敏证据。
-- [x] 4.2 全部实现完成后运行一次 pnpm verify:api、pnpm format:check、pnpm deps:check，记录准确结果和数量；失败先定向修复，再执行最终验证。
-- [x] 4.3 对照 delta 场景完成验收记录及迁移/回退说明，通过 OpenSpec 严格校验；未执行的前端、设备、Cloud 与部署明确保留未完成。
-- [ ] 4.4 在隔离 LiveKit Cloud 验证实际连接、5 分钟接任、空房结束和计划结束清理；无配置按用户决定保留本项未完成，不用本地 fake provider 代替。
+- [x] 4.1 Use real PostgreSQL/Redis and local fake provider to verify reservation to actual session closed loop, return to real-time room, room host management, reporting and identity history, and save desensitization evidence.
+- [x] 4.2 After all implementations are completed, run pnpm verify:api, pnpm format:check, and pnpm deps:check to record the accurate results and quantities; if they fail, perform directed repair first, and then perform final verification.
+- [x] 4.3 Complete the acceptance record and migration/rollback instructions against the delta scenario, and pass strict OpenSpec verification; the unexecuted front-end, equipment, Cloud and deployment are clearly left unfinished.
+- [ ] 4.4 Verify actual connection, 5-minute takeover, end of vacancy, and scheduled end cleanup in isolated LiveKit Cloud; without configuration, this item is left unfinished at the user's discretion and does not need to be replaced by a local fake provider.

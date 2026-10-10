@@ -1,110 +1,110 @@
 ## Context
 
-动机及批准前的范围见 proposal。当前读到的源码基线为 develop `716cc0bd`，已有 APK 发布记录为独立未提交文档，不纳入本次提交范围。
+See proposal for motivation and scope before approval. The current source code baseline read is develop `716cc0bd`. The existing APK release record is an independent unsubmitted document and is not included in the scope of this submission.
 
-### 已确认原因与合同审计
+### Confirmed reasons and contract audit
 
-|反馈|当前证据|结论/处理|
-|后台历史与折叠|RoomsPage.tsx 默认不带状态过滤；details 控制卡片详情；直接显示 room.id/room.kind|当前合同支持单一 status，但缺少 OPEN+SCHEDULED 合并分页边界；需服务器查询扩展，不能分页后本地过滤|
-|我的没有退出|MeScreen.tsx 有五个入口，无 logout 调用；auth/context.tsx 已有真实 logout|合同可复用，接入真实退出并删去多余页面入口|
-|键盘遮挡|RoomPage SafeAreaView overflow hidden，固定底部 footer；创建页面只有 ScrollView|不能只加 keyboardShouldPersistTaps；需要页面尺寸调整、焦点滚动及底部操作避让|
-|等级是单级|Prisma CefrLevel 有三组组合枚举，但 rooms/domain/entities/room.ts 的 ROOM_CEFR_LEVELS 只有六个单级，DTO 与生成合同跟随该常量|PARTIAL；新增上下限字段及兼容映射，不能仅把 B1 字符串换成 B1–B2|
-|消息入口错误|VoiceRoomScreen composerInput 是 TouchableOpacity，打开 initialMode=text 的 ExpressionAssistSheet；LiveKit token canPublishData=false|MISSING 普通房间文字消息能力，需独立真实合同和传输|
-|录音繁琐|ExpressionAssistSheet loading-consent/start/recording/confirm/loading/result 等多阶段；usePrivateRecorder 30 秒自动停止；只传入 muteRoomMicrophone|已有 AI/STT 合同可复用；缺少按住自动提交和明确的解除静音编排|
-|退出像重新加入|VoiceRoomSession.exit 先 await mute/disconnect，再 await leave；失败写 phase=failed；SessionState 把 leaving 显示成 connecting|需独立退出状态，先关闭本地音频，禁止离房时重连或重新入房|
-|退出等待 LiveKit|HostControlsController.run await host.execute 后 await dispatchPending；失败对已提交结果抛 503|数据库已完成也被误报失败；将 leave 请求与 provider dispatch 解耦|
+|Feedback|Current Evidence|Conclusion/Processing|
+|Backend history and folding|RoomsPage.tsx does not have status filtering by default; details controls card details; directly displays room.id/room.kind|The current contract supports a single status, but lacks the OPEN+SCHEDULED merge paging boundary; server query expansion is required, and local filtering after paging is not possible|
+|Mine did not exit|MeScreen.tsx has five entries and no logout call; auth/context.tsx already has a real logout|The contract can be reused, access the real exit and delete redundant page entries|
+|Keyboard blocked|RoomPage SafeAreaView overflow hidden, fixed bottom footer; create page with only ScrollView|You cannot just add keyboardShouldPersistTaps; you need page size adjustment, focus scrolling and bottom operation avoidance|
+|The level is single level|Prisma CefrLevel has three sets of combined enumerations, but ROOM_CEFR_LEVELS in rooms/domain/entities/room.ts has only six single levels, and DTOs and build contracts follow this constant|PARTIAL; add upper and lower limit fields and compatible mapping, you cannot just replace the B1 string with B1–B2|
+|Message entry error|VoiceRoomScreen composerInput is TouchableOpacity, open ExpressionAssistSheet with initialMode=text; LiveKit token canPublishData=false|MISSING Ordinary room text message capability, requires independent real contract and transmission|
+|Recording is cumbersome|ExpressionAssistSheet loading-consent/start/recording/confirm/loading/result and other multiple stages; usePrivateRecorder automatically stops in 30 seconds; only muteRoomMicrophone is passed in|Existing AI/STT contract reusable; lacks press-and-hold auto-commit and explicit unmute choreography|
+|Exit is like rejoining|VoiceRoomSession.exit first awaits mute/disconnect, then awaits leave; fails to write phase=failed; SessionState displays leaving as connecting|You need to exit the state independently. Turn off the local audio first. Reconnecting or re-entering the room when leaving the room is prohibited.|
+|Quit waiting for LiveKit|HostControlsController.run await host.execute and then await dispatchPending; if it fails, 503 will be thrown on the submitted result.|The database has been completed and was falsely reported as failure; decouple the leave request from provider dispatch|
 
-### Figma 证据与确认清单
+### Figma Evidence and Confirmation Checklist
 
-全部读取/写入通过 Desktop Bridge 插件，文件 `56nIowZmvBhb0QJvOlDQdU / Slogan`，页 `102:2766 / 02 UI`。已检查原始文本和插件导出截图；未修改用户原始页面。
+All read/write via Desktop Bridge plug-in, file `56nIowZmvBhb0QJvOlDQdU / Slogan`, page `102:2766 / 02 UI`. The original text and plug-in export screenshots have been checked; the user's original page has not been modified.
 
-|用途|Frame|尺寸|状态/差异|
-|即时创建|111:979|390×844|新版主题卡片、等级范围、直接内容；上下限直接选择补充状态 153:1485 已建立，原稿保留|
-|预约创建|121:3613|390×844|日期时间及相同房间配置；原始完整 Frame 截图已归档|
-|语音房|115:1425|390×844|底部普通输入+发送，私人翻译入口独立，消息区滚动；不得实现示例发言文字为实时转写|
-|按住翻译|115:1627|390×844|按住开始说、松开生成英文，最长10秒|
-|英文结果|115:1720|390×844|仅主要英文结果，无语气及多选表达堆叠|
-|房主移交退出|111:906|390×844|只有房主需要接任选择器|
-|后台房间|114:1602|1440×900|旧设计仍有已结束卡片和折叠，与本次明确反馈冲突；补充状态 153:1524 完整卡片已建立，保留旧图|
-|我的|152:1467|390×844|用户明确授权本次补画；现有 Noto Sans SC、背景变量和三个 Button 实例，自动布局，无新增无关业务入口；最终截图检查通过|
+|Purpose|Frame|Dimensions|Status/Difference|
+|Instant creation|111:979|390×844|New version of theme card, level range, direct content; upper and lower limits directly select supplementary status 153:1485 has been created, the original manuscript is retained|
+|Appointment creation|121:3613|390×844|Date, time and same room configuration; original full Frame screenshot archived|
+|Voice room|115:1425|390×844|Normal input + send at the bottom, independent private translation entrance, scrolling message area; real-time transcription of sample speech text is not allowed|
+|Press and hold to translate|115:1627|390×844|Press and hold to start speaking, release to generate English, up to 10 seconds|
+|English results|115:1720|390×844|Only main English results, no tone and multi-select expression stacking|
+|Room host handover exit|111:906|390×844|Only room host needs to take over the selector|
+|Admin room|114:1602|1440×900|The old design still has ended cards and folds, which conflicts with this clear feedback; supplementary status 153:1524 The complete card has been created, and the old image is retained|
+|Mine|152:1467|390×844|The user explicitly authorized this repainting; existing Noto Sans SC, background variables and three Button instances, automatic layout, no new irrelevant business entrance; final screenshot inspection passed|
 
-个人页导航采用返回入口；若新手机导航结构改变，须按具体原始 Frame 调整。全部手机 UI 更新先列出具体 Frame/路由集合，避免把“都调整了”等同于猜测未读取的设计。后续出现缺少状态时只补目标状态，不重画用户已调整的页面。
+The personal page navigation uses the return entrance; if the navigation structure of the new mobile phone changes, it must be adjusted according to the specific original Frame. All mobile phone UI updates will first list the specific Frame/routing set to avoid equating "all adjustments" with guessing unread designs. When missing status occurs subsequently, only the target status will be filled, and the page adjusted by the user will not be redrawn.
 
 ## Goals / Non-Goals
 
-**Goals:** 完成用户实际可见行为并保持服务器成员、权限、会话事实；短语音只在私有链路处理；生产退出响应不依赖 LiveKit 可用性。
+**Goals:** completes the actual visible behavior of the user and maintains server membership, permissions, and session facts; short speech is only processed on the private link; the production exit response does not rely on LiveKit availability.
 
-**Non-Goals:** 改写个人 CEFR、强制按房间等级拒绝入房、自动播放英文、房间音频转写、删除业务历史、为每次操作增加用户确认、iOS。
+**Non-Goals:** Rewrite personal CEFR, force room entry refusal based on room level, automatically play English, room audio transcription, delete business history, add user confirmation for each operation, iOS.
 
 ## Decisions
 
-### 1. 采用现有 NestJS code-first 合同流程
+### 1. Adopt existing NestJS code-first contract process
 
-修改拥有接口的 DTO/controller/domain 后通过现有 openapi:generate 更新唯一 openapi/openapi.yaml，并生成 packages/api-client。维护第二份手写前端类型会造成再次错接接口，因此不采用。
+Update unique openapi/openapi.yaml via existing openapi:generate after modifying the DTO/controller/domain that owns the interface, and generate packages/api-client. Maintaining a second handwritten front-end type will cause the interface to be misconnected again, so it is not used.
 
-房间增加兼容的等级上下限字段；单级请求按 min=max 解释，既有组合 enum 可解码为范围。服务端验证 CEFR 顺序和矛盾的混合输入。个人资料 CefrLevel 不改。公开发现新增范围查询时按区间相交，旧精确单级筛选仍保持原语义；游标绑定实际筛选条件。持久化可采用两个新增可空字段及旧数据回填，不删除原 cefrLevel；兼容旧输出的代表值不作为新版范围展示来源。
+Add compatible upper and lower limit fields to the room; single-level requests are interpreted as min=max, and existing combined enums can be decoded into ranges. Server validates CEFR order and inconsistent mixed input. Personal data CefrLevel will not be changed. It is publicly discovered that the new range query intersects by interval, and the old precise single-level filtering still maintains the original semantics; the cursor is bound to the actual filtering conditions. Persistence can use two new nullable fields and old data backfill, without deleting the original cefrLevel; the representative value compatible with the old output will not be used as the display source of the new version range.
 
-后台 room 查询增加只取当前运营集合的显式查询边界，与 status/q/visibility/from 及游标绑定；客户端默认请求此集合，只提供全部当前、进行中、预约三个状态入口。预约信息不得通过拼接两页结果来伪造全局分页。类型翻译为即时/预约，UUID 可用于技术检索及审计，不出现在主卡片信息；没有真实可读编号合同就不虚构 R-2409。
+The background room query adds an explicit query boundary that only takes the current operation collection, and is bound to status/q/visibility/from and the cursor; the client requests this collection by default, and only provides all three status entries of current, in progress, and reservation. Reservation information must not be spliced ​​into two pages of results to forge global paging. The type is translated as instant/appointment, the UUID can be used for technical retrieval and audit, and does not appear in the main card information; there is no fictitious R-2409 without a real readable number contract.
 
-### 2. 普通消息采用服务端鉴权的房间消息接口
+### 2. Ordinary messages use the server-side authenticated room message interface
 
-拟增加发送 POST 与基于游标增量读取 GET /v1/rooms/{roomId}/messages，使用当前成员和账号资格检查、clientRequestId 幂等、服务器时间/序号、可见发送者昵称；客户端周期增量读取并在离房时取消。消息纯文本、不支持 HTML、限制长度和请求速率；默认长度上限1000 Unicode码点，与现有文字边界一致，属于实现默认值供审核。
+It is planned to add sending POST and cursor-based incremental reading GET /v1/rooms/{roomId}/messages, using the current member and account qualification check, clientRequestId idempotent, server time/serial number, and visible sender nickname; the client periodically reads incrementally and cancels it when leaving the room. The message is plain text, does not support HTML, limits the length and request rate; the default length limit is 1000 Unicode code points, consistent with the existing text boundaries, and is an implementation default value for review.
 
-复用 PostgreSQL 事实与现有 domain/repository 边界，新增最小 RoomTextMessage 模型和索引。只提供当前房间消息读取，房间关闭后拒绝读写；正文结束清理及兜底定期清理一并实现，不承诺聊天历史。具体短期保留配置在迁移/验收记录中明确，禁止正文进入日志。
+Reuse PostgreSQL facts with existing domain/repository boundaries, add minimal RoomTextMessage model and index. Only provides reading of current room messages, and refuses to read and write after the room is closed; cleanup at the end of the text and regular cleaning of the bottom line are implemented at the same time, and the chat history is not guaranteed. The specific short-term retention configuration is specified in the migration/acceptance record, and the text is prohibited from entering the log.
 
-不直接把 LiveKit canPublishData 改为 true：客户端直发难以在服务器验证消息权限/幂等/限流，旧 token 在撤销延迟期间也会发送。也不新增 Vercel 长连接 WebSocket 服务；现有 serverless API 下受控增量读取更容易可靠部署。消息延迟和请求成本通过仅活跃房间轮询、后台暂停及短增量响应控制。若审核要求长期历史或低延迟强实时传输，需要独立调整方案。
+Do not directly change LiveKit canPublishData to true: it is difficult for the client to directly verify the message permissions/idempotent/current limit on the server, and the old token will also be sent during the revocation delay. The Vercel long connection WebSocket service will not be added; controlled incremental reading under the existing serverless API is easier to deploy reliably. Message latency and request cost are controlled with active room-only polling, background pauses, and short incremental responses. If the audit requires long-term history or low-latency strong real-time transmission, the plan needs to be adjusted independently.
 
-### 3. 按住录音是一次私有事务
+### 3. Press and hold to record is a private transaction
 
-入口仅进入已有 Figma 录音弹层；有效权限和用途同意后 onPressIn：确认房间静音→开始私人录音。onPressOut：停止录音→恢复可用房间麦克风→自动上传并显示生成中/主要英文结果。复用 consent/audio API，不修改主要英文结果合同；首次有效同意仍处理，当前用途提示保持可见，当次用户主动按住手势形成 noticeConfirmed，不再录后重复确认。
+The entrance only enters the existing Figma recording layer; after valid permissions and usage are agreed, onPressIn: Confirm that the room is muted → start private recording. onPressOut: Stop recording→Restore available room microphone→Automatically upload and display generated Chinese/mainly English results. Reuse the consent/audio API without modifying the main English result contract; the first valid consent is still processed, the current usage prompt remains visible, the user actively presses the gesture to form noticeConfirmed, and the confirmation is repeated after no longer recording.
 
-用录音代次及请求 UUID 防止快速按下/松开、异步 start 尚未结束、自动10秒截止和松开同时发生而重复上传。以 recorder.stop 返回的 clip 为提交事实，不等待 React clip state 更新。取消/离房/切后台处理资源释放；释放成功前不能重新发布房间麦克风。翻译等待不延长房间静音。恢复失败给出简洁反馈，不虚报已开麦；账号或房间权限失效不恢复。真实 Android 验证 Expo recorder 与 LiveKit AudioSession 的设备音频竞争，不能用单元测试代替。
+Use the recording generation and request UUID to prevent repeated uploading due to rapid press/release, asynchronous start that has not yet ended, automatic 10-second cutoff and release at the same time. Use the clip returned by recorder.stop as the submission fact and do not wait for the React clip state to be updated. Release processing resources on cancellation, room departure, or transition to the background. Room microphone audio must not be republished until release succeeds. Translation wait does not extend room silence. Provide concise feedback when recovery fails, and do not falsely report that the microphone is open; account or room permissions will not be restored if they fail. Real Android verification Expo recorder competes with LiveKit AudioSession's device audio and cannot be replaced by unit tests.
 
-### 4. 退出先完成业务，provider 在后台收敛
+### 4. Complete the business before exiting, and the provider will converge in the background.
 
-保留 HostControlsService 的事务、成员代次、并发锁、权限移交、endLocked 与 REVOKE_IDENTITY/DELETE_ROOM 持久命令。leave controller 在事务提交后返回业务结果及 PENDING 清理状态，不内联 dispatchPending，也不因 provider 不可用返回503。其他 remove/end/invite 行为不顺带改动。
+Preserve HostControlsService's transactions, member generations, concurrency locks, permission transfers, endLocked and REVOKE_IDENTITY/DELETE_ROOM persistent commands. The leave controller returns the business results and PENDING cleanup status after the transaction is submitted, does not inline dispatchPending, and does not return 503 because the provider is unavailable. Other remove/end/invite behaviors are not changed incidentally.
 
-普通成员无弹层直接退出；房主存在其他在线成员必须选择，房主独自一人不选择。服务端拒绝非法/已失效接任者，失败只留在简洁移交界面，不把成员送回加入流程。独立 leaving/leave-unconfirmed 状态处理网络失败；本地媒体立即静音、停止监听并断开，不等待 provider。不是在本地无依据伪造数据库退出；业务接口响应丢失以原 expectedCredentialVersion 幂等重试/确认。
+Ordinary members can exit directly without elasticity; room host must be selected if there are other online members, but room host cannot be selected alone. The server rejects illegal/expired successors. Failure only leaves the simple handover interface and does not send members back to the joining process. Independent leaving/leave-unconfirmed status processing network failure; local media is immediately muted, stops listening and disconnected, without waiting for the provider. It is not a local unfounded forgery database exit; the business interface response is lost and retry/confirm with the original expectedCredentialVersion idempotent.
 
-网络不可用时本地音频可停止，但必须区分服务端退出未确认。恢复职责由后端承担，UI 不显示“重新加入”；下一次加入不能沿用待退出凭证。不得将 async void 或 Vercel 响应后的进程继续存活视为持久任务交付。已有 runner 的实际运行平台与恢复触发必须验证；若未部署可靠 worker/scheduler，发布 C 前补齐目标环境的可靠触发、命令扫描与重试证据。
+Local audio can be stopped when the network is unavailable, but it must be distinguished that the server exits without confirmation. The recovery responsibility is borne by the backend, and the UI does not display "Rejoin"; the pending exit credentials cannot be used for the next join. Process survival after an async void or Vercel response must not be considered a durable task delivery. The actual running platform and recovery trigger of the existing runner must be verified; if a reliable worker/scheduler is not deployed, complete reliable triggering, command scanning and retry evidence of the target environment before releasing C.
 
-### 4.1 Vercel 托管队列适配
+### 4.1 Vercel managed queue adaptation
 
-按用户对 Vercel worker 的追问，现有 Vercel API 采用 Queues 独立私有消费者承接短任务；公开 Nest API 和消费函数分开构建。数据库仍拥有持久命令和恢复事实，不能只依赖响应后的进程存活。托管模式不启动进程内 Worker/定时器，消费者扫描后发布下一次扫描；异常由队列重试。其他环境保留 BullMQ 方案。
+According to users’ questions about Vercel workers, the existing Vercel API uses Queues independent private consumers to undertake short tasks; the public Nest API and consumption functions are built separately. The database still has persistent command and recovery facts and cannot rely solely on post-response process survival. Hosted mode does not start the in-process Worker/timer, and the next scan is issued after the consumer scans; exceptions are retried by the queue. Other environments retain the BullMQ solution.
 
-播种在公开 API 的请求上下文内执行，由平台 `waitUntil` 追踪队列发布，HTTP 不等待供应商清理。并发请求共用在途播种，成功后冷却五分钟；失败不缓存，下一请求重试，后续请求可重新启动中断的扫描链。启动阶段不发送恢复消息，避免依赖尚不存在的请求 OIDC 上下文。私有消费者和 PostgreSQL 持久事实保持不变。
+Seeding is performed within the request context of the public API, published by the platform `waitUntil` tracking queue, HTTP does not wait for provider cleanup. Concurrent requests share in-transit seeding, and will cool down for five minutes after success; failure will not be cached, and the next request will be retried. Subsequent requests can restart the interrupted scan chain. Do not send recovery messages during startup to avoid relying on a request OIDC context that does not yet exist. Private consumers and PostgreSQL persistent facts remain unchanged.
 
-beta、保留期、初次播种/扫描断链、重复投递、发布顺序及回滚边界见 `docs/deployment/room-experience-vercel-queues.md`。本地构建与失败测试已完成，云端调度证据仍是发布门槛；不要求用户另购常驻服务器，也不声称持续媒体订阅 worker 能直接迁入短任务队列。
+See `docs/deployment/room-experience-vercel-queues.md` for beta, retention period, initial seeding/scanning broken link, repeated delivery, release sequence and rollback boundary. Local build and failure testing have been completed, cloud scheduling evidence is still the release threshold; users are not required to purchase additional resident servers, and it is not claimed that persistent media subscription workers can be directly moved into short task queues.
 
-### 5. 精简入口与键盘行为
+### 5. Streamline entry and keyboard behavior
 
-MeScreen 接现有 useAuth().logout；保持撤销失败的诚实结果但本地会话清理完整。移除个人页多余入口，不删除其他功能合同或后端。键盘避让在共有页面壳处理布局尺寸，表单焦点滚动在各屏处理，语音房消息输入单独避免底部 composer 遮挡；检查 Android adjustResize 与 SafeArea/固定 footer 的叠加，不全局盲加 padding。
+MeScreen interfaces with existing useAuth().logout; keeps honest results of undo failures but keeps local session cleanup intact. Remove redundant entries from the personal page without deleting other functional contracts or backends. Keyboard avoidance is handled in the shared page shell to handle the layout size, form focus scrolling is handled in each screen, and voice room message input is separately prevented from being blocked by the composer at the bottom; check the superposition of Android adjustResize and SafeArea/fixed footer, and do not add global blind padding.
 
 ## Risks / Trade-offs
 
-- [新消息缺少现有合同] → 必须先实现服务端权限、幂等、生成合同，再接消息 UI；不放假消息证明成功。
-- [等级旧客户端/迁移漂移] → 增量迁移、回填、旧请求合同测试，禁止直接替换用户等级枚举。
-- [房主无接任者字段的旧 APK] → 新行为属于兼容性变化；同步发布新版手机端并给稳定错误，记录版本门槛。
-- [异步撤销期间旧 LiveKit 音频凭证] → 业务成员立即失效，短期凭证与既有身份撤销保持；故障恢复验证 provider 最终踢出，不能承诺零延迟撤销。
-- [按住录音泄露或卡死静音] → start/stop 顺序与取消竞态测试、双设备听音及真机音频恢复；录音私有且不持久化。
-- [精简 UI 隐藏必要用途控制] → 首次同意保留最小提示，已有撤回渠道维持实际可访问但不重新塞回“我的”的三项列表；由已有关联功能/账号控制入口承担，发布前验证路径。
-- [无限滚动消息或轮询资源泄露] → 有界分页/内存窗口、取消订阅、退房与后台停止轮询、速率限制。
+- [New message lacks existing contract] → Server permissions, idempotent, and contract generation must be implemented first, and then the message UI is connected; success is proven by not releasing fake messages.
+- [Level old client/migration drift] → Incremental migration, backfill, old request contract testing, direct replacement of user level enumeration is prohibited.
+- [room host old APK without successor field] → The new behavior is a compatibility change; the new version of the mobile phone version is released simultaneously and stable errors are given, and the version threshold is recorded.
+- [Old LiveKit audio credentials during asynchronous revocation] → Business members immediately expire, short-term credentials are maintained with existing identity revocation; the failure recovery verification provider is eventually kicked out, and zero-delay revocation cannot be promised.
+- [Press and hold to leak the recording or get stuck in mute] → start/stop sequence and cancel race test, dual-device listening and physical device audio recovery; the recording is private and not persistent.
+- [Simplified UI Hide Necessary Use Control] → The first time you agree to keep the minimum prompt, there is a withdrawal channel to maintain the three lists that are actually accessible but do not reinsert "My"; it is the responsibility of the existing associated function/account control entrance, and the path is verified before publishing.
+- [Infinite scroll message or polling resource leak] → Bounded paging/memory windows, unsubscribe, checkout and background stop polling, rate limiting.
 
 ## Migration Plan
 
-1. 审核本次 proposal/specs/design/tasks 与新增“我的”设计；补齐明确的视觉差异节点清单后逐批 apply。
-2. A：先本地迁移与兼容合同，再后台及手机基础页面；相关测试/截图通过。C 可以在 A 后先于 B 交付。
-3. B：消息模型/接口/清理→客户端真实双成员消息；按住翻译使用已有 provider 配置，真实 STT/AI 可用性单独确认，不擅自改密钥/供应商。
-4. C：验证持续后台命令处理和失效旧凭证，再发布快速退出。先在隔离环境注入 LiveKit 超时并确认 API 成功、数据库失效、最终清理。
-5. 完成全受影响范围 lint/typecheck/test/build、OpenAPI check、Playwright 管理流程、Android 真机键盘/消息/按住录音/退出对照。重新生成独立 APK 并记录 SHA、签名、API、版本和明确未验收项；本次不发布 iOS。
-6. 回滚保留新增数据列；消息能力停用回滚前端入口；不得回退已提交成员 LEFT/房间关闭或删除未清理命令。等待命令排空后才回滚处理器，避免丢失撤销/删除任务。
+1. Review this proposal/specs/design/tasks and the new "my" design; complete a clear list of visual difference nodes and apply batch by batch.
+2. A: First migrate the local migration and compatible contracts, and then the background and mobile basic pages; the relevant tests/screenshots passed. C can be delivered after A before B.
+3. B: Message model/interface/cleanup → client-side real dual-member message; press and hold to translate to use the existing provider configuration, real STT/AI availability is confirmed separately, and the key/provider is not changed without authorization.
+4. C: Verify continued background command processing and expire old credentials before issuing a quick exit. First inject LiveKit timeout in the isolation environment and confirm the API success, database failure, and final cleanup.
+5. Completed the full affected scope lint/typecheck/test/build, OpenAPI check, Playwright management process, Android physical device keyboard/message/press and hold recording/exit control. Regenerate standalone APK and record SHA, signature, API, version and clear unaccepted items; not released to iOS this time.
+6. Rollback retains newly added data columns; message capability disables the rollback front-end entry; submitted member LEFT/room closing or deletion uncleaned commands must not be rolled back. Wait for commands to drain before rolling back the processor to avoid losing undo/delete tasks.
 
-## 2026-10-09 用户验收补充（批准实施，发布暂停）
+## 2026-10-09 User acceptance supplement (approved for implementation, release suspended)
 
-用户明确将手机创建页调整为 A1～A2、B1～B2、C1～C2 三个直接可见选项，取消可发现性和房间音频处理控件。新建手机房间沿用 PUBLIC 默认值，两个房间音频处理标志固定 false；后端合法任意范围、旧客户端和既有房间用途授权不删除。此用户补充覆盖旧上下限选择 Frame 的选择交互，其余主题/容量/密码/预约视觉仍遵循 Bridge 原稿 111:979、121:3613。
+The user explicitly adjusts the mobile phone creation page to three directly visible options, A1~~A2, B1~~B2, and C1~C2, and cancels discoverability and room audio processing controls. The default value of PUBLIC will be used for new mobile rooms, and the audio processing flags of the two rooms are fixed to false; the backend legal arbitrary range, old clients and existing room usage authorizations will not be deleted. This user supplement covers the selection interaction of the old upper and lower limit selection Frame, and the remaining themes/capacities/passwords/reservation visuals still follow the Bridge originals 111:979, 121:3613.
 
-主题标题容器取消 20px 固定高度，显式行高及最小高度容纳 Android 中文字体。管理端所有业务页删除共享 page-content 的 1440px 宽度上限，保留侧栏、内边距、表格横向滚动以及弹窗本身的宽度边界。
+The theme title container cancels the 20px fixed height, explicit line height and minimum height to accommodate Android Chinese fonts. Remove the 1440px width limit of shared page-content from all business pages on the admin app, and retain the width boundaries of sidebars, padding, horizontal scrolling of tables, and the pop-up window itself.
 
-房内消息由恒定两秒轮询改为有新消息两秒、连续空页逐步退避至十秒；本地发送立即显示并恢复快速同步。后台停止请求，返回前台立即增量补齐，离房取消；不更改服务端成员鉴权或 canPublishData。房间详情/成员十五秒兜底保留，前后台生命周期绑定，并合并在途刷新。LiveKit regions 是 SDK 根据服务端缓存期限刷新区域配置，不属于业务接口循环，不通过禁用 SDK 恢复来隐藏请求。
+The constant two-second polling for in-room messages is changed to two seconds for new messages, and the continuous empty page gradually backs off to ten seconds; local transmission is displayed immediately and fast synchronization is resumed. Stop the request in the background, return to the front desk to complete the incremental request immediately, and cancel the departure; do not change the server member authentication or canPublishData. Room details/members are retained for fifteen seconds, the front and backend life cycles are bound, and merged and refreshed on the way. LiveKit regions are SDK refresh region configurations based on the server-side cache period. They do not belong to the business interface cycle and do not hide requests by disabling SDK recovery.
 
-本批只有客户端变化，无数据库迁移；回滚对应 UI/轮询/设备 adapter 即可。用户要求先排队处理任务，本批不推送、不新建 PR、不合并、不部署或发布 APK。设备与完整端到端 provider 验收仍由真机执行。
+This batch only has client changes, no database migration; just roll back the corresponding UI/polling/device adapter. The user requested to queue up the task first. This batch will not be pushed, create a new PR, merge, deploy or publish the APK. Device and full end-to-end provider acceptance is still performed by the physical device.

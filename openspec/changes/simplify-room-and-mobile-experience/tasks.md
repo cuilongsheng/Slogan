@@ -1,52 +1,52 @@
-## 1. 设计与实施边界
+## 1. Design and implementation boundaries
 
-- [x] 1.1 审核本次七项能力 delta、范围兼容与房主选择的兼容性变化；验收：记录批准范围及不会自动删除历史的边界。
-- [x] 1.2 逐页确认最新手机 Frame/路由，补齐后台展开卡片及等级上下限选择状态，复用新增我的 152:1467；验收：原始 Frame 截图及节点清单完整，差异可审查。
+- [x] 1.1 Review the compatibility changes of the seven capabilities delta, scope compatibility and room host selection; acceptance: record the approved scope and the boundaries that will not automatically delete the history.
+- [x] 1.2 Confirm the latest mobile Frame/routing page by page, complete the background expansion card and level upper and lower limit selection status, reuse and add my 152:1467; Acceptance: The original Frame screenshot and node list are complete, and the differences can be reviewed.
 
-## 2. A批：基础页面与等级范围
+## 2. Batch A: Basic page and level range
 
-- [x] 2.1 扩展后台当前房间查询集合和游标绑定；验收：混合 OPEN/SCHEDULED/ENDED/CANCELLED 数据的筛选、总数、分页与权限测试通过。
-- [x] 2.2 增加房间等级上下限的兼容字段、校验及增量迁移，覆盖即时/预约/分享/查询；验收：单级旧请求有效、B1–B2 往返一致、倒置范围拒绝、本地回填与旧数据读取测试通过。
-- [x] 2.3 从 code-first DTO 生成唯一 OpenAPI 和客户端；验收：openapi:check 及新旧请求合同测试通过。
-- [ ] 2.4 后台只展示当前房间、完整直接卡片和中文类型，移除 UUID 主展示；验收：Playwright 结束房间后消失、卡片无需展开及 Figma 对照截图。
-- [ ] 2.5 我的页面改为三个入口并连接真实 logout；验收：两个入口可达、凭证清理、服务端撤销及失败反馈测试，152:1467 视觉对照。行为测试与 web 对照已有，源字体与字重已复核，Android 对照未完成。
-- [x] 2.6 即时与预约创建使用直接可见的等级上下限，更新房间列表/详情/分享展示；验收：真实创建 B1–B2 房间，各界面一致且个人等级不变。
-- [ ] 2.7 修正页面壳和表单/底部操作的键盘避让；验收：Android 登录、资料、创建主题/密码/时间、房间消息及笔记等输入焦点逐项设备录像，不遮挡输入及操作。
+- [x] 2.1 Expand the background current room query set and cursor binding; Acceptance: The filtering, total number, paging and permission test of mixed OPEN/SCHEDULED/ENDED/CANCELLED data passed.
+- [x] 2.2 adds compatible fields, verification and incremental migration for the upper and lower limits of room levels, covering instant/reservation/sharing/query; acceptance: single-level old requests are valid, B1–B2 round-trips are consistent, inversion range rejection, local backfill and old data reading tests pass.
+- [x] 2.3 Generate unique OpenAPI and client from code-first DTO; acceptance: openapi:check and old and new request contract tests passed.
+- [ ] 2.4 The background only displays the current room, complete direct cards and Chinese types, and removes the UUID main display; acceptance: Playwright disappears after finishing the room, the card does not need to be expanded, and Figma comparison screenshots.
+- [ ] 2.5 My page is changed to three entrances and connected to the real logout; acceptance: two entrances are reachable, certificate cleaning, server revocation and failure feedback test, 152:1467 visual comparison. The behavioral test and web comparison have been completed, the source font and font weight have been reviewed, and the Android comparison has not been completed.
+- [x] 2.6 Use directly visible upper and lower level limits for instant and reservation creation, update room list/details/share display; Acceptance: Really create B1–B2 rooms, all interfaces are consistent and personal level remains unchanged.
+- [ ] 2.7 Corrected the keyboard avoidance of page shell and form/bottom operations; Acceptance: Android login, information, created theme/password/time, room messages and notes and other input focus item-by-device recording without blocking input and operations.
 
-## 3. B批：真实房间文字消息
+## 3. Batch B: real room text messages
 
-- [x] 3.1 增加 RoomTextMessage 模型、索引及迁移；验收：本地迁移成功、请求幂等及游标顺序 repository 测试通过。
-- [x] 3.2 增加房间消息发送和增量读取 use case，服务器成员授权、限流、纯文本边界及结束清理；验收：非成员/已离开/已移除被拒绝，重复请求不重复，房间关闭后不可读写及正文清理测试通过。
-- [x] 3.3 生成消息 OpenAPI/客户端并确认唯一合同一致；验收：schema 校验、生成检查和 HTTP 合同测试通过。
-- [ ] 3.4 房间 composer 改为真实 TextInput/发送按钮，与 AI 请求分离；实现消息滚动、增量读取及离房/后台取消；验收：双成员真实发送接收、失败重试不重复、退出后无轮询、115:1425 截图对照。
+- [x] 3.1 Added RoomTextMessage model, index and migration; acceptance: local migration successful, request idempotent and cursor order repository test passed.
+- [x] 3.2 Added room message sending and incremental reading use case, server member authorization, current limit, plain text boundary and end cleaning; acceptance: non-member/left/removed are rejected, repeated requests are not repeated, the room cannot be read and written after closing, and the body cleaning test is passed.
+- [x] 3.3 Generate message OpenAPI/client and confirm that the unique contract is consistent; acceptance: schema verification, generation check and HTTP contract test pass.
+- [ ] 3.4 room composer changed to real TextInput/send button, separated from AI request; realized message scrolling, incremental reading and departure/background cancellation; acceptance: real sending and receiving of two members, non-repetition of failed retries, no polling after exit, 115:1425 screenshot comparison.
 
-## 4. B批：按住母语翻译
+## 4. Batch B: Press and hold native language translation
 
-- [ ] 4.1 按当前用途提示与明确按住手势实现当次确认，保留首次权限/有效同意及可访问撤回路径；验收：无同意拒绝、有效手势成功、撤回/版本更新阻止处理，首次提示与后续短流程截图。
-- [x] 4.2 改录音编排为按住启动、松开/10秒自动停止并提交；以 stop 返回 clip 实现录音代次和幂等；验收：快速松开、双 stop、10秒截止、取消不上传、同段重试沿用 UUID 测试通过。
-- [ ] 4.3 实现录音期间确认静音、停止后开麦及主英文结果，移除常规流程中的录后上传确认/文字模式/语气/多个候选；验收：115:1627/115:1720 视觉对照，真实 STT/AI 返回主要英文。
-- [ ] 4.4 验证录音与 LiveKit 的设备音频协调；验收：两台 Android 中旁听者听不到私人录音，松开后能继续交流，录音失败/翻译失败/切后台/离房无残留采集。
+- [ ] 4.1 Prompt and clearly press and hold the gesture according to the current purpose to achieve immediate confirmation, retain the first permission/valid consent and accessible withdrawal path; acceptance: no consent rejection, valid gesture success, withdrawal/version update blocking processing, first prompt and subsequent short process screenshots.
+- [x] 4.2 changed the recording arrangement to press and hold to start, release/automatically stop in 10 seconds and submit; use stop to return to clip to realize recording generation and idempotent; acceptance: quick release, double stop, 10 seconds cutoff, cancel without uploading, retry in the same segment and use UUID test passed.
+- [ ] 4.3 implements the confirmation of mute during recording, turning on the microphone after stopping and the main English results, and removes the post-recording upload confirmation/text mode/tone/multiple candidates in the regular process; acceptance: 115:1627/115:1720 visual comparison, real STT/AI returns the main English.
+- [ ] 4.4 Verify that the recording is coordinated with the device audio of LiveKit; Acceptance: On the two Android devices, observers cannot hear the private recording, and can continue to communicate after releasing it. Recording fails/translation fails/cuts to the background/leaves the room without residual collection.
 
-## 5. C批：快速退出与后台收敛（可先于B批）
+## 5. Batch C: quick exit and background convergence (can precede Batch B)
 
-- [x] 5.1 leave controller 在事务提交后返回业务成功/PENDING，移除其同步 LiveKit dispatch 和已提交结果503；验收：注入 provider 超时/失败时 leave 成功且不调用请求内 provider I/O，持久命令存在。
-- [x] 5.2 服务端实现明确接任选择及最后一人业务关闭，保留代次幂等/并发锁/旧凭证拒绝；验收：接任失效、并发两人退出、房主无选择拒绝、最后一人退出和响应丢失重试测试通过。
-- [ ] 5.3 验证并补齐目标环境持续命令扫描、重试和恢复触发；验收：请求响应结束后仍能执行撤销/删除，重启及 provider 恢复后命令收敛，实际调度记录可审查。
-- [x] 5.4 客户端普通成员直接退、房主仅接任选择、独自房主直接退；分离退出和重连 UI并处理网络未确认；验收：各角色退出返回发现、无重新加入界面，重复点击/响应丢失不影响新成员代次。
-- [ ] 5.5 验证本地媒体停止和服务器清理分别完成；验收：Android 点击退出后立即停止音频，最后一人即使 provider 停机也得到业务成功，恢复后无幽灵房间和失效身份。
+- [x] 5.1 leave controller returns business success/PENDING after transaction submission, removes its synchronized LiveKit dispatch and submitted result 503; acceptance: when the injection provider times out/fails, leave succeeds and does not call provider I/O within the request, and the persistent command exists.
+- [x] 5.2 The server implements clear takeover selection and the last person's business closure, retaining the generation idempotent/concurrency lock/old certificate rejection; acceptance: takeover failure, two concurrent exits, room host no selection rejection, last person exit and response loss retry test passed.
+- [ ] 5.3 Verify and complete the target environment's continuous command scanning, retry and recovery triggering; acceptance: undo/deletion can still be performed after the request response is completed, the command converges after restart and provider recovery, and the actual scheduling record can be reviewed.
+- [x] 5.4 Ordinary members of the client log out directly, room host only takes over the selection, and room host alone logs out directly; separate logout and reconnection UI and handle unconfirmed network; acceptance: each role exits and returns to discovery, no rejoining interface, repeated clicks/loss of responses will not affect the generation of new members.
+- [ ] 5.5 Verify that local media stop and server cleanup are completed respectively; acceptance: Android stops audio immediately after clicking to exit, the last person gets business success even if the provider is down, and there are no ghost rooms and invalid identities after recovery.
 
-## 6. 完整验收与Android交付
+## 6. Complete acceptance and Android delivery
 
-- [ ] 6.1 最终运行全受影响范围 lint/typecheck/tests/build/OpenAPI check、Playwright 与 Android 设备验证；验收：记录真实通过结果、原始Figma对照及未执行项，不用Web证据替代麦克风真机证据。
-- [ ] 6.2 经批准后同步/归档需求，重新打包 Android 并更新发布记录；验收：APK 签名、内置 API、版本、SHA、安装与关键流程检查齐全，Git/部署边界和回滚路径明确，iOS 未触及。
+- [ ] 6.1 finally runs the full affected scope of lint/typecheck/tests/build/OpenAPI check, Playwright and Android device verification; acceptance: record the actual passing results, original Figma comparison and unexecuted items, and do not use Web evidence to replace the microphone physical device evidence.
+- [ ] 6.2 After approval, sync/archive requirements, repackage Android and update release records; acceptance: APK signature, built-in API, version, SHA, installation and key process checks are complete, Git/deployment boundaries and rollback paths are clear, iOS is not touched.
 
-## 本轮证据状态
+## Evidence status of this round
 
-2026-10-07：上述勾选项由本地迁移、HTTP/组件/浏览器测试支持；完整证据与未执行项见 `docs/acceptance/simplify-room-and-mobile-experience/README.md`。未勾选项保留视觉、真机或云端门槛，不代表已归档/已部署。Figma Desktop Bridge 已恢复读取/导出；语音房、按住/结果、移交和首次同意已有真实组件的浏览器 adapter 截图，不能代替原生/真实 provider 验收。Android `adb devices -l` 无设备。Vercel 已有独立消费者本地构建与失败恢复测试，无需另购常驻服务器，但尚无云端调度记录。
+2026-10-07: The above checked options are supported by local migration, HTTP/component/browser testing; see `docs/acceptance/simplify-room-and-mobile-experience/README.md` for complete evidence and unimplemented items. The unchecked option retains the visual, physical device or cloud threshold, which does not mean it has been archived/deployed. Figma Desktop Bridge has resumed reading/exporting; browser adapter screenshots of voice room, hold/result, handover and first consent that already have real components cannot replace native/real provider acceptance. Android `adb devices -l` No device. Vercel has independent consumer local builds and failure recovery tests, without the need to purchase additional resident servers, but there is no cloud scheduling record.
 
-## 7. 用户后续验收修正（2026-10-09，暂停发布）
+## 7. Subsequent user acceptance correction (2026-10-09, release suspended)
 
-- [x] 7.1 创建即时/预约房间使用三个范围；移除可发现性和房间音频处理 UI，验证默认请求值及主题标题不裁切。
-- [x] 7.2 所有后台业务页充满侧栏右侧可用宽度，验证大屏及设计宽度的真实布局。
-- [x] 7.3 消息空闲退避、前后台暂停恢复和在途房间刷新合并，验证没有重复计时器或退出后的请求。
-- [x] 7.4 运行受影响前端检查及视觉对照；保存本地结果，等待用户恢复发布，真机由用户验证。
+- [x] 7.1 Create instant/scheduled rooms using three scopes; remove discoverability and room audio handling UI, verify default request values and topic titles are not clipped.
+- [x] 7.2 All backend business pages fill the available width on the right side of the sidebar, verifying the true layout of large screens and design widths.
+- [x] 7.3 Message idle backoff, front and backend pause recovery and in-transit room refresh merge, verify that there are no repeated timers or requests after exit.
+- [x] 7.4 Run affected front-end inspection and visual comparison; save local results and wait for the user to resume publishing, and the physical device is verified by the user.

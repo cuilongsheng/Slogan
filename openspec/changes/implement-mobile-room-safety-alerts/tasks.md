@@ -1,13 +1,13 @@
-## 1. 合同与视觉依据
+## 1. Contract and visual basis
 
-- [x] 1.1 核对语音房 V2 原稿、当前房主查询合同和 LiveKit envelope，记录新增提醒状态的视觉边界
+- [x] 1.1 Check the voice room V2 manuscript, current room host query contract and LiveKit envelope, and record the visual boundary of the new reminder status
 
-## 2. 客户端接入
+## 2. Client access
 
-- [x] 2.1 接入生成类型的提醒查询与游标，验证认证、错误和分页参数
-- [x] 2.2 接入版本化 data packet 信号、会话补齐和房主权限清理，验证重连、接任、未知包和过期请求
-- [x] 2.3 完成房主专属提醒入口、列表、空态、失败重试和人工核实文案，验证普通成员不显示
+- [x] 2.1 Access generation type reminder query and cursor, verify authentication, error and paging parameters
+- [x] 2.2 Access versioned data packet signaling, session completion and room host permission cleanup, verify reconnection, takeover, unknown packets and expired requests
+- [x] 2.3 Completed room host exclusive reminder entrance, list, empty state, failed retry and manual verification copywriting, verification is not displayed for ordinary members
 
-## 3. 验证
+## 3. Verification
 
-- [x] 3.1 运行移动端 lint/typecheck/相关测试/Web 与 iOS 构建，记录 390×844 视觉对照以及真实设备与 provider 验收边界
+- [x] 3.1 Run mobile lint/typecheck/related tests/Web and iOS builds, record 390×844 visual comparison and real device and provider acceptance boundaries

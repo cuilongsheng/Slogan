@@ -1,20 +1,25 @@
 ## MODIFIED Requirements
 
-### Requirement: 案件证据包只组合允许的持久事实
-系统 MUST 提供与单个案件关联的证据包，包含举报信息、举报发生前后可用的房间成员和时间线事实、房主管理事件、相关举报、既往案件与限制摘要、相关的最小房间风险事件、安全能力降级事件以及案件处理记录。证据包 MUST 标识缺失、降级或尚不存在的信号，不得把风险事件解释为已确认违规，不得生成事实、保存或返回原始音频、命中原文或完整转写，也不得返回认证凭证或非必要个人资料。
+### Requirement: Case evidence package combines only permissible enduring facts
 
-#### Scenario: 查看有完整现有事实的证据包
-- **WHEN** 有权限的管理员或案件处理人查看案件证据包
-- **THEN** 系统返回可关联来源与发生时间的允许事实，包括举报相关时间窗口内的最小风险和降级事件，并按稳定顺序组织结果
+The system MUST provide an evidence package associated with a single case that contains report information, room membership and timeline facts available before and after the report occurred, room host management events, related reports, summary of past cases and restrictions, related minimum room risk events, security capability degradation events, and case handling records. Evidence packages MUST identify signals that are missing, downgraded, or do not yet exist, risk events MUST not be interpreted as confirmed violations, facts MUST not be generated, original audio, original audio, hits, or full transcripts MUST not be saved or returned, and authentication credentials or non-essential personal data MUST not be returned.
 
-#### Scenario: 部分证据不存在
-- **WHEN** 案件没有房主管理事件、既往限制、风险事件或其他相关信号
-- **THEN** 系统明确返回对应集合为空或信号不可用，不伪造风险结论且仍允许人工处理案件
+#### Scenario: View evidence package with complete existing facts
 
-#### Scenario: 举报时安全能力处于降级
-- **WHEN** 举报关联时间窗口内存在房间语音安全能力降级
-- **THEN** 证据包标识受影响组件和时间范围，不补造该期间的风险信号也不声称内容已被检查
+- **WHEN** The authorized administrator or case handler can view the case evidence package
+- **THEN** The system returns allowed facts that can be correlated to source and time of occurrence, including reporting minimal risk and degrading events within the relevant time window, and organizes the results in a stable order
 
-#### Scenario: 非案件处理人读取证据
-- **WHEN** 只持有安全员角色但案件已分配给另一名有效安全员的用户请求证据包
-- **THEN** 系统拒绝访问且不返回举报说明、成员信息或风险事件
+#### Scenario: Some evidence does not exist
+
+- **WHEN** The case has no room host management events, past restrictions, risk events or other related signals
+- **THEN** The system clearly returns that the corresponding set is empty or the signal is unavailable. It does not falsify risk conclusions and still allows manual processing of the case.
+
+#### Scenario: Security capabilities were downgraded when reporting
+
+- **WHEN** Report the degradation of voice security capability in the room within the associated time window
+- **THEN** The evidence package identifies the affected components and time range, does not redact risk signals during this period, and does not claim that the content has been inspected.
+
+#### Scenario: Non-case handler reads evidence
+
+- **WHEN** A user who only holds the safety officer role but the case is assigned to another valid safety officer requests an evidence package
+- **THEN** The system denies access and does not return reporting instructions, member information or risk events

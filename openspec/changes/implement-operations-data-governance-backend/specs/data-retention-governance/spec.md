@@ -1,89 +1,89 @@
 ## Purpose
 
-定义数据分类、版本化保留策略和可恢复清理执行边界，使临时内容按承诺及时删除，同时避免在期限或法律依据未批准时误删安全、审计、身份及用户内容事实。
+Define data classification, versioned retention policies, and recoverable cleanup execution boundaries to enable timely deletion of temporary content as promised while avoiding accidental deletion of security, audit, identity, and user content facts when deadlines or legal grounds are not approved.
 
 ## ADDED Requirements
 
-### Requirement: 每类数据具有明确治理分类和默认动作
+### Requirement: Each type of data has clear management classification and default actions
 
-系统 MUST 将受治理数据至少分类为临时语音内容、短期 AI 输出、临时协调状态、技术命令/job、运营指标、账号身份、用户私有内容、安全证据、处罚/申诉和后台审计。临时语音内容的配置保留上限 MUST 不超过七天并优先处理后立即删除；尚未批准具体期限的账号身份、安全证据、处罚/申诉、后台审计和用户私有内容 MUST 默认为 `RETAIN`，不得由定时任务自动物理删除。
+The system MUST classify governed data into at least temporary voice content, short-term AI output, temporary coordination status, technical commands/jobs, operational metrics, account identities, user private content, security evidence, penalties/grievances, and background audits. The configured retention limit for temporary voice content MUST not exceed seven days and be deleted immediately after priority processing; account identities, security evidence, penalties/appeals, background audits and user private content that have not been approved for a specific period MUST default to `RETAIN` and MUST not be automatically physically deleted by scheduled tasks.
 
-#### Scenario: 未配置安全证据期限
+#### Scenario: Security evidence period not configured
 
-- **WHEN** 清理 runner 扫描举报、案件、限制、申诉或后台审计数据且没有已批准的启用策略
-- **THEN** 系统跳过这些记录并记录保留原因，不依据创建时间自行删除
+- **WHEN** Cleaning runner scan reports, cases, restrictions, appeals or administrative audit data without an approved enablement policy
+- **THEN** The system skips these records and records the reasons for retention, and does not delete them based on the creation time.
 
-#### Scenario: 临时内容达到期限
+#### Scenario: Temporary content has expired
 
-- **WHEN** 临时内容超过已启用且不超过七天的策略期限
-- **THEN** 系统将其纳入可清理候选，不延长或复制原始内容
+- **WHEN** Temporary content exceeds the enabled policy period of no more than seven days
+- **THEN** The system includes it as a candidate for cleanup and does not extend or copy the original content.
 
-### Requirement: 保留策略版本化、受控启用且不可追溯扩权
+### Requirement: Retention policy versioning, controlled enablement, and non-retroactive rights expansion
 
-系统 MUST 保存策略版本、数据类别、作用范围、期限、依据引用、生效时间、创建人和启用状态。只有 `PLATFORM_ADMIN` 可以创建或启用策略；缩短安全证据、处罚/申诉、审计、账号身份或用户私有内容的保留期 MUST 被拒绝，直到独立 OpenSpec 需求明确允许。策略变更 MUST 只影响生效后的 runner 选择，不得伪造历史清理结果。
+The system MUST save the policy version, data category, scope, period, basis reference, effective time, creator and activation status. Only `PLATFORM_ADMIN` can create or enable the policy; shortening the retention period for security evidence, penalties/appeals, audits, account identities, or user private content MUST be denied until explicitly allowed by a separate OpenSpec requirement. Policy changes MUST only affect runner selection after taking effect, and historical cleanup results MUST not be falsified.
 
-#### Scenario: 管理员启用临时数据策略
+#### Scenario: Administrator enables temporary data policy
 
-- **WHEN** 平台管理员启用一个满足既有最大期限的临时数据策略
-- **THEN** 系统保存不可变版本和审计，后续运行引用该版本
+- **WHEN** The platform administrator enabled a temporary data policy that meets the existing maximum age
+- **THEN** The system saves the immutable version and audit, and references this version in subsequent runs.
 
-#### Scenario: 请求删除未批准类别
+#### Scenario: Request to delete unapproved categories
 
-- **WHEN** 管理员尝试通过配置或 API 为安全证据或后台审计启用物理删除
-- **THEN** 系统返回稳定冲突且不建立可执行策略
+- **WHEN** The administrator attempted to enable physical deletion for security evidence or background auditing via configuration or API
+- **THEN** The system returns a stable conflict and does not establish an executable policy
 
-### Requirement: 清理先 dry-run 再按批次执行
+### Requirement: Dry-run the cleaning first and then execute it in batches
 
-系统 MUST 支持按策略版本执行 dry-run，返回候选数量、最早/最晚时间、类别和不可逆影响摘要，不返回内容。实际清理 MUST 要求同一未过期 dry-run 标识、调用者 UUID 请求标识和明确确认，并按配置批量上限执行；普通定时清理只能执行已预先批准为自动运行的临时或技术类别。
+The system MUST support dry-run by policy version, returning the number of candidates, earliest/latest times, categories, and irreversible impact summary, without returning content. Actual cleanup MUST require the same unexpired dry-run ID, caller UUID request ID, and explicit confirmation, and be performed according to the configured batch limit; ordinary scheduled cleanup can only perform temporary or technical categories that have been pre-approved to run automatically.
 
-#### Scenario: dry-run 后执行
+#### Scenario: Execute after dry-run
 
-- **WHEN** 有权限的管理员以同一策略版本和未过期 dry-run 结果确认清理
-- **THEN** 系统创建幂等运行并只处理 dry-run 边界内仍符合条件的记录
+- **WHEN** An authorized administrator confirmed the cleanup with the same policy version and unexpired dry-run results
+- **THEN** The system creates an idempotent run and only processes records that still meet the criteria within the boundaries of the dry-run
 
-#### Scenario: 候选在确认前发生变化
+#### Scenario: Candidate changed before confirmation
 
-- **WHEN** 一条候选在 dry-run 后被 preservation hold 覆盖或不再满足策略
-- **THEN** 实际运行跳过该记录并在结果计数中说明，不绕过最新保护状态
+- **WHEN** A candidate is overwritten by preservation hold after dry-run or no longer meets the policy
+- **THEN** The actual operation skips this record and states it in the result count, without bypassing the latest protection status
 
-### Requirement: 清理运行具备租约、fencing、恢复和最小证明
+### Requirement: Cleanup run with leases, fencing, recovery and min-proof
 
-系统 MUST 为每次运行保存状态、策略版本、边界、租约 generation、批次游标、扫描/删除/跳过/失败计数、稳定错误和开始/结束时间。过期 runner MUST 不能提交晚到结果；进程重启后新 runner MUST 从已提交游标继续，且重试不得重复删除或错误累计。
+The system MUST save state, policy versions, boundaries, lease generation, batch cursors, scan/delete/skip/failure counts, stable errors, and start/end times for each run. The expired runner MUST not submit late results; after the process is restarted, the new runner MUST continue from the submitted cursor, and retries MUST not duplicate deletions or error accumulation.
 
-#### Scenario: 清理中途重启
+#### Scenario: Restarting during cleanup
 
-- **WHEN** runner 在部分批次提交后停止
-- **THEN** 新 runner 从最后已提交游标继续，并保持最终计数与实际删除一致
+- **WHEN** runner stopped after partial batch submission
+- **THEN** The new runner continues from the last committed cursor and keeps the final count consistent with the actual deletion
 
-#### Scenario: 旧租约晚到提交
+#### Scenario: The old lease is late for submission
 
-- **WHEN** 已失效 runner 在新 generation 接管后提交批次结果
-- **THEN** 系统拒绝该提交且不改写新运行状态
+- **WHEN** The expired runner submits batch results after the new generation takes over.
+- **THEN** The system rejects the submission and does not overwrite the new running status.
 
-### Requirement: 清理遵循引用完整性和 preservation hold
+### Requirement: Cleanup respects referential integrity and preservation hold
 
-系统 MUST 在删除技术或临时记录前验证其不再被活动命令、案件、审计、幂等重放、用户可见结果或恢复流程依赖。系统 MUST 支持按类别、目标或时间范围的 preservation hold；命中 hold 的记录不得被删除。清理失败 MUST 原子回滚当前批次并产生不含内容的异常事实。
+The system MUST verify that technical or temporary records are no longer relied upon by active orders, cases, audits, idempotent replays, user-visible results, or recovery processes before deleting them. The system MUST support preservation holds by category, target, or time range; records that hit hold MUST not be deleted. Cleanup failed MUST atomically roll back the current batch and generate an exception fact with no content.
 
-#### Scenario: 技术命令仍在恢复窗口
+#### Scenario: Technical command still in recovery window
 
-- **WHEN** 一个命令仍为待处理、失败可重试或被业务结果引用
-- **THEN** 清理跳过该命令并保留恢复能力
+- **WHEN** A command is still pending, can be retried if it fails, or is referenced by business results
+- **THEN** Cleanup skips this command and preserves recovery capabilities
 
-#### Scenario: 批次删除违反引用约束
+#### Scenario: Batch deletion violates reference constraints
 
-- **WHEN** 当前批次中任一删除会破坏允许保留事实的引用完整性
-- **THEN** 当前批次全部不提交并记录治理异常
+- **WHEN** Any deletion in the current batch would destroy the referential integrity that allows the facts to be preserved
+- **THEN** All current batches are not submitted and management exceptions are recorded.
 
-### Requirement: 治理查询最小化且所有敏感操作可审计
+### Requirement: Governance queries are minimized and all sensitive operations are auditable
 
-系统 MUST 允许 `PLATFORM_ADMIN` 查看策略、dry-run 和运行并执行受控命令，允许 `AUDITOR` 只读策略版本、运行结果和审计，允许 `OPERATIONS_ANALYST` 只读取按类别和结果聚合的治理健康趋势。响应和审计 MUST 不包含原始音频、转写、AI 文本、举报正文、私人笔记、词汇内容、手机号、provider subject、密钥或被删除内容快照。
+The system MUST allow `PLATFORM_ADMIN` to view policy, dry-run, and run and execute controlled commands, allow `AUDITOR` to read only policy versions, run results, and audits, and allow `OPERATIONS_ANALYST` to read only governance health trends aggregated by categories and results. Responses and audits MUST not contain original audio, transcriptions, AI text, report text, private notes, vocabulary content, mobile phone numbers, provider subjects, keys, or snapshots of deleted content.
 
-#### Scenario: 审计员查看运行结果
+#### Scenario: Auditor checks the running results
 
-- **WHEN** 审计员查询一个清理运行
-- **THEN** 系统返回策略版本、边界、计数、时间和稳定结果，不返回候选标识或内容
+- **WHEN** Auditor queries a cleanup run
+- **THEN** The system returns policy version, boundary, count, time and stable results, but does not return candidate identification or content
 
-#### Scenario: 敏感操作审计失败
+#### Scenario: Sensitive operation audit failed
 
-- **WHEN** 策略启用、hold 修改、实际清理命令或运行结果所需审计无法持久化
-- **THEN** 系统不接受该控制面操作，并返回不含内部细节的稳定错误
+- **WHEN** Audit required for policy enablement, hold modification, actual cleanup command or running results cannot be persisted
+- **THEN** The system does not accept this control plane operation and returns a stable error without internal details.

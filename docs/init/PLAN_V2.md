@@ -1,23 +1,25 @@
-# 用于承载我们刚才提到的所有长期设想,只记录方向,不作为 V1 开发依据,
+# Long-term directions
 
-## 包括
+This document records the long-term ideas discussed for the project. It captures direction only and is not a basis for V1 development.
 
-- 群组沉淀
-- 长期小组
-- 群聊
-- 社区主持人
-- 语言交换
-- 老师/教练市场
-- 资料库
-- 付费
-- 积分
-- 开房权限
-- 商业模式
+## Included directions
 
-## 原则是
+- Persistent groups
+- Long-term small groups
+- Group chat
+- Community moderators
+- Language exchange
+- Teacher / coach marketplace
+- Resource library
+- Paid features
+- Points
+- Room-creation permissions
+- Business model
 
-先说话,再社区,再商业化,安全始终优先。这两个文本就是执行的基线,后面只在此基础上迭代就行。
+## Principle
 
-## 项目严格把关
+Speaking comes first, followed by community and monetization; safety always takes priority. These two documents form the execution baseline, with subsequent iterations building on them.
 
-# 需求补充
+## Strict project review
+
+# Additional requirements

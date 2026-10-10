@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="610" viewBox="0 0 1100 610" role="img" aria-labelledby="title desc">
+  <title id="title">Slogan system architecture</title>
+  <desc id="desc">Android and web clients call the NestJS API for business operations and connect directly to LiveKit for audio. PostgreSQL holds durable business state, Redis handles presence and coordination, and workers process cleanup tasks. Optional AI and continuous speech processing require additional configuration.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#7861c8"/></marker>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; }
+      .heading { font-size: 27px; font-weight: 700; fill: #28213f; }
+      .name { font-size: 22px; font-weight: 700; fill: #28213f; }
+      .body { font-size: 17px; fill: #635c78; }
+      .label { font-size: 15px; font-weight: 700; fill: #6850af; }
+      .line { stroke: #7861c8; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1100" height="610" rx="24" fill="#faf8ff"/>
+  <text x="32" y="43" class="heading">Slogan / System architecture</text>
+  <path d="M175 148 V92 H925 V148" class="line"/>
+  <rect x="395" y="76" width="310" height="30" rx="15" fill="#faf8ff"/>
+  <text x="550" y="97" text-anchor="middle" class="label">Direct audio · LiveKit connection</text>
+  <rect x="30" y="150" width="290" height="135" rx="18" fill="#eee8ff" stroke="#ded3f7"/>
+  <text x="52" y="189" class="name">Clients</text>
+  <text x="52" y="220" class="body">Android APK · Mobile web</text>
+  <text x="52" y="249" class="body">React admin · Pages proxy</text>
+  <path d="M320 222 H400" class="line"/>
+  <text x="360" y="205" text-anchor="middle" class="label">HTTP</text>
+  <rect x="405" y="150" width="290" height="135" rx="18" fill="#6542ed"/>
+  <text x="427" y="189" style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;fill:white">NestJS API</text>
+  <text x="427" y="220" style="font-family:Arial,Helvetica,sans-serif;font-size:17px;fill:#eee8ff">Auth · Rooms · Learning</text>
+  <text x="427" y="249" style="font-family:Arial,Helvetica,sans-serif;font-size:17px;fill:#eee8ff">Safety · RBAC · Audit</text>
+  <path d="M695 222 H775" class="line"/>
+  <text x="735" y="205" text-anchor="middle" class="label">Control</text>
+  <rect x="780" y="150" width="290" height="135" rx="18" fill="#e1f8f3" stroke="#c3e9df"/>
+  <text x="802" y="189" class="name">LiveKit</text>
+  <text x="802" y="220" class="body">Voice tracks · Media rooms</text>
+  <text x="802" y="249" class="body">Participant events</text>
+  <path d="M550 285 V322 H175 V365" class="line"/>
+  <path d="M550 285 V365" class="line"/>
+  <path d="M550 322 H925 V365" class="line"/>
+  <rect x="30" y="370" width="290" height="126" rx="18" fill="white" stroke="#ded3f7"/>
+  <text x="52" y="410" class="name">PostgreSQL / Prisma</text>
+  <text x="52" y="441" class="body">Authoritative business state</text>
+  <text x="52" y="470" class="body">Sessions · Durable commands</text>
+  <rect x="405" y="370" width="290" height="126" rx="18" fill="white" stroke="#ded3f7"/>
+  <text x="427" y="410" class="name">Redis</text>
+  <text x="427" y="441" class="body">Presence · Coordination</text>
+  <text x="427" y="470" class="body">Standalone BullMQ runtime</text>
+  <rect x="780" y="370" width="290" height="126" rx="18" fill="white" stroke="#ded3f7"/>
+  <text x="802" y="410" class="name">Cleanup consumers</text>
+  <text x="802" y="441" class="body">Vercel Queues / standalone</text>
+  <text x="802" y="470" class="body">Retries · Reconciliation</text>
+  <rect x="30" y="524" width="1040" height="60" rx="14" fill="#f1edfa"/>
+  <text x="52" y="549" class="body">Optional: AI expression + STT providers, consent, and feature configuration.</text>
+  <text x="52" y="573" class="body">Continuous room speech processing requires a separate long-lived worker.</text>
+</svg>

@@ -1,27 +1,27 @@
 ## Context
 
-OpenAPI 已有好友列表/请求、屏蔽列表、可用用户、本人房间邀请和拒绝接口。好友请求响应原本只有用户 ID，无法让接收方识别对方；本 change 对本人待处理请求列表补充当前公开昵称，可为空时展示稳定短 ID。房主向人发送房间邀请已有 `RoomControls` 路径。
+OpenAPI already has friend list/request, block list, available users, personal room invitation and rejection interfaces. The friend request response originally only had the user ID, which could not allow the recipient to identify the other party; this change adds the current public nickname to the list of my pending requests, and can display a stable short ID when it is empty. The room host has the `RoomControls` path to send room invitations to people.
 
 ## Goals / Non-Goals
 
-**Goals:** 本人关系列表、发起及处理请求、屏蔽/解除、邀请接收与拒绝、临时可用状态。
+**Goals:** Personal relationship list, initiating and processing requests, blocking/unblocking, invitation acceptance and rejection, temporary availability status.
 
-**Non-Goals:** 不增加直聊；不展示精确在线时间或房间活动；不以邀请绕过密码、容量或资格校验；不推断对方是否屏蔽用户。
+**Non-Goals:** does not add direct chat; does not display precise online time or room activities; does not bypass password, capacity or qualification verification with invitations; does not infer whether the other party has blocked the user.
 
 ## Decisions
 
-1. 页面分为好友/可用用户/请求/屏蔽/房间邀请，均独立服务端游标。命令不乐观宣称成功，成功后刷新相关列表。
-2. 每次动作绑定操作与目标的 `clientRequestId`；不确定结果同一操作重试沿用，目标或动作改变时重建标识。
-3. 可用用户只显示服务端 `isAvailable` 布尔值；本人心跳仅在社交页面前台活跃时按服务端建议间隔续期，离开/后台停止。服务端继续最终裁决。
-4. 房间邀请仅提供“查看房间”和“拒绝”；进入房间后仍走已有详情和准备步骤，拒绝携带幂等标识。
-5. 视觉沿用 V2 页面和主题 tokens，390×844 夹具截图验证，不声称独立设计稿 1:1。
+1. The page is divided into friends/available users/requests/blocking/room invitations, all with independent server cursors. The command is not optimistic and declares success. After success, the related list is refreshed.
+2. Each action binds the operation to `clientRequestId` of the target; the uncertain result is inherited when the same operation is retried, and the identification is rebuilt when the target or action changes.
+3. Only the server-side `isAvailable` Boolean value is displayed for available users; my heartbeat is only renewed at the server-side recommended interval when the social page is active in the foreground, and stops when leaving/background. The server continues the final decision.
+4. Room invitations offer only “View room” and “Decline”. Joining still follows the existing detail and preparation steps; declining includes an idempotency identifier.
+5. Visually follows the V2 page and theme tokens, 390×844 fixture screenshot verification, does not claim independent design draft 1:1.
 
 ## Risks / Trade-offs
 
-- [请求对方资料随后被移除] → 列表昵称为空时展示稳定短 ID，不泄露内部账号状态。
-- [在线协调故障] → 页面解释不可用，不把旧数据当实时状态。
-- [命令响应丢失] → 相同动作重试使用相同 UUID。
+- [Requesting the other party's information and then removing it] → Display a stable short ID when the list nickname is empty, and do not reveal the internal account status.
+- [Online coordination failure] → The page explanation is unavailable and the old data is not regarded as real-time status.
+- [Command response lost] → Same action is retried using the same UUID.
 
 ## Migration Plan
 
-不涉及数据库/API 迁移。静态检查、行为测试、Web 视口和原生设备证据分开记录。
+No database/API migration involved. Static inspection, behavioral testing, web viewport and native device evidence are logged separately.

@@ -1,39 +1,39 @@
-## 1. 依赖、配置与模块边界
+## 1. Dependencies, configuration and module boundaries
 
-- [x] 1.1 激活 `.nvmrc` 的 Node 并核对 engines，固定 LiveKit SDK、ioredis、BullMQ，更新 lockfile/toolchain；通过 frozen-lockfile 安装与 package inventory 验证依赖可复现
-- [x] 1.2 增加 REALTIME_ENABLED、LiveKit URL/key/secret、60–600 秒 TTL 和 REDIS_URL 条件校验，更新环境示例/fixtures；通过 bootstrap 测试验证启用时缺失/非法配置拒绝启动、关闭时既有控制面可启动
-- [x] 1.3 为 token、Authorization、provider credential 与 webhook raw body 配置日志脱敏；通过日志单元测试验证原值不出现在输出中
-- [x] 1.4 建立 voice 到 rooms 公开 application API、provider-neutral ports 与 infrastructure wiring，替换真实职责对应的空骨架；通过 `pnpm deps:check` 验证无 Controller 直连 SDK、跨模块深层导入或循环依赖
+- [x] 1.1 Activate `.nvmrc`'s Node and check engines, fix LiveKit SDK, ioredis, BullMQ, update lockfile/toolchain; verify dependencies can be reproduced through frozen-lockfile installation and package inventory verification
+- [x] 1.2 Added REALTIME_ENABLED, LiveKit URL/key/secret, 60–600 seconds TTL and REDIS_URL condition checks, updated environment examples/fixtures; verified through bootstrap test that missing/illegal configuration refuses to start when enabled, and existing control plane can be started when closed
+- [x] 1.3 Configure log desensitization for token, Authorization, provider credential and webhook raw body; verify that the original values do not appear in the output through log unit testing
+- [x] 1.4 Establish voice to rooms, expose application API, provider-neutral ports and infrastructure wiring, replace the empty skeleton corresponding to real responsibilities; verify through `pnpm deps:check` that there is no Controller direct connection to SDK, cross-module deep import or circular dependency
 
-## 2. PostgreSQL 实时状态与持久补偿
+## 2. PostgreSQL real-time status and persistent compensation
 
-- [x] 2.1 增加 Room ENDING/version/ended 字段、membership opaque identity/credential version/presence/session 水位、历史 identity 撤销记录与 RoomEvent/RealtimeCommand；通过 Prisma validate 与约束测试验证唯一键/索引，不引入房主管理专属 lifecycle/deadline
-- [x] 2.2 创建 additive migration，保留 membership、joinOrder 和外键；通过 `pnpm --filter @slogan/api db:test:migrate` 对空库及已有房间数据 fixture 验证升级和保留字段的恢复路径
-- [x] 2.3 实现 RoomEvent/inbox 与 outbox repository，事务内保存业务状态和命令，支持幂等、claim/lease、崩溃重取和状态更新；通过真实 PostgreSQL 测试验证重复写、并发 claim、回滚及原始 payload/token 不落库
-- [x] 2.4 扩展 rooms 的授权快照、presence 更新与公共结束 transaction API，并使 join/token 对 ENDING 和 endsAt 拒绝；通过行锁/版本竞争测试验证发证与结束并发不返回失效授权，断线不释放 membership 容量
+- [x] 2.1 Added Room ENDING/version/ended field, membership opaque identity/credential version/presence/session water level, historical identity revocation record and RoomEvent/RealtimeCommand; verified the unique key/index through Prisma validate and constraint testing, and did not introduce room host management exclusive lifecycle/deadline
+- [x] 2.2 Create additive migration, retain membership, joinOrder and foreign keys; use `pnpm --filter @slogan/api db:test:migrate` to verify the recovery path of upgrade and retained fields for empty libraries and existing room data fixtures
+- [x] 2.3 implements RoomEvent/inbox and outbox repository, saves business status and commands in the transaction, supports idempotent, claim/lease, crash retrieval and status update; verifies repeated writing, concurrent claim, rollback and original payload/token are not dropped in the database through real PostgreSQL test
+- [x] 2.4 Expand the authorization snapshot, presence update and public end transaction API of rooms, and make join/token reject ENDING and endsAt; pass the row lock/version competition test to verify that the issuance and end concurrency does not return invalid authorization, and disconnection does not release membership capacity
 
-## 3. Provider adapter、凭证与 Webhook
+## 3. Provider adapter, credentials and Webhook
 
-- [x] 3.1 实现幂等确保 provider room、短期 token 与最小 grants；通过 SDK claims 测试验证 room/opaque identity/TTL、只允许 microphone publish/subscribe 且无 data/metadata/admin/video/screen/PII
-- [x] 3.2 实现 provider list、remove/revoke、delete adapter，核实所选 SDK 的显式 cutoff、离线 identity 和 not-found 语义；通过 SDK contract 测试验证错误映射/重试与撤销证据，未证实撤销时不得当成功
-- [x] 3.3 配置 NestJS raw body 和 WebhookReceiver，验证 provider Authorization 与 application/webhook+json；通过有效/缺失/篡改签名及普通 JSON endpoint 测试验证验签与原有 validation 无回归
-- [x] 3.4 实现 inbox 到规范化 presence/room-finished 的持久处理，按 event ID、当前 identity/session/时间水位去重防倒序；通过 PostgreSQL 测试验证旧 session left、未知 room、重复事件和 room-finished 不错误覆盖当前实例
+- [x] 3.1 Implement idempotent to ensure minimum provider room, short-term token and grants; verify room/opaque identity/TTL through SDK claims test, only allow microphone publish/subscribe and no data/metadata/admin/video/screen/PII
+- [x] 3.2 Implement provider list, remove/revoke, delete adapter, verify the explicit cutoff, offline identity and not-found semantics of the selected SDK; verify error mapping/retry and revocation evidence through SDK contract testing, and failure shall not be considered successful if revocation is not confirmed
+- [x] 3.3 Configure NestJS raw body and WebhookReceiver, verify provider Authorization and application/webhook+json; verify the signature and original validation through valid/missing/tampered signature and ordinary JSON endpoint tests without regression
+- [x] 3.4 Implement persistent processing from inbox to standardized presence/room-finished, and de-duplicate and prevent reverse order by event ID, current identity/session/time water level; verify through PostgreSQL test that old session left, unknown room, duplicate events and room-finished do not overwrite the current instance by mistake
 
-## 4. Redis/BullMQ、到期与恢复
+## 4. Redis/BullMQ, expiration and recovery
 
-- [x] 4.1 扩展测试 compose 和 Redis infrastructure，在现有 API 进程建立 queue/worker 生命周期、合法确定性 job ID、有限退避与失败记录；通过真实 Redis 测试验证去重、retry、关闭连接和业务冲突不重试
-- [x] 4.2 实现公共结束路径与 room-expiry：锁内判定 endsAt/version 后进入 ENDING，撤销全部未撤销 identity 再 DeleteRoom，完成才 ENDED；通过冻结时钟/数据库测试验证无宽限、迟到 job 不放开发证、重复结束和 cleanup 幂等
-- [x] 4.3 实现 outbox dispatcher 的提交后首试、pending 重试与 stale/completed no-op；通过 provider failure/recovery 和进程中断集成测试验证先关闭授权、命令不丢失且不伪报断开成功
-- [x] 4.4 实现启动/周期补排 expiry/pending command 及 provider presence reconciliation；通过删除 Redis job、丢失全部 webhook、旧 identity 和 worker 重启测试验证状态收敛且 provider 不创造成员资格
+- [x] 4.1 Expand test compose and Redis infrastructure, establish queue/worker life cycle, legal certainty job ID, limited backoff and failure record in the existing API process; verify deduplication, retry, closed connection and non-retry of business conflicts through real Redis test
+- [x] 4.2 Implement public end path and room-expiry: enter ENDING after determining endsAt/version in the lock, revoke all unrevoced identities and then DeleteRoom, and then ENDED after completion; verify through frozen clock/database test that no grace, late job will not release the issuance, repeated end and cleanup idempotent
+- [x] 4.3 Implement outbox dispatcher's first try after submission, pending retry and stale/completed no-op; use provider failure/recovery and process interruption integration tests to verify that authorization is turned off first, the command is not lost, and no false reports of disconnection are successful
+- [x] 4.4 implements startup/period rescheduling expiry/pending command and provider presence reconciliation; by deleting Redis job, losing all webhooks, old identity and worker restart test to verify state convergence and provider does not create membership
 
-## 5. HTTP 与唯一 OpenAPI
+## 5. HTTP and the only OpenAPI
 
-- [x] 5.1 实现 realtime-credentials 与 members 两个认证 endpoint；通过 HTTP E2E 验证账号/房间/membership/到期授权、响应最小字段、成员顺序及出生/地区/provider SID 不泄露
-- [x] 5.2 实现 webhooks/livekit endpoint 与稳定错误映射；通过 HTTP E2E 验证合法/重复事件 2xx、非法签名 401、用户 Bearer 不替代签名、REALTIME_PROVIDER_UNAVAILABLE 不暴露密钥
-- [x] 5.3 更新 NestJS Swagger DTO/decorator 并生成唯一 `openapi/openapi.yaml`；通过 Swagger parser 和 `pnpm --filter @slogan/api openapi:check` 验证三个新增 endpoint、认证差异和既有 join 到期行为无 drift，不生成管理 endpoint
+- [x] 5.1 implements two authentication endpoints, realtime-credentials and members; verifies account/room/membership/expiration authorization through HTTP E2E, response minimum fields, member order and birth/region/provider SID are not leaked
+- [x] 5.2 implements webhooks/livekit endpoint and stable error mapping; verifies legal/duplicate events 2xx, illegal signature 401, user Bearer does not replace signature, REALTIME_PROVIDER_UNAVAILABLE does not expose keys through HTTP E2E
+- [x] 5.3 updates NestJS Swagger DTO/decorator and generates unique `openapi/openapi.yaml`; uses Swagger parser and `pnpm --filter @slogan/api openapi:check` to verify three new endpoints, authentication differences and existing join expiration behavior without drift, and no management endpoint is generated
 
-## 6. 依赖交付与验收
+## 6. Dependence on delivery and acceptance
 
-- [ ] 6.1 在隔离 LiveKit Cloud 环境执行 opt-in smoke，验证两身份连接、最小 grants、在线/离线 identity 撤销后旧 token 拒绝、DeleteRoom 断开和签名 webhook；将真实结果写入验收记录，无凭证时记 BLOCKED 并保留本项未完成
-- [x] 6.2 在 `docs/acceptance/implement-livekit-voice-session-backend.md` 记录供 host-controls 复用的实际公开 API/事务、事件字段、审计/outbox、身份历史、queue 与结束入口，通过链接到实现和定向测试逐项核对；明确前置 Cloud 限制及 host-controls/前端/设备未验收，release state 不冒充已部署
-- [x] 6.3 完成本 change 全部实现后运行一次 `pnpm verify:api`、`pnpm format:check` 和 `pnpm deps:check`，记录 Node、命令与 PASS/FAIL/BLOCKED；对照 current voice-session/basic-safety-reporting 与本 delta 建立范围矩阵，管理场景归下一 change，未运行项不标 PASS
+- [ ] 6.1 Execute opt-in smoke in the isolated LiveKit Cloud environment, verify the two-identity connection, minimum grants, old token rejection after online/offline identity revocation, DeleteRoom disconnection and signature webhook; write the real results to the acceptance record, record BLOCKED when there is no certificate and leave this item unfinished
+- [x] 6.2 Record in `docs/acceptance/implement-livekit-voice-session-backend.md` the actual public API/transaction, event field, audit/outbox, identity history, queue and end entry for reuse by host-controls, and check them one by one by linking to the implementation and directed tests; clarify the pre-Cloud restrictions and host-controls/front-end/device acceptance, and the release state does not pretend to have been deployed
+- [x] 6.3 After completing all implementations of this change, run `pnpm verify:api`, `pnpm format:check` and `pnpm deps:check` once, record Node, command and PASS/FAIL/BLOCKED; compare current voice-session/basic-safety-reporting with this delta to establish a scope matrix, management scenarios are classified under the next change, and unrun items are not marked PASS

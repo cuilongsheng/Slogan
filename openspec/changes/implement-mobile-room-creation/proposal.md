@@ -1,24 +1,24 @@
 ## Why
 
-移动房间发现页的“创建”入口仍被禁用。现有即时房间和预约房间 API 都已提供真实创建能力，用户无法在客户端使用。
+The "Create" entry on the mobile room discovery page is still disabled. The existing instant room and reserved room APIs already provide real creation capabilities, and users cannot use them on the client.
 
 ## What Changes
 
-- 按已确认 Figma 即时 111:979 和预约 121:3613 两张 390×844 页面实现房间创建表单。
-- 接入 /v1/rooms 和 /v1/appointment-rooms 的生成客户端，提供主题、具体 CEFR、容量、密码、可见性、预约起止时间的校验和服务端错误反馈。
-- 创建成功后进入真实房间；即时房间房主进入语音房流程，预约房间进入房间详情。创建按钮防止重复提交。
-- 从房间发现页启用“创建”入口，记录浏览器预览、API 和设备证据边界。
-- 预约房间详情允许房主在开始前取消；生成的分享链接经真实分享码解析后打开对应房间。
+- According to the confirmed Figma instant 111:979 and reservation 121:3613 two 390×844 pages to implement the room creation form.
+- Access the generation client of /v1/rooms and /v1/appointment-rooms, providing verification of theme, specific CEFR, capacity, password, visibility, appointment start and end time, and server error feedback.
+- Enter the real room after successful creation; the instant room room host enters the voice room process, and the reserved room enters the room details. Create a button to prevent repeated submissions.
+- Enable "Create" entry from room discovery page, logging browser preview, API and device evidence boundaries.
+- The room reservation details allow the room host to cancel before starting; the generated sharing link is parsed by the real sharing code and the corresponding room is opened.
 
 ## Capabilities
 
 ### New Capabilities
 
-- mobile-room-creation: 用户在移动端创建即时和预约房间。
+- mobile-room-creation: Users create instant and reserved rooms on the mobile terminal.
 
 ### Modified Capabilities
 
-无。房间业务规则及 API 沿用现有 OpenSpec/OpenAPI。
+None. Room business rules and API continue to use the existing OpenSpec/OpenAPI.
 
 ## Impacted delivery stages
 
@@ -28,4 +28,4 @@
 
 ## Impact
 
-apps/mobile 路由、房间创建 feature、发现页按钮、文案与验证。无后端或持久层改动。
+apps/mobile routing, room creation feature, discovery page button, copywriting and verification. No backend or persistence layer changes.

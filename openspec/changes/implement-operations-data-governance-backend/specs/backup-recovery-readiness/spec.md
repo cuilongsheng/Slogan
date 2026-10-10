@@ -1,61 +1,61 @@
 ## Purpose
 
-定义 V1 后端持久数据和必要配置的备份、隔离恢复、完整性验证与演练证据，使公开测试前可以证明故障恢复能力，而不把本地 fixture 当作生产恢复证明。
+Define the backup, isolation recovery, integrity verification and drill evidence of V1 backend persistent data and necessary configuration, so that failure recovery capabilities can be proven before public testing, instead of treating local fixtures as proof of production recovery.
 
 ## ADDED Requirements
 
-### Requirement: 备份范围和恢复目标必须显式声明
+### Requirement: Backup scope and recovery target must be explicitly declared
 
-系统 MUST 在启用目标环境备份前声明环境、PostgreSQL 数据范围、加密与密钥管理方式、备份周期、保留数量、RPO 和 RTO 目标。Redis 临时状态、应用密钥和 provider secret MUST 不作为可从数据库备份恢复的业务真相；密钥恢复 MUST 使用独立受控流程。
+The system MUST declare the environment, PostgreSQL data ranges, encryption and key management methods, backup period, retention amount, RPO and RTO goals before enabling backup of the target environment. Redis temporary state, application keys, and provider secrets MUST not serve as business truth that can be restored from database backups; key recovery MUST use a separate controlled process.
 
-#### Scenario: 备份配置缺少恢复目标
+#### Scenario: Backup configuration missing recovery target
 
-- **WHEN** 目标环境未配置 RPO、RTO、加密或保留边界
-- **THEN** readiness 报告备份能力未就绪且不宣称具备恢复保证
+- **WHEN** The target environment does not have RPO, RTO, encryption, or retention boundaries configured
+- **THEN** readiness reports that backup capabilities are not ready and does not claim recovery guarantees
 
-#### Scenario: 备份产物记录
+#### Scenario: Backup product records
 
-- **WHEN** 一次备份成功完成
-- **THEN** 系统记录不含凭据的环境、时间、逻辑范围、校验摘要、工具版本和结果
+- **WHEN** A backup completed successfully
+- **THEN** System records environment, time, logical scope, verification summary, tool version and results without credentials
 
-### Requirement: 恢复演练只在隔离环境执行
+### Requirement: Recovery drills are only performed in isolation environments
 
-系统 MUST 将备份恢复到与生产隔离且访问受控的目标，禁止覆盖当前生产数据库。演练 MUST 使用独立数据库标识和显式确认，并在验证完成后按策略销毁隔离副本或保留最小演练事实。
+The system MUST restore the backup to a target that is isolated from production and has controlled access, and is prohibited from overwriting the current production database. Walkthrough MUST use standalone database identification and explicit validation, and policy-based destruction of quarantine copies or retention of minimal walkthrough facts after validation is complete.
 
-#### Scenario: 目标指向活动生产数据库
+#### Scenario: Targeting the active production database
 
-- **WHEN** 恢复命令检测到目标与活动生产数据库相同或无法证明隔离
-- **THEN** 系统拒绝执行且不写入目标
+- **WHEN** Recovery command detected the target is the same as the active production database or cannot prove isolation
+- **THEN** The system refused execution and did not write to the target
 
-#### Scenario: 隔离恢复成功
+#### Scenario: Isolation recovery successful
 
-- **WHEN** 有效备份恢复到隔离目标
-- **THEN** 系统继续执行 schema、关键表、引用和业务不变量检查，不因数据库可连接就宣称演练成功
+- **WHEN** Valid backup restored to quarantine target
+- **THEN** The system continues to perform schema, key table, reference and business invariant checks, and does not declare the drill to be successful just because the database is connectable.
 
-### Requirement: 恢复验证覆盖关键业务不变量
+### Requirement: Recovery verification covers key business invariants
 
-系统 MUST 验证 migration 状态、账号与身份占用、房间和成员关系、预约、安全案件/限制/申诉、后台角色/审计、用户私有内容、持久命令及治理事实的数量和引用完整性。检查 MUST 不调用真实 LiveKit、AI/STT、SMS 或告警 provider，也不得向真实用户发送通知。
+The system MUST verify the quantity and referential integrity of migration status, account and identity occupancy, room and membership relationships, reservations, security cases/restrictions/appeals, backend roles/audits, user private content, persistent commands, and governance facts. Check MUST not call real LiveKit, AI/STT, SMS or alert providers, nor send notifications to real users.
 
-#### Scenario: 恢复后存在悬空安全记录
+#### Scenario: There is a dangling security record after recovery.
 
-- **WHEN** 隔离数据库中的限制、申诉或审计引用缺失目标事实
-- **THEN** 演练失败并记录最小失败类别，不把该备份标记为已验证
+- **WHEN** A restriction, appeal, or audit reference in the quarantine database is missing the target fact
+- **THEN** The walkthrough failed and logged the minimum failure category and did not mark the backup as verified
 
-#### Scenario: 恢复验证触发外部副作用
+#### Scenario: Resume validation triggers external side effects
 
-- **WHEN** 隔离环境没有明确 fake/disabled provider 边界
-- **THEN** 恢复验证拒绝启动，避免连接真实外部系统
+- **WHEN** The isolation environment does not have clear fake/disabled provider boundaries
+- **THEN** Recovery verification refuses to start, avoiding connection to real external system
 
-### Requirement: 演练结果受限可见并保留实际观察值
+### Requirement: Restricted visibility of drill results and retention of actual observed values
 
-系统 MUST 保存演练开始/结束时间、备份标识摘要、工具/schema 版本、观察到的恢复时长、RPO 距离、检查结果和操作者，不得保存数据库连接串、密钥或数据内容。只有 `PLATFORM_ADMIN` 可以启动演练并查看完整结果，`AUDITOR` 可以只读结果；每次启动和查看 MUST 审计。
+The system MUST save exercise start/end times, backup identification summaries, tool/schema versions, observed recovery times, RPO distances, inspection results, and operators. It MUST not save database connection strings, keys, or data content. Only `PLATFORM_ADMIN` can launch the drill and view full results, `AUDITOR` can read-only results; MUST audit each time it is launched and viewed.
 
-#### Scenario: 演练达到配置目标
+#### Scenario: Walkthrough reaches configuration target
 
-- **WHEN** 隔离恢复和全部不变量检查通过且观察值在配置目标内
-- **THEN** 系统把本次演练标记为成功并保留实际观察值，不用配置目标替代测量结果
+- **WHEN** Isolation recovery and all invariant checks passed and observations were within configured targets
+- **THEN** The system marks this exercise as successful and retains the actual observation values. There is no need to configure targets to replace the measurement results.
 
-#### Scenario: 本地 fixture 演练
+#### Scenario: Local fixture walkthrough
 
-- **WHEN** 只在本地测试数据库完成恢复验证
-- **THEN** 证据明确标记为本地，不得作为生产或公开测试环境恢复证明
+- **WHEN** Recovery verification is only completed on the local test database
+- **THEN** Evidence is clearly marked as local and may not be used as proof of recovery for production or public test environments

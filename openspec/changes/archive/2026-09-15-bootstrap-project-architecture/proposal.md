@@ -1,31 +1,31 @@
 ## Why
 
-当前规则只描述了技术栈和少量通用约束，没有定义 PC、移动端、后端各自的目录职责、模块边界和依赖方向。开发前补齐这些稳定边界，可以避免 `components`、`hooks`、`utils`、NestJS services 等目录逐渐成为无边界的代码堆积区。
+The current rules only describe the technology stack and a few general constraints, and do not define the respective directory responsibilities, module boundaries and dependency directions of PC, mobile terminal and backend. Filling in these stable boundaries before development can prevent directories such as `components`, `hooks`, `utils`, and NestJS services from gradually becoming unbounded code accumulation areas.
 
 ## What Changes
 
-- 确立 `pnpm` monorepo 的目标结构：`apps/mobile`、`apps/admin`、`apps/api` 和按真实共享需求创建的 `packages/*`。
-- 保留 `rules/frontend.md` 作为双端共同规则，新增 `rules/mobile.md` 和 `rules/admin.md`。
-- 扩展 `rules/backend.md`，采用 NestJS modular monolith，并定义 presentation、application、domain、infrastructure 的依赖方向。
-- 新增 `docs/architecture/project-structure.md`，存放完整目录示例、目录职责和模块模板。
-- 更新 `AGENTS.md` 的规则路由，使 Codex 根据改动目标读取对应规则。
-- 明确不共享 PC/移动 UI，不建立全局 `interfaces` 垃圾目录，也不在目录骨架中生成占位业务代码。
-- 创建 `apps/mobile`、`apps/admin`、`apps/api`、`packages/api-client`、`packages/shared` 及文档所列子目录的完整目录骨架；空目录使用 `.gitkeep` 保留，不生成业务实现。
-- 保持 API contract、Figma、OpenSpec、verification 和 deployment 的既有权责不变。
+- Establish the target structures for the `pnpm` monorepo: `apps/mobile`, `apps/admin`, `apps/api`, and `packages/*` created with true sharing requirements.
+- Retain `rules/frontend.md` as a common rule for both ends, and add `rules/mobile.md` and `rules/admin.md`.
+- Extends `rules/backend.md`, uses NestJS modular monolith, and defines the dependency directions of presentation, application, domain, and infrastructure.
+- Added `docs/architecture/project-structure.md`, which stores complete directory examples, directory responsibilities and module templates.
+- Update the rule routing of `AGENTS.md` so that Codex reads the corresponding rules according to the change target.
+- Clearly do not share PC/mobile UI, do not create a global `interfaces` garbage directory, and do not generate placeholder business code in the directory skeleton.
+- Create a complete directory skeleton of `apps/mobile`, `apps/admin`, `apps/api`, `packages/api-client`, `packages/shared` and the subdirectories listed in the document; empty directories are retained with `.gitkeep` and no business implementation is generated.
+- Keep the existing responsibilities of API contract, Figma, OpenSpec, verification and deployment unchanged.
 
 ## Capabilities
 
 ### New Capabilities
 
-<!-- 无。本变更只建立工程架构与规则，不改变产品可观察行为。 -->
+<!-- None. This change only establishes the engineering structure and rules and does not change the observable behavior of the product. -->
 
 ### Modified Capabilities
 
-<!-- 无。skip_specs=true。 -->
+<!-- None. skip_specs=true。 -->
 
 ## Impact
 
 - Impacted delivery stages: Architecture。
-- 将修改 `AGENTS.md`、`rules/*.md` 和 `docs/architecture/*.md`。
-- 不修改 `PRD_V1.md`、baseline migration 候选 specs、`openspec/specs/` 或业务代码。
-- 创建 `apps/`、`packages/` 目录骨架，但不创建 package manifest、运行时代码、API contract 或业务实现。
+- `AGENTS.md`, `rules/*.md` and `docs/architecture/*.md` will be modified.
+- Do not modify `PRD_V1.md`, baseline migration candidate specs, `openspec/specs/`, or business code.
+- Create `apps/`, `packages/` directory skeletons, but do not create package manifest, runtime code, API contract or business implementation.

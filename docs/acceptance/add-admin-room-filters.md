@@ -1,6 +1,6 @@
-# 后台房间筛选验收记录（2026-09-28）
+# Admin room-filter acceptance record (2026-09-28)
 
-- Figma Desktop Bridge 现场核对 V2 房间页 `114:1602`。1440×900 运行时截图：[房间页](assets/admin-rooms-1440-visual-fixture.png)。四个控件、卡片位置与高度已对照；卡片展示真实 UUID 缩写和真实时间，设计稿 `R-2409` 友好编号无合同字段。
-- `GET /v1/backoffice/operations/rooms` 增加可选 `q/status/visibility/from`。主题包含查询忽略大小写，完整 UUID 精确查询；组合条件在 PostgreSQL 执行，游标与规范化条件绑定。旧无筛选请求保持兼容。查询审计只记录是否筛选，不记录原始搜索词。
-- PostgreSQL 集成测试覆盖组合筛选、两页不重复、UUID 精确命中、旧条件游标用于新条件时返回验证错误。HTTP E2E 以真实数据库记录验证已授权筛选返回、非法状态 400、分析员 403。浏览器 Playwright 验证控件提交生成完整查询参数和 1440×900 渲染。
-- API lint/typecheck、OpenAPI 检查、客户端生成检查、管理端 lint/typecheck/test/build、Playwright 3/3 通过。浏览器视觉使用确定性夹具；未使用用户账号中的真实房间数据验证全部四种组合。
+- Figma Desktop Bridge on-site verification V2 room page `114:1602`. 1440×900 running screenshot: [Room page](assets/admin-rooms-1440-visual-fixture.png). The four controls and card positions/heights have been compared. Cards display actual abbreviated UUIDs and timestamps; the friendly `R-2409` identifier in the design has no corresponding contract field.
+- `GET /v1/backoffice/operations/rooms` adds optional `q/status/visibility/from`. Topic substring matching is case-insensitive, while full UUID matching is exact. PostgreSQL applies the combined filters, and the cursor is bound to the normalized criteria. Old unfiltered requests remain compatible. Query audit only records whether to filter or not, not the original search terms.
+- PostgreSQL integration test covers combination filtering, two pages are not repeated, UUID exact hit, validation error returned when old condition cursor is used for new condition. HTTP E2E uses real database records to verify authorized filtering returns, illegal status 400, analyst 403. Browser Playwright validation control submission generates full query parameters and 1440×900 rendering.
+- API lint/typecheck, OpenAPI checks, client-generation checks, admin lint/typecheck/test/build, and Playwright 3/3 passed. Browser visual verification uses deterministic fixtures. All four filter combinations have not been verified using actual room data from the user account.

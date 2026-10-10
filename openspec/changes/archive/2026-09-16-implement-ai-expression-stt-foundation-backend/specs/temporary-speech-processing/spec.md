@@ -1,86 +1,108 @@
 ## Purpose
 
-定义短期语音转文字处理的同意、供应商资格、数据最小化和故障隔离边界，使 AI 短语音以及后续房间级 STT 能共享明确且可审计的隐私基础，而不形成录音或完整转写存档。
+Define consent, vendor qualifications, data minimization and fault isolation boundaries for short-term speech-to-text processing so that AI short speech and subsequent room-level STT can share a clear and auditable basis for privacy without forming a recording or full transcript archive.
 
 ## ADDED Requirements
 
-### Requirement: 语音处理同意按目的和版本保存
-系统 MUST 允许已认证用户查看、接受和撤回特定处理目的的语音处理同意，并保存用户、目的、说明版本、provider 类别、服务端时间和当前状态。说明版本变化后，旧同意 MUST 不能授权新版本处理；撤回只阻止未来处理，不删除仍需保留的最小同意审计事实。
+### Requirement: Voice processing consent is saved by purpose and version
 
-#### Scenario: 接受当前说明
-- **WHEN** 用户明确接受当前 AI 短语音处理说明
-- **THEN** 系统保存可查询的当前有效同意及版本事实
+The system MUST allow authenticated users to view, accept, and withdraw voice processing consent for specific processing purposes and save the user, purpose, description version, provider category, server time, and current status. Note that after a version change, the old consent MUST not authorize processing of the new version; withdrawal only prevents future processing and does not delete the minimum consent audit facts that still need to be retained.
 
-#### Scenario: 撤回未来同意
-- **WHEN** 用户撤回 AI 短语音处理同意
-- **THEN** 后续短语音请求被拒绝，既有最小同意和撤回事实保持可审计
+#### Scenario: Accept current instructions
 
-#### Scenario: 说明版本更新
-- **WHEN** 服务端要求的处理说明版本高于用户最后接受版本
-- **THEN** 系统要求用户重新明确同意后才允许新的语音处理
+- **WHEN** The user clearly accepts the current AI short voice processing instructions
+- **THEN** The system saves the currently valid consent and version facts that can be queried
 
-### Requirement: 每次短语音请求都需要当次提示确认
-系统 MUST 在持久同意之外要求每次 AI 短语音请求确认本次处理提示，且不得由客户端为其他用户确认。文字表达请求 MUST 不依赖语音处理同意。
+#### Scenario: Withdrawing future consent
 
-#### Scenario: 有同意且确认本次提示
-- **WHEN** 用户具有当前有效同意并确认本次短语音处理提示
-- **THEN** 系统允许请求进入音频校验和临时 STT 流程
+- **WHEN** User withdraws consent for AI short voice processing
+- **THEN** Subsequent short voice request denied, both minimum consent and withdrawal facts remain auditable
 
-#### Scenario: 缺少当次确认
-- **WHEN** 用户已有持久同意但未确认本次处理提示
-- **THEN** 系统拒绝音频处理且不向 STT provider 发送数据
+#### Scenario: Description version update
 
-### Requirement: 原始音频和完整转写不得持久化
-系统 MUST 只在单次请求内临时持有原始音频和完整转写，且不得将其写入 PostgreSQL、Redis、对象存储、队列载荷、审计事件或应用日志。处理完成、失败、超时或进程终止后，系统 MUST 不提供音频或完整转写的读取、回放或恢复能力。
+- **WHEN** The processing description version requested by the server is higher than the version last accepted by the user
+- **THEN** The system requires the user to explicitly agree again before allowing new voice processing.
 
-#### Scenario: STT 与表达生成成功
-- **WHEN** 短语音完成临时转写并生成表达
-- **THEN** 系统释放音频和完整转写，只保存允许的输入摘要、大小、时长、状态和用量事实
+### Requirement: Each short voice request requires prompt confirmation.
 
-#### Scenario: 处理中服务失败
-- **WHEN** 进程在音频接收、STT 或表达生成期间失败
-- **THEN** 请求可以从最小状态事实收敛为失败或不确定，但音频和完整转写不可恢复
+The system MUST require confirmation of this processing prompt for each AI short voice request in addition to persistent consent, and MUST not be confirmed by the client for other users. Text expression requests MUST not rely on speech processing for consent.
 
-### Requirement: 只有满足数据政策的 STT provider 才能启用
-系统 MUST 只启用能够声明处理区域、数据用途、最大临时保留期和删除或不留存能力的 STT provider。配置的 provider 临时数据上限 MUST 不超过七天，并优先使用本次处理完成后立即删除或不留存的模式；缺失必要政策配置、密钥或安全端点时，系统 MUST 禁止启用语音处理。
+#### Scenario: Agree and confirm this prompt
 
-#### Scenario: provider 配置满足边界
-- **WHEN** provider 配置完整且声明的临时保留期不超过七天
-- **THEN** 系统可以启用该 provider 并把声明类别纳入用户说明和最小调用事实
+- **WHEN** The user has currently valid consent and confirmation for this short voice processing prompt
+- **THEN** The system allows the request to enter the audio verification and temporary STT process
 
-#### Scenario: provider 保留期过长或配置不完整
-- **WHEN** provider 声明超过七天保留、缺少删除能力说明或缺少必要安全配置
-- **THEN** 系统拒绝启用短语音处理且不暴露凭据值
+#### Scenario: Missing current confirmation
 
-### Requirement: STT 调用使用最小权限和可替换边界
-系统 MUST 只向当前配置的 STT provider 发送本次请求所需的音频、可选源语言和受控识别参数，不发送真实姓名、联系方式、其他成员资料、房间密码或 LiveKit 凭证。更换 provider MUST 不改变公开短语音请求与失败合同。
+- **WHEN** The user has given persistent consent but has not confirmed this processing prompt
+- **THEN** The system refuses audio processing and does not send data to the STT provider
 
-#### Scenario: 发送短语音进行识别
-- **WHEN** 合格音频进入临时 STT
-- **THEN** provider 请求只包含识别所需数据和不可反推个人身份的关联标识
+### Requirement: Original audio and full transcription must not be persisted
 
-#### Scenario: 切换已配置 provider
-- **WHEN** 运维切换到满足相同能力和数据政策的 provider
-- **THEN** 客户端继续使用同一公开合同和稳定错误语义
+The system MUST temporarily hold the original audio and full transcript only within a single request, and MUST not write it to PostgreSQL, Redis, object storage, queue payloads, audit events, or application logs. The system MUST not provide the ability to read, playback, or restore audio or full transcripts after processing completes, fails, times out, or terminates.
 
-### Requirement: STT 故障不得影响真人语音
-系统 MUST 对 STT 超时、额度耗尽、provider 不可用、删除确认失败和临时协调故障进行分类记录并安全降级。故障 MUST 不停止或录制 LiveKit 房间音频，不改变房间状态、membership、房主或麦位，也不得自动处罚任何用户。
+#### Scenario: STT and expression generated successfully
 
-#### Scenario: STT provider 不可用
-- **WHEN** 用户主动短语音请求遇到 STT provider 故障
-- **THEN** 系统返回可改用文字输入的结果，既有真人语音继续工作
+- **WHEN** Short speech completes temporary transcription and generates expressions
+- **THEN** The system releases audio and complete transcription, saving only allowed input summary, size, duration, status and usage facts
 
-#### Scenario: 临时协调不可用
-- **WHEN** 系统无法可靠执行语音请求的频率或并发保护
-- **THEN** 系统停止新的临时语音处理并保持房间流程可用
+#### Scenario: Service failure during processing
 
-### Requirement: 语音处理观测信息不得包含内容
-系统 MUST 记录诊断所需的请求状态、阶段、provider 类别、耗时、音频字节数、provider 返回的时长、用量、错误类别和清理结果，但 MUST 不记录原始音频、完整转写、原始文字、完整 provider 响应、密钥或用户联系方式。
+- **WHEN** Process failed during audio reception, STT, or expression generation
+- **THEN** Request can converge from minimum status fact to failed or indeterminate, but audio and full transcription are not recoverable
 
-#### Scenario: 调用失败需要诊断
-- **WHEN** STT 调用超时或返回错误
-- **THEN** 运维可以看到阶段、耗时和归一化错误类别，但无法从日志或审计恢复用户说话内容
+### Requirement: Only STT providers that meet the data policy can be enabled
 
-#### Scenario: 查询本人同意状态
-- **WHEN** 用户查询当前语音处理同意
-- **THEN** 响应只返回目的、说明版本、状态和时间，不返回历史音频、转写或 provider 凭据
+The system MUST only enable STT providers that declare processing areas, data usage, maximum temporary retention period, and the ability to delete or not retain. The configured temporary data limit of the provider MUST not exceed seven days, and priority is given to the mode of deleting immediately after the completion of this processing or not retaining it; when the necessary policy configuration, key or security endpoint is missing, the system MUST prohibit enabling voice processing.
+
+#### Scenario: provider configuration meets the boundary
+
+- **WHEN** The provider configuration is complete and the declared temporary retention period does not exceed seven days.
+- **THEN** The system can enable this provider and include declaration categories into user descriptions and minimal call facts
+
+#### Scenario: provider retention period is too long or configuration is incomplete
+
+- **WHEN** The provider statement is retained for more than seven days, lacks deletion capability instructions, or lacks necessary security configurations.
+- **THEN** The system refuses to enable short speech processing without exposing credential values
+
+### Requirement: STT call uses least privilege and replaceable boundaries
+
+The system MUST only send the audio, optional source language, and controlled identification parameters required for this request to the currently configured STT provider, but not the real name, contact information, other member information, room passwords, or LiveKit credentials. Changing the provider MUST not change the public short voice request and failure contract.
+
+#### Scenario: Send short voice for recognition
+
+- **WHEN** Qualified audio entered temporary STT
+- **THEN** The provider request contains only the data required to identify and associated identifiers that cannot be inferred to be personally identifiable.
+
+#### Scenario: Switch configured provider
+
+- **WHEN** Operation and maintenance switch to a provider that meets the same capabilities and data policies
+- **THEN** Client continues to use the same public contract and stable error semantics
+
+### Requirement: STT failure must not affect the real voice
+
+The system MUST classify and record STT timeouts, quota exhaustion, provider unavailability, deletion confirmation failures, and temporary coordination failures and safely downgrade them. Fault MUST not stop or record LiveKit room audio, change room status, membership, room host, or microphone position, nor automatically penalize any user.
+
+#### Scenario: STT provider is not available
+
+- **WHEN** The user's active short voice request encountered an STT provider failure.
+- **THEN** The system returns results that can be changed to text input, and the existing human voice continues to work.
+
+#### Scenario: Temporary coordination is not available
+
+- **WHEN** The system cannot reliably perform frequency or concurrency protection for voice requests
+- **THEN** System stops new temporary voice processing and keeps room processes available
+
+### Requirement: Speech processing observation information must not contain content
+
+The system MUST record the request status, stage, provider category, time taken, audio bytes, provider return duration, usage, error category, and cleanup results required for diagnosis, but MUST not record the original audio, full transcription, original text, full provider response, key, or user contact information.
+
+#### Scenario: Call failure requires diagnosis
+
+- **WHEN** STT call timed out or returned an error
+- **THEN** Operations and maintenance can see the stage, time-consuming and normalized error categories, but cannot recover user speech content from logs or audits
+
+#### Scenario: Check my consent status
+
+- **WHEN** User queries current voice processing consent
+- **THEN** The response only returns the purpose, description version, status and time, not historical audio, transcription or provider credentials.

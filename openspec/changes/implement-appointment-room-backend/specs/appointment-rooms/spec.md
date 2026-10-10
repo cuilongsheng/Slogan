@@ -1,157 +1,197 @@
 ## Purpose
 
-定义预约语音房的提前安排、预约席位保障、开始和结束边界，以及房主尚未进入时成员可先交流的可观察行为，使预约不会绕过既有账号、实际入房、实时凭证和历史举报规则。
+Define the advance arrangement of the reservation voice room, reservation seat guarantee, start and end boundaries, and the observable behavior of members who can communicate before the room host has entered, so that the reservation will not bypass the existing account, actual room entry, real-time voucher and historical reporting rules.
 
 ## ADDED Requirements
 
-### Requirement: 创建与发现预约房间
-系统 MUST 允许符合现有资料、年龄和账号资格的用户创建预约房间，指定主题、CEFR、包含房主在内的 2 至 6 人容量、有效开始和结束时间及可选 4 位数字密码。系统 MUST 拒绝开始不晚于当前服务器时间或结束不晚于开始的配置，并提供预约房间列表与详情，展示时间、状态、实际成员数、预约占位数、可用名额、密码状态和调用者自己的预约信息。
+### Requirement: Create and discover reserved rooms
 
-#### Scenario: 创建有效预约房间
-- **WHEN** 合格用户提交有效配置及带时区的未来开始、结束时间
-- **THEN** 系统保存尚未开放的预约房间，并展示服务器规范化后的时间与容量
+The system MUST allow users who meet existing profile, age, and account qualifications to create reservation rooms, specify a theme, CEFR, capacity of 2 to 6 people including room host, valid start and end times, and an optional 4-digit password. The system MUST reject configurations that start no later than the current server time or end no later than the start, and provide a reservation room list and details, displaying time, status, actual number of members, reservation occupancy, available places, password status, and the caller's own reservation information.
 
-#### Scenario: 非法配置或不合格创建者
-- **WHEN** 用户不符合现有创建资格或提交无效时间、容量、主题、CEFR、密码
-- **THEN** 系统拒绝创建且不产生房间或预约占位
+#### Scenario: Create a valid reservation room
 
-#### Scenario: 查看预约详情
-- **WHEN** 合格用户查询预约房间
-- **THEN** 系统返回最小公开房间信息及本人的预约状态，不泄露密码、其他预约人的个人资料或凭证
+- **WHEN** Qualified users submit valid configuration and future start and end time with time zone
+- **THEN** The system saves reserved rooms that have not yet been opened and displays the time and capacity after server normalization
 
-### Requirement: 预约占位与并发容量
-系统 MUST 将有效预约作为有保障的入房名额，保证已占用的实际名额与尚未使用的预约席位不会重复计算或合计超过房间容量。系统 MUST 防止普通加入抢占其他用户的有效预约席位，并在预约及实际加入时执行对应账号、规则和密码校验；预约不得绕过已有平台限制。
+#### Scenario: Illegal configuration or unqualified creator
 
-#### Scenario: 最后一个预约席位竞争
-- **WHEN** 多个合格用户并发预约最后一个可用席位
-- **THEN** 最多一个新预约成功，其他请求收到名额不足结果且容量不超限
+- **WHEN** The user does not meet the existing creation qualifications or submitted invalid time, capacity, subject, CEFR, password
+- **THEN** The system refuses to create and does not generate rooms or reservations.
 
-#### Scenario: 有预约成员实际加入
-- **WHEN** 已预约成员在开放时间内通过实际加入校验
-- **THEN** 系统将其保留席位转换为实际成员名额，不双重计数，并保留原预约的可追踪状态
+#### Scenario: View reservation details
 
-#### Scenario: 普通加入不能抢占预约
-- **WHEN** 未预约用户尝试加入，剩余物理空间全部对应其他用户的有效预约
-- **THEN** 系统拒绝该次加入并保留预约成员的席位
+- **WHEN** Qualified users query and reserve rooms
+- **THEN** The system returns the minimum public room information and my reservation status, without revealing the password, personal information or credentials of other reservation persons.
 
-#### Scenario: 存在未预约名额
-- **WHEN** 未预约用户通过加入校验且存在不属于任何有效预约的空位
-- **THEN** 系统允许其实际加入，且不影响其他预约成员的席位保障
+### Requirement: Reservation space and concurrent capacity
 
-### Requirement: 取消预约与重复请求
-系统 MUST 允许普通预约用户取消尚未使用的预约并释放其占位，不把取消预约当作退出已建立的语音会话。重复预约或取消请求 MUST 不重复占位、重复释放，也不得使迟到的旧请求覆盖更新后的预约状态。
+The system MUST treat valid reservations as guaranteed room quotas to ensure that the actual occupied quotas and unused reserved seats will not be double counted or the total will not exceed the room capacity. The system MUST prevent ordinary joins from seizing the valid reservation seats of other users, and perform corresponding account, rule and password verification when making reservations and actual joining; reservations MUST not bypass existing platform restrictions.
 
-#### Scenario: 成员取消未使用预约
-- **WHEN** 成员取消自己尚未使用的有效预约
-- **THEN** 系统保存取消状态并释放该席位，其他用户可以按房间当前规则使用释放后的名额
+#### Scenario: Competition for the last reserved seat
 
-#### Scenario: 重复或迟到的请求
-- **WHEN** 用户重复相同预约操作，或旧取消请求在其完成新预约后才到达
-- **THEN** 系统返回已提交结果或稳定版本冲突，不额外占用或释放新预约的席位
+- **WHEN** Multiple qualified users concurrently reserve the last available seat
+- **THEN** At most one new reservation is successful, other requests receive insufficient quota results and the capacity does not exceed the limit.
 
-#### Scenario: 已实际加入后取消预约
-- **WHEN** 已经使用预约进入房间的成员请求取消原预约
-- **THEN** 系统不通过该请求改变 ACTIVE membership，成员退出继续遵循现有 leave 流程
+#### Scenario: Members who have reservations actually join
 
-### Requirement: 预约不是实际加入资格
-系统 MUST 区分预约记录和实际 membership；仅预约但从未实际加入的用户不得因此取得实时凭证、当前成员列表访问权、房主管理权限或历史成员举报资格。实际加入失败 MUST 保留原先有效的预约占位且不产生部分加入状态。
+- **WHEN** The reserved members passed the actual joining verification during the opening hours
+- **THEN** The system converts its reserved seats into actual member quotas without double counting, and retains the traceability status of the original reservation
 
-#### Scenario: 仅预约用户直接获取凭证或举报
-- **WHEN** 仅有预约而没有实际加入事实的用户直接请求实时凭证、当前成员信息或举报
-- **THEN** 系统依据现有成员授权与举报规则拒绝，不把预约当作 membership
+#### Scenario: Ordinary joining cannot preempt the reservation
 
-#### Scenario: 实际加入校验失败
-- **WHEN** 预约成员实际加入时账号、规则、密码或房间资格检查失败
-- **THEN** 系统不创建 membership、不发证，也不错误消耗仍有效的预约席位
+- **WHEN** Users without reservations try to join, and all remaining physical spaces correspond to valid reservations of other users.
+- **THEN** The system refuses the joining and reserves the seat of the reserved member
 
-### Requirement: 定时开放与房主首次缺席
-系统 MUST 在计划开始时自动开放预约房间，不要求房主点击开始或先到场。房主尚未上线时，成员 MUST 可以依照预约与容量规则先进入；开始后满 5 分钟房主仍未上线，系统 MUST 按当前在线 ACTIVE 成员的实际加入顺序选择第二麦接任，旧房主之后上线不得自动夺回权限；满 5 分钟时无人在线则直接结束，先判断空房结束再判断接任，不等待后续成员。该首次到场规则 MUST 与已上线房主的 60 秒断线窗口分开，不产生爽约计次或处罚。房主到场后的主动离开、异常断线和管理动作继续遵循现有房主管理规则，但满 5 分钟后的空房立即结束优先于断线等待。
+#### Scenario: There are unreserved places
 
-#### Scenario: 开始前尝试实际加入
-- **WHEN** 用户在计划开始前尝试实际 join 或取得实时凭证
-- **THEN** 系统拒绝提前进入或发证，并返回未开始及开始时间信息
+- **WHEN** Unreserved users passed the join verification and there are vacancies that do not belong to any valid reservations
+- **THEN** The system allows him to actually join without affecting the seat guarantee of other reserved members.
 
-#### Scenario: 到点但房主尚未进入
-- **WHEN** 计划开始时间已到、尚未结束且房主从未实际进入
-- **THEN** 合格成员可以使用其预约或剩余名额进入，开始后未满 5 分钟不会仅因房主首次缺席移交权限
+### Requirement: Cancel reservation and repeat request
 
-#### Scenario: 房主稍后进入
-- **WHEN** 指定房主在开始后 5 分钟内实际上线
-- **THEN** 系统保留其房主身份并取消首次到场超时接任，保留满 5 分钟后的空房检查，后续离开与断线受该空房结束规则约束
+The system MUST allow ordinary reservation users to cancel unused reservations and release their occupancy, and do not treat cancellation of reservations as exiting the established voice session. Duplicate reservation or cancellation requests MUST not repeatedly occupy or release the space, nor allow late old requests to overwrite the updated reservation status.
 
-#### Scenario: 满五分钟由第二麦接任
-- **WHEN** 开始后已满 5 分钟，指定房主尚未实际上线，且存在在线 ACTIVE 成员
-- **THEN** 系统将房主权限原子交给当前实际加入顺序最早的在线成员，不选择仅预约、离开、被移除或离线的用户
+#### Scenario: Member cancels unused reservation
 
-#### Scenario: 五分钟无人可接任
-- **WHEN** 开始后已满 5 分钟，指定房主未上线且没有在线 ACTIVE 成员
-- **THEN** 系统直接结束房间并拒绝后续加入或发证，不等待后续成员接任
+- **WHEN** Member cancels his/her unused valid reservation
+- **THEN** The system saves the cancellation status and releases the seat. Other users can use the released seat according to the current rules of the room.
 
-#### Scenario: 原房主迟到
-- **WHEN** 首次到场超时已完成接任，原房主之后进入或其旧上线事件迟到
-- **THEN** 原房主只能按现有资格作为普通成员进入，不能通过旧角色声明或迟到事件恢复房主权限
+#### Scenario: Duplicate or late request
 
-#### Scenario: 调度任务延迟
-- **WHEN** 开始时间已到但后台开放任务尚未执行，用户查询或加入该预约房间
-- **THEN** 系统按持久时间事实处理当前可开放状态，不继续要求房主手动开始，也不能在结束时间后补开放
+- **WHEN** The user repeats the same reservation operation, or the old cancellation request does not arrive until the new reservation is completed.
+- **THEN** The system returns submitted results or stable version conflicts, and does not occupy or release additional newly reserved seats.
 
-### Requirement: 取消房间与准时结束
-系统 MUST 允许房主取消尚未开始的预约房间，并使相关预约失去入房效力。到结束时间，系统 MUST 拒绝新增预约、实际加入和发证，复用现有房间结束及媒体清理机制，不因调度延迟、房主缺席或预约未使用而延期。
+#### Scenario: Cancel reservation after actually joining
 
-#### Scenario: 房主取消未开始房间
-- **WHEN** 房主取消尚未开始且未取消的预约房间
-- **THEN** 房间与相关预约显示取消结果，重复操作不重新开放房间，普通成员不能执行房主取消操作
+- **WHEN** A member who has used a reservation to enter the room requests to cancel the original reservation.
+- **THEN** The system does not change the ACTIVE membership through this request. The member exits and continues to follow the existing leave process.
 
-#### Scenario: 取消与开始竞争
-- **WHEN** 取消请求与开始时间边界并发发生
-- **THEN** 系统按服务器时间和同一房间事实确定结果，不同时出现已取消和允许新加入的状态
+### Requirement: Reservation is not the actual qualification to join
 
-#### Scenario: 未曾开放或无人进入即已过期
-- **WHEN** 服务恢复时已超过预约结束时间，房间尚未执行开放且无人实际加入
-- **THEN** 系统将其结束而不短暂开放，也不为清理创建新的媒体房间
+The system MUST distinguish between reservation records and actual membership; users who only make reservations but never actually join may not obtain real-time credentials, access to the current member list, room host management rights, or historical member reporting qualifications. The actual joining failed. The original valid reservation space MUST be retained and the partial joining status should not be generated.
 
-#### Scenario: 到期及失败恢复
-- **WHEN** 预约房间到期，但队列或媒体服务暂时不可用
-- **THEN** 新加入和发证立即被拒绝，清理保持可恢复的未完成状态，响应不得伪报所有连接已断开
+#### Scenario: Only reservation users can directly obtain vouchers or report
 
-### Requirement: 满五分钟后空房立即结束
-系统 MUST 从预约计划开始时间计算 5 分钟空房保留期限；未满 5 分钟时不得仅因空房结束，满 5 分钟时当前无人在线则直接结束。此后只要当前在线人数变为零，包括最后一人主动退出、被移除或实际断线，系统 MUST 立即启动结束并拒绝后续加入和发证，不再等待成员到场或给予额外断线宽限。系统 MUST 依据当前实际在线状态判断，不以预约、仅完成 HTTP join、离线 ACTIVE 或曾有人上线代替当前在线成员。计划结束时间与已发生的主动结束仍优先，本规则不生成爽约计次或账号处罚。
+- **WHEN** Users who only have reservations but no actual joining facts directly request real-time vouchers, current member information or reports
+- **THEN** The system refused based on the existing member authorization and reporting rules, and did not regard the appointment as a membership.
 
-#### Scenario: 未满五分钟暂时空房
-- **WHEN** 尚未到开始后 5 分钟，当前无人在线且未达到计划结束时间，也没有其他已触发的结束原因
-- **THEN** 系统保持开放，允许合格成员后续加入
+#### Scenario: Actual join verification failed
 
-#### Scenario: 满五分钟当前无人在线
-- **WHEN** 开始后已满 5 分钟且当前没有在线成员，无论此前是否有人上线
-- **THEN** 系统结束房间并使未使用预约失效，拒绝后续 join/token，不等待新的接任者
+- **WHEN** The account, rule, password or room qualification check failed when the reserved member actually joined.
+- **THEN** The system does not create a membership, does not issue a certificate, and does not incorrectly consume the still valid reservation seats.
 
-#### Scenario: 五分钟后最后一人离开
-- **WHEN** 开始后已满 5 分钟，最后一名在线成员退出、被移除或被可信离线观察确认断线
-- **THEN** 系统立即启动结束，不额外等待房主 60 秒重连；即使该成员曾经上线也不保留空房
+### Requirement: Scheduled opening and room host absent for the first time
 
-#### Scenario: 仍有人在线且房主缺席
-- **WHEN** 开始后已满 5 分钟，仍有合格成员在线但指定房主从未上线
-- **THEN** 系统保持会话并按首次缺席规则由当前加入最早的在线成员接任
+The system MUST automatically open the reserved room at the beginning of the plan, without requiring the room host to click start or arrive first. When the room host is not online yet, members MUST enter first according to the reservation and capacity rules; if the room host is not online for 5 minutes after the start, the system MUST select the second microphone to take over according to the actual joining order of the currently online ACTIVE members. The old room host cannot automatically take back the permission when it comes online later; when no one is online for 5 minutes, it will end directly. The room will be judged first and then taken over, without waiting for subsequent members. This first arrival rule MUST be separated from the 60-second disconnection window of the online room host, and no no-show counts or penalties will be incurred. Active departure, abnormal disconnection and management actions after the room host arrives will continue to follow the existing room host management rules, but the immediate end of vacancy after 5 minutes will take precedence over disconnection waiting.
 
-#### Scenario: 房主已到场后空房
-- **WHEN** 房主曾按时上线，但开始满 5 分钟时或此后房间变为无人在线
-- **THEN** 系统仍立即启动结束，不因首次接任已取消而遗漏空房检查
+#### Scenario: Try actually joining before starting
 
-#### Scenario: 空房结束时清理失败或事件迟到
-- **WHEN** 空房结束已经触发，媒体清理暂时失败或旧在线事件迟到
-- **THEN** 系统继续拒绝 join/token 并恢复未完成清理，不重新开放，也不伪报媒体清理已完成
+- **WHEN** User attempted to actually join or obtain live credentials before the plan started
+- **THEN** The system refuses to enter or issue a permit in advance, and returns unstarted and start time information.
 
-### Requirement: 预约扩展保持既有后端边界
-系统 MUST 保留已有即时房间创建与默认列表行为，以及实际 membership 的离开、重进末位、移除/重邀、结束和举报规则。预约调度恢复 MUST 不重复开放已取消或结束房间，不重复分配名额或覆盖房主管理状态。
+#### Scenario: Arrive but room host has not entered yet
 
-#### Scenario: 即时房间兼容
-- **WHEN** 现有客户端调用即时房间创建与默认列表
-- **THEN** 行为保持兼容，不混入尚未开放的预约房间或要求新增预约字段
+- **WHEN** The scheduled start time has arrived, has not yet ended, and the room host has never actually entered
+- **THEN** Qualified members can use their reservation or remaining quota to enter, and permission will not be transferred within 5 minutes after the start just because the room host is absent for the first time.
 
-#### Scenario: 成员使用预约后离开再进入
-- **WHEN** 成员已通过预约实际进入后离开，并再次尝试加入
-- **THEN** 系统执行已有重进资格和末位顺序规则，同时保护其他用户仍有效的预约席位
+#### Scenario: Room host enter later
 
-#### Scenario: 服务重启或任务丢失
-- **WHEN** 服务重启、重复执行时间任务或临时队列任务丢失后恢复
-- **THEN** 系统从持久事实恢复时间处理，已取消或结束的房间不会重新开放，预约及实际成员容量保持一致
+- **WHEN** The specified room host actually comes online within 5 minutes of starting
+- **THEN** The system retains its room host identity and cancels the first arrival timeout takeover. The system retains the vacancy check after 5 minutes. Subsequent departures and disconnections are subject to the vacancy end rule.
+
+#### Scenario: After five minutes, the second microphone takes over.
+
+- **WHEN** It has been 5 minutes since the start, the specified room host has not actually come online yet, and there are online ACTIVE members
+- **THEN** The system will atomically hand over the room host permission to the online member with the earliest actual joining order. Users who only made reservations, left, were removed or are offline will not be selected.
+
+#### Scenario: No one can take over for five minutes
+
+- **WHEN** It has been 5 minutes since the start, the specified room host is not online and there are no online ACTIVE members
+- **THEN** The system directly ends the room and refuses subsequent joining or issuance of certificates without waiting for subsequent members to take over.
+
+#### Scenario: The original room host is late
+
+- **WHEN** The first arrival timeout has been completed and the takeover has been completed. The original room host entered later or its old online event was late.
+- **THEN** The original room host can only enter as an ordinary member based on the existing qualifications, and the room host permissions cannot be restored through old role declaration or lateness events.
+
+#### Scenario: Scheduling task delay
+
+- **WHEN** The start time has arrived but the background opening task has not yet been executed. The user queries or joins the reservation room.
+- **THEN** The system handles the current openable status according to the persistence time fact, and does not continue to require the room host to start manually, nor can it be opened after the end time.
+
+### Requirement: Room cancellation and on-time completion
+
+The system MUST allow the room host to cancel room reservations that have not yet started and make the related reservations ineffective. At the end time, the system MUST reject new reservations, actual joins, and certificate issuance, reuse the existing room ending and media cleanup mechanisms, and do not extend due to scheduling delays, room host absences, or unused reservations.
+
+#### Scenario: Room host Cancel unstarted room
+
+- **WHEN** Room host cancels a reserved room that has not been started and has not been cancelled.
+- **THEN** The room and related reservations display the cancellation result. Repeated operations will not reopen the room. Ordinary members cannot perform room host cancellation operations.
+
+#### Scenario: Cancel and start competition
+
+- **WHEN** Cancellation request occurred concurrently with start time boundary
+- **THEN** The system determines the result based on the server time and the fact that the same room is in the same room, and the status of canceled and new joining is not displayed at the same time.
+
+#### Scenario: It has expired since it has not been opened or no one has entered.
+
+- **WHEN** The reservation end time has passed when the service was restored, the room has not yet been opened and no one has actually joined.
+- **THEN** The system ended it without briefly opening it or creating a new media room for cleanup
+
+#### Scenario: Expiration and failed recovery
+
+- **WHEN** The reserved room has expired, but the queue or media service is temporarily unavailable
+- **THEN** New joins and certifications are rejected immediately, cleanup remains in a recoverable and incomplete state, and responses must not falsely report that all connections have been disconnected
+
+### Requirement: Room vacancies will end immediately after five minutes
+
+The system MUST calculate the 5-minute vacancy reservation period from the start time of the reservation plan; if it is less than 5 minutes, it MUST not end just because the room is vacant; if it is 5 minutes, it will end directly if no one is online. From now on, as long as the current number of people online becomes zero, including the last person voluntarily quitting, being removed, or actually disconnecting, the system MUST immediately terminate and refuse subsequent joining and certificate issuance, without waiting for members to arrive or giving additional disconnection grace. The system MUST judge based on the current actual online status, and do not replace the current online members with reservations, only completed HTTP join, offline ACTIVE, or someone has been online. The planned end time and the active end that have occurred still take precedence. This rule does not generate no-show calculations or account penalties.
+
+#### Scenario: Temporarily vacant room within five minutes
+
+- **WHEN** It has not yet reached 5 minutes after the start, no one is currently online and the planned end time has not been reached, and there are no other triggered end reasons.
+- **THEN** The system remains open and allows qualified members to join later.
+
+#### Scenario: No one is currently online for five minutes
+
+- **WHEN** It has been 5 minutes since the start and there are currently no online members, regardless of whether anyone was online before.
+- **THEN** The system ends the room and invalidates unused reservations, rejects subsequent join/token, and does not wait for a new successor.
+
+#### Scenario: The last person left after five minutes
+
+- **WHEN** It has been 5 minutes since the start, and the last online member has logged out, been removed, or has been confirmed disconnected by trusted offline observation.
+- **THEN** The system starts immediately and ends without waiting for the room host to reconnect for 60 seconds; even if the member has been online before, the room will not be reserved.
+
+#### Scenario: There is still someone online and the room host is absent
+
+- **WHEN** 5 minutes have passed since the start, qualified members are still online but the specified room host has never come online
+- **THEN** The system keeps the session and the earliest online member who joins takes over according to the first absence rule.
+
+#### Scenario: Room host has arrived and the room is available.
+
+- **WHEN** The room host came online on time, but the room became unavailable after the first 5 minutes or thereafter.
+- **THEN** The system still starts and ends immediately, and the vacancy check is not missed because the first takeover has been cancelled.
+
+#### Scenario: Failed to clean up at the end of vacancy or late for the event
+
+- **WHEN** Vacancy end has been triggered, media cleanup failed temporarily or old online events are late
+- **THEN** The system continues to reject join/token and restores the unfinished cleanup. It does not reopen and does not falsely report that the media cleanup has been completed.
+
+### Requirement: Appointment extension maintains existing backend boundaries
+
+The system MUST retain existing instant room creation and default list behavior, as well as actual membership leave, re-enter, remove/re-invite, end and report rules. Reservation scheduling recovery MUST not repeatedly open canceled or ended rooms, repeatedly assign quotas, or overwrite the room host management status.
+
+#### Scenario: Instant room compatibility
+
+- **WHEN** Existing client calls instant room creation and default list
+- **THEN** The behavior remains compatible and does not mix in reservation rooms that have not yet been opened or require new reservation fields.
+
+#### Scenario: A member leaves and then enters after using the reservation
+
+- **WHEN** The member actually entered through reservation, left, and tried to join again
+- **THEN** The system implements the existing re-entry qualification and last order rules, while protecting the reserved seats that are still valid for other users.
+
+#### Scenario: Service restarted or task lost
+
+- **WHEN** Recovery after service restart, repeated execution of time tasks or loss of temporary queue tasks
+- **THEN** The system recovers time processing from persistent facts, canceled or ended rooms will not be reopened, and reservation and actual member capacity remain consistent

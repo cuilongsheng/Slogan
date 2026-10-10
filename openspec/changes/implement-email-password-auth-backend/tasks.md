@@ -1,32 +1,32 @@
-## 1. 数据与安全基础
+## 1. Data and security basics
 
-- [x] 1.1 增加 EmailCredential、EmailEnrollment、EmailChallenge、EmailAuthProof、EmailDelivery 模型、唯一约束和 additive migration，运行 Prisma validate/generate，并用空库与含 OAuth/手机号/会话/注销账号的真实 PostgreSQL 历史 fixture 验证无自动身份关联或旧数据变化
-- [x] 1.2 实现用户名/邮箱规范化、密码长度及常见密码策略、异步带版本散列和 dummy 校验，单元测试覆盖大小写、plus/dot、Unicode、无裁剪、独立盐和错误密码，记录本地散列耗时与并发内存边界
-- [x] 1.3 增加默认关闭开关、SMTP/TLS、可信链接、HMAC/AES keyId 和配额配置及 domain ports，启动测试验证缺配置安全失败、不回显秘密、关闭后既有认证照常工作
-- [x] 1.4 实现 Redis 来源/目标摘要/全局配额与重发冷却，用双实例 Redis 测试验证原子计数、未知身份同样限流及 Redis 失败拒绝新增尝试
+- [x] 1.1 Add EmailCredential, EmailEnrollment, EmailChallenge, EmailAuthProof, EmailDelivery model, unique constraints and additive migration, run Prisma validate/generate, and use empty library with real PostgreSQL history fixture with OAuth/mobile number/session/account deletion account to verify that there is no automatic identity association or old data changes
+- [x] 1.2 implements username/email normalization, password length and common password policies, asynchronous versioned hashing and dummy verification, unit tests cover upper and lower case, plus/dot, Unicode, no clipping, independent salt and wrong passwords, records local hashing time consumption and concurrent memory boundaries
+- [x] 1.3 Added default shutdown switch, SMTP/TLS, trusted link, HMAC/AES keyId and quota configuration and domain ports, started the test to verify that the missing configuration security fails, does not echo the secret, and the existing authentication works as usual after closing
+- [x] 1.4 implements Redis source/target summary/global quota and retransmission cooling, uses dual-instance Redis test to verify atomic count, unknown identity also limits the flow, and Redis fails to reject new attempts.
 
-## 2. 邮件投递和注册验证
+## 2. Mail delivery and registration verification
 
-- [x] 2.1 实现事务邮件 outbox、加密载荷、SMTP adapter 和 auth-mail worker 的领取/租约/fencing/重试，使用本地 SMTP 捕获服务验证成功、拒绝、超时不确定和重启重复投递不增加凭据使用次数
-- [x] 2.2 实现待验证注册、管理凭据和重发，PostgreSQL 测试验证每目标申请上限、无 User/session、重复申请不改旧密码、60 秒冷却和 24 小时固定过期边界
-- [x] 2.3 实现注册验证一次性消费及邮箱身份创建，用并发测试验证 username/email 唯一竞争、同 token 重放、过期/错目的/旧 generation 拒绝及 GET 不消费
-- [x] 2.4 实现完成、替换和过期邮件载荷清除及 enrollment/challenge/proof 元数据清理，runtime 验证 24 小时内容清理、7 天技术元数据清理、worker 重启收敛且不删除正式身份
+- [x] 2.1 Implement the collection/lease/fencing/retry of transaction mail outbox, encrypted payload, SMTP adapter and auth-mail worker, and use the local SMTP capture service to verify successful verification, rejection, timeout uncertainty and restart. Repeated delivery does not increase the number of credential usage.
+- [x] 2.2 implements registration to be verified, management of credentials and reissue, PostgreSQL test verification per target application limit, no User/session, repeated application without changing the old password, 60 second cooling and 24-hour fixed expiration boundary
+- [x] 2.3 Implement registration verification, one-time consumption and email identity creation, use concurrent testing to verify username/email unique competition, same token replay, expired/wrong purpose/old generation rejection and GET non-consumption
+- [x] 2.4 implements completion, replacement and expired email payload cleaning and enrollment/challenge/proof metadata cleaning, runtime verification 24-hour content cleaning, 7-day technical metadata cleaning, worker restart convergence without deleting formal identities
 
-## 3. 登录、找回与会话一致性
+## 3. Login, retrieval and session consistency
 
-- [x] 3.1 实现用户名密码登录和现有 session 签发适配，定向 HTTP 测试验证正确/错误/未验证/禁用/注销分支、统一凭据错误及资料/成年/后台角色边界
-- [x] 3.2 实现统一找回受理和重置邮件，用 HTTP 与 SMTP 测试验证已知/未知/非 ACTIVE 邮箱响应一致、只有合格账号收到邮件及限流不泄露存在性
-- [x] 3.3 实现重置原子更新、credentialVersion 和全部平台会话撤销，真实 PostgreSQL 并发测试验证旧密码登录晚到、refresh 竞争、双重消费和响应丢失后新密码登录恢复
+- [x] 3.1 Implement username and password login and existing session issuance adaptation, directed HTTP test to verify correct/error/unverified/disabled/account deletion branches, unified credential errors and information/adult/backend role boundaries
+- [x] 3.2 Achieve unified retrieval, acceptance and reset of emails, use HTTP and SMTP tests to verify that known/unknown/non-ACTIVE mailbox responses are consistent, only qualified accounts receive emails, and rate limiting does not leak the existence
+- [x] 3.3 implements reset atomic updates, credentialVersion and all platform session revocation, real PostgreSQL concurrency testing to verify new password login recovery after old password login late arrival, refresh competition, double consumption and response loss
 
-## 4. 既有账号绑定与注销
+## 4. Binding and canceling existing accounts
 
-- [x] 4.1 增加当前账号 OAuth/手机号重新认证的 LINK_EMAIL 证明，用定向集成测试验证身份归属、用户/会话/命令绑定、5 分钟过期及注销 proof 不可互换
-- [x] 4.2 实现绑定申请与邮件确认、命令重放冲突及 EMAIL_PASSWORD 脱敏登录方式，HTTP/PostgreSQL 测试验证原 userId 保留、跨账号冲突、原 session 撤销和重复绑定拒绝
-- [x] 4.3 增加密码注销 proof 并接入现有注销事务，测试验证错误密码/过期 proof 拒绝、密码重置使旧 proof 无效、重放安全、注销后凭据失效与身份占用保留，回归原 OAuth/手机号注销
+- [x] 4.1 Add LINK_EMAIL proof for current account OAuth/mobile phone number re-authentication, use directed integration testing to verify identity ownership, user/session/command binding, 5-minute expiration and account deletion proof is not interchangeable
+- [x] 4.2 Implement binding application and email confirmation, command replay conflicts and EMAIL_PASSWORD desensitized login method, HTTP/PostgreSQL test to verify original userId retention, cross-account conflicts, original session revocation and repeated binding rejection
+- [x] 4.3 Add password account deletion proof and access existing account deletion transactions, test and verify incorrect password/expired proof rejection, password reset to invalidate old proof, replay security, credential invalidation and identity occupation retention after account deletion, return to original OAuth/mobile phone number account deletion
 
-## 5. 合同与最终验收
+## 5. Contract and final acceptance
 
-- [x] 5.1 补齐 DTO、稳定错误、OpenAPI decorators 和脱敏规则，生成唯一 OpenAPI 并运行 drift 与定向 E2E，验证直接请求不能绕过确认、用途、配额或 RBAC 边界且日志不含凭据/邮箱/正文
-- [x] 5.2 全部实现完成后执行一次最终 affected-scope：format、Prisma validate/generate、lint/typecheck、依赖边界、build、OpenAPI drift、完整 API unit/integration/e2e/runtime、git diff --check 和 OpenSpec strict；记录实际命令/数量，失败仅先修复最小范围再重跑最终检查
-- [x] 5.3 编写中文验收与运行说明，记录本地 SMTP/数据库/Redis 版本、迁移/关闭回滚、凭据清理、邮件不确定重发、原型冲突处理及外部 BLOCKED；核对每个 spec scenario 的证据，不能仅凭测试全绿勾选未执行验收
-- [ ] 5.4 在隔离真实 SMTP/域名及受控收件邮箱上执行注册送达、验证、冷却重发、重置与旧 session 拒绝 smoke，记录脱敏证据；缺配置时保持 BLOCKED、此项未完成且不归档，不以本地捕获邮件或 HTTP fixture 代替
+- [x] 5.1 Complete DTOs, stable errors, OpenAPI decorators and masking rules, generate unique OpenAPI and run drift and directed E2E, verify that direct requests cannot bypass confirmation, purpose, quota or RBAC boundaries and logs do not contain credentials/email/body
+- [x] 5.2 Execute the final affected-scope once after all implementations are completed: format, Prisma validate/generate, lint/typecheck, dependency boundary, build, OpenAPI drift, complete API unit/integration/e2e/runtime, git diff --check and OpenSpec strict; record the actual commands/number, if failed, only repair the minimum scope first and then rerun the final check
+- [x] 5.3 Write Chinese acceptance and operation instructions, record local SMTP/database/Redis version, migration/shutdown rollback, credential cleaning, uncertain email resending, prototype conflict handling and external BLOCKED; check the evidence of each spec scenario, and cannot just rely on the test to check the all-green check and not perform the acceptance
+- [ ] 5.4 Perform registered delivery, verification, cool-down resend, reset and old session rejection smoke on the isolated real SMTP/domain name and controlled receiving mailbox, record desensitization evidence; keep BLOCKED when configuration is missing, this item is not completed and will not be archived, and will not be replaced by local capture of emails or HTTP fixtures

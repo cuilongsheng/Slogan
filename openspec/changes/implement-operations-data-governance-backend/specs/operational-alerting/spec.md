@@ -1,66 +1,66 @@
 ## Purpose
 
-定义后端关键依赖、异步收敛和数据治理异常的持久发现、去重、恢复和受限查看能力，使故障可以被追踪，同时不会把告警系统变成业务可用性的单点依赖。
+Define persistent discovery, deduplication, recovery, and restricted viewing capabilities for backend critical dependencies, asynchronous convergence, and data governance exceptions so that failures can be tracked without turning the alarm system into a single point of dependency for business availability.
 
 ## ADDED Requirements
 
-### Requirement: 关键运行异常形成最小持久事实
+### Requirement: Critical operational exception forms minimum persistent fact
 
-系统 MUST 监测 PostgreSQL、Redis、LiveKit、AI/STT/SMS provider readiness，持久命令与 job 堆积或超期、案件分配/限制恢复延迟、临时数据清理失败、指标快照过期及备份恢复演练失败。异常事实 MUST 只包含组件、类别、严重度、受影响范围类型、首次/最近观察时间、计数、状态和稳定原因码，不得保存密钥、连接串、原始请求、音频、完整转写、举报正文或私人内容。
+The system MUST monitor PostgreSQL, Redis, LiveKit, AI/STT/SMS provider readiness, persistent command and job accumulation or expiration, case allocation/limit recovery delay, temporary data cleanup failure, indicator snapshot expiration and backup recovery drill failure. Exception facts MUST only contain component, category, severity, scope type, first/last observed time, count, status, and stability reason code. Keys, connection strings, original requests, audio, full transcripts, report text, or private content MUST not be saved.
 
-#### Scenario: provider readiness 连续失败
+#### Scenario: provider readiness fails continuously
 
-- **WHEN** 同一 provider 在配置窗口内达到失败阈值
-- **THEN** 系统建立或更新一个对应异常事实并记录首次和最近观察时间，不为每次探测创建重复事件
+- **WHEN** The same provider reached the failure threshold within the configuration window
+- **THEN** The system creates or updates a corresponding anomaly fact and records the first and latest observation times, without creating duplicate events for each detection.
 
-#### Scenario: 异常载荷包含敏感值
+#### Scenario: Abnormal payload contains sensitive values
 
-- **WHEN** 下游错误对象包含凭据、URL 查询参数或 provider 原始响应
-- **THEN** 系统只保存白名单原因码和最小范围，不保存该原始值
+- **WHEN** Downstream error object contains credentials, URL query parameters, or provider raw response
+- **THEN** The system only saves the whitelist reason code and minimum range, but does not save the original value.
 
-### Requirement: 异常生命周期幂等且保留恢复事实
+### Requirement: Exception lifecycle idempotent and retain recovery facts
 
-系统 MUST 使用稳定指纹合并同一组件、类别和范围的重复异常，并支持 `OPEN`、`ACKNOWLEDGED`、`RESOLVED` 状态。恢复探测 MUST 关闭当前异常但保留历史；新一轮失败 MUST 建立新的 occurrence，不得改写上一轮恢复时间。
+The system MUST use stable fingerprints to merge duplicate anomalies of the same component, category, and scope, and support the `OPEN`, `ACKNOWLEDGED`, `RESOLVED` states. Recovery detection MUST close the current exception but retain the history; a new round of failure MUST create a new occurrence, and the previous round of recovery time MUST not be overwritten.
 
-#### Scenario: 并发发现同一异常
+#### Scenario: The same exception was found concurrently
 
-- **WHEN** 多个 runner 并发报告同一异常指纹
-- **THEN** 系统只保留一个当前开放异常并原子累加观察计数
+- **WHEN** Multiple runners report the same abnormal fingerprint concurrently
+- **THEN** The system only retains one currently open exception and atomically accumulates the observation count
 
-#### Scenario: 组件恢复后再次失败
+#### Scenario: Component failed again after recovery
 
-- **WHEN** 已解决异常对应组件后来再次达到失败阈值
-- **THEN** 系统保留旧异常并建立新的开放 occurrence
+- **WHEN** The component corresponding to the resolved exception later reached the failure threshold again.
+- **THEN** The system retains the old exception and creates a new open occurrence
 
-### Requirement: 告警操作和查询遵循最小权限
+### Requirement: Alarm operations and queries follow the minimum permissions
 
-系统 MUST 只允许 `PLATFORM_ADMIN` 查看完整异常范围并确认或手工解决异常，允许 `AUDITOR` 只读异常和状态历史，允许 `OPERATIONS_ANALYST` 只读取按组件、严重度和状态聚合且达到最小样本阈值的趋势。确认或解决 MUST 携带原因和调用者 UUID 请求标识，并使用当前持久角色判断。
+The system MUST only allow `PLATFORM_ADMIN` to view the full exception scope and confirm or manually resolve the exception, allow `AUDITOR` to read only the exception and status history, and allow `OPERATIONS_ANALYST` to only read trends aggregated by component, severity, and status that meet the minimum sample threshold. Confirm or resolve MUST carry the cause and caller UUID request identification, and use the current persistent role judgment.
 
-#### Scenario: 管理员确认异常
+#### Scenario: Administrator confirmation exception
 
-- **WHEN** 平台管理员以有效原因和请求标识确认一个开放异常
-- **THEN** 系统幂等保存确认人、时间和原因，并追加后台审计
+- **WHEN** The platform administrator acknowledged an open exception with a valid reason and request ID.
+- **THEN** The system idempotent saves the confirmation person, time and reason, and adds administrative audit
 
-#### Scenario: 审计员修改异常
+#### Scenario: Auditor modification exception
 
-- **WHEN** 只有审计员角色的用户尝试确认或解决异常
-- **THEN** 系统拒绝修改并保留原状态
+- **WHEN** Only users with the auditor role are trying to confirm or resolve the exception.
+- **THEN** The system rejects the modification and retains the original status
 
-#### Scenario: 运营分析员读取异常趋势
+#### Scenario: Operations analyst reads abnormal trend
 
-- **WHEN** 运营分析员查询异常趋势
-- **THEN** 系统只返回匿名聚合，不返回房间、用户、命令或 provider 请求标识
+- **WHEN** Operations analyst queries abnormal trends
+- **THEN** The system only returns anonymous aggregates, not room, user, command or provider request identifiers.
 
-### Requirement: 外部告警投递与业务事务隔离
+### Requirement: External alarm delivery and business transaction isolation
 
-系统 MUST 通过可替换 sink 投递不含内容的异常通知，并以持久投递状态重试。sink 不可用 MUST 不回滚房间、安全处置、账号注销、清理或指标快照等已提交业务结果，也不得阻止真人语音；系统 MUST 保留待重试投递并暴露投递降级状态。
+The system MUST deliver exception notifications without content via a replaceable sink and retry in a persistent delivery state. The sink is unavailable. Submitted business results such as rooms, security disposals, account account deletion, cleanups, or indicator snapshots MUST not be rolled back, and real-person voices MUST not be blocked. The system MUST retain delivery for retry and expose the delivery degradation status.
 
-#### Scenario: 外部 sink 超时
+#### Scenario: External sink timeout
 
-- **WHEN** 异常已提交但外部告警 sink 超时
-- **THEN** 业务结果保持提交，投递进入可重试状态且不复制敏感异常上下文
+- **WHEN** Exception submitted but external alarm sink timed out
+- **THEN** The business results remain submitted, the delivery enters the retryable state and the sensitive exception context is not copied.
 
-#### Scenario: 重启后恢复投递
+#### Scenario: Delivery resumes after restarting
 
-- **WHEN** 进程在异常提交后、通知成功前重启
-- **THEN** 新 runner 可以领取持久投递并完成或稳定记录失败
+- **WHEN** The process restarted after the exception was submitted but before the notification was successful.
+- **THEN** New runner can receive persistent delivery and complete or stable record failure

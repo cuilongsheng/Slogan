@@ -1,16 +1,16 @@
-## 1. 合同与会话
+## 1. Contract and conversation
 
-- [x] 1.1 补齐成员目标用户 ID 和仅房主可读的已移除成员合同，生成客户端并验证权限
-- [x] 1.2 实现 API 请求、请求标识和失败状态；保持语音会话挂载
+- [x] 1.1 Complete the member target user ID and the removed member contract that is only readable by room host, generate the client and verify permissions
+- [x] 1.2 Implement API requests, request identification and failure status; keep voice sessions mounted
 
-## 2. 页面与覆盖层
+## 2. Pages and Overlays
 
-- [x] 2.1 按成员和移除稿完成成员操作、确认及已移除成员重新邀请
-- [x] 2.2 按接任稿完成房主退出选择器
-- [x] 2.3 按举报稿完成目标/类别/说明表单和受理结果
-- [x] 2.4 按邀请稿完成候选选择和普通邀请结果
+- [x] 2.1 Complete member operations, confirmation and re-invitation of removed members by member and removal draft
+- [x] 2.2 Complete the room host exit selector according to the takeover draft
+- [x] 2.3 Complete the target/category/explanation form and acceptance results according to the report draft
+- [x] 2.4 Complete candidate selection and ordinary invitation results according to the invitation draft
 
-## 3. 验证
+## 3. Verification
 
-- [x] 3.1 自动化验证权限、重复提交、冲突和失败保留
-- [ ] 3.2 390×844 截图对比，记录 API、Cloud 和设备证据边界
+- [x] 3.1 Automated verification of permissions, duplicate submissions, conflicts and failed retention
+- [ ] 3.2 390×844 screenshot comparison, recording API, Cloud and device evidence boundaries

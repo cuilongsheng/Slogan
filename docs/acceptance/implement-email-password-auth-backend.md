@@ -1,64 +1,64 @@
-# 邮箱密码认证后端验收
+# Email password authentication backend acceptance
 
-状态：本地实现与验证完成（17/18 项）；真实邮件验收 BLOCKED，未完成项目验收，未部署，未归档。
+Status: Local implementation and verification completed (17/18 items); real email acceptance BLOCKED, project acceptance not completed, not deployed, not archived.
 
-## 数据与密码基础
+## Data and Password Basics
 
-- 2026-09-23：Prisma validate/generate 通过。增量迁移在本地 PostgreSQL 17.6 测试库执行成功。
-- `email-auth-migration.spec.ts`：2/2 通过；空库与 OAuth/手机号/会话/注销用户历史 fixture 均验证，旧行保持不变，无自动创建邮箱身份，注销身份唯一占用有效。
-- `email-password.policy.spec.ts`：4/4 通过；大小写、plus/dot、Unicode 码点、原始密码字节、独立盐、dummy 校验及队列上限。
-- Node 24.21.0 本地 scrypt 抽样：两次并行 N=32768/r=8/p=1 共 66ms，进程最大 RSS 114784 KiB。此为本机抽样，不是生产容量承诺。
-- 每个散列核心工作内存约 32MiB，maxmem=64MiB；每个进程最多 2 个计算、20 个排队，超出返回不可用；多进程须按进程数预算资源。
+- 2026-09-23: Prisma validate/generate passed. The incremental migration was successfully executed on the local PostgreSQL 17.6 test library.
+- `email-auth-migration.spec.ts`: 2/2 passed; the empty database and the OAuth/mobile phone number/session/account deletion user history fixtures are verified, the old row remains unchanged, no mailbox identity is automatically created, and the account deletion identity is uniquely occupied and valid.
+- `email-password.policy.spec.ts`: 4/4 Pass; uppercase and lowercase, plus/dot, Unicode codepoints, raw password bytes, independent salt, dummy check, and queue limit.
+- Node 24.21.0 local scrypt sampling: two parallel N=32768/r=8/p=1, a total of 66ms, the maximum RSS of the process is 114784 KiB. This is a local sampling, not a production capacity commitment.
+- The working memory of each hash core is about 32MiB, maxmem=64MiB; each process can perform up to 2 calculations and 20 queues, and will return unavailable if exceeded; multi-process resources must be budgeted according to the number of processes.
 
-## 外部验收
+## External acceptance
 
-2026-09-23 用户确认尚未配置真实 SMTP/已验证发信域名/受控收件邮箱。任务 5.4 保持 BLOCKED、未勾选，不归档；不得用本地捕获邮件代替。本地证据见下表。
+2026-09-23 The user confirms that real SMTP/verified sending domain name/controlled receiving mailbox has not been configured. Task 5.4 remains BLOCKED, unchecked, and unarchived; may not be replaced by local capture of mail. See the table below for local evidence.
 
-## 场景证据映射
+## Scene evidence mapping
 
-以下均为本地证据。`test/` 路径相对 `apps/api/`。
+The following is local evidence. The path `test/` is relative to `apps/api/`.
 
-| OpenSpec scenario    | 证据                                                                                                       | 状态    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------- | ------- |
-| 新注册与已占用身份   | integration/email-auth：pending cap、旧申请密码不变；e2e/email-auth：占用拒绝                              | PASS    |
-| 同一身份并发验证     | integration/email-auth：并发验证仅一个用户提交、失败事务回滚                                               | PASS    |
-| 完成验证             | e2e/email-auth：POST 确认无会话，密码登录进入 PROFILE_REQUIRED                                             | PASS    |
-| 过期、重复或错误目的 | integration/email-auth：错目的、期限、重复确认拒绝                                                         | PASS    |
-| 重发与抢占防护       | integration/email-auth：管理摘要查找、60 秒、旧 generation、固定过期                                       | PASS    |
-| 成功登录与权限边界   | e2e/email-auth：PROFILE_REQUIRED、AGE_RESTRICTED、后台无角色拒绝                                           | PASS    |
-| 禁用、注销和无效密码 | e2e/email-auth：统一凭据错误、非 ACTIVE 拒绝                                                               | PASS    |
-| 密码重置成功         | e2e/email-auth：SMTP 捕获、旧 access/refresh/密码失效、新密码恢复                                          | PASS    |
-| 并发旧密码登录与刷新 | integration/email-auth：真实 PostgreSQL reset/refresh/login 并发、晚到旧版本拒绝                           | PASS    |
-| 重放与账号枚举       | e2e/email-auth 与 integration/email-auth：已知/未知响应一致、仅合格账号投递、双消费仅一次                  | PASS    |
-| 绑定成功             | e2e/email-auth：OAuth 与手机号重新认证、原 userId 和原身份保留                                             | PASS    |
-| 身份冲突或会话失效   | e2e/email-auth：跨账号身份冲突、重复凭据、原会话撤销；integration/email-auth：proof 命令/会话/目的/期限    | PASS    |
-| 注销后重入           | e2e/email-auth 与 integration/email-auth：密码清除、占用保留、旧 reset/proof 拒绝、命令重放                | PASS    |
-| 投递失败与不确定结果 | runtime/auth-mail.smoke：真实本地 SMTP 接收/拒绝/超时、5 次上限、租约恢复/fencing/重复邮件单次消费         | PASS    |
-| 链接安全与日志       | runtime/auth-mail.smoke：固定 HTTPS fragment；e2e/email-auth：GET 不消费/拒绝 redirect；unit/log-redaction | PASS    |
-| 配额和依赖失败       | integration/email-quota：双实例 Redis 来源/目标/全局配额、冷却、未知目标、失败拒绝；e2e：代理头不可绕过    | PASS    |
-| 真实邮件验收缺失     | 用户确认暂无配置，5.4 未执行，不归档                                                                       | BLOCKED |
+| OpenSpec scenario                            | Evidence                                                                                                                                                          | Status  |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| New registration and occupied identity       | integration/email-auth: pending cap, old application password remains unchanged; e2e/email-auth: occupation rejected                                              | PASS    |
+| Concurrent verification of the same identity | integration/email-auth: Concurrent verification only submitted by one user, failed transaction rollback                                                           | PASS    |
+| Verification completed                       | e2e/email-auth: POST confirms no session, password login enters PROFILE_REQUIRED                                                                                  | PASS    |
+| Expired, duplicate or wrong purpose          | integration/email-auth: wrong purpose, deadline, duplicate confirmation rejected                                                                                  | PASS    |
+| Resend and preemption protection             | integration/email-auth: manage digest lookup, 60 seconds, old generation, fixed expiration                                                                        | PASS    |
+| Successful login and permission boundaries   | e2e/email-auth: PROFILE_REQUIRED, AGE_RESTRICTED, no role rejection in the background                                                                             | PASS    |
+| Disabled, deleted and invalid passwords      | e2e/email-auth: unified credentials error, non-ACTIVE rejection                                                                                                   | PASS    |
+| Password reset successful                    | e2e/email-auth: SMTP capture, old access/refresh/password invalidation, new password recovery                                                                     | PASS    |
+| Concurrent login and refresh of old password | integration/email-auth: true PostgreSQL reset/refresh/login concurrency, late arrival and old version rejection                                                   | PASS    |
+| Replay and account enumeration               | e2e/email-auth and integration/email-auth: known/unknown responses are consistent, only qualified accounts are delivered, double consumption is only once         | PASS    |
+| Binding successful                           | e2e/email-auth: OAuth and mobile phone number re-authentication, original userId and original identity retained                                                   | PASS    |
+| Identity conflict or session invalidation    | e2e/email-auth: cross-account identity conflict, duplicate credentials, original session revocation; integration/email-auth: proof command/session/purpose/period | PASS    |
+| delete the account and then re-enter         | e2e/email-auth and integration/email-auth: password clearing, occupation retention, old reset/proof rejection, command replay                                     | PASS    |
+| Delivery failure and uncertain result        | runtime/auth-mail.smoke: true local SMTP reception/rejection/timeout, 5-time limit, lease recovery/fencing/single consumption of duplicate emails                 | PASS    |
+| Link security and logs                       | runtime/auth-mail.smoke: fixed HTTPS fragment; e2e/email-auth: GET does not consume/reject redirect; unit/log-redaction                                           | PASS    |
+| Quota and dependency failure                 | integration/email-quota: dual instance Redis source/target/global quota, cooldown, unknown target, failure rejection; e2e: proxy header cannot be bypassed        | PASS    |
+| Real email acceptance is missing             | The user confirmed that there is no configuration yet, 5.4 has not been executed and will not be archived.                                                        | BLOCKED |
 
-运行与回滚说明：`docs/email-password-auth-runbook.md`。未修改移动端/管理端 UI，未执行生产发布。
+Run and rollback instructions: `docs/email-password-auth-runbook.md`. The mobile terminal/management terminal UI has not been modified, and the production release has not been executed.
 
-## 最终 affected-scope
+## final affected-scope
 
-2026-09-23 最终完整检查全部退出码为 0。环境：Node 24.21.0、PostgreSQL 17.6、Redis 7.4.11；SMTP 捕获使用 smtp-server 3.19.13，发送使用 nodemailer 10.0.10。
+2026-09-23 The final complete check all exit codes are 0. Environment: Node 24.21.0, PostgreSQL 17.6, Redis 7.4.11; SMTP capture uses smtp-server 3.19.13, and sending uses nodemailer 10.0.10.
 
-| 检查       | 实际命令                                                                                                                                                   | 结果                       |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| 测试依赖   | `pnpm --filter @slogan/api db:test:up`                                                                                                                     | PASS                       |
-| 格式       | `pnpm exec prettier --check 'apps/api/**/*.{ts,js,cjs,json}' docs/email-password-auth-runbook.md docs/acceptance/implement-email-password-auth-backend.md` | PASS                       |
-| Prisma     | `pnpm --filter @slogan/api exec prisma validate`、`pnpm --filter @slogan/api db:generate`                                                                  | PASS                       |
-| 静态检查   | `pnpm --filter @slogan/api lint`、`pnpm --filter @slogan/api typecheck`、`pnpm deps:check`                                                                 | PASS                       |
-| 构建与合同 | `pnpm --filter @slogan/api build`、`pnpm --filter @slogan/api exec node dist/scripts/generate-openapi.js --check`                                          | PASS                       |
-| 单元测试   | `pnpm --filter @slogan/api test:unit`                                                                                                                      | 37 suites / 209 tests PASS |
-| 集成测试   | `pnpm --filter @slogan/api test:integration`                                                                                                               | 36 suites / 196 tests PASS |
-| HTTP E2E   | `pnpm --filter @slogan/api test:e2e`                                                                                                                       | 16 suites / 82 tests PASS  |
-| 运行时     | `pnpm --filter @slogan/api test:runtime`                                                                                                                   | 8 suites / 15 tests PASS   |
-| 差异与规格 | `git diff --check`、`openspec validate implement-email-password-auth-backend --strict`                                                                     | PASS                       |
+| Check                          | actual command                                                                                                                                             | Result                     |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Test dependencies              | `pnpm --filter @slogan/api db:test:up`                                                                                                                     | PASS                       |
+| format                         | `pnpm exec prettier --check 'apps/api/**/*.{ts,js,cjs,json}' docs/email-password-auth-runbook.md docs/acceptance/implement-email-password-auth-backend.md` | PASS                       |
+| Prisma                         | `pnpm --filter @slogan/api exec prisma validate`、`pnpm --filter @slogan/api db:generate`                                                                  | PASS                       |
+| Static check                   | `pnpm --filter @slogan/api lint`、`pnpm --filter @slogan/api typecheck`、`pnpm deps:check`                                                                 | PASS                       |
+| Build and Contract             | `pnpm --filter @slogan/api build`、`pnpm --filter @slogan/api exec node dist/scripts/generate-openapi.js --check`                                          | PASS                       |
+| Unit testing                   | `pnpm --filter @slogan/api test:unit`                                                                                                                      | 37 suites / 209 tests PASS |
+| Integration testing            | `pnpm --filter @slogan/api test:integration`                                                                                                               | 36 suites / 196 tests PASS |
+| HTTP E2E                       | `pnpm --filter @slogan/api test:e2e`                                                                                                                       | 16 suites / 82 tests PASS  |
+| Runtime                        | `pnpm --filter @slogan/api test:runtime`                                                                                                                   | 8 suites / 15 tests PASS   |
+| Differences and specifications | `git diff --check`、`openspec validate implement-email-password-auth-backend --strict`                                                                     | PASS                       |
 
-共 97 个测试套件、502 个测试通过；这是当前工作区完整 API 测试数量，包含既有功能，不代表全部为本次新增。生成的 OpenAPI 以生成器 drift 检查为准，不额外手动格式化。
+A total of 97 test suites, 502 tests passed; this is the number of complete API tests in the current workspace, including existing functions, and does not mean that all are newly added this time. The generated OpenAPI is subject to the generator drift check, and no additional manual formatting is required.
 
-运行时证据包含真实 auth-mail worker 子进程：SMTP 接收后强制终止、持久化 RUNNING 租约、重启恢复和重复邮件 token 仅能消费一次。测试手动推进租约到期时间，未等待完整生产租约周期。真实外部送达、域名配置和收件箱效果仍未验证。
+Runtime evidence contains real auth-mail worker child process: SMTP force termination after reception, persistent RUNNING lease, restart recovery and duplicate mail token can only be consumed once. The test manually advances the lease expiration time without waiting for the full production lease cycle. The actual external delivery, domain name configuration and inbox performance have not yet been verified.
 
-测试 shell 的隔离环境覆盖见运行说明；未修改本地凭据文件。Jest 曾提示退出延迟和 Node 实验性 VM 警告，最终进程正常退出且退出码为 0。
+See the run instructions for the isolation environment coverage of the test shell; the local credentials file has not been modified. Jest had prompted exit delays and Node experimental VM warnings, and eventually the process exited normally with exit code 0.

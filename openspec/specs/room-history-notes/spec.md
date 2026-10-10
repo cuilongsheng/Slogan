@@ -2,39 +2,48 @@
 
 ## Purpose
 
-提供用户本人实际参加或预约过的房间记录，以及实际会话结束后的私人手写笔记，使用户能够回顾交流经历而不暴露其他成员的私有内容，也不依赖录音、转写或自动总结。
+Provides records of rooms that the user has actually attended or reserved, as well as private handwritten notes after the actual session, allowing users to review communication experiences without exposing the private content of other members, and without relying on recording, transcription or automatic summary.
 
 ## Requirements
 
-### Requirement: 本人房间与预约历史
-系统 MUST 仅返回调用者实际参加或预约过的房间记录，支持有限分页，区分实际入房与仅预约，并返回房间当前状态和本人记录，不公开他人预约或笔记。读取 MUST 不赋予重新加入或房主管理权限。
+### Requirement: My room and reservation history
 
-#### Scenario: 本人分页查询
-- **WHEN** 已认证用户查询自己的历史
-- **THEN** 系统分页返回其有实际入房或预约关系的房间，同一房间不重复，其他用户无关系的房间不出现
+The system MUST only return room records that the caller has actually attended or made reservations, supports limited paging, distinguishes actual room entry and reservation only, and returns the current status of the room and personal records, without disclosing other people's reservations or notes. Read MUST not grant rejoin or room host management permissions.
 
-#### Scenario: 预约未曾入房
-- **WHEN** 用户仅预约过某房间而没有实际 membership
-- **THEN** 历史明确表示仅预约，不将其标记为实际参与
+#### Scenario: Personal page query
 
-### Requirement: 私人会后笔记
-系统 MUST 允许实际参与过已结束房间的用户保存和读取自己的纯文本笔记；仅预约、无关系用户或其他成员 MUST 无法代读代写。历史成员即使后来离开或被移除仍保留自身会后记录资格。
+- **WHEN** Authenticated users query their own history
+- **THEN** The system paging returns rooms with actual room check-in or reservation relationships. The same room is not repeated, and rooms that are not related to other users do not appear.
 
-#### Scenario: 保存本人笔记
-- **WHEN** 已结束房间的历史成员提交有效私人笔记
-- **THEN** 系统保存本人内容，其他房间成员读取各自的独立笔记
+#### Scenario: No check-in for reservation
 
-#### Scenario: 未参与或尚未结束
-- **WHEN** 仅预约、无实际参与关系的用户请求笔记，或成员在会话结束前尝试保存
-- **THEN** 系统拒绝操作，不产生笔记或改变入房资格
+- **WHEN** The user has only reserved a room but has no actual membership
+- **THEN** The history clearly says appointment only, not marking it as actual participation
 
-### Requirement: 并发编辑与清空
-系统 MUST 防止旧版本写入覆盖更新的笔记，重复同一次保存不增加重复内容；清空笔记后 MUST 继续阻止旧请求使旧文本复活。非法或超长内容 MUST 被拒绝。
+### Requirement: Notes after private meeting
 
-#### Scenario: 两端竞争保存
-- **WHEN** 两个不同编辑以同一旧版本并发提交
-- **THEN** 最多一个新编辑提交，另一个收到版本冲突，已提交内容保持完整
+The system MUST allow users who have actually participated in ended rooms to save and read their own plain text notes; only reservation-only, unrelated users or other members MUST not be able to read and write on their behalf. Historical members will still retain their post-meeting record qualifications even if they later leave or are removed.
 
-#### Scenario: 清空后旧请求迟到
-- **WHEN** 用户已清空笔记，之前的旧保存请求迟到
-- **THEN** 系统拒绝旧写入，不重新恢复已经清空的文本
+#### Scenario: Save my notes
+
+- **WHEN** Historical members of closed rooms submitted valid private notes
+- **THEN** The system saves my content, and other room members read their independent notes.
+
+#### Scenario: Not participating or not finished yet
+
+- **WHEN** A user with only reservations and no actual participation relationship requests a note, or a member attempts to save it before the session ends.
+- **THEN** The system refuses the operation and does not generate notes or change room entry qualifications.
+
+### Requirement: Concurrent editing and clearing
+
+The system MUST prevent old versions from being written to overwrite updated notes, and repeating the same save does not add duplicate content; after clearing the notes, the system MUST continue to prevent old requests from reviving old text. Illegal or extremely long content MUST be rejected.
+
+#### Scenario: Competing save at both ends
+
+- **WHEN** Two different editors submitted concurrently with the same old version
+- **THEN** At most one new editor commits, another receives a version conflict, and the submitted content remains intact
+
+#### Scenario: Old requests are late after clearing
+
+- **WHEN** The user has cleared the notes and the previous old save request is late
+- **THEN** The system rejects old writes and does not restore cleared text

@@ -1,19 +1,19 @@
 ## Context
 
-后台复用普通账号会话；权限来自服务端当前持久角色。Web 刷新使用认证路径的 HttpOnly Cookie，access token 仅保存在运行内存。后台 API 已提供案件、申诉、降级事件、角色和审计；房间运营明细仅查询，现有合同没有房间处置命令。
+The admin app reuses ordinary account sessions. Permissions come from current persistent server-side roles. Web refresh uses the authentication path’s HttpOnly cookie. Access tokens remain only in runtime memory. The backend API has provided cases, appeals, downgrade events, roles and audits; room operation details are only queried, and there is no room disposal order for existing contracts.
 
 ## Decisions
 
-1. `apps/admin/src/app` 持有路由和 providers，`layouts` 持有 232px 侧栏及 70px 顶栏，feature 持有各领域数据请求和交互。所有 HTTP 调用通过 `@slogan/api-client`。服务端仍是权限最终裁决者，前端角色导航只改善使用体验。
-2. 登录使用现有 `/v1/auth/web/password/exchange`。启动时单飞调用 `/v1/auth/web/refresh`，随后调用 `/v1/backoffice/me`；401 清理本地 access token，403 显示没有后台权限。登出清理本地缓存并调用 `/v1/auth/web/logout`。
-3. 六张页面分别绑定已确认的 Figma frame：房间 `114:1602`、案件 `114:1655`、申诉 `114:1708`、降级事件 `114:1761`、角色 `114:1814`、审计 `114:1867`。保留布局、层级、色彩和控件状态；示例数据不是运行时数据。
-4. 房间运营明细只读，筛选只在服务端合同支持时提交；当前 API 仅支持游标及 limit，其他界面筛选不能伪装为全量查询。后台角色操作、案件与申诉决策需显示服务端真实结果和冲突/拒绝状态。
-5. 查询缓存使用一个 `QueryClient`，按资源与过滤条件区分 key。瞬时表单状态保持在组件内，角色变更后刷新当前身份和相关列表。文案放入集中资源文件。
-6. 案件和申诉页三张统计卡从独立的全量 summary API 读取，案件沿用管理员全量/安全员本人和未分配队列的可见范围，申诉仅安全员可读。统计失败显示未知值，不能以当前页长度填数。
+1. `apps/admin/src/app` owns routes and providers; `layouts` owns the 232px sidebar and 70px top bar. Features own their domain-specific requests and interactions. All HTTP calls use `@slogan/api-client`. The server remains the final authorization authority; frontend role-based navigation only improves the user experience.
+2. Login using existing `/v1/auth/web/password/exchange`. On startup, make a single-flight call to `/v1/auth/web/refresh`, then call `/v1/backoffice/me`. A 401 clears the local access token; a 403 displays that administrative access is unavailable. Logout clears local caches and calls `/v1/auth/web/logout`.
+3. Six pages are bound to the confirmed Figma frames: room `114:1602`, case `114:1655`, appeal `114:1708`, downgrade event `114:1761`, role `114:1814`, audit `114:1867`. Preserve layout, hierarchy, colors, and control states. Example design data is not runtime data.
+4. Room operation details are read-only, and filtering is only submitted when the server contract supports it; the current API only supports cursor and limit, and filtering on other interfaces cannot be disguised as full query. Administrative role operations and case/appeal decisions must display actual server results and conflict/rejection states.
+5. Use one `QueryClient` for query caching, with keys distinguished by resource and filter criteria. Keep transient form state within components. Refresh the current identity and related lists after role changes. Put the copy into a centralized resource file.
+6. The three statistics cards on the case and appeal pages are read from the independent full summary API. The cases follow the visible range of the administrator full amount/safety officer and the unassigned queue. Appeals are only readable by the safety officer. Statistics failed to display an unknown value, which cannot be filled in with the current page length.
 
 ## Risks and rollback
 
-- 当前房间明细 OpenAPI 缺成功响应字段：先补 code-first DTO 并重新生成合同/客户端，再接页面；仅追加响应描述，不改变运行时 JSON。
-- 浏览器来源必须出现在服务端 CORS 与 Web auth 允许源中；环境遗漏时后台登录明确报错。不得把 token 写入 localStorage 或日志。
-- 客户端切换角色或角色被撤销时，下次 API 请求仍由后端重新鉴权；收到 403 后移除相应缓存并显示拒绝态。
-- UI 可独立回滚到工程启动页；后端新增的响应描述保持兼容，无数据迁移。高权限操作的失败不做乐观成功展示。
+- The current room details OpenAPI is missing a successful response field: first fill in the code-first DTO and regenerate the contract/client, and then connect to the page; only add the response description and do not change the runtime JSON.
+- The browser source must appear in the server CORS and Web auth allowed sources; if the environment is omitted, the admin login will clearly report an error. Do not write tokens to localStorage or logs.
+- When the client switches roles or the role is revoked, the next API request will still be re-authenticated by the backend; after receiving 403, the corresponding cache will be removed and a rejection status will be displayed.
+- The UI can be rolled back to the project startup page independently; the new response description in the backend remains compatible, and there is no data migration. Failure of high-privilege operations does not show optimistic success.

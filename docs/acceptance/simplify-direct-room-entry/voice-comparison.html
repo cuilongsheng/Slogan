@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
   <meta charset="utf-8" />
-  <title>Slogan 语音房原稿与运行对照</title>
+  <title>Slogan voice room: original design and runtime comparison</title>
   <style>
     body {
       margin: 24px;
@@ -40,20 +40,20 @@
       margin: 16px 0;
     }
   </style>
-  <h1>原始 Figma 与真实运行组件</h1>
-  <p>02 UI · 115:1425 · 390×844；Web fixture 对照，Android 真机另行验证。两张图片原样显示。</p>
+  <h1>Original Figma design and actual running component</h1>
+  <p>02 UI · 115:1425 · 390×844. This is a Web-fixture comparison; Android device verification is separate. Both images are displayed unchanged.</p>
   <div class="pair">
     <figure>
-      <figcaption>Desktop Bridge 原稿</figcaption>
+      <figcaption>Original exported through Desktop Bridge</figcaption>
       <img src="voice-original-figma.png" alt="原始语音房设计" />
     </figure>
     <figure>
-      <figcaption>最终运行组件，明确的 fixture 数据</figcaption>
+      <figcaption>Final running component with explicit fixture data</figcaption>
       <img src="voice-runtime-web-fixture.png" alt="最终语音房运行" />
     </figure>
   </div>
-  <h2>透明叠图</h2>
-  <label>运行图透明度 <input id="opacity" type="range" min="0" max="100" value="50" /></label>
+  <h2>Opacity overlay</h2>
+  <label>Runtime image opacity <input id="opacity" type="range" min="0" max="100" value="50" /></label>
   <div class="overlay">
     <img src="voice-original-figma.png" alt="原稿底图" /><img
       id="runtime"

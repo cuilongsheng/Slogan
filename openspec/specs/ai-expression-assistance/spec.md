@@ -2,109 +2,137 @@
 
 ## Purpose
 
-定义真人英语语音房中由用户主动触发的私人表达辅助，使文字或短语音输入可以生成适合当前主题和英语水平的简短表达，同时保持房间资格、额度、隐私和失败降级边界。
+Defines private expression assistance in a live English voice room that is actively triggered by the user, so that text or short voice input can generate short expressions suitable for the current topic and English level, while maintaining room qualifications, quotas, privacy, and failure downgrade boundaries.
 
 ## Requirements
 
-### Requirement: 表达辅助只服务于当前合格房间成员
-系统 MUST 只接受当前 `OPEN` 房间中有效成员的表达辅助请求，并在服务端重新校验账号可用、资料完成、成年和当前安全限制。房间主题、目标英语和用户 CEFR MUST 由服务端事实确定，客户端不得覆盖这些上下文。
+### Requirement: Expression assistance only serves current qualified room members
 
-#### Scenario: 当前成员请求辅助
-- **WHEN** 合格用户在其当前开放房间中主动发起表达辅助请求
-- **THEN** 系统使用该房间主题和用户当前 CEFR 处理请求
+The system MUST only accept expression assistance requests from valid members in the current `OPEN` room, and re-verify account availability, data completion, adulthood and current security restrictions on the server. Room theme, target English, and user CEFR MUST be determined by server-side facts, the client MUST not override these contexts.
 
-#### Scenario: 非成员或失效成员直接调用
-- **WHEN** 非成员、已离开、已移除、账号不可用或当前受限用户绕过客户端直接请求辅助
-- **THEN** 系统拒绝请求且不调用 AI 或 STT provider
+#### Scenario: Current member requests assistance
 
-### Requirement: 文字输入生成可直接说出的英语表达
-系统 MUST 接受去除首尾空白后 1–1000 个 Unicode code point 的母语文字，并返回一条简短自然的主要英语表达、零至两条可选表达、每条表达的语气标识以及 AI 可能出错的稳定提示标识。系统 MUST 不接受客户端提供的房间主题、CEFR、系统提示词或目标用户身份。
+- **WHEN** A qualified user actively initiates a request for expression assistance in his current open room
+- **THEN** The system uses the room theme and the user's current CEFR to process the request
 
-#### Scenario: 有效文字请求
-- **WHEN** 当前成员提交有效母语文字
-- **THEN** 系统返回结合服务端房间主题与 CEFR 的私人英语表达结果
+#### Scenario: Direct call from non-member or invalid member
 
-#### Scenario: 越界或空文字
-- **WHEN** 用户提交空白、超过长度上限或含未允许协议字段的文字请求
-- **THEN** 系统在调用 provider 前返回稳定的参数错误
+- **WHEN** Non-member, left, removed, account unavailable or currently restricted user bypasses the client and requests assistance directly
+- **THEN** The system rejects the request and does not call the AI or STT provider
 
-### Requirement: 短语音输入复用同一表达结果合同
-系统 MUST 允许当前成员上传单段不超过 30 秒且不超过 5 MiB 的受支持母语音频，并在满足 `temporary-speech-processing` 同意要求后将本次临时转写用于表达生成。响应 MUST 只返回表达结果，不返回完整转写；不支持、损坏、超时或超过边界的音频 MUST 失败且不得进入表达生成。
+### Requirement: Text input generates directly spoken English expressions
 
-#### Scenario: 有效短语音请求
-- **WHEN** 用户在有效同意下主动上传合格短语音且 STT 成功
-- **THEN** 系统使用本次临时转写生成与文字入口相同结构的私人英语表达
+The system MUST accept native text within 1–1000 Unicode code points after removing leading and trailing whitespace, and return a short and natural main English expression, zero to two optional expressions, a tone flag for each expression, and a stable prompt flag for possible AI errors. The system MUST not accept the client-supplied room theme, CEFR, system prompt word, or target user identity.
 
-#### Scenario: 短语音识别失败
-- **WHEN** 音频无效、超过限制或 STT 无法可靠识别
-- **THEN** 系统不调用表达生成并返回可改用文字输入的稳定失败结果
+#### Scenario: Valid text request
 
-### Requirement: 表达结果保持私人且不控制房间媒体
-系统 MUST 只向请求用户返回表达结果，不向房主或其他成员广播，不自动播放、不发布音频、不代表用户发言，也不把结果作为实时字幕、公开房间内容、私人笔记或单词本事实。请求上下文 MUST 不包含其他成员的资料或语音内容。
+- **WHEN** The current member submitted valid native language text
+- **THEN** The system returns private English expression results that combine the server room theme with CEFR
 
-#### Scenario: 成功生成表达
-- **WHEN** provider 返回有效表达结果
-- **THEN** 只有请求用户收到文字结果，房间成员和实时媒体状态不发生变化
+#### Scenario: Out of bounds or empty text
 
-#### Scenario: 其他成员尝试读取结果
-- **WHEN** 其他成员使用结果标识或修改请求参数尝试读取该结果
-- **THEN** 系统拒绝读取且不泄露结果是否存在或输入内容
+- **WHEN** The user submitted a text request that was blank, exceeded the maximum length, or contained an unallowed protocol field.
+- **THEN** The system returns a stable parameter error before calling provider
 
-### Requirement: 表达请求可安全重试并处理不确定外部结果
-系统 MUST 要求文字和短语音请求携带调用者生成的 UUID 请求标识，并把标识绑定到用户、房间、输入模式和规范化输入摘要。已完成结果在私有保留期内以相同标识和内容重试 MUST 返回原结果且不重复扣减用户额度；改变内容、房间或输入模式复用标识 MUST 冲突。并发处理中或外部结果不确定时，系统 MUST 返回明确状态，不得虚构成功或承诺 provider 侧恰好一次执行。
+### Requirement: Short voice input multiplexing the same expression result contract
 
-#### Scenario: 成功响应丢失后重试
-- **WHEN** 用户以相同标识和内容重试仍在私有保留期内的成功请求
-- **THEN** 系统返回原结果且不重新生成或再次扣减用户额度
+The system MUST allow current members to upload single segments of supported native language audio no longer than 30 seconds and no larger than 5 MiB, and use this temporary transcription for expression generation subject to `temporary-speech-processing` consent requirements. Response MUST return only expression results, not full transcription; audio that is unsupported, corrupted, timed out, or out of bounds MUST fail and MUST not enter expression generation.
 
-#### Scenario: 重用标识改变请求
-- **WHEN** 用户使用已有标识改变输入、房间或输入模式
-- **THEN** 系统返回稳定冲突并保持原请求事实
+#### Scenario: Valid short voice request
 
-#### Scenario: 不确定调用仍在处理
-- **WHEN** 相同请求存在未过期处理租约或 provider 结果尚不确定
-- **THEN** 系统返回处理中或暂不可重试状态，不并发启动第二次生成
+- **WHEN** The user actively uploads qualified short voice messages with valid consent and the STT is successful.
+- **THEN** The system uses this temporary transcription to generate a private English expression with the same structure as the text entry
 
-### Requirement: 频率、用户额度和平台预算在 provider 调用前执行
-系统 MUST 对表达请求执行跨实例频率限制、用户每日额度和平台级 provider 预算保护。确定在 provider 调用前失败的认证、资格、参数、同意或额度检查 MUST 不消耗 provider 用量；达到边界时 MUST 返回稳定限制结果和可用的重试时间，且不得影响用户继续真人语音交流。
+#### Scenario: Short speech recognition failed
 
-#### Scenario: 用户达到每日额度
-- **WHEN** 用户在当前额度周期内已经达到允许的表达辅助用量
-- **THEN** 系统拒绝新的 provider 调用并返回额度耗尽结果
+- **WHEN** The audio is invalid, exceeds the limit, or the STT cannot be reliably recognized
+- **THEN** The system does not call expression generation and returns a stable failure result that can be used for text input instead.
 
-#### Scenario: 平台预算关闭调用
-- **WHEN** 平台预算闸门关闭或无法安全确认剩余额度
-- **THEN** 系统拒绝新的表达生成但保持房间和实时语音可用
+### Requirement: Expression results remain private and do not control room media
 
-### Requirement: AI 失败必须安全降级
-系统 MUST 对超时、网络失败、provider 拒绝、无效结构和内容不可处理返回稳定且不泄露 provider 细节的结果。文字生成失败 MUST 提供重试语义；短语音链路失败 MUST 指示可改用文字输入。任何失败 MUST 不结束房间、不移除成员、不修改麦位，也不自动改用未配置的第二 provider。
+The system MUST only return expression results to the requesting user, not broadcast to the room host or other members, not automatically play, not publish audio, not speak on behalf of the user, and not use the results as live subtitles, public room content, private notes, or wordbook facts. The request context MUST not contain other members' profiles or voice content.
 
-#### Scenario: AI provider 超时
-- **WHEN** 表达生成超过服务端处理时限
-- **THEN** 系统终止等待并返回可重试失败，真人语音继续工作
+#### Scenario: Successfully generated expression
 
-#### Scenario: provider 返回无效结构
-- **WHEN** provider 响应缺少受控表达字段或超过输出边界
-- **THEN** 系统拒绝该响应且不把原始 provider 内容返回给客户端
+- **WHEN** provider returns valid expression result
+- **THEN** Only the requesting user receives text results, room members and real-time media status do not change
 
-### Requirement: AI provider 必须满足最小数据政策
-系统 MUST 只启用能够声明处理区域、数据用途、最大保留期和不使用请求内容训练公共模型的 AI provider。请求原文和 provider 侧完整响应的配置保留上限 MUST 不超过七天，并优先使用不留存模式；缺少必要政策配置、密钥或安全端点时，系统 MUST 禁止启用表达生成。
+#### Scenario: Other members try to read the results
 
-#### Scenario: provider 配置满足边界
-- **WHEN** AI provider 配置完整并满足区域、用途和不超过七天的保留边界
-- **THEN** 系统可以启用表达生成并只记录 provider 类别和最小用量事实
+- **WHEN** Other members use the result identifier or modify the request parameters to try to read the result.
+- **THEN** The system refuses to read without revealing whether the result exists or the input content
 
-#### Scenario: provider 数据政策不合格
-- **WHEN** provider 未声明数据用途、会将输入用于公共模型训练或保留期超过七天
-- **THEN** 系统拒绝启用表达生成且不暴露凭据值
+### Requirement: Express requests can be safely retried and handle indeterminate external results
 
-### Requirement: 私有结果短期保留并到期清理
-系统 MUST 只为响应丢失后的安全重放短期保存结构化表达结果，并设置不超过七天的明确过期时间。到期后系统 MUST 清除表达正文但保留不含原始输入和输出的最小请求、用量及失败事实；系统 MUST 不提供默认 AI 历史列表。
+The system MUST require text and short speech requests to carry a caller-generated UUID request identifier and bind the identifier to the user, room, input mode, and normalized input digest. Retry the completed result with the same identification and content within the private retention period MUST return the original result without repeatedly deducting the user's credit; changing the content, room or input mode reuse identification MUST conflicts. During concurrent processing or when the external result is uncertain, the system MUST return a clear status and MUST not fabricate success or promise the provider side to execute exactly once.
 
-#### Scenario: 保留期内重放
-- **WHEN** 请求用户在结果过期前以相同请求标识重试
-- **THEN** 系统返回原私人结果和原过期时间
+#### Scenario: Retry after successful response is lost
 
-#### Scenario: 结果已经过期
-- **WHEN** 用户在正文清理后重试原请求标识
-- **THEN** 系统返回结果已过期且不重新调用 provider，用户需以新标识主动发起新请求
+- **WHEN** The user retries a successful request with the same identity and content that is still within the private retention period
+- **THEN** The system returns the original result and does not regenerate or deduct the user's quota again.
+
+#### Scenario: Reuse ID change request
+
+- **WHEN** User changes input, room or input mode using existing identifier
+- **THEN** The system returns a stable conflict and keeps the original request fact
+
+#### Scenario: Unsure call is still being processed
+
+- **WHEN** There is an unexpired processing lease or provider result for the same request is uncertain
+- **THEN** The system returns to the status of processing or temporarily unavailable to retry, and the second generation will not be started concurrently.
+
+### Requirement: Frequency, user quota and platform budget are executed before provider call
+
+The system MUST enforce cross-instance frequency limits, user daily quotas, and platform-level provider budget protections for expression requests. Determine that authentication, qualification, parameter, consent, or credit checks that failed before the provider call MUST not consume provider usage; when the boundary is reached, stable limit results and available retry times MUST be returned, and MUST not affect the user's continued live voice communication.
+
+#### Scenario: User reaches daily quota
+
+- **WHEN** The user has reached the allowed expression auxiliary usage in the current quota period
+- **THEN** The system rejects the new provider call and returns a quota exhaustion result.
+
+#### Scenario: Platform budget close call
+
+- **WHEN** The platform budget gate is closed or the remaining balance cannot be safely confirmed
+- **THEN** System rejects new expression generation but keeps room and live speech available
+
+### Requirement: AI failed and must be safely downgraded
+
+The system MUST return stable results for timeouts, network failures, provider rejections, invalid structures, and unprocessable content without revealing provider details. Text generation failure MUST provide retry semantics; short voice link failure MUST indicate text input can be used instead. Any failure MUST not end the room, remove members, modify the microphone position, or automatically switch to an unconfigured second provider.
+
+#### Scenario: AI provider timed out
+
+- **WHEN** Expression generation exceeds server processing time limit
+- **THEN** The system terminates waiting and returns to retry failure, and the human voice continues to work.
+
+#### Scenario: provider returned an invalid structure
+
+- **WHEN** provider response is missing a controlled expression field or exceeds output bounds
+- **THEN** The system rejects the response and does not return the original provider content to the client.
+
+### Requirement: AI provider must meet minimum data policy
+
+The system MUST only enable AI providers that declare processing regions, data usage, maximum retention periods, and do not use request content to train public models. The configuration retention limit for the original request text and the complete response on the provider side MUST not exceed seven days, and the non-retention mode is preferred; the system MUST prohibit enabling expression generation when necessary policy configuration, keys or security endpoints are missing.
+
+#### Scenario: provider configuration meets the boundary
+
+- **WHEN** AI provider is fully configured and meets region, purpose, and retention boundaries of no more than seven days
+- **THEN** The system can enable expression generation and only log provider class and minimum usage facts
+
+#### Scenario: provider data policy is unqualified
+
+- **WHEN** The provider does not declare data usage, will use the input for public model training, or the retention period exceeds seven days
+- **THEN** The system refuses to enable expression generation without exposing credential values
+
+### Requirement: Private results are retained for a short period of time and cleared upon expiration.
+
+The system MUST only store structured expression results short-term for safe replay after response loss, and set an explicit expiration time of no more than seven days. After expiration, the system MUST clear the expression body but retain the minimum request, usage, and failure facts without original input and output; the system MUST not provide a default AI history list.
+
+#### Scenario: Replay within retention period
+
+- **WHEN** Requesting the user to retry with the same request ID before the result expires
+- **THEN** The system returns the original private result and the original expiration time
+
+#### Scenario: The result has expired
+
+- **WHEN** The user retried the original request after the body was cleaned
+- **THEN** The result returned by the system has expired and the provider will not be called again. The user needs to actively initiate a new request with a new ID.

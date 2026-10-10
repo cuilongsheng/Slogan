@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>房间体验修正 · 原稿与运行截图</title>
+  <title>Room experience corrections · original and runtime screenshots</title>
   <style>
     body {
       font: 15px/1.6 system-ui;
@@ -62,27 +62,26 @@
       max-width: 1000px;
     }
   </style>
-  <h1>房间体验修正：设计与运行截图</h1>
+  <h1>Room experience corrections: design and runtime screenshots</h1>
   <p class="note">
-    Figma 原稿由 Desktop Bridge 导出。运行截图来自本地最终页面，使用明确标注的确定性 API
-    测试数据；不代表真实 Android、麦克风或云端验收。原图可点击查看。完整结果及差异见
-    <a href="README.md">验收记录</a>。
+    The original Figma images were exported through Desktop Bridge. Runtime screenshots show the final local pages using explicitly identified deterministic API fixtures; they do not establish Android, microphone, or cloud acceptance. Click an image to open the original. See the full results and differences in the
+    <a href="README.md">acceptance record</a>。
   </p>
   <section>
-    <h2>我的 · 390 × 844</h2>
+    <h2>My account · 390 × 844</h2>
     <div class="pair phone">
       <figure>
-        <figcaption>原稿 152:1467</figcaption>
+        <figcaption>Original 152:1467</figcaption>
         <a href="me-figma-original.png"><img src="me-figma-original.png" alt="我的原稿" /></a>
       </figure>
       <figure>
-        <figcaption>运行页面 /me · Chromium / zh-CN / DPR 1</figcaption>
+        <figcaption>Runtime /me · Chromium / zh-CN / DPR 1</figcaption>
         <a href="me-runtime-fixture.png"><img src="me-runtime-fixture.png" alt="我的运行截图" /></a>
       </figure>
     </div>
-    <p>同尺寸叠加，仅改变透明度；没有修改任何图像。</p>
+    <p>Same-size overlay with opacity adjustment only; neither image has been edited.</p>
     <label
-      >运行图透明度
+      >Runtime image opacity
       <input
         type="range"
         min="0"
@@ -100,26 +99,25 @@
     </div>
   </section>
   <section>
-    <h2>创建房间 · 390 × 844</h2>
+    <h2>Create room · 390 × 844</h2>
     <p>
-      原稿保留。新增等级上下限由 153:1485
-      补充；运行页面仍保留既有发现范围与处理用途控制，这些状态尚未完成完整视觉验收。
+      The original is preserved. Node 153:1485 adds minimum and maximum proficiency levels. The runtime page still includes the existing discovery-scope and processing-purpose controls; complete visual acceptance of these states remains pending.
     </p>
     <div class="pair phone">
       <figure>
-        <figcaption>原稿 111:979</figcaption>
+        <figcaption>Original 111:979</figcaption>
         <a href="create-figma-original.png"
           ><img src="create-figma-original.png" alt="创建原稿"
         /></a>
       </figure>
       <figure>
-        <figcaption>实际 /rooms/create · 范围直接可见</figcaption>
+        <figcaption>Runtime /rooms/create · proficiency range always visible</figcaption>
         <a href="create-runtime-fixture.png"
           ><img src="create-runtime-fixture.png" alt="创建运行截图"
         /></a>
       </figure>
       <figure>
-        <figcaption>补充等级选择状态 153:1485（独立 390 × 400）</figcaption>
+        <figcaption>Additional proficiency-selection state 153:1485 (separate 390 × 400 frame)</figcaption>
         <a href="create-range-v3-figma.png"
           ><img src="create-range-v3-figma.png" alt="补充等级选择设计"
         /></a>
@@ -127,14 +125,14 @@
     </div>
   </section>
   <section>
-    <h2>后台当前房间 · 1440 × 900</h2>
+    <h2>Admin current rooms · 1440 × 900</h2>
     <div class="pair admin">
       <figure>
-        <figcaption>补充设计 153:1524；原始 114:1602 未改动</figcaption>
+        <figcaption>Additional design 153:1524; original 114:1602 is unchanged</figcaption>
         <a href="admin-v3-figma.png"><img src="admin-v3-figma.png" alt="后台补充设计" /></a>
       </figure>
       <figure>
-        <figcaption>实际 /rooms · 当前房间 / 完整卡片</figcaption>
+        <figcaption>Runtime /rooms · current rooms / complete cards</figcaption>
         <a href="admin-runtime-fixture.png"
           ><img src="admin-runtime-fixture.png" alt="后台运行截图"
         /></a>
@@ -142,33 +140,33 @@
     </div>
   </section>
   <section>
-    <h2>语音房 · 390 × 844</h2>
+    <h2>Voice room · 390 × 844</h2>
     <div class="pair phone">
       <figure>
-        <figcaption>原稿 115:1425</figcaption>
-        <a href="voice-figma-original.png"
-          ><img src="voice-figma-original.png" alt="语音房 · 390 × 844原稿"
+        <figcaption>Original 115:1425</figcaption>
+        <a href="../assets/implement-mobile-voice-room-session-voice-room-v2.png"
+          ><img src="../assets/implement-mobile-voice-room-session-voice-room-v2.png" alt="语音房 · 390 × 844原稿"
         /></a>
       </figure>
       <figure>
-        <figcaption>实际生产组件 · Chromium · 显式 adapters</figcaption>
-        <a href="voice-runtime-component-fixture.png"
-          ><img src="voice-runtime-component-fixture.png" alt="语音房 · 390 × 844运行"
+        <figcaption>Production component at runtime · Chromium · explicit adapters</figcaption>
+        <a href="../simplify-direct-room-entry/voice-runtime-web-fixture.png"
+          ><img src="../simplify-direct-room-entry/voice-runtime-web-fixture.png" alt="语音房 · 390 × 844运行"
         /></a>
       </figure>
     </div>
   </section>
   <section>
-    <h2>按住母语翻译 · 390 × 844</h2>
+    <h2>Hold to translate native speech · 390 × 844</h2>
     <div class="pair phone">
       <figure>
-        <figcaption>原稿 115:1627</figcaption>
+        <figcaption>Original 115:1627</figcaption>
         <a href="translation-hold-figma-original.png"
           ><img src="translation-hold-figma-original.png" alt="按住母语翻译 · 390 × 844原稿"
         /></a>
       </figure>
       <figure>
-        <figcaption>实际生产组件 · Chromium · 显式 adapters</figcaption>
+        <figcaption>Production component at runtime · Chromium · explicit adapters</figcaption>
         <a href="translation-hold-runtime-component-fixture.png"
           ><img
             src="translation-hold-runtime-component-fixture.png"
@@ -178,16 +176,16 @@
     </div>
   </section>
   <section>
-    <h2>主要英文结果 · 390 × 844</h2>
+    <h2>Primary English result · 390 × 844</h2>
     <div class="pair phone">
       <figure>
-        <figcaption>原稿 115:1720</figcaption>
+        <figcaption>Original 115:1720</figcaption>
         <a href="translation-result-figma-original.png"
           ><img src="translation-result-figma-original.png" alt="主要英文结果 · 390 × 844原稿"
         /></a>
       </figure>
       <figure>
-        <figcaption>实际生产组件 · Chromium · 显式 adapters</figcaption>
+        <figcaption>Production component at runtime · Chromium · explicit adapters</figcaption>
         <a href="translation-result-runtime-component-fixture.png"
           ><img
             src="translation-result-runtime-component-fixture.png"
@@ -197,16 +195,16 @@
     </div>
   </section>
   <section>
-    <h2>房主明确选择接任者 · 390 × 844</h2>
+    <h2>Explicit host-successor selection · 390 × 844</h2>
     <div class="pair phone">
       <figure>
-        <figcaption>原稿 111:906</figcaption>
+        <figcaption>Original 111:906</figcaption>
         <a href="host-handoff-figma-original.png"
           ><img src="host-handoff-figma-original.png" alt="房主明确选择接任者 · 390 × 844原稿"
         /></a>
       </figure>
       <figure>
-        <figcaption>实际生产组件 · Chromium · 显式 adapters</figcaption>
+        <figcaption>Production component at runtime · Chromium · explicit adapters</figcaption>
         <a href="host-handoff-runtime-component-fixture.png"
           ><img
             src="host-handoff-runtime-component-fixture.png"
@@ -216,16 +214,16 @@
     </div>
   </section>
   <section>
-    <h2>补充业务状态</h2>
+    <h2>Additional business states</h2>
     <div class="pair phone">
       <figure>
-        <figcaption>房主已选择接任者；移交按钮开启</figcaption>
+        <figcaption>Host successor selected; transfer button enabled</figcaption>
         <a href="host-handoff-selected-runtime-component-fixture.png"
           ><img src="host-handoff-selected-runtime-component-fixture.png" alt="选择接任者"
         /></a>
       </figure>
       <figure>
-        <figcaption>首次有效同意；没有用普通结果原稿冒充同意状态</figcaption>
+        <figcaption>First valid consent; the ordinary result design is not presented as a consent state</figcaption>
         <a href="translation-consent-runtime-component-fixture.png"
           ><img src="translation-consent-runtime-component-fixture.png" alt="首次有效同意"
         /></a>
@@ -233,14 +231,9 @@
     </div>
   </section>
   <section>
-    <h2>证据边界与待验收状态</h2>
+    <h2>Evidence boundaries and pending acceptance states</h2>
     <p>
-      语音截图来自真实 VoiceRoomScreen、生成客户端及生产样式，使用独立会话、媒体、录音和 HTTP
-      adapters； 不是原生 Expo/LiveKit/STT
-      验证。舞台原稿示例引语没有真实转写合同，本次不伪造；房主需明确选择后才能移交，
-      未选择状态按需求禁用按钮。完整选择/禁用、首次同意及撤回状态设计还需验收。 Desktop Bridge
-      已成功读取和导出，当前没有连接阻塞。真实 Android 截图、系统键盘录像、 双设备隐私隔离、STT/AI
-      结果和云端队列触发仍缺少，不能报告全局 1:1 PASS。
+      Voice screenshots use the actual VoiceRoomScreen, generated client, and production styles with separate session, media, recording, and HTTP adapters. They do not verify native Expo, LiveKit, or STT. The original stage contains an example quotation without a real transcription contract; no transcription is fabricated here. Host transfer requires an explicit successor selection, and the button is disabled when no successor is selected. Full selection/disabled, first-consent, and withdrawal designs still require acceptance. Desktop Bridge reads and exports succeeded, with no current connection blocker. Real Android screenshots, system-keyboard recordings, two-device privacy isolation, STT/AI results, and cloud queue triggers remain missing; a global 1:1 PASS cannot be reported.
     </p>
   </section>
 </html>

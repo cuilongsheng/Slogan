@@ -1,30 +1,30 @@
 ## ADDED Requirements
 
-### Requirement: 用户可创建即时和预约房间
+### Requirement: Users can create instant and reserved rooms
 
-移动端 MUST 从房间发现页进入创建页，按当前 OpenAPI 提交即时或预约房间，并显示真实服务端结果。主题、具体 CEFR 等级、2–6 人容量和预约起止时间 MUST 在提交前校验；可见性与四位密码 MUST 独立设置。
+The mobile terminal MUST enter the creation page from the room discovery page, submit instant or reserved rooms according to the current OpenAPI, and display the real server results. Topic, specific CEFR level, 2–6 person capacity, and reservation start and end times MUST be verified before submission; visibility and four-digit password MUST be set independently.
 
-#### Scenario: 创建即时公开房间
+#### Scenario: Create an instant public room
 
-- **WHEN** 符合资格用户输入有效配置并创建即时公开房间
-- **THEN** 客户端只发出一次创建请求，并使用响应中的房间标识进入房主语音房流程
+- **WHEN** Qualified users enter valid configuration and create instant public rooms
+- **THEN** The client only issues a creation request once and uses the room ID in the response to enter the room host voice room process.
 
-#### Scenario: 创建预约房间
+#### Scenario: Create a reservation room
 
-- **WHEN** 符合资格用户输入有效未来起止时间并创建预约房间
-- **THEN** 客户端提交服务端可验证的 ISO 时间，成功后打开新房间详情
+- **WHEN** Qualified users enter valid future start and end times and create a reservation room
+- **THEN** The client submits the ISO time that can be verified by the server, and opens the new room details after success.
 
-#### Scenario: 服务端拒绝
+#### Scenario: Server refused
 
-- **WHEN** 服务端因资格、限制、时间或字段约束拒绝创建
-- **THEN** 页面保留原输入并显示错误，不制造成功的房间或自动重复提交
+- **WHEN** The server refused to create due to qualifications, restrictions, time or field constraints.
+- **THEN** The page retains the original input and displays an error, does not create a successful room or automatically resubmits
 
-#### Scenario: 房主取消预约房间
+#### Scenario: Room host cancel room reservation
 
-- **WHEN** 房主在预约开始前确认取消
-- **THEN** 客户端调用预约取消接口，并展示服务端返回的取消状态；失败时保留房间详情和错误
+- **WHEN** Room host Confirm cancellation before reservation starts
+- **THEN** The client calls the reservation cancellation interface and displays the cancellation status returned by the server; retains room details and errors in case of failure
 
-#### Scenario: 打开创建后分享的房间链接
+#### Scenario: Open the room link shared after creation
 
-- **WHEN** 用户打开房间分享码链接
-- **THEN** 客户端先解析分享码，再按房间种类打开真实详情；失效链接显示错误
+- **WHEN** The user opens the room sharing code link
+- **THEN** The client first parses the sharing code and then opens the real details according to the room type; the invalid link displays an error

@@ -1,134 +1,167 @@
 ## Purpose
 
-定义成人语音房平台的手机号自主认证、多登录方式绑定与账号软注销闭环，使身份验证、访问收敛和必要事实保留在并发、重试及外部 provider 故障下仍具有稳定结果。
+Define the adult audio room platform's mobile phone number independent authentication, multi-login method binding and account soft account deletion closed loop, so that identity verification, access convergence and necessary facts are retained to achieve stable results under concurrency, retries and external provider failures.
 
 ## ADDED Requirements
 
-### Requirement: 国际手机号 OTP 请求安全且不可枚举账号
-系统 MUST 接受可规范化为 E.164 的国际手机号并请求一次性验证码。成功响应 MUST 只返回不透明 challenge 标识、过期时间和允许重发时间，不得说明手机号是否已注册。系统 MUST 对手机号不可逆摘要、来源地址、设备和发送频率实施有界限流与重发冷却。
+### Requirement: International mobile number OTP request for secure and non-enumerable accounts
 
-#### Scenario: 请求有效手机号验证码
-- **WHEN** 调用者提交受支持国家或地区的有效手机号且未触发限流
-- **THEN** 系统请求短信 provider 发送短期验证码，并返回不暴露账号存在性的统一 challenge 结果
+The system MUST accept international mobile phone numbers that can be normalized to E.164 and request a one-time verification code. A successful response MUST only return the opaque challenge identifier, expiration time and allowed resend time, and MUST not indicate whether the mobile phone number has been registered. The system MUST implement bounded flow and retransmission cooling for mobile phone number irreversible digests, source addresses, devices, and sending frequencies.
 
-#### Scenario: 手机号格式无效或地区不受支持
-- **WHEN** 调用者提交无法规范化为有效 E.164 或当前不支持的手机号
-- **THEN** 系统拒绝请求且不调用短信 provider、不创建 challenge
+#### Scenario: Requesting a valid mobile phone number verification code
 
-#### Scenario: 重发冷却或限流命中
-- **WHEN** 同一手机号摘要、来源或设备在限制窗口内超过允许请求次数
-- **THEN** 系统返回稳定限流结果，不再次发送验证码且不暴露是哪一个限流维度命中
+- **WHEN** The caller submitted a valid mobile phone number in a supported country or region and the current limit was not triggered.
+- **THEN** The system requests the SMS provider to send a short-term verification code and returns a unified challenge result that does not reveal the existence of the account.
 
-#### Scenario: 短信 provider 不可用
-- **WHEN** provider 明确失败、超时或返回不可确认结果
-- **THEN** 系统返回归一化失败或不确定状态，不创建账号、不保存明文验证码，并保持 OAuth 登录可用
+#### Scenario: The mobile phone number format is invalid or the region is not supported
 
-### Requirement: OTP 验证一次性创建或登录唯一账号
-系统 MUST 只接受属于当前 challenge、尚未过期且未消费的正确验证码。首次验证 MUST 原子创建一个 `ACTIVE` 平台账号和唯一手机号身份，后续验证 MUST 登录同一账号；并发请求不得为同一手机号创建多个平台账号或重复消费同一验证码。
+- **WHEN** The caller submission cannot be normalized to a valid E.164 or a currently unsupported mobile phone number
+- **THEN** The system rejects the request and does not call the SMS provider or create a challenge.
 
-#### Scenario: 首次手机号验证成功
-- **WHEN** 未绑定手机号的有效 challenge 收到正确验证码
-- **THEN** 系统只创建一个平台账号和手机号身份，签发新会话并返回资料初始化状态
+#### Scenario: Resend cooldown or current limit hit
 
-#### Scenario: 已绑定手机号再次验证
-- **WHEN** 已绑定有效账号的手机号完成新的 OTP 验证
-- **THEN** 系统登录原平台账号且不创建重复用户或手机号身份
+- **WHEN** The same mobile phone number summary, source or device exceeds the allowed number of requests within the limit window
+- **THEN** The system returns stable rate limiting results, does not send verification codes again, and does not reveal which rate limiting dimension is hit.
 
-#### Scenario: 验证码错误或过期
-- **WHEN** 验证码错误、challenge 已过期或验证码已被消费
-- **THEN** 系统拒绝验证且不创建账号或会话，错误响应不得回显验证码或完整手机号
+#### Scenario: SMS provider is not available
 
-#### Scenario: 超过验证尝试上限
-- **WHEN** 同一 challenge 的错误验证码尝试达到上限
-- **THEN** 系统使 challenge 失效并要求重新请求，不允许继续暴力尝试
+- **WHEN** provider explicitly failed, timed out, or returned unconfirmable results
+- **THEN** The system returns normalization failure or uncertain status, does not create an account, does not save the clear text verification code, and keeps OAuth login available.
 
-#### Scenario: 并发消费同一验证码
-- **WHEN** 两个请求并发提交同一 challenge 和正确验证码
-- **THEN** 最多一个请求完成消费和登录，数据库中仍只有一个账号和一个手机号身份
+### Requirement: OTP verification creates or logs in to a unique account at one time
 
-### Requirement: 手机身份和验证码采用最小数据边界
-系统 MUST 只持久保存版本化的手机号不可逆查找摘要和提供最小掩码所需片段，不得在 PostgreSQL、Redis、队列、审计、日志、异常或 trace 中保存完整手机号或明文验证码。短信 provider 请求 MUST 只包含投递所需号码、验证码、模板和受控关联信息，不得包含用户资料、房间信息、OAuth token 或平台密钥。
+The system MUST only accept correct verification codes that belong to the current challenge, have not expired, and have not been consumed. For first-time verification, MUST atomically create a `ACTIVE` platform account and unique mobile phone number identity, and for subsequent verification, MUST log in to the same account; concurrent requests MUST not create multiple platform accounts for the same mobile phone number or repeatedly consume the same verification code.
 
-#### Scenario: OTP 处理完成或失败
-- **WHEN** challenge 被消费、过期、达到尝试上限、发送失败或维护清理运行
-- **THEN** 系统删除对应临时验证码状态，诊断输出只保留归一化阶段、provider 类别、地区、状态和错误类别
+#### Scenario: First mobile phone number verification successful
 
-#### Scenario: 查询当前登录方式
-- **WHEN** 已登录用户读取自己的登录方式
-- **THEN** 系统只返回登录方式类别、验证时间和手机号最小掩码，不返回完整号码、provider subject 或任何 token
+- **WHEN** Valid challenge with no mobile phone number bound and received correct verification code
+- **THEN** The system only creates a platform account and mobile phone number identity, issues a new session and returns to the data initialization state
 
-### Requirement: 登录方式绑定必须重新验证且不能猜测合并
-系统 MUST 只允许当前 `ACTIVE` 用户在重新完成目标手机号 OTP 或 Google/微信 OAuth 验证后把该登录方式绑定到本人账号。相同身份已属于本人时重试 MUST 幂等；身份已属于其他平台账号时 MUST 稳定冲突且不得移动任一账号的数据。系统不得使用 email、昵称、头像、手机号相似性或 provider 建议资料自动合并账号。
+#### Scenario: The mobile phone number has been bound and verified again.
 
-#### Scenario: 绑定新的 OAuth 登录方式
-- **WHEN** 已登录用户完成一个尚未绑定的 Google 或微信身份验证
-- **THEN** 系统把该身份绑定到当前平台账号，原资料、房间历史、单词本和安全事实保持归属于同一 userId
+- **WHEN** The mobile phone number bound to a valid account completes the new OTP verification
+- **THEN** The system logs in to the original platform account and does not create duplicate users or mobile phone numbers.
 
-#### Scenario: 绑定新的手机号登录方式
-- **WHEN** 已登录且尚无手机号身份的用户完成手机号 OTP 验证
-- **THEN** 系统把手机号身份绑定到当前平台账号且不创建新用户
+#### Scenario: Verification code is wrong or expired
 
-#### Scenario: 重复绑定本人身份
-- **WHEN** 用户重复提交已经属于本人的同一已验证身份
-- **THEN** 系统返回同一绑定结果且不创建重复身份记录
+- **WHEN** The verification code is incorrect, the challenge has expired, or the verification code has been consumed.
+- **THEN** The system refuses verification and does not create an account or session. The error response must not echo the verification code or complete mobile phone number.
 
-#### Scenario: 身份属于另一个平台账号
-- **WHEN** 当前用户验证的手机号或 OAuth 身份已经绑定到不同 userId
-- **THEN** 系统返回稳定身份冲突，不透露另一账号资料且不迁移、复制或删除任何业务数据
+#### Scenario: Verification attempt limit exceeded
 
-### Requirement: 不可用账号不能通过任何凭证恢复访问
-系统 MUST 在 OTP、OAuth、access token、refresh token和登录方式绑定路径读取当前账号状态。`DISABLED` 或 `DELETED` 账号不得获得新会话、刷新现有会话或绑定新身份，旧 access token 和实时凭证也不得绕过该状态。
+- **WHEN** The number of incorrect verification code attempts for the same challenge has reached the upper limit.
+- **THEN** The system invalidates the challenge and requires a new request, and no further brute force attempts are allowed.
 
-#### Scenario: 永久禁用账号重新认证
-- **WHEN** `DISABLED` 账号通过已绑定手机号或 OAuth 身份再次完成 provider 验证
-- **THEN** 系统拒绝签发会话，保留原安全处置且不创建替代账号
+#### Scenario: Concurrent consumption of the same verification code
 
-#### Scenario: 已注销账号重新认证
-- **WHEN** `DELETED` 账号使用其原手机号、OAuth 身份、refresh token 或旧 access token请求访问
-- **THEN** 系统拒绝访问且不自动恢复账号或允许原身份创建新账号
+- **WHEN** Two requests submitted the same challenge and correct verification code concurrently
+- **THEN** At most one request can complete consumption and login. There is still only one account and one mobile phone number in the database.
 
-### Requirement: 软注销需要近期重新认证和幂等命令
-系统 MUST 只允许当前 `ACTIVE` 普通用户使用本人已绑定登录方式完成短期、单用途重新认证后提交账号软注销。注销命令 MUST 带调用者生成的 UUID 请求标识并绑定规范化载荷；相同请求重试返回原结果，改变载荷冲突。仍持有有效后台角色的账号 MUST 先完成受控角色交接或撤销，不能直接自助注销。
+### Requirement: Mobile phone identity and verification codes use minimum data boundaries
 
-#### Scenario: 普通用户完成软注销
-- **WHEN** 当前用户提供有效近期重新认证证明、明确注销确认和新的请求标识
-- **THEN** 系统把账号一次性推进为 `DELETED`，记录服务端注销时间并返回不含凭证的稳定完成结果
+The system MUST persist only versioned phone number irreversible lookup summaries and fragments required to provide the minimum mask, and MUST not save full phone numbers or clear text verification codes in PostgreSQL, Redis, queues, audits, logs, exceptions, or traces. The SMS provider request MUST only contain the number required for delivery, verification code, template and controlled association information, and MUST not contain user information, room information, OAuth token or platform key.
 
-#### Scenario: 重新认证无效
-- **WHEN** 注销证明过期、已使用、目的不符或属于其他用户
-- **THEN** 系统拒绝注销且账号、会话和业务关系保持不变
+#### Scenario: OTP processing completed or failed
 
-#### Scenario: 后台角色持有者自助注销
-- **WHEN** 用户仍持有任一有效后台角色并直接提交注销
-- **THEN** 系统拒绝操作并要求先通过后台角色管理完成交接或撤销
+- **WHEN** The challenge is consumed, expired, the attempt limit is reached, the sending fails, or maintenance and cleanup are running.
+- **THEN** The system deletes the corresponding temporary verification code status, and the diagnostic output only retains the normalization stage, provider category, region, status and error category.
 
-#### Scenario: 注销命令重试或冲突
-- **WHEN** 用户以相同请求标识重试相同注销，或复用该标识提交不同内容
-- **THEN** 系统分别返回原注销结果或稳定幂等冲突，不重复执行生命周期动作
+#### Scenario: Query the current login method
 
-### Requirement: 注销立即阻断访问并可靠收敛业务关系
-系统 MUST 在注销持久事务中设置 `DELETED`、撤销全部认证会话、失效全部实时 issuance 和 participant identity，并写入可重试的外部撤销命令。系统 MUST 使该用户退出活动 membership，按既有房主规则移交或结束其活动房间，取消其未来预约和待处理邀请，并使其不再出现在好友、空闲、公开资料或普通发现结果中。外部 provider 暂时失败不得恢复账号访问。
+- **WHEN** Logged-in user reads his/her login method
+- **THEN** The system only returns the login method category, verification time and minimum mask of the mobile phone number, but does not return the complete number, provider subject or any token.
 
-#### Scenario: 注销用户仍连接语音房
-- **WHEN** 用户注销时仍持有活动 membership 或 LiveKit 身份
-- **THEN** 数据库资格立即失效并持久写入撤销命令，房主按既有规则移交或结束，provider 重试期间旧 API 请求仍被拒绝
+### Requirement: Login method binding must be re-verified and cannot be guessed and merged
 
-#### Scenario: 注销用户拥有未来预约或待处理社交关系
-- **WHEN** 用户注销时存在其主持或参加的未来预约、待处理好友请求或房间邀请
-- **THEN** 系统把这些可继续授予访问的关系收敛为取消或终结状态，其他用户后续不能据此进入或定向互动
+The system MUST only allow the current `ACTIVE` user to bind this login method to his or her account after completing the OTP or Google/WeChat OAuth verification of the target mobile phone number again. Retry MUST idempotent when the same identity already belongs to you; MUST stabilize the conflict when the identity already belongs to another platform account, and the data of any account MUST not be moved. The system may not use email, nickname, avatar, phone number similarity, or provider suggestion information to automatically merge accounts.
 
-#### Scenario: 注销事务失败
-- **WHEN** 核心账号状态、会话撤销、实时失效或可靠命令无法作为一个持久结果提交
-- **THEN** 系统回滚注销且用户得到可重试失败，不留下部分 `DELETED` 状态
+#### Scenario: Bind new OAuth login method
 
-### Requirement: 注销保留必要事实但不提供自助恢复或身份重用
-系统 MUST 在软注销后保留 userId、登录身份占用、举报、案件、处罚、申诉、审计、历史参与和用户主动保存内容的必要持久事实，直到独立数据治理政策允许进一步匿名化或删除。普通业务和其他用户不得读取已注销账号的私人资料；本 change MUST 不提供自助恢复、身份重用或物理删除接口。
+- **WHEN** The logged-in user completed an unbound Google or WeChat authentication
+- **THEN** The system binds this identity to the current platform account, and the original information, room history, vocabulary and security facts remain under the same userId
 
-#### Scenario: 注销用户存在安全案件
-- **WHEN** 账号软注销前后存在举报、案件、限制、申诉或审计事实
-- **THEN** 这些事实继续关联稳定 userId 并只在既有受限权限内可见，注销不撤销处罚或销毁证据
+#### Scenario: Bind new mobile phone number login method
 
-#### Scenario: 使用注销身份重新注册
-- **WHEN** 调用者使用已注销账号占用的手机号或 OAuth 身份尝试创建新账号
-- **THEN** 系统拒绝身份重用且不泄露已注销账号的资料或安全历史
+- **WHEN** Users who have logged in and do not yet have a mobile phone number complete OTP verification of their mobile phone number
+- **THEN** The system binds the mobile phone number identity to the current platform account and does not create new users.
 
+#### Scenario: Repeatedly bind my identity
+
+- **WHEN** User repeatedly submits the same verified identity that already belongs to him/her
+- **THEN** The system returns the same binding result and does not create duplicate identity records
+
+#### Scenario: The identity belongs to another platform account
+
+- **WHEN** The mobile phone number or OAuth identity verified by the current user has been bound to a different userId
+- **THEN** The system returns a stable identity conflict, does not reveal another account information and does not migrate, copy or delete any business data
+
+### Requirement: The unavailable account cannot be accessed through any credentials.
+
+The system MUST read the current account status in the OTP, OAuth, access token, refresh token and login method binding path. `DISABLED` or `DELETED` accounts may not obtain new sessions, refresh existing sessions, or bind new identities, nor may old access tokens and live credentials bypass this status.
+
+#### Scenario: Permanently disable account reauthentication
+
+- **WHEN** `DISABLED` account completes provider verification again through bound mobile phone number or OAuth identity
+- **THEN** The system refuses to issue the session, retains the original security treatment and does not create a replacement account
+
+#### Scenario: Account has been canceled and re-verified.
+
+- **WHEN** The `DELETED` account uses its original mobile phone number, OAuth identity, refresh token or old access token to request access.
+- **THEN** The system denies access and does not automatically restore the account or allow the original identity to create a new account
+
+### Requirement: Soft account deletion requires recent reauthentication and idempotent command
+
+The system MUST only allow the current `ACTIVE` ordinary user to use his/her bound login method to complete short-term, single-purpose re-authentication and then submit an account soft account deletion. The account deletion command MUST carry the UUID request identifier generated by the caller and bind the normalized payload; retrying the same request returns the original result, and changes in the payload conflict. Accounts that still hold valid administrative roles MUST complete the handover or cancellation of controlled roles first, and cannot delete the account directly by themselves.
+
+#### Scenario: Ordinary users complete soft account deletion
+
+- **WHEN** Current user provides valid proof of recent recertification, clear cancellation confirmation and new request identification
+- **THEN** The system advances the account to `DELETED` at one time, records the server account deletion time and returns a stable completion result without credentials.
+
+#### Scenario: Re-authentication invalid
+
+- **WHEN** The account deletion certificate is expired, has been used, is inconsistent with the purpose, or belongs to another user
+- **THEN** The system refuses to delete the account and the account, session and business relationship remain unchanged.
+
+#### Scenario: Backend role holder self-service account deletion
+
+- **WHEN** The user still holds any valid administrative role and directly submits the account deletion
+- **THEN** The system refuses the operation and requires the handover or cancellation to be completed through administrative role management first.
+
+#### Scenario: account deletion command retry or conflict
+
+- **WHEN** The user retries the same account deletion with the same request ID, or reuses the ID to submit different content
+- **THEN** The system returns the original account deletion result or stable idempotent conflict respectively, and does not repeatedly perform life cycle actions.
+
+### Requirement: account deletion immediately blocks access and reliably converges business relationships
+
+The system MUST set `DELETED` in the account deletion persistent transaction, revoke all authentication sessions, invalidate all live issuance and participant identity, and write a retryable external revoke command. The system MUST remove this user from active membership, transfer or end their active room according to existing room host rules, cancel their future reservations and pending invitations, and no longer appear in friends, availability, public profiles, or general discovery results. The external provider has temporarily failed and account access cannot be restored.
+
+#### Scenario: The deleted user is still connected to the voice room
+
+- **WHEN** User still has active membership or LiveKit identity when deleted
+- **THEN** The database qualification immediately expires and a revocation command is permanently written. The room host is transferred or terminated according to the existing rules. Old API requests are still rejected during the provider retry.
+
+#### Scenario: The deleted user has future appointments or pending social relationships
+
+- **WHEN** There are future appointments, pending friend requests, or room invitations that the user is hosting or participating in when they delete the account
+- **THEN** The system converges these relationships that can continue to grant access to a canceled or terminated state, and other users cannot subsequently enter or interact accordingly.
+
+#### Scenario: account deletion transaction failed
+
+- **WHEN** Core account status, session revocation, live invalidation, or reliable command cannot be submitted as a persistent result
+- **THEN** System rollback account deletion and user get retry failed, leaving no partial `DELETED` status
+
+### Requirement: account deletion preserves necessary facts but does not provide self-service recovery or identity reuse
+
+The system MUST retain the necessary persistence of userIds, login identity occupations, reports, cases, penalties, appeals, audits, historical engagements, and user-initiated content preservation facts after soft account deletion until an independent data governance policy allows for further anonymization or deletion. Ordinary business and other users are not allowed to read the private information of canceled accounts; this change MUST not provide self-service recovery, identity reuse or physical deletion interfaces.
+
+#### Scenario: There is a security case for deleting the account the user
+
+- **WHEN** There are reports, cases, restrictions, appeals or audit facts before and after the soft cancellation of the account
+- **THEN** These facts continue to be associated with the stable userId and are only visible within the existing restricted permissions. deleting the account does not revoke the penalty or destroy the evidence.
+
+#### Scenario: Re-register using the deleted identity
+
+- **WHEN** The caller tried to create a new account using the mobile phone number or OAuth identity occupied by the canceled account.
+- **THEN** The system refuses identity reuse and does not disclose the data or security history of canceled accounts.

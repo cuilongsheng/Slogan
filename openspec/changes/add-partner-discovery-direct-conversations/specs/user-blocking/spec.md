@@ -2,21 +2,26 @@
 
 ## MODIFIED Requirements
 
-### Requirement: 任一方向屏蔽隔离社交互动
-系统 MUST 在好友请求、好友列表、找伙伴空闲用户列表、普通房间邀请、1 对 1 文字发送和语音请求中执行双向隔离：只要任一方屏蔽另一方，双方都不能看到彼此的社交发现条目、建立好友关系、发送普通房间邀请、发送新的文字消息或发起和接通 1 对 1 语音。历史会话记录按各自既有可见性保留，但不得借历史会话绕过屏蔽。服务端 MUST 在每项写入或接通决策时重新检查屏蔽事实，不能只依赖客户端列表过滤。
+### Requirement: Block and isolate social interactions in any direction
 
-#### Scenario: 被屏蔽用户直接发起请求
-- **WHEN** 被屏蔽用户绕过客户端直接向屏蔽者发送好友请求、普通房间邀请、文字消息或语音请求
-- **THEN** 系统返回一致的目标不可用结果且不暴露屏蔽方向
+The system MUST enforce two-way isolation in friend requests, friend lists, find-a-mate idle user lists, regular room invitations, 1-to-1 text messages, and voice requests: as long as either party blocks the other, neither party can see each other's social discovery entries, establish friend relationships, send regular room invitations, send new text messages, or initiate and connect 1-to-1 voice calls. Historical conversation records are retained according to their existing visibility, but historical conversations cannot be used to bypass blocking. The server MUST recheck blocking facts on every write or connect decision and cannot rely solely on client list filtering.
 
-#### Scenario: 屏蔽双方查询空闲列表
-- **WHEN** 任一方查询好友或找伙伴空闲用户列表
-- **THEN** 双方均看不到对方的社交发现条目和空闲状态
+#### Scenario: The blocked user directly initiates a request
 
-#### Scenario: 屏蔽后访问历史会话
-- **WHEN** 屏蔽双方之一打开先前的会话历史并尝试发送新消息或发起语音
-- **THEN** 系统允许读取其原本可见的历史，但拒绝新的互动
+- **WHEN** The blocked user bypasses the client and directly sends friend requests, general room invitations, text messages or voice requests to the blocked person.
+- **THEN** The system returns consistent target unavailability results without exposing the shielding direction
 
-#### Scenario: 屏蔽发生时有待接语音请求
-- **WHEN** 任一方屏蔽对方且双方之间有尚未接受的语音请求
-- **THEN** 该请求失效，之后不能凭旧请求接受或取得媒体接入资格
+#### Scenario: Block both parties from querying the free list
+
+- **WHEN** Either party can query the free user list of friends or partners
+- **THEN** Neither party can see the other party's social discovery entries and availability status
+
+#### Scenario: Access historical sessions after blocking
+
+- **WHEN** Block one of the parties to open the previous conversation history and try to send a new message or initiate a voice message
+- **THEN** The system allows reading of its originally visible history, but denies new interactions
+
+#### Scenario: There is a pending voice request when blocking occurs
+
+- **WHEN** Either party blocks the other party and there are unaccepted voice requests between the two parties.
+- **THEN** The request is invalid, and the old request cannot be accepted or media access qualification can be obtained in the future.

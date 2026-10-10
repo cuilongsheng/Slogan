@@ -2,50 +2,62 @@
 
 ## Purpose
 
-定义可邀请用户的临时在线和空闲投影，使好友及陌生人只能看到是否当前可邀请，而无法获得精确在线时长、位置或房间活动详情。
+Define temporary online and idle projections of inviteable users, so that friends and strangers can only see whether they are currently inviteable, but cannot obtain precise online duration, location or room activity details.
 
 ## Requirements
 
-### Requirement: 空闲状态由近期在线和房间事实共同决定
-系统 MUST 仅在用户存在未过期的已认证在线信号、账号和资料可用、达到年龄要求、没有当前安全限制，并且当前不在任何有效房间 membership 中时，将其视为可邀请的空闲用户。客户端声明不能覆盖房间或安全持久事实。
+### Requirement: Idle status is determined by a combination of recent online and room facts
 
-#### Scenario: 在线且不在房间
-- **WHEN** 合格用户具有未过期在线信号且没有当前有效房间 membership
-- **THEN** 系统将其投影为可邀请的空闲用户
+The system MUST treat the user as an inviteable idle user only if the user has an unexpired authenticated online signal, an account and profile are available, meets age requirements, has no current security restrictions, and is not currently in any valid room membership. Client assertion cannot override room or security persistent facts.
 
-#### Scenario: 在线用户进入房间
-- **WHEN** 用户仍有近期在线信号但已经存在当前有效房间 membership
-- **THEN** 系统立即不再将其显示为空闲
+#### Scenario: Online and not in the room
 
-#### Scenario: 在线信号过期
-- **WHEN** 用户不再续期在线信号并达到服务端过期边界
-- **THEN** 系统将其视为不在线且不再出现在可邀请列表
+- **WHEN** Qualified user with unexpired online signal and no current active room membership
+- **THEN** The system projects it as an idle user that can be invited.
 
-### Requirement: 在线信号短期保存且可刷新
-系统 MUST 允许已认证客户端刷新本人的短期在线信号，并由服务端控制过期时间。刷新响应 MUST 返回服务端过期时间和下一次建议刷新时间；系统不得把心跳次数或精确时间作为公开用户资料，也不得依赖客户端提交的时间戳决定有效性。
+#### Scenario: Online user enters the room
 
-#### Scenario: 刷新本人在线信号
-- **WHEN** 已认证用户发送有效在线心跳
-- **THEN** 系统按服务端时间刷新短期信号且只返回本人所需的最小状态
+- **WHEN** The user still has a recent online signal but already has a current valid room membership.
+- **THEN** The system will no longer show it as idle immediately
 
-#### Scenario: 伪造其他用户或客户端时间
-- **WHEN** 调用者尝试为其他用户刷新信号或提交自定义生效时间和过期时间
-- **THEN** 系统拒绝非法字段且不改变任何其他用户状态
+#### Scenario: Online signal expired
 
-### Requirement: 可邀请用户列表保护隐私
-系统 MUST 以有限游标分页向已认证合格用户返回当前可邀请用户的最小公开资料和空闲布尔值。陌生人可出现在列表中，但响应 MUST 不包含精确在线时间、IP、位置、设备、会话、当前或历史房间详情；任一方向屏蔽的用户 MUST 相互隐藏。
+- **WHEN** The user does not renew the online signal and reaches the server expiration boundary.
+- **THEN** The system treats it as offline and no longer appears in the inviteable list.
 
-#### Scenario: 陌生人查询可邀请用户
-- **WHEN** 合格用户查询当前可邀请用户列表
-- **THEN** 系统返回允许展示的空闲用户最小资料，不要求双方已经是好友
+### Requirement: Online signals are saved for a short period of time and can be refreshed
 
-#### Scenario: 不合格调用者查询
-- **WHEN** 账号不可用、资料未完成、未达到年龄要求或受当前安全限制的用户查询列表
-- **THEN** 系统拒绝请求且不返回其他用户状态
+The system MUST allow authenticated clients to refresh their short-term online signals, and the server controls the expiration time. The refresh response MUST return the server expiration time and the next recommended refresh time; the system MUST not use the heartbeat count or precise time as public user data, nor MUST it rely on the timestamp submitted by the client to determine validity.
 
-### Requirement: 临时协调故障安全降级
-系统 MUST 将持久账号、资料、安全限制和房间关系作为资格事实；临时在线协调不可用或状态不确定时 MUST 不把用户错误显示为空闲，并且不得影响用户现有房间的真人语音和离房流程。
+#### Scenario: Refresh my online signal
 
-#### Scenario: 在线状态设施不可用
-- **WHEN** 系统无法可靠读取或刷新临时在线信号
-- **THEN** 可邀请状态安全降级为不可用或空列表，现有房间流程继续工作
+- **WHEN** Authenticated user sends valid online heartbeat
+- **THEN** The system refreshes short-term signals according to the server time and only returns the minimum status required by the user.
+
+#### Scenario: Forging other user or client time
+
+- **WHEN** The caller tried to refresh the signal for other users or submit custom effective time and expiration time
+- **THEN** The system rejects illegal fields and does not change any other user status
+
+### Requirement: Invitable user list to protect privacy
+
+The system MUST use limited cursor paging to return the minimum public information and idle Boolean value of the currently inviteable user to the authenticated and qualified user. Strangers can appear in the list, but responses MUST not include precise online time, IP, location, device, session, current or historical room details; users blocked in either direction MUST be hidden from each other.
+
+#### Scenario: Stranger query can invite users
+
+- **WHEN** Qualified users query the current list of inviteable users
+- **THEN** The system returns the minimum information of idle users that is allowed to be displayed. It does not require that both parties are already friends.
+
+#### Scenario: Unqualified caller query
+
+- **WHEN** Query list of users whose account is unavailable, information is incomplete, does not meet the age requirement, or is subject to current security restrictions
+- **THEN** The system rejects the request and does not return other user status
+
+### Requirement: Temporary coordinated failsafe downgrade
+
+The system MUST treat persistent accounts, profiles, security restrictions, and room relationships as qualification facts; it MUST not display user errors as idle when temporary online coordination is unavailable or the status is uncertain, and it MUST not affect the live voice and check-out process of the user's existing room.
+
+#### Scenario: Online status facility not available
+
+- **WHEN** The system cannot reliably read or refresh temporary online signals
+- **THEN** The inviteable status is safely downgraded to unavailable or empty list, and the existing room process continues to work.

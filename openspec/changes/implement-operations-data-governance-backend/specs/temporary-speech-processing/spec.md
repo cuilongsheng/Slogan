@@ -1,20 +1,20 @@
 ## ADDED Requirements
 
-### Requirement: 临时语音删除结果纳入统一治理证明
+### Requirement: The temporary voice deletion results are included in the unified management certificate
 
-系统 MUST 将平台控制范围内的临时音频、完整转写和短窗口内容清理结果记录为不含内容的治理事实，包括处理目的、provider 类别、策略版本、最晚删除时间、完成时间和稳定结果。provider 声明删除或不留存时 MUST 记录声明模式；无法取得或确认删除结果时 MUST 产生对应降级异常，不得把请求已结束等同于 provider 已删除。
+The system MUST record temporary audio, full transcription, and short-window content cleaning results within the scope of platform control as content-free governance facts, including processing purpose, provider category, policy version, latest deletion time, completion time, and stable results. When the provider declares deletion or non-retention, MUST record the declaration mode; when the deletion result cannot be obtained or confirmed, a corresponding downgrade exception MUST be generated, and the end of the request MUST not be equated to the fact that the provider has been deleted.
 
-#### Scenario: 本地临时内容完成清理
+#### Scenario: Local temporary content has been cleaned up
 
-- **WHEN** 一次成功、失败、超时或取消的临时语音处理释放全部平台控制内容
-- **THEN** 系统记录不含用户内容的完成证明并保持既有不可读取边界
+- **WHEN** A successful, failed, timed-out or canceled temporary voice processing releases all platform control content
+- **THEN** The system logs proof of completion without user content and maintains existing unreadable boundaries
 
-#### Scenario: provider 删除确认失败
+#### Scenario: provider deletion confirmation failed
 
-- **WHEN** 配置要求 provider 删除确认但确认调用失败或超时
-- **THEN** 系统记录删除状态不确定并产生治理异常，真人语音和已提交业务结果保持可用
+- **WHEN** Configuration requires provider deletion confirmation but the confirmation call fails or times out.
+- **THEN** The system record deletion status is uncertain and a governance exception occurs. Live voice and submitted business results remain available.
 
-#### Scenario: 超过七天仍未确认
+#### Scenario: Not confirmed for more than seven days
 
-- **WHEN** 任一临时语音处理在最长七天边界内仍无法证明删除或不留存
-- **THEN** 系统将其标记为高严重度治理异常并禁止 readiness 宣称该处理能力满足数据政策
+- **WHEN** Any temporary voice processing cannot be proven to be deleted or not retained within the maximum seven-day limit.
+- **THEN** The system marks this as a high-severity governance exception and prohibits readiness from claiming that the processing capacity meets the data policy

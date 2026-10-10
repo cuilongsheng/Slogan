@@ -1,84 +1,104 @@
 ## Purpose
 
-定义即时与预约语音房的公开发现、链接可见性、可组合筛选和分享入口边界，使用户可以安全地从列表或外部链接找到房间，同时不绕过任何账号及入房规则。
+Define public discovery, link visibility, combinable filtering and sharing entry boundaries for instant and scheduled voice rooms, allowing users to safely find rooms from lists or external links without bypassing any account and room entry rules.
 
 ## ADDED Requirements
 
-### Requirement: 房间可见性跨房间类型保持一致
-系统 MUST 为即时房间和预约房间保存 `PUBLIC` 或 `LINK_ONLY` 可见性。`PUBLIC` 房间可以进入对应公开列表，`LINK_ONLY` 房间 MUST 不进入任何公开发现列表；可见性不得改变房间密码、容量、预约或成员资格规则。
+### Requirement: Room visibility remains consistent across room types
 
-#### Scenario: 创建公开预约房间
-- **WHEN** 合格房主创建预约房间并选择 `PUBLIC`
-- **THEN** 系统保存公开可见性，且该房间在符合当前状态和筛选条件时出现在预约房间列表
+The system MUST save `PUBLIC` or `LINK_ONLY` visibility for live and reserved rooms. `PUBLIC` rooms can enter the corresponding public list, `LINK_ONLY` rooms MUST not enter any public discovery lists; visibility MUST not change room passwords, capacity, reservations, or membership rules.
 
-#### Scenario: 创建链接预约房间
-- **WHEN** 合格房主创建预约房间并选择 `LINK_ONLY`
-- **THEN** 系统保存链接可见性并生成分享入口，但不在预约房间公开列表返回该房间
+#### Scenario: Create a public reservation room
 
-#### Scenario: 密码与可见性组合
-- **WHEN** 房主创建带密码的公开房间或链接房间
-- **THEN** 系统同时保存可见性和密码状态，并在实际加入或预约时继续要求正确密码
+- **WHEN** Qualified room host creates a reservation room and selects `PUBLIC`
+- **THEN** The system saves public visibility, and the room appears in the reservation room list when it meets the current status and filter conditions.
 
-### Requirement: 公开房间支持 CEFR 和主题筛选
-系统 MUST 允许合格用户在即时房间和预约房间的公开列表中使用一个有效 CEFR 等级和可选主题查询进行组合筛选。CEFR MUST 精确匹配；主题查询 MUST 去除首尾空白并采用大小写不敏感的包含匹配。未提交筛选时 MUST 保持对应列表的现有排序和分页语义。
+#### Scenario: Create a link to reserve a room
 
-#### Scenario: 只按 CEFR 筛选
-- **WHEN** 用户在公开房间列表提交 `B1`
-- **THEN** 系统只返回 CEFR 为 `B1`、当前可发现且属于该列表房间类型的房间
+- **WHEN** Qualified room host creates a reservation room and selects `LINK_ONLY`
+- **THEN** The system saves the link visibility and generates a sharing entry, but does not return to the room in the public list of reserved rooms.
 
-#### Scenario: 组合筛选主题
-- **WHEN** 用户提交有效 CEFR 和包含大小写或首尾空白的主题查询
-- **THEN** 系统按规范化后的主题内容与 CEFR 同时筛选，并返回稳定排序结果
+#### Scenario: Password and visibility combination
 
-#### Scenario: 非法筛选
-- **WHEN** 用户提交未知 CEFR、空白主题、超长主题或损坏的分页游标
-- **THEN** 系统返回稳定校验错误且不执行未限定查询
+- **WHEN** Room host Create a public room or linked room with password
+- **THEN** The system saves both visibility and password status and continues to require the correct password when actually joining or making an appointment
 
-### Requirement: 筛选分页不能混用上下文
-系统 MUST 使公开列表分页游标绑定房间类型、可见性和规范化筛选条件。游标只在原查询条件下有效，列表翻页 MUST 保持既有确定性排序，不得因切换筛选条件而跳过或重复返回错误范围的房间。
+### Requirement: Public rooms support CEFR and topic filtering
 
-#### Scenario: 使用相同条件翻页
-- **WHEN** 用户以原房间类型和筛选条件提交上一页返回的游标
-- **THEN** 系统返回该筛选结果的下一页且不重复上一页项目
+The system MUST allow qualified users to filter in combination with a valid CEFR rating and an optional subject query in the public list of live and reserved rooms. CEFR MUST match exactly; subject queries MUST remove leading and trailing whitespace and use case-insensitive inclusive matching. MUST maintain the existing sorting and paging semantics of the corresponding list when filtering is not committed.
 
-#### Scenario: 游标与筛选不一致
-- **WHEN** 用户把某个 CEFR、主题或房间类型下的游标用于不同查询条件
-- **THEN** 系统返回稳定校验错误且不返回混合范围的数据
+#### Scenario: Filter only by CEFR
 
-### Requirement: 每个房间具有稳定且不可枚举的分享入口
-系统 MUST 为每个即时房间和预约房间生成独立于内部房间标识的高熵稳定分享标识，并可以据此生成配置域名下的分享 URL。分享入口在房间可用期间对相同房间保持稳定，不得包含成员、密码、认证凭证、provider 标识或可反推个人身份的资料。
+- **WHEN** User submitted `B1` in the public room list
+- **THEN** The system only returns rooms whose CEFR is `B1`, which are currently discoverable and belong to the room type in this list.
 
-#### Scenario: 获取房间分享入口
-- **WHEN** 已认证用户查看其有权访问的房间详情
-- **THEN** 系统返回该房间稳定的分享 URL，且重复读取不会生成多个不同入口
+#### Scenario: Combination filter theme
 
-#### Scenario: 比较两个房间的分享入口
-- **WHEN** 系统分别为两个房间返回分享入口
-- **THEN** 两个入口使用不同的不可预测分享标识，且标识不等于内部房间 ID
+- **WHEN** User submitted valid CEFR and subject query containing uppercase and lowercase or leading and trailing whitespace
+- **THEN** The system filters the standardized subject content and CEFR at the same time, and returns stable sorting results.
 
-### Requirement: 分享入口只公开最小房间信息
-系统 MUST 允许未登录调用者使用有效分享标识解析尚可访问房间的最小信息，包括内部入房所需房间标识、房间类型、状态、可见性、主题、CEFR、人数与上限、开始和结束时间、房主昵称及密码状态。响应 MUST 不包含成员列表、预约人、密码、用户联系方式、实时凭证或内部 provider 数据。
+#### Scenario: Illegal filtering
 
-#### Scenario: 未登录打开有效分享链接
-- **WHEN** 未登录用户打开仍处于可预约、可加入或已开放状态的有效分享入口
-- **THEN** 系统返回最小房间信息，使客户端可以展示房间并引导登录或继续入房
+- **WHEN** User submitted unknown CEFR, blank topic, overlong topic, or broken paging cursor
+- **THEN** The system returns a stable verification error and does not execute the unqualified query
 
-#### Scenario: 分享标识不存在或房间不可再访问
-- **WHEN** 调用者使用未知分享标识，或对应房间已经取消、正在结束或已经结束
-- **THEN** 系统返回稳定的不存在或不可用结果，且不泄露历史成员及结束原因
+### Requirement: Filter paging cannot mix contexts
 
-### Requirement: 分享入口不得成为入房凭证
-系统 MUST 在分享入口解析之后继续执行现有登录、资料、年龄、安全限制、房间状态、预约、规则确认、密码和容量校验。持有分享标识不产生 reservation、membership、实时凭证或房主管理权限。
+The system MUST enable public list paging cursors to bind room type, visibility, and normalization filters. The cursor is only valid under the original query conditions. List page turning MUST maintain the existing deterministic sorting. Rooms in the wrong range MUST not be skipped or repeatedly returned due to switching filter conditions.
 
-#### Scenario: 受限用户通过分享链接加入
-- **WHEN** 处于平台限制的用户持有有效分享标识并直接请求加入或获取实时凭证
-- **THEN** 系统按现有限制拒绝，且不创建成员资格或发放凭证
+#### Scenario: Use the same conditions to turn pages
 
-#### Scenario: 密码房间通过分享链接访问
-- **WHEN** 用户解析带密码房间的分享入口但未提交正确密码
-- **THEN** 系统只允许查看最小密码状态，并在预约或实际加入时拒绝继续
+- **WHEN** The user submits the cursor returned from the previous page with the original room type and filter conditions.
+- **THEN** The system returns the next page of the filtered results without repeating the items on the previous page.
 
-#### Scenario: 链接房间满员
-- **WHEN** 用户通过分享入口访问链接房间但实际名额和预约席位规则判定无可用名额
-- **THEN** 系统拒绝预约或加入，且分享入口不能扩大容量
+#### Scenario: Cursor and filter are inconsistent
 
+- **WHEN** The user uses the cursor under a certain CEFR, topic or room type for different query conditions
+- **THEN** The system returns a stable checksum error and does not return mixed range data.
+
+### Requirement: Each room has a stable and non-enumerable shared entrance
+
+The system MUST generate a high-entropy stable sharing identifier for each instant room and reservation room that is independent of the internal room identifier, and can generate a sharing URL under the configured domain name accordingly. Sharing portals are stable for the same room while the room is available, and must not contain members, passwords, authentication credentials, provider identification, or information that can be used to infer personal identity.
+
+#### Scenario: Get room sharing entrance
+
+- **WHEN** Authenticated users view details of rooms they have access to
+- **THEN** The system returns the stable shared URL of the room, and repeated reading will not generate multiple different entries.
+
+#### Scenario: Compare the shared entrance of two rooms
+
+- **WHEN** The system returns shared entrances for the two rooms respectively.
+- **THEN** Two entrances use different unpredictable sharing IDs and the IDs are not equal to the internal room ID
+
+### Requirement: The sharing portal only discloses the minimum room information
+
+The system MUST allow unlogged callers to use a valid share ID to resolve the minimum information that can still access the room, including the room ID required for internal entry, room type, status, visibility, theme, CEFR, number of people and upper limit, start and end time, room host nickname, and password status. The response MUST not contain member lists, bookers, passwords, user contact information, live credentials, or internal provider data.
+
+#### Scenario: Not logged in to open a valid sharing link
+
+- **WHEN** A non-logged-in user opens a valid sharing portal that is still available for reservation, available for joining, or open.
+- **THEN** The system returns the minimum room information so that the client can display the room and guide you to log in or continue entering the room.
+
+#### Scenario: The sharing ID does not exist or the room is no longer accessible
+
+- **WHEN** The caller uses an unknown sharing ID, or the corresponding room has been canceled, is ending, or has ended.
+- **THEN** The system returns stable non-existence or unavailability results without disclosing historical members and termination reasons.
+
+### Requirement: The shared entrance cannot be used as a room check-in voucher
+
+The system MUST continue to perform existing login, profile, age, security restrictions, room status, reservations, rule confirmation, password and capacity verification after sharing portal resolution. Holding a shared ID does not generate reservation, membership, real-time credentials or room host management rights.
+
+#### Scenario: Restricted users can join by sharing a link
+
+- **WHEN** Users who are restricted by the platform hold a valid sharing ID and directly request to join or obtain real-time credentials
+- **THEN** The system denies based on existing restrictions and does not create membership or issue credentials
+
+#### Scenario: The password room is accessed through a shared link
+
+- **WHEN** The user parsed the shared entrance of the password-protected room but did not submit the correct password.
+- **THEN** The system only allows viewing the minimum password status and refuses to continue when making an appointment or actually joining.
+
+#### Scenario: The link room is full
+
+- **WHEN** The user accesses the linked room through the sharing portal, but the actual quota and reserved seat rules determine that there is no available quota.
+- **THEN** The system refuses to make a reservation or join, and the capacity of the sharing portal cannot be expanded.

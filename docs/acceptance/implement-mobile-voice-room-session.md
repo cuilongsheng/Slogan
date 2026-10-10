@@ -1,30 +1,30 @@
-# implement-mobile-voice-room-session 验收记录
+# implement-mobile-voice-room-session acceptance record
 
-## 设计依据
+## Design basis
 
-2026-09-26 通过 Figma Desktop Bridge `Slogan` 文件 `56nIowZmvBhb0QJvOlDQdU` 的 `02 UI` 页面直接导出当前原稿，均为 390×844：
+2026-09-26 Directly export the current original through the `02 UI` page of the Figma Desktop Bridge `Slogan` file `56nIowZmvBhb0QJvOlDQdU`, both of which are 390×844:
 
-- 语音房 V2 `115:1425`：[原稿](assets/implement-mobile-voice-room-session-voice-room-v2.png)。成员区域 y416/高218；底部操作区 y763/高81。
-- 重连 `114:2511`：[原稿](assets/implement-mobile-voice-room-session-reconnecting-v1.png)。重连面板 x16/y251/358×345。
-- 结束 `114:2512`：[原稿](assets/implement-mobile-voice-room-session-ended-v1.png)。房间摘要 x16/y462/358×140。
-- 房主结束确认 `114:2514`：[原稿](assets/implement-mobile-voice-room-session-end-confirm-v1.png)。确认面板 y435。
+- Voice Room V2 `115:1425`: [Original manuscript](assets/implement-mobile-voice-room-session-voice-room-v2.png). Member area y416/height 218; bottom operating area y763/height 81.
+- Reconnect `114:2511`: [Original manuscript](assets/implement-mobile-voice-room-session-reconnecting-v1.png). Reconnect panel x16/y251/358×345.
+- End `114:2512`: [Original manuscript](assets/implement-mobile-voice-room-session-ended-v1.png). Room summary x16/y462/358×140.
+- Room host end confirmation `114:2514`: [Original manuscript](assets/implement-mobile-voice-room-session-end-confirm-v1.png). Confirm panel y435.
 
-## API 合同
+## API Contract
 
-唯一合同为 `openapi/openapi.yaml` 的生成类型。`POST /v1/rooms/{roomId}/memberships` 接收 `rulesAccepted` 与可选四位 `password`，返回 `currentMembership`、房间状态字段；错误包括 `ROOM_PASSWORD_REQUIRED/INVALID`、`ROOM_RULES_NOT_ACCEPTED`、`ROOM_FULL`、`ROOM_ENDED`、账号与安全限制。`POST /v1/rooms/{roomId}/realtime-credentials` 返回短期 `serverUrl`、`participantToken`、`participantIdentity`、`credentialVersion` 和角色。`GET /v1/rooms/{roomId}/members` 返回成员昵称、CEFR、顺序、角色、presence、participantIdentity，无照片头像。`POST /v1/rooms/{roomId}/leave` 需要 `expectedCredentialVersion`，结果包含业务 lifecycle 与 providerStatus；`POST /v1/rooms/{roomId}/end` 为房主结束接口。
+The only contract is the generation type `openapi/openapi.yaml`. `POST /v1/rooms/{roomId}/memberships` receives `rulesAccepted` and optional four-digit `password`, and returns `currentMembership`, room status field; errors include `ROOM_PASSWORD_REQUIRED/INVALID`, `ROOM_RULES_NOT_ACCEPTED`, `ROOM_FULL`, `ROOM_ENDED`, account number and security restrictions. `POST /v1/rooms/{roomId}/realtime-credentials` returns the short-term `serverUrl`, `participantToken`, `participantIdentity`, `credentialVersion` and roles. `GET /v1/rooms/{roomId}/members` returns member nickname, CEFR, order, role, presence, participantIdentity, no photo avatar. `POST /v1/rooms/{roomId}/leave` requires `expectedCredentialVersion`, and the result includes business lifecycle and providerStatus; `POST /v1/rooms/{roomId}/end` is the room host end interface.
 
-## 验证状态
+## Verification status
 
-- 已按当前设计帧实现语音房主体、重连/失败、退出确认、房主结束确认与结束页。390×844 Web 最终运行截图：[语音房](assets/implement-mobile-voice-room-session-runtime-web-active.png)、[双用户](assets/implement-mobile-voice-room-session-runtime-web-two-users.png)、[结束页](assets/implement-mobile-voice-room-session-runtime-web-ended.png)。房间规则、发言卡、成员区及底部操作区的主坐标与原稿对齐；结束页的成功标记、摘要与返回按钮也按原稿重新定位。截图显示真实 API 数据；测试房间的英文主题、人数和占位头像因此不同于 Figma 的示例数据。
-- 浏览器实测使用两名独立、已完成资料的本地测试账号与真实本地 API、LiveKit Cloud 会话。房主首次连接默认静音，刷新后恢复原有 membership；访客从详情页经过主动规则确认、模拟麦克风检查入房；双方看到成员变化。访客主动打开/关闭麦克风后，房主侧实时状态跟随变化；访客退出后成员被移除；房主确认结束后进入结束页。该轮浏览器脚本错误和 API 失败响应均为 `0`。测试账号及其 `9` 个临时房间已删除，辅助脚本和凭据文件已清理。
-- 本地 `apps/api/.env` 的 `REALTIME_ENABLED` 已设为 `true`。联调中曾在开关为 `false` 时得到预期的 `503`；启用后另有一次刷新取凭证的暂时性 `503`，重试可恢复。页面为此保留重试和明确退出路径。后端对“操作已提交但 provider 清理不可用”的 `503` 会在 `details` 返回结果；前端只在 room ID、状态和版本形状匹配时承认已提交的离开/结束结果。
-- Web 的麦克风使用 Chromium 模拟设备。以上证明了两客户端的信令、成员状态和音轨发布开关，不证明两台真实设备间的听感、原生音频会话、物理断网恢复或推送到 Cloud 的 Webhook 公网可达。原生 Expo Go 无法承载 LiveKit WebRTC；仍需在 iOS/Android 开发构建与两台真实设备上做音频和断线验收。[LiveKit Expo 官方说明](https://docs.livekit.io/home/quickstarts/expo)。
-- 合同没有成员头像字段，因此成员位用姓名首字占位；表达辅助与聊天发送属于后续功能，页面明确呈现不可用状态。房间结束后直接刷新该旧 URL 时，房间详情 API 会拒绝已结束房间，结束页保留终态提示但无法再次取得摘要；正常房内结束流程保有摘要。
+- The voice room host body, reconnection/failure, exit confirmation, room host end confirmation and end page have been implemented according to the current design frame. 390×844 Web final running screenshots: [Voice room](assets/implement-mobile-voice-room-session-runtime-web-active.png), [Dual user](assets/implement-mobile-voice-room-session-runtime-web-two-users.png), [End page](assets/implement-mobile-voice-room-session-runtime-web-ended.png). The main coordinates of the room rules, speech cards, member area and bottom operation area are aligned with the original; the success mark, summary and return button of the end page are also repositioned according to the original. Screenshot showing real API data; the test room's English theme, number of people, and placeholder avatars are therefore different from Figma's sample data.
+- The actual browser test uses two independent local test accounts with completed data and real local API and LiveKit Cloud sessions. The room host is muted by default when connecting for the first time, and the original membership is restored after refreshing; visitors enter the room through active rule confirmation and simulated microphone check from the details page; both parties see the member changes. After the visitor actively turns on/off the microphone, the real-time status of the room host changes accordingly; members are removed after the visitor exits; the room host enters the end page after confirmation. This round of browser script errors and API failure responses are both `0`. The test account and its `9` temporary rooms have been deleted, and the auxiliary scripts and credential files have been cleaned.
+- `REALTIME_ENABLED` of local `apps/api/.env` has been set to `true`. In integration verification, the expected `503` was obtained when the switch was `false`; after it was enabled, there was a temporary `503` that refreshed the credentials and could be recovered by retrying. The page reserves retry and explicit exit paths for this purpose. The backend will return the result in `details` for "operation submitted but provider cleanup is not available" `503`; the frontend only recognizes the submitted leave/end result when the room ID, status and version shape match.
+- The web microphone uses a Chromium emulated device. This establishes signaling, membership state, and audio-track publishing controls across two clients. It does not establish audible quality between two physical devices, native audio-session behavior, physical network-loss recovery, or public reachability of Cloud webhooks. Native Expo Go cannot host LiveKit WebRTC; audio and disconnection acceptance still need to be done on the iOS/Android development build and two real devices. [LiveKit Expo official description](https://docs.livekit.io/home/quickstarts/expo)。
+- The contract does not have a member avatar field, so the member's initials are used as a placeholder; expression assistance and chat sending are follow-up functions, and the page is clearly unavailable. When the old URL is refreshed directly after the room ends, the room details API will reject the ended room, and the end page retains the final prompt but cannot obtain the summary again; the normal room ending process retains the summary.
 
-## 自动检查
+## Automatic check
 
-- `pnpm --filter @slogan/mobile lint`、`typecheck`：通过。
-- 移动端 Jest：`20` 套、`63` 项通过。
-- `expo export --platform all`：Web、iOS、Android JS bundle 均导出成功；Expo Android prebuild 成功，原生项目由配置生成并列出 LiveKit plugin。这不是安装或真机证据。
-- 2026-10-02 Android `:app:assembleDebug` 已通过，耗时 6 分 35 秒，生成 `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk`（290 MB；SHA-256 `c409e0fc3841520121fbf106ebb23b7ce12c57068cdd50670b5c62bc51b59f87`）。本机 `local.properties` 指向已授权的 `~/Library/Android/sdk`，构建进程通过本机 HTTP 代理访问官方 Google Maven，完成 LiveKit / React Native 原生依赖编译。`adb devices` 仍无设备；原生安装、双机音频、断线及 iOS 构建未验证。
-- `openspec validate implement-mobile-voice-room-session --strict` 与目标文件 Prettier 检查：通过。
+- `pnpm --filter @slogan/mobile lint`, `typecheck`: Passed.
+- Mobile Jest: `20` sets and `63` items passed.
+- `expo export --platform all`: Web, iOS, and Android JS bundles are all exported successfully; Expo Android prebuild is successful, the native project is generated by the configuration and the LiveKit plugin is listed. This is not proof of installation or physical device.
+- 2026-10-02 Android `:app:assembleDebug` passed, took 6 minutes and 35 seconds to generate `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` (290 MB; SHA-256 `c409e0fc3841520121fbf106ebb23b7ce12c57068cdd50670b5c62bc51b59f87`). The native `local.properties` points to the authorized `~/Library/Android/sdk`. The build process accesses the official Google Maven through the native HTTP proxy to complete the LiveKit / React Native native dependency compilation. `adb devices` still has no device; native installation, dual-machine audio, disconnection and iOS build are not verified.
+- `openspec validate implement-mobile-voice-room-session --strict` and target file Prettier check: passed.

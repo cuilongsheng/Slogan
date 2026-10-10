@@ -1,77 +1,95 @@
 ## Purpose
 
-定义用户如何把本人可读取的会后关键词或短表达保存为私有单词本条目，并以可分页、可编辑、可删除、可收藏且并发安全的方式持续维护个人学习内容。
+Define how users can save post-session keywords or short expressions that they can read as private word entries, and continue to maintain personal learning content in a paging, editable, deletable, collectible, and concurrently safe manner.
 
 ## ADDED Requirements
 
-### Requirement: 用户只能从本人可读汇总加入单词本
-系统 MUST 允许已认证用户选择本人有权读取的 `READY` 房间汇总条目加入个人单词本。加入 MUST 复制允许的文本和类型为用户私有内容，不建立对其他成员内容的读取能力；同一幂等标识的相同请求不得重复创建，改变载荷复用标识 MUST 冲突。
+### Requirement: Users can only add words to the wordbook from the summary that can be read by themselves.
 
-#### Scenario: 从可读汇总加入条目
-- **WHEN** 实际参与者选择本人可读汇总中的有效关键词或短表达
-- **THEN** 系统创建归当前用户所有的单词本条目，并返回稳定标识、版本和收藏状态
+The system MUST allow authenticated users to select the `READY` room summary entries that they have the right to read to add to their personal vocabulary books. Added MUST. The text and type allowed for copying are user private content, and the ability to read the content of other members is not established. The same request with the same idempotent ID MUST not be created repeatedly. Changing the payload reuse ID MUST conflicts.
 
-#### Scenario: 重放相同加入请求
-- **WHEN** 用户使用同一幂等标识重放完全相同的加入请求
-- **THEN** 系统返回原结果且不重复创建条目
+#### Scenario: Add entries from readable summary
 
-#### Scenario: 从不可读汇总加入
-- **WHEN** 用户选择未参与房间、尚未完成的汇总或不存在的汇总条目
-- **THEN** 系统拒绝请求且不泄露其他用户、房间候选或内部生成状态
+- **WHEN** Actual participants choose valid keywords or short expressions in the summary that they can read
+- **THEN** The system creates a wordbook entry owned by the current user and returns the stable identification, version and collection status
 
-### Requirement: 单词本列表只返回本人内容
-系统 MUST 为当前用户提供稳定 keyset 分页的个人单词本列表，并支持按收藏状态和条目类型筛选。响应 MUST 只包含本人当前存在的条目，不返回其他用户的保存行为或房间成员信息。
+#### Scenario: Replay the same join request
 
-#### Scenario: 分页查看本人单词本
-- **WHEN** 用户使用有效限制和游标查询单词本
-- **THEN** 系统按稳定顺序返回本人条目和下一页游标，不重复或跳过并发边界外的既有项
+- **WHEN** User replays the exact same join request using the same idempotent ID
+- **THEN** The system returns the original results and does not create repeated entries
 
-#### Scenario: 按收藏和类型筛选
-- **WHEN** 用户提交有效收藏状态或关键词/短表达类型筛选
-- **THEN** 系统只返回同时满足条件的本人条目，游标与筛选条件绑定
+#### Scenario: Join from unreadable summary
 
-#### Scenario: 用户没有任何条目
-- **WHEN** 用户查询空单词本
-- **THEN** 系统返回空列表和空下一页游标，不自动保存房间汇总内容
+- **WHEN** The user selected a room that has not participated in the room, a summary that has not yet been completed, or a summary entry that does not exist.
+- **THEN** The system rejects the request without disclosing other users, room candidates, or internal generation status
 
-### Requirement: 用户可以并发安全地编辑本人条目
-系统 MUST 允许条目所有者编辑允许长度内的显示文本和个人释义或备注，并使用版本前置条件阻止旧写入覆盖新内容。编辑 MUST 不修改来源房间汇总或其他用户从同一汇总保存的条目。
+### Requirement: The word list only returns my content
 
-#### Scenario: 使用当前版本编辑
-- **WHEN** 所有者以当前版本提交有效文本或个人备注
-- **THEN** 系统保存规范化内容、递增版本并返回更新结果
+The system MUST provide the current user with a stable keyset-paged personal vocabulary list, and support filtering by collection status and entry type. The response MUST only contains entries that currently exist for me, and does not return other users' saving behavior or room member information.
 
-#### Scenario: 旧版本编辑迟到
-- **WHEN** 两个编辑基于同一旧版本竞争提交
-- **THEN** 最多一个编辑成功，另一个收到稳定版本冲突且已提交内容保持完整
+#### Scenario: View my vocabulary book in pages
 
-#### Scenario: 非所有者直接编辑
-- **WHEN** 用户尝试通过猜测标识编辑其他用户条目
-- **THEN** 系统拒绝操作且不返回该条目的内容或所有者信息
+- **WHEN** User queries wordbook using valid limits and cursor
+- **THEN** The system returns my entries and the next page cursor in a stable order, without repeating or skipping existing entries outside the concurrency boundary.
 
-### Requirement: 用户可以收藏或删除本人条目
-系统 MUST 允许条目所有者幂等设置收藏状态并删除本人条目。删除后该条目 MUST 不再出现在读取或列表中，迟到的旧版本编辑或收藏命令不得使其恢复。
+#### Scenario: Filter by collection and type
 
-#### Scenario: 设置收藏状态
-- **WHEN** 所有者把有效条目设为收藏或取消收藏
-- **THEN** 系统返回目标收藏状态，重复设置相同状态不产生重复条目
+- **WHEN** User submits valid collection status or keyword/short expression type filtering
+- **THEN** The system only returns my entries that meet the conditions at the same time, and the cursor is bound to the filtering conditions.
 
-#### Scenario: 删除条目
-- **WHEN** 所有者删除当前存在的单词本条目
-- **THEN** 系统移除该用户的私有副本，但共享房间汇总和其他用户条目保持不变
+#### Scenario: User has no entries
 
-#### Scenario: 删除后旧命令迟到
-- **WHEN** 条目删除后旧版本编辑或收藏命令到达
-- **THEN** 系统拒绝旧命令且不得恢复已删除内容
+- **WHEN** User queries empty word book
+- **THEN** The system returns an empty list and an empty next page cursor, and does not automatically save the room summary content.
 
-### Requirement: 单词本不得自动暴露或扩散
-系统 MUST 只在用户明确选择后创建个人单词本条目，不得自动导入整个房间汇总、向房主或其他成员展示、写入私人会后笔记或用于安全判断。
+### Requirement: Users can edit their own entries concurrently and securely
 
-#### Scenario: 房间汇总完成
-- **WHEN** 房间会后汇总变为 `READY`
-- **THEN** 系统不自动创建任何成员的单词本条目，等待每个用户独立选择
+The system MUST allow entry owners to edit display text and personal paraphrases or comments within the allowed length, and use version preconditions to prevent old writes from overwriting new content. Editing MUST not modify the source room summary or entries saved by other users from the same summary.
 
-#### Scenario: 其他成员保存相同词条
-- **WHEN** 多名成员各自选择同一个共享汇总条目
-- **THEN** 系统创建相互隔离的个人副本，任何成员的编辑、收藏或删除不影响其他人
+#### Scenario: Edit with current version
 
+- **WHEN** Owner submitted valid text or personal notes in current version
+- **THEN** The system saves the standardized content, incremental version and returns the update result
+
+#### Scenario: Old version edited late
+
+- **WHEN** Two editors competing for submission based on the same old version
+- **THEN** At most one edit is successful, the other receives a stable version conflict and the submitted content remains intact
+
+#### Scenario: Edit directly by non-owner
+
+- **WHEN** User attempts to edit another user's entry by guessing the ID
+- **THEN** The system rejects the operation and does not return the entry's content or owner information.
+
+### Requirement: Users can favorite or delete their own entries
+
+The system MUST allow the entry owner idempotent to set favorite status and delete his own entry. The entry MUST no longer appear in reads or lists after deletion, and late edit or favorite commands for older versions MUST not restore it.
+
+#### Scenario: Set favorite status
+
+- **WHEN** The owner has set or unfavorited a valid entry
+- **THEN** The system returns to the target collection state, and repeated settings of the same state will not produce duplicate entries.
+
+#### Scenario: Delete entry
+
+- **WHEN** The owner deletes the currently existing wordbook entry
+- **THEN** The system removes the user's private copy, but the shared room summary and other user entries remain unchanged
+
+#### Scenario: Old command late after deletion
+
+- **WHEN** Old version edit or favorite command arrived after entry deleted
+- **THEN** The system rejected the old command and may not restore deleted content
+
+### Requirement: The word book must not be automatically exposed or diffused
+
+The system MUST only create personal wordbook entries after the user explicitly selects them, and may not automatically import the entire room summary, display it to the room host or other members, write private post-meeting notes, or use it for security judgment.
+
+#### Scenario: Room summary completed
+
+- **WHEN** The summary after the room meeting becomes `READY`
+- **THEN** The system does not automatically create wordbook entries for any member, waiting for each user to select independently.
+
+#### Scenario: Other members save the same entry
+
+- **WHEN** Multiple members each selected the same shared summary entry
+- **THEN** The system creates personal copies that are isolated from each other. Editing, favorites or deletions by any member will not affect others.

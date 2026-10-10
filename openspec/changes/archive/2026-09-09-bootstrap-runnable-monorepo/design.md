@@ -1,120 +1,120 @@
 ## Context
 
-见 `proposal.md` 的 Why。当前 `apps/*`、`packages/*` 和 `tests/*` 只有目录及 `.gitkeep`；仓库根没有 `package.json`、`pnpm-workspace.yaml`、lockfile、TypeScript 配置、测试运行器或 Git repository。既有架构已确认 `pnpm` monorepo、React PC 管理端、React Native + Expo 移动端、NestJS modular monolith、`packages/api-client` 与纯 TypeScript `packages/shared`，本设计负责把这些边界变成可执行基线。
+See `proposal.md`’s Why. Currently `apps/*`, `packages/*` and `tests/*` only have directories and `.gitkeep`; the repository root does not have `package.json`, `pnpm-workspace.yaml`, lockfile, TypeScript configuration, test runner or Git repository. The existing architecture has been confirmed `pnpm` monorepo, React PC management terminal, React Native + Expo mobile terminal, NestJS modular monolith, `packages/api-client` and pure TypeScript `packages/shared`. This design is responsible for turning these boundaries into executable baselines.
 
-本 change 是工程基础设施变更，不产生产品 requirement delta，因此使用 `skip_specs=true`。它只进入 Architecture 与 Test / Acceptance 阶段。
+This change is an engineering infrastructure change and does not generate product requirement delta, so `skip_specs=true` is used. It only enters the Architecture and Test / Acceptance phases.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- 一次安装、一个 lockfile、统一根命令，同时允许每个 workspace 独立开发和验证。
-- 三个 app 都有最小可启动入口，且入口不伪装成已实现的产品页面或 API。
-- 将幽灵依赖、跨应用导入、非法共享和循环依赖从文字规则提升为自动检查。
-- 让本地与未来任意 CI provider 调用同一个 `pnpm verify`，避免本地/CI 两套事实。
-- 为 admin、mobile、api 和纯 TS package 采用适合各运行环境的 TypeScript 与测试配置。
-- 为每项技术记录唯一职责和采用时机，避免同一职责并存多套库或预装无消费者依赖。
+- One installation, one lockfile, unified root command, while allowing each workspace to develop and verify independently.
+- All three apps have minimal launchable portals that do not pretend to be implemented product pages or APIs.
+- Promote ghost dependencies, cross-application imports, illegal sharing and circular dependencies from literal rules to automatic checks.
+- Let local and any future CI provider call the same `pnpm verify` to avoid two sets of facts for local/CI.
+- Use TypeScript and test configurations suitable for each running environment for admin, mobile, api and pure TS package.
+- Record the unique responsibility and adoption time for each technology to avoid the coexistence of multiple libraries for the same responsibility or pre-installation without consumer dependence.
 
 **Non-Goals:**
 
-- 不把所有平台强行使用同一个测试运行器、tsconfig 或 UI 组件体系。
-- 不引入 Nx、Turborepo、Changesets、Git LFS、容器编排或共享配置 package。
-- 不初始化数据库、Redis、LiveKit 等运行依赖，不创建公开 HTTP endpoint。
-- 不生成 OpenAPI contract/client，不决定 API-first 或 NestJS code-first。
-- 不接入特定 CI/Git 平台，不定义部署和正式发布版本。
+- Don't force all platforms to use the same test runner, tsconfig, or UI component architecture.
+- Does not introduce Nx, Turborepo, Changesets, Git LFS, container orchestration or shared configuration packages.
+- Do not initialize database, Redis, LiveKit and other running dependencies, and do not create public HTTP endpoint.
+- Does not generate OpenAPI contract/client, does not determine API-first or NestJS code-first.
+- Does not connect to a specific CI/Git platform, and does not define deployment and official release versions.
 
 ## Decisions
 
-### Decision: 使用原生 pnpm workspace，不增加任务编排框架
+### Decision: Use the native pnpm workspace without adding a task orchestration framework
 
-根目录创建 `package.json`、`pnpm-workspace.yaml`、唯一 `pnpm-lock.yaml`、版本文件和 `.npmrc`。workspace 范围固定为 `apps/*` 与 `packages/*`，包名使用 `@slogan/*`，全部标记为 `private: true`。本地 workspace 依赖必须使用 `workspace:*`，每个包显式声明自己的直接依赖。
+Root directory creates `package.json`, `pnpm-workspace.yaml`, unique `pnpm-lock.yaml`, version files and `.npmrc`. The workspace range is fixed to `apps/*` and `packages/*`, the package name uses `@slogan/*`, and all are marked as `private: true`. Local workspace dependencies must use `workspace:*`, and each package explicitly declares its direct dependencies.
 
-根 package 只持有真正跨 workspace 的工程工具和编排脚本；React、Expo、NestJS 等运行依赖归各自 app。使用 pnpm 默认依赖布局，不为方便导入而开启全局 hoist；若 Expo 的已验证兼容性要求特殊 node linker，必须在 apply evidence 中说明原因和影响。
+The root package only holds engineering tools and orchestration scripts that are truly cross-workspace; running dependencies such as React, Expo, and NestJS belong to their respective apps. Use pnpm's default dependency layout, and do not enable global hoist for easy import; if Expo's verified compatibility requires a special node linker, the reasons and impact must be explained in apply evidence.
 
-当前只有三个 app 和两个 package，pnpm recursive/filter 命令足以组织任务。Nx/Turborepo 的缓存、daemon 和额外配置暂不产生足够收益；出现可测量的 CI 或本地构建瓶颈后再以独立 change 引入。
+Currently there are only three apps and two packages, and the pnpm recursive/filter command is enough to organize tasks. Nx/Turborepo's cache, daemon and additional configuration do not generate enough revenue yet; introduce it as an independent change after measurable CI or local build bottlenecks occur.
 
-### Decision: 工具链版本必须被仓库记录
+### Decision: The tool chain version must be recorded in the repository
 
-根 `package.json` 用 `packageManager` 固定精确 pnpm 版本，用 `engines.node` 和一个版本文件固定受支持的 Node LTS 主版本；lockfile 固定完整依赖图。apply 开始时应依据 React/Vite、Expo、NestJS 与 Playwright 官方兼容范围选择同一组稳定版本并记录，不直接继承当前机器的 Node `v25.9.0` 或未声明的全局工具。
+Root `package.json` pins the exact pnpm version with `packageManager`, pins the supported Node LTS major version with `engines.node` and a version file; lockfile pins the complete dependency graph. At the beginning of apply, the same set of stable versions should be selected and recorded based on the official compatibility range of React/Vite, Expo, NestJS and Playwright. It should not directly inherit the Node `v25.9.0` of the current machine or undeclared global tools.
 
-版本选择验证记录写入本 change 的 acceptance evidence。以后常规依赖升级按 Level 0/1 路由；Node、Expo、NestJS 或构建系统跨主要版本升级需单独评估。
+The version selection verification record is written into the acceptance evidence of this change. In the future, regular dependency upgrades will be routed according to Level 0/1; cross-major version upgrades of Node, Expo, NestJS or build systems need to be evaluated separately.
 
-### Decision: 技术栈使用 adopt-now / adopt-on-trigger 分层
+### Decision: The technology stack is layered using adopt-now / adopt-on-trigger
 
-`docs/architecture/toolchain.md` 是技术选择登记入口；它记录职责、状态、选择原因、引入触发条件和被拒绝的重叠方案。`package.json` 与 lockfile 才是实际安装版本的事实来源。稳定且必须遵守的使用边界继续由 `rules/*.md` 持有，不能把完整依赖清单复制进 `AGENTS.md`。
+`docs/architecture/toolchain.md` is the technology selection registration entry; it records responsibilities, status, selection reasons, introduction trigger conditions and rejected overlapping solutions. `package.json` and lockfile are the source of truth for the actual installed version. Stable and must-observe usage boundaries continue to be held by `rules/*.md`, and the complete dependency list cannot be copied into `AGENTS.md`.
 
-Bootstrap 的 `adopt-now` 组合为：
+Bootstrap’s `adopt-now` combination is:
 
-| Area | Adopt now | Responsibility |
-|---|---|---|
-| Root | pnpm workspace、TypeScript、ESLint、Prettier、dependency-cruiser、Playwright | workspace、静态检查、依赖边界与 Web E2E |
-| Admin | React、Vite、React Router、Tailwind CSS、Vitest、React Testing Library | PC 壳、集中路由、样式 tokens 与快速测试 |
-| Mobile | React Native、Expo、Expo Router、React Native StyleSheet、Jest、React Native Testing Library | 原生壳、文件路由、平台样式与快速测试 |
-| API | NestJS、Express adapter、`@nestjs/config`、Zod、Jest | HTTP 应用壳、启动配置校验和测试 |
+| Area   | Adopt now                                                                                    | Responsibility                                                      |
+| ------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Root   | pnpm workspace、TypeScript、ESLint、Prettier、dependency-cruiser、Playwright                 | workspace, static checking, dependency boundaries and Web E2E       |
+| Admin  | React、Vite、React Router、Tailwind CSS、Vitest、React Testing Library                       | PC shell, centralized routing, style tokens and quick testing       |
+| Mobile | React Native、Expo、Expo Router、React Native StyleSheet、Jest、React Native Testing Library | Native shell, file routing, platform style and quick testing        |
+| API    | NestJS、Express adapter、`@nestjs/config`、Zod、Jest                                         | HTTP application shell, startup configuration verification and test |
 
-业务能力出现时采用以下 `adopt-on-trigger` 默认方案，但不得在 bootstrap 中安装：
+The following `adopt-on-trigger` default scheme is used when business capabilities appear, but must not be installed in bootstrap:
 
-| Trigger | Default choice | Boundary |
-|---|---|---|
-| 首个真实 API 消费页面 | OpenAPI generated fetch client + TanStack Query | View 不直接请求；feature hook 组合 generated client |
-| 首个复杂表单 | React Hook Form + Zod | 表单 schema 属于 feature，不复制 API DTO |
-| 首个后台数据表格 | TanStack Table | 列、筛选和权限动作属于对应 feature |
-| 首个中英文产品页面 | i18next + react-i18next；mobile 加 expo-localization | 用户文本只来自 i18n 资源 |
-| 首个预约/跨时区功能 | date-fns + date-fns-tz | DB/API 使用 UTC 时刻，展示使用 IANA timezone |
-| 首个持久化用例 | PostgreSQL + Prisma | PostgreSQL 是事实来源；Prisma 只在 infrastructure |
-| 首个 Redis 协调用例 | ioredis | presence、限流、临时状态和 Lua 原子操作，不保存持久事实 |
-| 首个异步/延迟/重试任务 | BullMQ | 任务必须幂等并有 retry、timeout 与失败证据 |
-| 首个语音房用例 | LiveKit server/client SDK | token 由后端签发；SDK 隔离在 adapter/service |
-| 首个公开 API | nestjs-pino、Helmet、CORS allowlist、rate limiting | 结构化脱敏日志和服务端安全边界 |
-| Auth change | Passport/provider adapter、token/refresh 方案、Argon2id（密码存在时） | 作为独立 Level 2 设计，不在 bootstrap 推断会话模型 |
-| 首次真实部署 | error reporting / OpenTelemetry 按运维需求选择 | 未部署前不虚构生产监控能力 |
+| Trigger                                        | Default choice                                                                             | Boundary                                                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| The first real API consumption page            | OpenAPI generated fetch client + TanStack Query                                            | View does not request directly; feature hook combination generated client                      |
+| The first complex form                         | React Hook Form + Zod                                                                      | The form schema belongs to the feature and the API DTO is not copied.                          |
+| The first admin data table                | TanStack Table                                                                             | Column, filter and permission actions belong to the corresponding feature                      |
+| The first Chinese and English product page     | i18next + react-i18next; mobile plus expo-localization                                     | User text only comes from i18n resources                                                       |
+| The first appointment/cross-time zone function | date-fns + date-fns-tz                                                                     | DB/API uses UTC time, showing the use of IANA timezone                                         |
+| The first persistence use case                 | PostgreSQL + Prisma                                                                        | PostgreSQL is the source of truth; Prisma is only in infrastructure                            |
+| The first Redis coordination use case          | ioredis                                                                                    | presence, throttling, temporary state and Lua atomic operations, no persistent facts are saved |
+| First asynchronous/delay/retry task            | BullMQ                                                                                     | The task must be idempotent and have retry, timeout and failure evidence.                      |
+| The first voice room use case                  | LiveKit server/client SDK                                                                  | token is issued by the backend; SDK is isolated in adapter/service                             |
+| The first public API                           | nestjs-pino、Helmet、CORS allowlist、rate limiting                                         | Structured desensitization logs and server-side security boundaries                            |
+| Auth change                                    | Passport/provider adapter, token/refresh scheme, Argon2id (when password exists)           | As a standalone Level 2 design, no session model is inferred in bootstrap                      |
+| First real deployment                          | error reporting / OpenTelemetry Select according to operation and maintenance requirements | Do not fabricate production monitoring capabilities before deployment                          |
 
-Axios、Redux/Zustand、NativeWind、Fastify、Changesets、Testcontainers 等初始状态为 `deferred`，不是永久禁止：
+The initial status of Axios, Redux/Zustand, NativeWind, Fastify, Changesets, Testcontainers, etc. is `deferred`, which is not permanently banned:
 
-- 默认使用由唯一 OpenAPI contract 生成的 fetch transport；只有上传进度、特定 adapter 或 generator 约束形成真实需求时才评估 Axios，且组件不得直接依赖 transport。
-- TanStack Query 只管理 server state；局部 React state 足够时不引入全局 store，出现真实跨页面客户端状态后再评估 Zustand/Redux。
-- Admin 使用 Tailwind CSS；Mobile 使用 StyleSheet + semantic tokens，不为语法统一而强行引入 NativeWind。
-- API 使用 NestJS 默认 Express adapter；只有压测或明确兼容性证据表明需要时才评估 Fastify。
-- Testcontainers 在 PostgreSQL/Redis 集成测试出现后再引入；bootstrap 测试不要求外部容器。
+- Use the fetch transport generated by a unique OpenAPI contract by default; Axios is only evaluated when upload progress, specific adapter or generator constraints form real requirements, and components must not directly depend on the transport.
+- TanStack Query only manages server state; when the local React state is sufficient, the global store will not be introduced, and Zustand/Redux will be evaluated after the real cross-page client state appears.
+- Admin uses Tailwind CSS; Mobile uses StyleSheet + semantic tokens, and NativeWind is not forcibly introduced for grammatical unification.
+- API uses NestJS default Express adapter; Fastify will only be evaluated if stress testing or clear compatibility evidence indicates it is needed.
+- Testcontainers were introduced after the advent of PostgreSQL/Redis integration tests; bootstrap tests do not require external containers.
 
-同一职责只能存在一个默认方案。新增重叠库必须通过后续 change 说明原方案无法满足的真实约束、迁移影响和移除计划。
+Only one default scheme can exist for the same responsibility. New overlapping libraries must explain the real constraints, migration impacts, and removal plans that cannot be met by the original solution through subsequent changes.
 
-### Decision: 三端分别采用最小官方运行壳
+### Decision: The three ends use the smallest official operating shell
 
-- `apps/admin`：React + TypeScript + Vite + React Router + Tailwind CSS。只提供工程 smoke 页面和集中 router/provider 入口，不建立虚假的 dashboard、登录或房间 UI。测试使用 Vitest、React Testing Library；浏览器验收使用根 Playwright。
-- `apps/mobile`：React Native + Expo + Expo Router + TypeScript。只提供一个工程 smoke route；保留顶层 `app/` 与 `src/features`/`src/services` 边界，样式使用 StyleSheet 和 semantic tokens。单元/组件测试使用 Expo 兼容的 Jest 与 React Native Testing Library；启动与 bundle/export 检查不等同于真机验收。
-- `apps/api`：NestJS + TypeScript + Express adapter。只提供可启动的 `AppModule`、bootstrap、`@nestjs/config` 和 Zod 环境校验，不创建业务 module、公开 controller 或未进入唯一 OpenAPI contract 的 `/health` endpoint。测试使用 Jest，至少验证合法配置可 init/close、缺失必需配置会启动失败。
+- `apps/admin`：React + TypeScript + Vite + React Router + Tailwind CSS。 Only provides the project smoke page and centralized router/provider entrance, and does not create fake dashboard, login or room UI. Use Vitest and React Testing Library for testing; use root Playwright for browser acceptance.
+- `apps/mobile`：React Native + Expo + Expo Router + TypeScript。 Only provides one project smoke route; retains the top-level `app/` and `src/features`/`src/services` boundaries, and uses StyleSheet and semantic tokens for style. Unit/component testing uses Expo-compatible Jest and React Native Testing Library; startup and bundle/export checks are not equivalent to physical device acceptance.
+- `apps/api`：NestJS + TypeScript + Express adapter。 Only provides bootable `AppModule`, bootstrap, `@nestjs/config` and Zod environment verification, and does not create business modules, public controllers or `/health` endpoints that have not entered the only OpenAPI contract. Use Jest for testing. At least verify that the legal configuration can be init/close. If the required configuration is missing, the startup will fail.
 
-这些 smoke 壳属于工程运行证据，不是产品 UI 设计，因此不要求 Figma，也不使用 `voice-room-figma-to-frontend`；后续 Level 1/2 产品 UI 仍遵守该 Skill 规则。
+These smoke shells are engineering operation evidence, not product UI design, so Figma is not required and `voice-room-figma-to-frontend` is not used; subsequent Level 1/2 product UIs still comply with this Skill rule.
 
-### Decision: 共享包先建立边界，不预造能力
+### Decision: The shared package establishes boundaries first and does not pre-build capabilities.
 
-- `packages/shared` 使用纯 TypeScript，提供最小公开入口和 package `exports`；不得依赖 DOM、Node-only API、React、React Native、NestJS 或环境变量。没有真实共享逻辑时入口保持无业务导出。
-- `packages/api-client` 只建立 private package manifest、生成目录和生成/清理脚本边界；在 `openapi/openapi.yaml` 获批前不生成文件、不暴露占位 DTO，也不成为 app 依赖。
+- `packages/shared` uses pure TypeScript, providing minimal public entry and package `exports`; must not rely on DOM, Node-only API, React, React Native, NestJS, or environment variables. When there is no real sharing logic, the entrance remains without business export.
+- `packages/api-client` only creates private package manifest, generate directory and generate/clean script boundaries; before `openapi/openapi.yaml` is approved, it does not generate files, does not expose placeholder DTO, and does not become app dependency.
 
-不新增 `packages/config`。共享 TypeScript、ESLint、Prettier 配置直接放根目录，由 app/package 显式扩展；待配置需要独立版本或跨仓库复用时再抽包。
+Do not add `packages/config`. The shared TypeScript, ESLint, and Prettier configurations are placed directly in the root directory and explicitly extended by app/package; they will be extracted when the configuration requires an independent version or is reused across repositories.
 
-### Decision: TypeScript 配置按运行环境继承，不使用全局路径捷径
+### Decision: TypeScript configuration is inherited by running environment and does not use global path shortcuts
 
-根 `tsconfig.base.json` 只放三端都成立的严格性和质量选项。admin、mobile、api、shared 各自维护运行环境相关选项；不把 DOM、Node 和 React Native lib 混入同一配置。
+Root `tsconfig.base.json` only puts stringency and quality options that are true for all three ends. admin, mobile, api, and shared each maintain options related to the operating environment; do not mix DOM, Node, and React Native lib into the same configuration.
 
-跨 workspace 导入走 package name 与 `exports`，应用内别名只允许指向本应用公开根。禁止用一个根 `paths` 映射直接穿透其他 app 或 feature 内部目录。初始规模不强制 TypeScript Project References；真实 build graph 需要增量编译时再引入。
+When importing package name and `exports` across workspaces, aliases within the application are only allowed to point to the public root of this application. It is prohibited to use a root `paths` mapping to directly penetrate other app or feature internal directories. The initial scale is not mandatory for TypeScript Project References; the real build graph needs to be introduced during incremental compilation.
 
-### Decision: ESLint 管代码质量，依赖图工具管边界和循环
+### Decision: ESLint manages code quality, dependency graph tools manage boundaries and loops
 
-根 ESLint flat config 提供 TypeScript 和平台适配规则，各 app 只增加必要 override。使用 `dependency-cruiser` 作为单独的依赖图检查器，执行以下硬性检查：
+The root ESLint flat config provides TypeScript and platform adaptation rules, and each app only adds necessary overrides. Use `dependency-cruiser` as a separate dependency graph checker to perform the following hard checks:
 
-- app 不得导入另一 app；
-- package 不得导入 app；
-- `packages/shared` 不得依赖平台框架或 Node-only 模块；
-- 跨 feature/module 不得深层导入内部实现；
-- 依赖图不得形成循环。
+- app cannot import another app;
+- package cannot be imported into app;
+- `packages/shared` must not rely on platform frameworks or Node-only modules;
+- Deep import of internal implementation across feature/module is not allowed;
+- The dependency graph must not form a cycle.
 
-依赖图检查作为 `pnpm deps:check` 并进入 `pnpm verify`。不以 barrel、TS alias 或 NestJS `forwardRef` 隐藏循环。
+Dependency graph checked as `pnpm deps:check` and into `pnpm verify`. Don't hide loops with barrel, TS alias or NestJS `forwardRef`.
 
-### Decision: 根命令是唯一验证入口
+### Decision: The root command is the only verification entry
 
-根 scripts 至少包括：
+Root scripts include at least:
 
 ```text
 dev:admin       dev:mobile       dev:api
@@ -124,46 +124,46 @@ test            test:e2e        build
 verify
 ```
 
-`verify` 顺序执行不修改文件的检查：`format:check -> deps:check -> lint -> typecheck -> test -> build -> test:e2e`。Playwright 配置通过 `webServer` 启动 admin smoke app，只覆盖浏览器行为；移动端 smoke 使用 Expo 启动/bundle 和对应测试证据，后续麦克风、权限、语言环境等功能仍要求真机 evidence。
+`verify` sequentially performs checks without modifying the file: `format:check -> deps:check -> lint -> typecheck -> test -> build -> test:e2e`. Playwright configuration starts the admin smoke app through `webServer`, which only covers browser behavior; the mobile side smoke uses Expo to start/bundle and corresponding test evidence. Subsequent functions such as microphone, permissions, and locale still require physical device evidence.
 
-每个 workspace 的 scripts 保持可单独调用，根命令通过 pnpm recursive/filter 编排。没有对应能力的 package 不提供伪成功脚本；例如尚未生成的 api-client 不使用 `echo success` 冒充 build/test。
+The scripts of each workspace remain individually callable, and the root command is arranged through pnpm recursive/filter. Packages without corresponding capabilities do not provide pseudo-success scripts; for example, the api-client that has not yet been generated does not use `echo success` to pretend to be build/test.
 
-### Decision: Git、版本与发布只建立防污染边界
+### Decision: Git, version and release only establish anti-pollution boundaries
 
-创建 `.gitignore`，排除 `node_modules`、构建产物、覆盖率、Playwright 报告、本地环境文件、Expo/Metro 缓存和编辑器临时文件，同时保留安全的 `.env.example`。不忽略 OpenSpec、rules、lockfile 或必要测试 fixtures。
+Create `.gitignore`, exclude `node_modules`, build artifacts, coverage, Playwright reports, local environment files, Expo/Metro cache, and editor temp files, while leaving safe `.env.example`. Do not ignore OpenSpec, rules, lockfile or required test fixtures.
 
-本 change 不执行 `git init`，因为 repository 远程平台和工作方式尚未由用户确认；也不启用 Git LFS，因为当前没有必须进入仓库的大型二进制资产。所有 workspace 先保持 private，不引入 Changesets 或 npm publish 流程。产品 release state 继续独立记录在 `docs/releases/`。
+This change does not implement `git init` because the repository remote platform and working method have not yet been confirmed by the user; nor does it enable Git LFS because there are currently no large binary assets that must enter the repository. Keep all workspaces private first, and do not introduce Changesets or npm publish process. Product release state continues to be recorded independently in `docs/releases/`.
 
-### Decision: CI provider 延后，但 CI contract 现在固定
+### Decision: CI provider is deferred, but CI contract is now fixed
 
-未来 CI 只能调用根 `pnpm install --frozen-lockfile` 和 `pnpm verify`，不得复制另一套检查逻辑。缓存键应包含 lockfile 与运行时版本；并行化或 affected-only 优化必须保持与完整 `verify` 等价。
+In the future, CI can only call root `pnpm install --frozen-lockfile` and `pnpm verify`, and cannot copy another set of check logic. Cache keys should contain lockfile and runtime versions; parallelization or affected-only optimizations must remain equivalent to full `verify`.
 
-由于 `docs/runbooks/deployment.md` 已记录 CI provider 未决定，本 change 不创建 `.github/workflows` 或其他平台文件。平台确定后，以独立 change 添加 provider adapter，并在首次 CI 中保留完整验证作为基线。
+Since `docs/runbooks/deployment.md` has been recorded and the CI provider has not been determined, this change does not create `.github/workflows` or other platform files. After the platform is determined, add the provider adapter as an independent change and retain complete verification as a baseline in the first CI.
 
 ## Risks / Trade-offs
 
-- [Risk] Expo 对 pnpm 依赖布局或 Node 版本存在框架特定要求。→ apply 时使用官方支持矩阵选择版本，先验证 `expo-doctor`、启动和 bundle/export；只有出现证据时才增加 linker/hoist 例外。
-- [Risk] 根 `verify` 初期串行执行会比最短反馈慢。→ 保留各 workspace 与各检查的独立命令；CI provider 接入后再基于测量并行或过滤，不提前增加缓存框架。
-- [Risk] dependency boundary 规则过严会阻碍合法复用。→ 跨端只允许经 package public exports 共享；新增例外必须说明所有者，不允许路径级临时豁免长期存在。
-- [Risk] 三种测试环境增加配置量。→ 接受平台差异，统一的是根入口、命名和 evidence，不强行统一测试运行器。
-- [Risk] smoke 页面被误认为产品实现。→ 页面显式标注工程 bootstrap，不使用产品文案、Figma 状态或静态业务数据；验收记录注明不构成 0.0.1 功能完成。
-- [Risk] 未接入 provider CI，合并时尚无远程强制门禁。→ 本 change 固定可复现的本地 CI contract；平台选择后优先接入，并在此之前不得声称 CI 已配置。
-- [Risk] `packages/api-client` 空包导致使用者绕开 contract。→ app 不得依赖该包，直到唯一 OpenAPI contract 与生成策略在后续 Architecture change 中获批。
-- [Risk] 技术登记表列出的 deferred 库被误认为已经安装或可用。→ 只有 manifest 和 lockfile 中存在且对应验证通过的依赖才算 implemented；文档必须显示 adoption status 和 trigger。
+- [Risk] Expo has framework-specific requirements for pnpm dependency layout or Node version. → Use the official support matrix to select the version when applying, first verify `expo-doctor`, startup and bundle/export; only add linker/hoist exceptions when evidence appears.
+- [Risk] Root `verify` Initial serial execution will be slower than shortest feedback. → Keep the independent commands of each workspace and each check; after the CI provider is connected, it will be parallelized or filtered based on the measurement, and the cache framework will not be added in advance.
+- [Risk] Dependency boundary rules that are too strict will prevent legal reuse. → Cross-end sharing is only allowed via package public exports; new exceptions must indicate the owner, and path-level temporary exemptions are not allowed to exist for a long time.
+- [Risk] Increase the configuration amount of the three test environments. → Accept platform differences, unify the root entry, naming and evidence, and do not force unification of test runners.
+- [Risk] smoke page mistaken for product implementation. → The page explicitly marks the project bootstrap, and does not use product copy, Figma status or static business data; the acceptance record indicates that it does not constitute 0.0.1 functional completion.
+- [Risk] The provider CI is not connected, and there is no remote mandatory access control at the time of merging. → This change fixes the reproducible local CI contract; priority is given to access after the platform is selected, and it must not claim that the CI has been configured before.
+- [Risk] `packages/api-client` empty packet causes users to bypass the contract. → Apps must not rely on this package until the unique OpenAPI contract and build strategy are approved in a subsequent Architecture change.
+- [Risk] The deferred library listed in the technical registry was mistakenly thought to be installed or available. → Only dependencies that exist in the manifest and lockfile and that have passed verification are considered implemented; the document must show adoption status and trigger.
 
 ## Migration Plan
 
-1. 记录兼容版本组合和选择依据，创建根 package/workspace/version/format/lint/TypeScript 配置及 `.gitignore`。
-2. 为五个 workspace 创建 manifest，使用 `workspace:*` 声明真实内部依赖，安装依赖并生成唯一 lockfile。
-3. 在既有目录中创建 admin、mobile、api 的最小运行入口及各自配置；删除被真实文件替代的 `.gitkeep`，不清理仍为空的已确认目录。
-4. 创建 `packages/shared` 最小 public entry；保持 `packages/api-client/src/generated` 未生成且不被 app 消费。
-5. 增加 ESLint、依赖图、各应用测试和根 Playwright smoke 测试，接通根 scripts。
-6. 从干净依赖状态执行 frozen install、`pnpm verify`，分别采集 admin 浏览器启动、mobile Expo 启动/bundle、Nest application init/close 证据。
-7. 更新工程启动文档，明确哪些只是 bootstrap evidence、哪些仍未实现；不修改产品 acceptance 或 release 状态。
+1. Record compatible version combinations and selection criteria, create root package/workspace/version/format/lint/TypeScript configuration and `.gitignore`.
+2. Create manifests for five workspaces, use `workspace:*` to declare real internal dependencies, install dependencies and generate unique lockfiles.
+3. Create the minimum running entrance and respective configurations of admin, mobile, and api in the existing directory; delete `.gitkeep` that was replaced by the real file, and do not clean up the confirmed directory that is still empty.
+4. Create a minimal public entry for `packages/shared`; keep `packages/api-client/src/generated` ungenerated and not consumed by the app.
+5. Add ESLint, dependency graph, each application test and root Playwright smoke test, and connect root scripts.
+6. Execute frozen install and `pnpm verify` from the clean dependency state, and collect evidence of admin browser startup, mobile Expo startup/bundle, and Nest application init/close respectively.
+7. Update the project startup document to clarify which ones are only bootstrap evidence and which ones have not yet been implemented; do not modify the product acceptance or release status.
 
-回滚以本 change 的新增 manifest、lockfile、工具配置和 smoke 入口为边界；保留原有 rules、docs、OpenSpec 与目录结构。由于没有数据库、API contract、远程 CI 或部署状态，本 change 不需要数据迁移和生产回滚。
+The rollback is bounded by the new manifest, lockfile, tool configuration and smoke entry of this change; the original rules, docs, OpenSpec and directory structure are retained. Since there is no database, API contract, remote CI or deployment state, this change does not require data migration and production rollback.
 
 ## Open Questions
 
-- 使用 GitHub、GitLab 或其他远程平台；确定后决定 CI adapter 文件位置和分支保护方式。
-- 未来是否需要 Git LFS；只有 Figma 导出或媒体资产确实需要进入 Git 且尺寸达到约定阈值时再决定。
+- Use GitHub, GitLab or other remote platforms; decide the CI adapter file location and branch protection method after finalization.
+- Whether Git LFS is needed in the future; this will only be decided if Figma exports or media assets do need to go into Git and the size reaches an agreed threshold.

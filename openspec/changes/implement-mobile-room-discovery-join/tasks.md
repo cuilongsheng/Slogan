@@ -1,22 +1,22 @@
-## 1. 设计与合同
+## 1. Design and Contract
 
-- [x] 1.1 记录 Desktop Bridge 原始列表、详情、密码、规则和设备检查帧的截图、尺寸、组件与关键坐标；核对截图与节点一致。
-- [x] 1.2 对照生成客户端核对列表、详情、成员可见性、加入及权限所需 API 字段；在验收记录中标明 READY 与缺口，并以 OpenSpec strict 验证 change。
+- [x] 1.1 Record the original list, details, passwords, rules and equipment of Desktop Bridge. Check the screenshots, dimensions, components and key coordinates of the frame; check that the screenshots are consistent with the nodes.
+- [x] 1.2 Compare API fields required to generate client checklist, details, member visibility, joining and permissions; indicate READY and gaps in the acceptance record, and verify changes with OpenSpec strict.
 
-## 2. 房间发现
+## 2. Room discovery
 
-- [x] 2.1 为 room-discovery 增加带认证的列表/详情请求、错误分类与稳定游标分页；用服务层测试验证空结果、刷新、下一页及失效会话。
-- [x] 2.2 实现 V2 房间列表的真实卡片及加载、空、错误、刷新、分页状态；在 390×844 Web 预览核对原始列表帧，不显示静态假房间。
-- [x] 2.3 实现房间详情和可用性状态，进入时重新读取服务端；用页面测试覆盖密码、满员、结束和读取失败。
+- [x] 2.1 Add authenticated list/detail requests, error classification and stable cursor paging to room-discovery; use service layer testing to verify empty results, refresh, next page and invalid sessions.
+- [x] 2.2 Implements the real card and loading, empty, error, refresh, and paging status of the V2 room list; checks the original list frame in 390×844 Web preview, and does not display static fake rooms.
+- [x] 2.3 Implement room details and availability status, re-read the server when entering; use page tests to cover password, full, end and read failure.
 
-## 3. 入房前流程
+## 3. Pre-move-in process
 
-- [x] 3.1 实现按 roomId 隔离的临时密码与规则状态；用测试验证 4 位数字校验、刷新/切换房间清理和未勾选规则不能继续。
-- [x] 3.2 实现密码页与规则页，并在 390×844 预览对照原始 Figma；密码不出现在 URL、日志或持久化存储。
-- [x] 3.3 实现设备权限适配与检查页面，区分允许、拒绝、不可用和重试；用适配器测试及浏览器/设备可用证据验证，确认未调用 membership 或实时凭证接口。
+- [x] 3.1 Implement temporary password and rule status isolated by roomId; use test to verify 4-digit verification, refresh/switch room cleaning and unchecked rules cannot continue.
+- [x] 3.2 implements the password page and rules page, and previews it at 390×844 against the original Figma; the password does not appear in the URL, logs or persistent storage.
+- [x] 3.3 Implement device permission adaptation and inspection pages, distinguish between allow, deny, unavailable and retry; use adapter testing and browser/device available evidence verification to confirm that the membership or real-time credential interface is not called.
 
-## 4. 路由与验收
+## 4. Routing and acceptance
 
-- [x] 4.1 把合格用户默认入口接到 `/rooms`，所有房间及入房前路由使用资格 gate；用路由测试确认资料未完成和年龄受限用户不能进入。
-- [x] 4.2 对照原始 Figma 截图完成列表与入房前页面视觉检查，记录合同缺口与有意差异；Web 运行时核对页面状态。
-- [x] 4.3 在所有实现完成后运行移动端 lint、typecheck、相关测试、Web/iOS 导出、OpenSpec strict 和格式检查；记录真机权限验收状态与未完成的实时入房范围。
+- [x] 4.1 Connect the default entrance for qualified users to `/rooms`, and use the qualification gate for all rooms and routes before entering the room; use the route test to confirm that users with incomplete information and age-restricted users cannot enter.
+- [x] 4.2 Compare the original Figma screenshot to complete the list and visually inspect the pre-move-in page, record contract gaps and intentional differences; check the page status during Web runtime.
+- [x] 4.3 Run mobile lint, typecheck, related tests, Web/iOS export, OpenSpec strict and format check after all implementations are completed; record physical device permission acceptance status and unfinished real-time room entry range.

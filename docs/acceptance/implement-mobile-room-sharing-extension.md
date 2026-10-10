@@ -1,17 +1,17 @@
-# 房间分享与延长验收记录（2026-09-28）
+# Room sharing and extended acceptance record (2026-09-28)
 
-## 实现
+## Implementation
 
-- 即时详情、预约详情、语音房使用服务端 `shareUrl`。Web 可复制链接，原生调用系统分享；失败仍保留可选中的 URL。
-- 已连接语音房只向当前房主显示延长入口。房主可选 15/30/60 分钟；同一确认在网络失败后重试保留 UUID 和分钟数。成功显示服务端新结束时间；实时同步 `PENDING` 或 `UNAVAILABLE` 显示同步待恢复。
-- 后端继续强制房主身份、OPEN 状态、次数上限和到期判断；前端不乐观改变倒计时。
+- Instant details, reservation details, and voice room use server `shareUrl`. Web can copy the link and natively call the system to share; if it fails, the selected URL will still be retained.
+- The connected voice room only displays the extension entrance to the current room host. Room host optional 15/30/60 minutes; same confirmation retains UUID and number of minutes to retry after network failure. The new end time of the server is successfully displayed; real-time synchronization `PENDING` or `UNAVAILABLE` displays synchronization to be restored.
+- The backend continues to force the room host identity, OPEN status, upper limit and expiration judgment; the frontend is not optimistic about changing the countdown.
 
-## 验证
+## Verification
 
-- 移动端 `typecheck`、`lint`、全套测试通过；组件测试覆盖失败重试标识和分享失败时 URL 保留。
-- 本机真实 Google 会话创建即时房并连接语音；房主提交 15 分钟延长后，页面倒计时从 120 分钟增至 135 分钟，显示新的服务端结束时间。
-- 同一房间点击分享显示服务端链接，Web 反馈“链接已复制”；在新标签打开该链接，解析进入正确的即时房详情。测试房间随后从语音页结束。
+- The mobile terminal `typecheck`, `lint`, and the full set of tests passed; the component test covers the failed retry flag and the URL is retained when sharing fails.
+- The local real Google session creates an instant room and connects voice; after the room host submits a 15-minute extension, the page countdown increases from 120 minutes to 135 minutes, showing the new server end time.
+- Clicking share in the same room displays the server link, and the web feedback is "Link has been copied"; open the link in a new tab and parse to enter the correct instant room details. The test room then exits from the voice page.
 
-## 尚未验收
+## Not accepted yet
 
-- 原生系统分享面板、双设备 LiveKit 时间同步和延长/分享覆盖层的 390×844 逐帧视觉对照。Figma 没有该操作态的独立高保真帧，当前使用既有语音房视觉语言，不能宣称此操作态 1:1。
+- 390×844 frame-by-frame visual comparison of native system sharing panels, dual-device LiveKit time sync, and extended/shared overlays. Figma does not have an independent high-fidelity frame for this operation state. It currently uses the existing voice room visual language and cannot claim this operation state 1:1.

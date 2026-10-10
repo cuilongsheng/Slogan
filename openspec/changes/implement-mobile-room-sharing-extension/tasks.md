@@ -1,13 +1,13 @@
-## 1. 分享
+## 1. Share
 
-- [x] 1.1 在即时/预约详情及语音房显示服务端分享 URL 和复制/分享结果
+- [x] 1.1 Share URL and copy/share results in instant/reservation details and voice room display server
 
-## 2. 延长
+## 2. Extend
 
-- [x] 2.1 增加生成客户端延长命令与稳定请求标识
-- [x] 2.2 在语音房完成房主确认、分钟选择、错误和成功同步状态
+- [x] 2.1 Added generation of client extension command and stable request identifier
+- [x] 2.2 Complete room host confirmation, minute selection, error and successful synchronization status in the voice room
 
-## 3. 验证
+## 3. Verification
 
-- [x] 3.1 验证权限入口、失败重试、成功刷新及分享失败状态
-- [ ] 3.2 完成浏览器真实房主操作及设备/设计差异记录
+- [x] 3.1 Verification authority entry, failure retry, successful refresh and sharing failure status
+- [ ] 3.2 Complete browser real room host operation and equipment/design difference record

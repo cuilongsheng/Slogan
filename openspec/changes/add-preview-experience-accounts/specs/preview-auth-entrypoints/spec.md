@@ -1,45 +1,52 @@
 ## Purpose
 
-定义首轮网页试用的认证入口和邮件停用状态，使招聘方及海外体验者能通过预置密码账号或 Google 使用正常流程，直接访问关闭路由也能得到准确中英文反馈，而不会看到未发生的邮件发送或获得后台越权。
+Define the authentication entrance and email deactivation status of the first round of web trial, so that recruiters and overseas experiencers can use the normal process through the preset password account or Google, directly access the closed route, and get accurate feedback in Chinese and English, without seeing emails that have not been sent or obtaining background overrides.
 
 ## ADDED Requirements
 
-### Requirement: 网页入口遵循真实认证能力
+### Requirement: The web portal follows real authentication capabilities
 
-移动 Web MUST 在试用邮件关闭时保留用户名密码及已配置 Google 登录，隐藏邮件注册与找回入口；正常邮箱模式保持原有流程。认证能力未知或查询失败时 MUST 不开放邮件动作，不展示静态成功。前端 MUST 消费唯一 API 合同和现有认证状态，不把隐藏入口作为服务端安全边界。
+Mobile Web MUST retain the username, password and configured Google login when the trial email is closed, and hide the email registration and retrieval entrance; the normal mailbox mode maintains the original process. When the authentication capability is unknown or the query fails, the email action MUST not be opened and static success MUST not be displayed. The front end MUST consume unique API contracts and existing authentication status, and do not use hidden entrances as server-side security boundaries.
 
-#### Scenario: 试用登录页
-- **WHEN** 移动网页收到密码和 Google 可用、邮件关闭的认证能力
-- **THEN** 提供正常密码与 Google 登录，不呈现可操作邮件注册/找回入口，成功后按服务端资料状态导航
+#### Scenario: Trial login page
 
-#### Scenario: 能力查询失败
-- **WHEN** 认证能力无法确定
-- **THEN** 显示可恢复状态且不开放邮件动作，不声明邮件已发送或认证配置成功
+- **WHEN** Mobile webpage receives password and Google available, email closed authentication capabilities
+- **THEN** Provide normal password and Google login, no operable email registration/retrieval entrance is presented, navigate according to server data status after success
 
-### Requirement: 关闭邮件页面明确反馈且不自动发请求
+#### Scenario: Capability query failed
 
-邮件关闭时，直接访问注册、验证、找回、重置或邮箱绑定页面 MUST 展示对应中英文的当前试用不可用提示和返回登录入口，不执行邮件请求或自动消费链接 token。链接 fragment MUST 按现有隐私规则及时从地址栏清除。UI MUST 复用确认的页面视觉语言，不伪造待收件、邮件成功或邮箱已验证状态。
+- **WHEN** Authentication capability cannot be determined
+- **THEN** Displays the recoverable status and does not open email actions, does not declare that the email has been sent or the authentication configuration is successful.
 
-#### Scenario: 直接打开旧邮件链接
-- **WHEN** 用户在邮件关闭的试用中打开带 token 的验证/重置链接
-- **THEN** 清除敏感 fragment，展示不可用及返回登录，不确认 token、不展示已验证/重置成功
+### Requirement: Close the email page to provide clear feedback and do not automatically send requests
 
-#### Scenario: 中英文停用页面
-- **WHEN** 中文或英文用户直接打开任一关闭邮件流程页
-- **THEN** 使用相应语言给出一致、可理解的停用反馈，不发送邮件请求，返回后可继续正常密码或 Google 登录
+When the email is closed, directly access the registration, verification, retrieval, reset or email binding page MUST display the corresponding Chinese and English prompts that the current trial is unavailable and return to the login entrance, and do not perform email requests or automatically consume link tokens. Link fragment MUST be promptly removed from the address bar in accordance with existing privacy rules. UI MUST reuse the visual language of the confirmation page and do not fake the status of pending receipt, email success or email verification.
 
-### Requirement: 后台使用已有正常会话和实时授权
+#### Scenario: Directly open the old email link
 
-后台 MUST 复用已有用户名密码及 Google 浏览器入口，登录后使用当前后台身份/角色判断可见路由；无后台角色的移动账号或 Google 普通访客 MUST 呈现无权限状态，不返回或显示后台数据。浏览器刷新凭据 MUST 保留在 HttpOnly Cookie，access token 仅在内存；密码账号来源投影的空验证时间 MUST 不导致页面崩溃或误报邮件验证。
+- **WHEN** User opens verification/reset link with token in trial with email closed
+- **THEN** Clear sensitive fragments, display unavailable and return to login, do not confirm token, do not display verified/reset successful
 
-#### Scenario: 两个后台账号分别进入
-- **WHEN** 管理员与安全员用各自用户名密码在独立浏览器会话登录
-- **THEN** 各自得到服务端最终角色及有权路由，刷新后重新查询权限，不共享身份或 session
+#### Scenario: Chinese and English deactivation page
 
-#### Scenario: 普通账号直接访问后台
-- **WHEN** 任一移动体验账号或无后台角色 Google 用户直接打开后台受保护路由
-- **THEN** 显示无权限状态，服务端拒绝后台数据；改客户端角色不能取得权限
+- **WHEN** Chinese or English users can directly open any close email process page
+- **THEN** Give consistent, understandable deactivation feedback in appropriate language, do not send email requests, and return to normal password or Google login
 
-#### Scenario: 体验来源可显示且会话安全
-- **WHEN** 体验用户查询登录方式或刷新浏览器会话
-- **THEN** 正确处理未邮件验证来源和空时间，不暴露占位邮箱或将 refresh token 写入普通浏览器存储
+### Requirement: There is a normal session and real-time authorization for background use.
+
+The backend MUST reuse the existing username, password and Google browser entrance, and use the current backend identity/role to determine visible routes after logging in; mobile accounts without backend roles or ordinary Google visitors MUST be in a permissionless state and do not return or display backend data. The browser refresh credentials MUST remain in the HttpOnly Cookie, and the access token is only in memory; the empty verification time projected by the password account source MUST not cause page crashes or false positives for email verification.
+
+#### Scenario: Two background accounts enter separately
+
+- **WHEN** Administrator and safety officer log in in separate browser sessions using their respective usernames and passwords
+- **THEN** Each obtains the final role of the server and has the authority to route. Requery the permissions after refreshing. No identity or session is shared.
+
+#### Scenario: Ordinary account can directly access the backend
+
+- **WHEN** Any mobile experience account or Google user without a administrative role can directly open background protected routing
+- **THEN** Displays no permission status, the server rejects admin data; changing the client role cannot obtain permissions
+
+#### Scenario: Experience source can be displayed and session is secure
+
+- **WHEN** Experience user query login method or refresh browser session
+- **THEN** Correctly handle unverified email sources and empty times, without exposing placeholder mailboxes or writing refresh tokens to ordinary browser storage

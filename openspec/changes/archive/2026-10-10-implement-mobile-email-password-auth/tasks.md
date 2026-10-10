@@ -1,16 +1,16 @@
-## 1. 设计与合同
+## 1. Design and Contract
 
-- [x] 1.1 记录 V2 四个 Figma frame 的页面结构、关键坐标和状态，核对现有 OpenAPI 的请求、响应及邮件链接格式。
-- [x] 1.2 新增浏览器密码登录 Cookie 入口并生成 OpenAPI 与客户端类型；测试 Origin、Cookie、安全响应和刷新恢复。
+- [x] 1.1 Record the page structure, key coordinates and status of the four Figma frames of V2, and check the existing OpenAPI request, response and email link format.
+- [x] 1.2 Added browser password login cookie entry and generated OpenAPI and client types; tested Origin, Cookie, security response and refresh recovery.
 
-## 2. 前端流程
+## 2. Front-end process
 
-- [x] 2.1 按 V2 恢复登录表单、注册/找回入口和可用的 Google 次级按钮；实现输入校验、状态和服务端错误映射。
-- [x] 2.2 实现注册、验证邮箱与重发流程，使用真实 API 且不持久化密码或管理 token。
-- [x] 2.3 实现找回请求、邮件链接重置、成功返回登录；保持存在性模糊提示。
-- [x] 2.4 接入原生 SecureStore 与网页 HttpOnly Cookie 会话，验证导航、刷新、退出及账号状态。
+- [x] 2.1 Press V2 to restore the login form, registration/retrieval portal and available Google secondary buttons; implement input verification, status and server-side error mapping.
+- [x] 2.2 Implement registration, email verification and resend process, using real API and not persisting passwords or management tokens.
+- [x] 2.3 implements retrieval request, email link reset, and successful return to login; maintains existence fuzzy prompts.
+- [x] 2.4 Access native SecureStore and web page HttpOnly Cookie session to verify navigation, refresh, exit and account status.
 
-## 3. 验证
+## 3. Verification
 
-- [x] 3.1 运行格式、lint、typecheck、相关测试、Web/iOS 构建及 OpenSpec strict；修复本 change 引入的问题。
-- [x] 3.2 在 390×844 浏览器对照原始 Figma 四帧并检查交互；记录真实 SMTP/原生设备/微信扫码的验收状态。
+- [x] 3.1 running format, lint, typecheck, related tests, Web/iOS build and OpenSpec strict; fix the problems introduced by this change.
+- [x] 3.2 Compare the original Figma four frames in a 390×844 browser and check the interaction; record the acceptance status of the real SMTP/native device/WeChat code scan.

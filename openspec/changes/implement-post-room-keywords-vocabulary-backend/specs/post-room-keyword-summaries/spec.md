@@ -1,96 +1,119 @@
 ## Purpose
 
-定义明确启用的语音房如何在独立同意和数据最小化边界内形成不含成员归属的会后关键词与短表达汇总，并让实际参与者在房间结束后安全读取稳定生成结果。
+Define how an explicitly enabled voice room can form a post-meeting summary of keywords and short expressions without member attribution within independent consent and data minimization boundaries, and allow actual participants to safely read the stable generated results after the room ends.
 
 ## ADDED Requirements
 
-### Requirement: 会后关键词必须由房主在创建房间时明确启用
-系统 MUST 只为创建时明确启用会后关键词的即时或预约房间处理此目的的音频，并在加入前可见的房间信息中展示是否启用。该选择在房间创建后 MUST 不可变；未提交该字段的现有客户端请求 MUST 按关闭处理。
+### Requirement: The post-meeting keyword must be explicitly enabled by the room host when creating the room
 
-#### Scenario: 创建启用会后关键词的房间
-- **WHEN** 合格房主创建即时或预约房间并明确启用会后关键词
-- **THEN** 系统保存不可变的启用状态，并在成员加入前明确展示需要对应语音处理同意
+The system MUST only process audio for this purpose for instant or reserved rooms that explicitly enable the post-meeting keyword when they are created, and display whether it is enabled in the room information visible before joining. This selection MUST be immutable after room creation; existing client requests that do not submit this field MUST be processed as closed.
 
-#### Scenario: 创建时未启用
-- **WHEN** 房主未提交会后关键词字段或明确关闭该能力
-- **THEN** 系统创建不处理此目的音频的房间，房间结束后返回 `DISABLED` 汇总状态
+#### Scenario: Create a room with post-meeting keywords enabled
 
-#### Scenario: 房间创建后尝试切换
-- **WHEN** 房主或其他调用者尝试在房间创建后开启或关闭会后关键词
-- **THEN** 系统拒绝修改，已向成员展示的处理目的保持不变
+- **WHEN** Qualified room host creates an instant or reserved room and explicitly enables post-meeting keywords
+- **THEN** The system saves the immutable enabled status and clearly displays the need for corresponding voice processing consent before members join.
 
-### Requirement: 启用房间要求独立的会后关键词处理同意
-系统 MUST 在签发或续期启用房间的实时访问凭证前，校验成员已接受当前版本的会后关键词语音处理说明。该同意 MUST 与 AI 短语音和房间安全识别目的相互隔离；缺少、过期或已撤回的同意 MUST 阻止加入或续期，但不得形成举报、限制或处罚。
+#### Scenario: Not enabled when created
 
-#### Scenario: 已同意成员加入
-- **WHEN** 合格成员已接受当前版本的会后关键词处理说明并加入启用房间
-- **THEN** 系统在既有密码、容量、屏蔽和安全限制校验通过后允许加入
+- **WHEN** Room host did not submit the post-meeting keyword field or explicitly turned off the ability
+- **THEN** The system creates a room that does not process audio for this purpose. After the room ends, it returns to `DISABLED` summary status.
 
-#### Scenario: 未同意成员加入
-- **WHEN** 成员没有当前有效的会后关键词处理同意
-- **THEN** 系统返回稳定的需要同意结果，不创建 membership 或实时访问凭证
+#### Scenario: Try to switch after room creation
 
-#### Scenario: 房间内成员撤回同意
-- **WHEN** 启用房间内的成员撤回会后关键词处理同意
-- **THEN** 系统停止该成员后续音频处理、撤销其后续实时访问并将其断开该房间，且不把该结果记为安全处罚
+- **WHEN** The room host or other caller attempted to enable or disable post-meeting keywords after the room was created.
+- **THEN** The system rejects the modification and the processing purpose shown to the member remains unchanged.
 
-#### Scenario: 一个目的的同意不能替代另一个目的
-- **WHEN** 房间同时启用安全识别和会后关键词而成员只接受其中一个目的
-- **THEN** 系统要求成员补齐另一个目的的当前同意后才允许加入或续期
+### Requirement: Enable room to require independent post-meeting keyword processing consent
 
-### Requirement: 会话期间只允许匿名且有界的临时候选
-系统 MUST 从当前已同意成员的临时转写中提取英语关键词和短表达候选，并在保存最终汇总前移除成员归属、说话时间和逐句顺序。临时候选 MUST 有数量、长度和生存时间上限，不得包含 userId、membership、实时身份、完整原句或可恢复完整对话的连续内容。
+The system MUST verify that the member has accepted the current version of the post-meeting keyword voice processing instructions before issuing or renewing a live access credential for an enabled room. This consent MUST be isolated from AI short voice and room security identification purposes; missing, expired, or withdrawn consent MUST prevent joining or renewal, but may not result in reporting, restrictions, or penalties.
 
-#### Scenario: 临时窗口产生候选
-- **WHEN** 启用房间的临时转写包含合格英语关键词或短表达
-- **THEN** 系统只累积规范化文本、类型和聚合计数，不保留说话者或句子顺序
+#### Scenario: Members have been agreed to join
 
-#### Scenario: 候选包含私人或超长内容
-- **WHEN** 候选超过允许长度、包含联系方式或无法安全脱离原句
-- **THEN** 系统丢弃该候选且不把原文写入汇总、日志或诊断事件
+- **WHEN** Qualified members have accepted the current version of the post-meeting keyword processing instructions and joined the enabled room
+- **THEN** The system allows joining after the existing password, capacity, shielding and security restrictions are verified.
 
-#### Scenario: 安全风险信号已经存在
-- **WHEN** 同一房间已有敏感语音风险事件或房主提醒
-- **THEN** 系统不得从风险事件、举报或案件证据反向生成学习关键词
+#### Scenario: Member not allowed to join
 
-### Requirement: 房间结束后生成单个稳定汇总
-系统 MUST 为每个启用房间在结束后生成至多一个房间级汇总，状态为 `PENDING`、`READY` 或 `UNAVAILABLE`。成功汇总 MUST 包含房间主题、稳定排序的去重关键词和短表达，并在提交最终结果后删除临时工作集；重复结束事件或生成重试不得创建第二份汇总。
+- **WHEN** The member does not have a currently valid post-meeting keyword processing consent
+- **THEN** The system returns a stable consent required result and does not create membership or real-time access credentials.
 
-#### Scenario: 正常结束并完成生成
-- **WHEN** 启用房间结束且存在足够的合格候选
-- **THEN** 系统把汇总原子更新为 `READY`，返回稳定条目顺序，并使临时工作集不可读取或恢复
+#### Scenario: Member in the room withdraws consent
 
-#### Scenario: 没有足够候选
-- **WHEN** 启用房间结束但没有达到最小质量和数量要求的候选
-- **THEN** 系统把汇总收敛为 `UNAVAILABLE`，不生成空洞或推测内容
+- **WHEN** Enable members in the room to withdraw consent for post-meeting keyword processing
+- **THEN** The system stops the member's subsequent audio processing, revokes his subsequent real-time access and disconnects him from the room, and does not record the result as a security penalty.
 
-#### Scenario: 重复收到结束事件
-- **WHEN** 同一房间结束命令、事件或生成任务被重复处理
-- **THEN** 系统复用同一汇总状态和结果，不重复条目也不改变已完成内容
+#### Scenario: Consent for one purpose cannot substitute for another purpose
 
-### Requirement: 只有实际参与者可以读取会后汇总
-系统 MUST 只允许实际参与过且房间已经结束的用户读取房间汇总。提前离开或被移除的历史成员仍可读取；仅预约、被邀请但未加入、无关系用户或其他后台角色不得通过普通接口读取。
+- **WHEN** The room has both security identification and post-meeting keyword enabled and members only accept one of the purposes.
+- **THEN** The system requires members to complete the current consent for another purpose before allowing joining or renewal.
 
-#### Scenario: 历史成员读取成功汇总
-- **WHEN** 实际参与者在房间结束后读取状态为 `READY` 的汇总
-- **THEN** 系统返回房间主题、生成时间、关键词和短表达，不返回成员、说话时间或完整原句
+### Requirement: Only anonymous and bounded temporary candidates are allowed during the session
 
-#### Scenario: 生成仍在进行或不可用
-- **WHEN** 实际参与者读取 `PENDING` 或 `UNAVAILABLE` 的汇总
-- **THEN** 系统返回稳定状态和可理解的不可用结果，不返回临时候选或内部错误
+The system MUST extract English keywords and short expression candidates from provisional transcriptions of currently agreed members, and remove member attribution, speaking time, and sentence-by-sentence order before saving the final summary. Temporary candidates MUST have an upper limit on number, length, and lifetime, and MUST not contain userIds, memberships, live identities, complete original sentences, or contiguous content that can restore a complete conversation.
 
-#### Scenario: 非参与者读取
-- **WHEN** 仅预约、仅受邀或无关系用户请求房间汇总
-- **THEN** 系统拒绝访问且不泄露汇总状态、主题以外的内容或参与关系
+#### Scenario: Temporary window generation candidate
 
-### Requirement: 汇总失败不得影响房间和真人语音
-系统 MUST 对临时识别、候选提取、聚合和结束后生成失败进行归一化记录并安全降级。故障 MUST 不停止真人语音、不阻止房主结束房间、不改变 membership、房主或安全案件，也不得在恢复后补处理故障期间未保留的音频。
+- **WHEN** Enable temporary transcription of rooms containing qualified English keywords or short expressions
+- **THEN** The system only accumulates normalized text, type, and aggregate counts and does not preserve speaker or sentence order
 
-#### Scenario: 会话中处理依赖不可用
-- **WHEN** 启用房间的 STT、候选提取或临时聚合持续不可用
-- **THEN** 系统停止或退避新的会后候选处理并保持真人语音可用
+#### Scenario: Candidate contains private or extremely long content
 
-#### Scenario: 结束后生成失败
-- **WHEN** 房间已结束但最终汇总无法安全完成
-- **THEN** 系统把汇总收敛为 `UNAVAILABLE`，删除可删除的临时工作集且不阻塞房间结束
+- **WHEN** The candidate exceeds the allowed length, contains contact information, or cannot be safely separated from the original sentence
+- **THEN** The system discards this candidate and does not write the original text to the summary, log, or diagnostic event
 
+#### Scenario: Security risk signal already exists
+
+- **WHEN** There is a sensitive voice risk event or room host reminder in the same room
+- **THEN** The system shall not generate learning keywords reversely from risk events, reports or case evidence.
+
+### Requirement: Generate a single stable summary after the room ends
+
+The system MUST generate at most one room-level summary after completion for each enabled room with status `PENDING`, `READY`, or `UNAVAILABLE`. Successful rollup MUST contain room themes, stable ordering of deduplicated keywords and short expressions, and delete the temporary working set after the final result is submitted; a second rollup MUST not be created by repeating end events or generation retries.
+
+#### Scenario: End normally and complete the generation
+
+- **WHEN** Enable room end and there are enough qualified candidates
+- **THEN** The system updates the rollup atom to `READY`, returning stable entry order and making the temporary working set unreadable or recoverable
+
+#### Scenario: Not enough candidates
+
+- **WHEN** Candidates that enable room ending but do not meet the minimum quality and quantity requirements
+- **THEN** The system converges the summary to `UNAVAILABLE` without generating holes or speculative content.
+
+#### Scenario: End event received repeatedly
+
+- **WHEN** The same room end command, event or generation task is processed repeatedly
+- **THEN** The system reuses the same summary status and results, without duplicating entries or changing completed content.
+
+### Requirement: Only actual participants can read the post-meeting summary
+
+The system MUST only allow users who have actually participated and the room has ended to read the room summary. Historical members who left early or were removed can still be read; only reservation-only, invited but not joined, unrelated users or other administrative roles cannot be read through the normal interface.
+
+#### Scenario: Summary of successful reading of historical members
+
+- **WHEN** Summary of actual participants reading status `READY` after the room ends
+- **THEN** The system returns the room theme, generation time, keywords and short expressions, but does not return members, speaking time or complete original sentences.
+
+#### Scenario: Generation is still in progress or unavailable
+
+- **WHEN** Summary of actual participants reading `PENDING` or `UNAVAILABLE`
+- **THEN** The system returns a stable state and understandable unavailable results, and does not return temporary candidates or internal errors
+
+#### Scenario: Read by non-participant
+
+- **WHEN** Room summary requested by reservation only, invitation only or unrelated users
+- **THEN** The system denies access without disclosing summary status, content other than topics, or participation relationships.
+
+### Requirement: Summary failure must not affect the room and live voice
+
+The system MUST normalize logging and safely degrade provisional identification, candidate extraction, aggregation, and final post-generation failures. The fault MUST not stop live speech, prevent the room host from ending the room, change membership, room host, or security cases, or reprocess audio that was not retained during the fault after recovery.
+
+#### Scenario: Processing dependencies in session are not available
+
+- **WHEN** Room-enabled STT, candidate extraction, or temporary aggregation persists unavailable
+- **THEN** The system stops or backs off new post-conference candidate processing and keeps live voice available
+
+#### Scenario: Generation failed after completion
+
+- **WHEN** The room has ended but the final summary cannot be completed safely
+- **THEN** The system converges the summary to `UNAVAILABLE`, deletes the deletable temporary working set without blocking the end of the room

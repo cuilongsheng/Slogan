@@ -1,89 +1,104 @@
 ## Purpose
 
-定义首轮网页试用中密码认证、Google 登录与邮件流程的独立可用性，限定受控预置凭据的合法来源和环境，保持普通用户验证、安全会话及临时载荷清理边界，不把无邮件试用变成任意账号免验证注册。
+Define the independent availability of password authentication, Google login and email processes in the first round of web trials, limit the legal sources and environments of controlled preset credentials, maintain the boundaries of ordinary user authentication, secure sessions and temporary payload cleanup, and do not turn no-email trials into verification-free registration for any account.
 
 ## ADDED Requirements
 
-### Requirement: 密码认证和邮件流程独立受控
+### Requirement: Password authentication and email processes are independently controlled
 
-系统 MUST 支持明确配置密码认证开启且邮件流程关闭，保留已配置的 Google 登录；此模式 MUST 不要求 SMTP、邮件加密密钥或验证/重置邮件回调地址，但仍要求正常密码配额、签名和会话安全依赖。未显式配置新邮件开关时 MUST 保持旧配置的启停语义；非法开关组合 MUST 阻止启动。
+The system MUST support explicit configuration of password authentication on and email flow off, retaining the configured Google login; this mode MUST not require SMTP, email encryption keys, or verify/reset email callback addresses, but still requires normal password quotas, signatures, and session security dependencies. When the new mail switch is not explicitly configured, the start-stop semantics of the old configuration MUST be maintained; illegal switch combinations MUST prevent startup.
 
-#### Scenario: 无邮件试用启动
-- **WHEN** 密码认证、指定环境的体验账号能力及 Google 已正确配置，邮件流程显式关闭且未配置 SMTP
-- **THEN** 应用正常启动，正常密码和 Google exchange 可用，邮件流程不可用，浏览器仍遵循公开环境的安全 Cookie 和来源校验
+#### Scenario: No email trial start
 
-#### Scenario: 普通邮箱模式保持校验
-- **WHEN** 邮件流程开启但安全 SMTP、加密、可信链接或协调配置缺失
-- **THEN** 启动失败，不把试用模式例外应用于真实邮件模式
+- **WHEN** Password authentication, experience account capabilities in the specified environment and Google have been configured correctly, the email process is explicitly closed and SMTP is not configured
+- **THEN** The application starts normally, normal passwords and Google exchange are available, the email process is not available, and the browser still follows the security cookies and source verification of the public environment
 
-#### Scenario: 旧配置和非法组合
-- **WHEN** 未显式设置新邮件开关，或显式启用邮件但关闭密码认证
-- **THEN** 前者保持旧密码开关对应的邮件启停行为，后者启动失败
+#### Scenario: Ordinary mailbox mode keeps verification
 
-### Requirement: 受控体验来源不能冒充邮箱验证
+- **WHEN** Mail flow is enabled but secure SMTP, encryption, trusted links or coordination configuration is missing
+- **THEN** Startup failed, not applying trial mode exception to real mail mode
 
-系统 MUST 区分真实邮箱验证与受控体验初始化。只有正确密码、ACTIVE 状态、有效受控预置记录、已开启体验能力且环境匹配的体验凭据才能通过预置例外登录；普通邮箱凭据仍 MUST 具有真实验证事实。密码登录 MUST 不发送邮件，不向客户端回显密码散列、完整邮箱、环境映射或秘密。
+#### Scenario: Old configuration and illegal combination
 
-#### Scenario: 体验密码正常登录
-- **WHEN** 当前体验环境中已受控初始化的 ACTIVE 账号提交正确用户名密码
-- **THEN** 通过正常密码配额、认证和会话机制登录，并返回原有 onboarding 状态，不创建邮件或绕过后台/房间授权
+- **WHEN** The new mail switch is not explicitly set, or mail is explicitly enabled but password authentication is turned off
+- **THEN** The former maintains the email start and stop behavior corresponding to the old password switch, while the latter fails to start.
 
-#### Scenario: 无效来源及普通未验证身份
-- **WHEN** 普通未验证申请或伪造/缺失受控记录的凭据尝试登录
-- **THEN** 不建立会话，不因试用模式将其视为已验证或受控预置身份
+### Requirement: The controlled experience source cannot pretend to be an email address for verification
 
-#### Scenario: 来源投影
-- **WHEN** 已认证用户查询其登录方式
-- **THEN** 体验凭据返回可识别的受控来源且邮箱验证时间为空；真实邮箱凭据保持原验证时间，不把初始化时间显示为邮箱验证事实
+The system MUST distinguish between real mailbox verification and controlled experience initialization. Only experience credentials with correct passwords, ACTIVE status, valid controlled provisioning records, experience capabilities turned on, and matching environments can log in through provisioning exceptions; ordinary email credentials MUST still have real verification facts. Password login MUST not send emails, echo password hashes, full mailboxes, environment maps, or secrets to the client.
 
-### Requirement: 体验凭据保持安全会话与环境边界
+#### Scenario: Experience password and log in normally
 
-系统 MUST 在密码校验、会话签发、刷新和 access 验证时保持预置环境/有效性边界；体验能力关闭、环境不匹配、预置记录退役或账号禁用/注销后，旧会话 MUST 不恢复访问。错误密码和未知用户名 MUST 保持统一错误；Redis 配额不可用时 MUST 拒绝新密码尝试。Google 身份 MUST 按原规则验证，不自动关联预置密码账号。
+- **WHEN** Submit the correct username and password for the ACTIVE account that has been initialized under control in the current experience environment.
+- **THEN** Log in via normal password quota, authentication and session mechanisms, and return to original onboarding state without creating emails or bypassing backend/room authorization
 
-#### Scenario: 旧凭据与跨环境拒绝
-- **WHEN** 已登录体验用户之后被退役、禁用、注销，或访问关闭体验能力/环境不匹配的服务
-- **THEN** 新密码登录、旧 access 与 refresh 均不能建立或恢复访问，不能通过开启邮件或重跑初始化复活账号
+#### Scenario: Invalid source and ordinary unverified identity
 
-#### Scenario: 错误密码及配额故障
-- **WHEN** 提交错误密码、未知用户名或密码配额服务不可用
-- **THEN** 前两者返回统一无效凭据结果，后者返回稳定不可用结果，均不发会话或退化为无限尝试
+- **WHEN** Ordinary unverified application or attempted login with forged/missing credentials for controlled records
+- **THEN** Session not established, not considered authenticated or controlled provisioned identity due to trial mode
 
-#### Scenario: Google 访客
-- **WHEN** 访客使用有效 Google OAuth 凭据登录
-- **THEN** 建立其正常独立身份并执行原 onboarding，不因显示名称或邮箱类似而合并预置账号或授予后台权限
+#### Scenario: Source projection
 
-### Requirement: 邮件关闭时拒绝全部邮件流程
+- **WHEN** Authenticated users query their login method
+- **THEN** The experience credential returns an identifiable controlled source and the email verification time is empty; the real email credential keeps the original verification time and does not display the initialization time as the email verification fact
 
-邮件流程关闭时，系统 MUST 对注册、重发、邮件确认、找回/重置密码、邮箱绑定和绑定专用证明返回统一的 `EMAIL_AUTH_UNAVAILABLE`，HTTP 503；MUST 不创建申请、挑战或投递、不调用绑定专用外部认证、不消费旧邮件凭据、不返回已发送的成功状态。正常密码和 Google 登录、正常密码注销重新认证 MUST 不因此停用。
+### Requirement: Experience Credentials Maintain Secure Session and Environment Boundaries
 
-#### Scenario: 直接请求关闭接口
-- **WHEN** 调用者绕过 UI 请求任一已关闭邮件流程接口，包括提交仍在有效期的邮件 token
-- **THEN** 返回统一不可用结果，不产生持久邮件副作用、消费 token 或改变密码/绑定状态
+The system MUST maintain the preset environment/validity boundary during password verification, session issuance, refresh and access verification; after the experience capability is turned off, the environment does not match, the preset record is retired, or the account is disabled/deleted, access to the old session MUST not be restored. Bad passwords and unknown usernames MUST remain consistent errors; new password attempts MUST be rejected when Redis quotas are unavailable. Google identity MUST be verified according to the original rules and not automatically associated with accounts with preset passwords.
 
-#### Scenario: 保留密码注销
-- **WHEN** 已登录密码用户在账号生命周期能力开启时提供正确密码和明确注销确认
-- **THEN** 使用原 purpose/session/command 约束的注销流程，邮件关闭不阻断合法注销也不放松 proof 校验
+#### Scenario: Old Credentials and Cross-Environment Denials
 
-### Requirement: 停用邮件不停止保留期限清理
+- **WHEN** The logged-in experience user is later retired, disabled, deleted, or accesses and closes services that do not match the experience capabilities/environment.
+- **THEN** New password login, old access and refresh cannot establish or restore access, and the account cannot be revived by opening an email or re-initializing it.
 
-系统 MUST 在邮件流程关闭时停止领取与投递，保持独立的过期临时数据清理；停止投递切换 MUST 可幂等取消旧未终结投递及邮件流程挑战，清除可还原载荷和临时身份/密码材料，避免重启或重开邮件发送旧积压。过期/完成载荷 MUST 保持原 24 小时清除边界与临时元数据期限；正式账号、安全审计和仍有效的注销 proof MUST 不因停用清理被误删。
+#### Scenario: Wrong password and quota failure
 
-#### Scenario: 旧待投递数据
-- **WHEN** 含待投递或过期租约记录的服务切换到邮件关闭并运行停用维护/清理
-- **THEN** 不调用邮件服务，不将记录标为投递成功；待发记录被取消并失效旧租约结果，载荷清空，重复维护不重新投递
+- **WHEN** Wrong password submitted, unknown username or password quota service unavailable
+- **THEN** The former two return a unified result of invalid credentials, while the latter returns a stable and unavailable result. No session is issued or it degrades to infinite attempts.
 
-#### Scenario: 无邮件配置的期限清理
-- **WHEN** 邮件关闭且 SMTP/AES 配置不存在，已过期申请或 proof 到达清理期限
-- **THEN** 无需解密即可按期限清理临时材料，保持正式身份和审计，未到期的 ACCOUNT_DELETE proof 仍可正常使用
+#### Scenario: Google Visitor
 
-### Requirement: 客户端可读取最小认证能力
+- **WHEN** Guest logged in using valid Google OAuth credentials
+- **THEN** Establish its normal independent identity and perform original onboarding. Do not merge preset accounts or grant background permissions due to similar display names or email addresses.
 
-系统 MUST 提供不含身份或秘密的认证能力结果，使客户端判断密码、Google 与邮件流程可用性。结果 MUST 与服务端有效配置一致，不能作为请求授权的替代；对未知/失败结果，客户端 MUST 不开放邮件流程。
+### Requirement: Reject all mail processes when mail is closed
 
-#### Scenario: 首轮试用能力
-- **WHEN** 客户端读取已配置的首轮试用认证能力
-- **THEN** 返回密码及 Google 可用、邮件不可用的最小结果，不包含账号名单、环境标识、完整邮箱或 provider 密钥
+When the email process is closed, the system MUST return a unified `EMAIL_AUTH_UNAVAILABLE`, HTTP 503, for registration, resending, email confirmation, retrieval/reset password, email binding, and binding-specific certification; MUST not create applications, challenges, or deliveries, do not call binding-specific external authentication, do not consume old email credentials, and do not return the sent success status. Normal password and Google login, normal password account deletion re-authentication MUST not be disabled for this reason.
 
-#### Scenario: 篡改客户端状态
-- **WHEN** 调用者伪造邮件能力为可用并直接请求接口
-- **THEN** 服务端仍按实际关闭状态拒绝请求
+#### Scenario: Direct request to close the interface
+
+- **WHEN** The caller bypasses the UI and requests any closed email process interface, including submitting an email token that is still valid.
+- **THEN** Returns a unified unavailable result without producing persistent email side effects, consuming tokens or changing password/binding status
+
+#### Scenario: Keep password and delete the account
+
+- **WHEN** Users who have logged in passwords provide the correct password and clear account deletion confirmation when the account life cycle capability is enabled.
+- **THEN** Use the original purpose/session/command constrained account deletion process. Email closing does not block legal account deletion and does not relax proof verification.
+
+### Requirement: Deactivating messages does not stop retention period cleanup
+
+The system MUST stop collection and delivery when the mail process is closed, and maintain independent expiration temporary data cleanup; stop delivery switching MUST idempotent cancel old unterminated delivery and mail process challenges, clear restorable payloads and temporary identity/password materials, and avoid restarting or reopening old backlogs of mail delivery. Expired/completed payloads MUST maintain the original 24-hour purge boundary and temporary metadata period; official account, security audit, and still valid account deletion proof MUST not be accidentally deleted due to deactivation of purge.
+
+#### Scenario: Old data to be delivered
+
+- **WHEN** Services with pending delivery or expired lease records are switched to mail shutdown and run outage maintenance/cleanup
+- **THEN** The mail service is not called, and the record is not marked as successfully delivered; the pending record is canceled and invalidates the old lease result, the payload is cleared, and repeated maintenance is not re-delivered.
+
+#### Scenario: Deadline cleanup without email configuration
+
+- **WHEN** The email is closed and the SMTP/AES configuration does not exist. The application has expired or the proof has reached the cleanup period.
+- **THEN** Temporary materials can be cleaned according to the deadline without decryption, formal identity and auditing can be maintained, and unexpired ACCOUNT_DELETE proof can still be used normally.
+
+### Requirement: The minimum authentication capability that the client can read
+
+The system MUST provide authentication capability results that do not contain identities or secrets, allowing clients to determine password, Google, and email process availability. The result MUST be consistent with the effective configuration of the server and cannot be used as a substitute for requesting authorization; for unknown/failed results, the client MUST not open the email process.
+
+#### Scenario: First round trial capability
+
+- **WHEN** The client reads the configured first-round trial authentication capability
+- **THEN** Returns the password and the minimum result available for Google and unavailable for email. It does not include account list, environment identifier, complete email address or provider key.
+
+#### Scenario: Tampering with client status
+
+- **WHEN** The caller's ability to forge emails is available and directly requests the interface
+- **THEN** The server still rejects the request according to the actual closed status.

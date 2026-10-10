@@ -1,26 +1,26 @@
-# 手机端好友与邀请验收
+# Mobile friend and invitation acceptance
 
-2026-09-28，本地实现对应 `implement-mobile-social`。
+2026-09-28, the local implementation corresponds to `implement-mobile-social`.
 
-## 实现与行为
+## Implementation and Behavior
 
-- `/me/social` 提供好友、可邀请用户、收到/发出的好友请求、已屏蔽用户及收到的房间邀请六个分页列表。
-- 好友请求列表后端补充对方当前公开昵称；持久层明确挑选公开响应字段，防止 Prisma 关系对象和出生年月等字段泄漏。E2E 验证响应字段精确集合及其他用户不可读。
-- 发起/接受/拒绝/撤回好友请求、删除好友、屏蔽/解除和拒绝房间邀请均使用 UUID 命令标识；不确定结果同一动作重试沿用标识。本人在线心跳只在该页前台可见时根据服务端建议间隔续期。
-- 邀请“查看房间”进入既有详情和加入准备流程，`invitationId` 随准备草稿传至 membership 请求。密码、容量、规则与资格仍由后端重新校验。
+- `/me/social` provides six paginated lists of friends, inviteable users, friend requests received/sent, blocked users and room invitations received.
+- The friend request list backend supplements the other party's current public nickname; the persistence layer explicitly selects the public response fields to prevent the leakage of fields such as Prisma relationship objects and birth dates. The exact set of E2E validation response fields is not readable by other users.
+- Initiating/accepting/rejecting/withdrawing friend requests, deleting friends, blocking/dismissing and rejecting room invitations all use UUID command identifiers; retrying the same action with uncertain results will use the same identifier. My online heartbeat is only renewed at intervals recommended by the server when the page is visible in the foreground.
+- Invite "view room" into the existing details and join preparation process, `invitationId` is passed along with the preparation draft to the membership request. Password, capacity, rules and qualifications are still re-verified by the backend.
 
-## 本地验证
+## Local verification
 
-- API lint/typecheck/OpenAPI check 与生成客户端检查：通过。`test/e2e/social.e2e.spec.ts` 5/5 通过，覆盖公开昵称最小字段、关系隔离与邀请加入校验。
-- 移动端 lint/typecheck：通过；37 suites、101 tests 通过，覆盖社交授权 API、失败重试的相同请求标识、邀请 ID 经过加入准备传递。
-- iOS JS export 通过，仅证明 bundle 可导出。
-- `tests/e2e/mobile-social-visual.e2e.spec.ts` 390×844 浏览器夹具 1/1，通过个人入口、好友/可邀请/请求昵称/收到邀请及房间跳转。
-- `openspec validate implement-mobile-social --strict`：通过。
+- API lint/typecheck/OpenAPI check and build client check: passed. `test/e2e/social.e2e.spec.ts` 5/5 passed, covering the minimum field of public nickname, relationship isolation and invitation to join verification.
+- Mobile lint/typecheck: passed; 37 suites, 101 tests passed, covering the social authorization API, the same request ID for failed retries, and the invitation ID is ready to be passed after joining.
+- iOS JS export passed, only proving that the bundle can be exported.
+- `tests/e2e/mobile-social-visual.e2e.spec.ts` 390×844 browser fixture 1/1, through personal entrance, friends/invitable/request nickname/received invitation and room jump.
+- `openspec validate implement-mobile-social --strict`: Passed.
 
-![好友页 390×844](assets/mobile-social-friends-390-visual-fixture.png)
+![Friend page 390×844](assets/mobile-social-friends-390-visual-fixture.png)
 
-![邀请页 390×844](assets/mobile-social-invitations-390-visual-fixture.png)
+![Invitation page 390×844](assets/mobile-social-invitations-390-visual-fixture.png)
 
-## 证据边界
+## Evidence Boundary
 
-用户允许沿用 V2 样式，这些页面没有独立 Figma 帧，截图不是逐帧 1:1 对照。页面夹具及后端 E2E 不替代两个真实账号、真实在线协同、原生设备和推送通知验收。在线状态仅是服务端短期布尔投影，页面不展示精确时间或房间活动。
+Users are allowed to follow the V2 style. These pages do not have independent Figma frames, and the screenshots are not compared frame by frame 1:1. Page fixtures and backend E2E do not replace two real accounts, real online collaboration, native devices and push notification acceptance. The online status is only a short-term Boolean projection on the server side, and the page does not display precise time or room activity.

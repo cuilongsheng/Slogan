@@ -1,42 +1,51 @@
 ## Purpose
 
-定义首个技术验证版本的基础举报、关键事件审计和服务端权限保护，使房主操作与成员生命周期可以追踪且不能仅靠客户端界面限制。
+Defines the first technical verification version of basic reporting, key event auditing and server-side permission protection, so that room host operations and member life cycles can be tracked and cannot be restricted by the client interface alone.
 
 ## ADDED Requirements
 
-### Requirement: 提交基础举报
-系统 MUST 允许房间成员提交包含房间、举报人、被举报人、时间、类别和文字说明的基础举报记录。
+### Requirement: Submit a basic report
 
-#### Scenario: 成员提交有效举报
-- **WHEN** 房间成员选择举报对象、类别并提交说明
-- **THEN** 系统保存举报记录并返回提交结果
+The system MUST allow room members to submit basic report records containing room, reporter, reportee, time, category and text description.
 
-### Requirement: 关键房间事件审计
-系统 MUST 记录举报、成员移除、成员重新邀请、房主移交、房主断线和房间结束事件，并保留事件主体、操作者、时间、原因或结果等必要信息。
+#### Scenario: A member submitted a valid report
 
-#### Scenario: 房主执行管理动作
-- **WHEN** 房主移除成员、重新邀请成员、移交权限或结束房间
-- **THEN** 系统生成可追踪的审计事件
+- **WHEN** Room members select the reporting object, category and submit instructions
+- **THEN** The system saves the report record and returns the submission result
 
-#### Scenario: 实时连接状态变化
-- **WHEN** 实时语音服务通知成员加入、离开、异常断开或房间结束
-- **THEN** 系统将事件与对应房间和成员关联并更新必要状态
+### Requirement: Critical room event audit
 
-### Requirement: 服务端权限校验
-系统 MUST 在服务端校验所有房间加入、房主管理、邀请和结束操作，不得只依赖客户端隐藏按钮或本地状态。
+The system MUST record reporting, member removal, member re-invitation, room host handover, room host disconnection and room end events, and retain necessary information such as event subject, operator, time, cause or result.
 
-#### Scenario: 非房主直接调用房主管理接口
-- **WHEN** 普通成员绕过客户端直接请求移除成员、移交房主或结束房间
-- **THEN** 系统拒绝请求且不改变房间状态
+#### Scenario: Room host performs management actions
 
-### Requirement: 限定房间的实时凭证
-系统 MUST 只向通过加入校验的用户发放短期、限定到目标房间和目标身份的实时语音凭证。
+- **WHEN** Room host remove members, re-invite members, transfer permissions or end the room
+- **THEN** The system generates traceable audit events
 
-#### Scenario: 合法加入请求
-- **WHEN** 用户通过账号、规则确认、密码、容量和房间状态校验
-- **THEN** 系统发放只能用于该房间的短期凭证
+#### Scenario: Real-time connection status changes
 
-#### Scenario: 使用旧凭证重入
-- **WHEN** 已被移除或房间已结束的用户尝试使用旧凭证重新连接
-- **THEN** 系统拒绝其恢复房间成员身份
+- **WHEN** Real-time voice service notifies members to join, leave, abnormal disconnection or room end
+- **THEN** The system associates the event with the corresponding room and member and updates the necessary status
 
+### Requirement: Server permission verification
+
+The system MUST verify all room joining, room host management, invitation and end operations on the server side and MUST not rely solely on client hidden buttons or local state.
+
+#### Scenario: Non-room host directly calls the room host management interface
+
+- **WHEN** Ordinary members bypass the client and directly request to remove members, transfer room host or end the room
+- **THEN** The system rejects the request and does not change the room status
+
+### Requirement: Real-time voucher for limited rooms
+
+The system MUST only issue short-term, real-time voice credentials limited to the target room and target identity to users who pass the verification.
+
+#### Scenario: Legal join request
+
+- **WHEN** User passes account, rule confirmation, password, capacity and room status verification
+- **THEN** The system issues a short-term voucher that can only be used for this room.
+
+#### Scenario: Reentry using old credentials
+
+- **WHEN** A user who has been removed or whose room has ended attempts to reconnect using old credentials
+- **THEN** The system refuses to restore the room membership

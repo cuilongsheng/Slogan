@@ -1,15 +1,15 @@
 ## MODIFIED Requirements
 
-### Requirement: 每次短语音请求都需要当次提示确认
+### Requirement: Each short voice request requires prompt confirmation.
 
-系统 MUST 在持久同意之外要求每次 AI 短语音请求确认本次处理提示，且不得由客户端为其他用户确认。明确展示本次用途与私人范围的按住录音界面 MUST 允许由当前用户主动按住手势完成当次确认，松开后无需再次确认上传；没有有效持久同意、说明未展示或没有主动录音手势时 MUST 不得自动确认。文字表达请求 MUST 不依赖语音处理同意。
+The system MUST require confirmation of this processing prompt for each AI short voice request in addition to persistent consent, and MUST not be confirmed by the client for other users. The press-and-hold recording interface that clearly demonstrates the purpose and private scope of this application MUST allow the current user to actively press and hold the gesture to complete the current confirmation, and there is no need to confirm the upload again after releasing it; MUST not automatically confirm when there is no valid persistent consent, the explanation is not displayed, or there is no active recording gesture. Text expression requests MUST not rely on speech processing for consent.
 
-#### Scenario: 有同意且确认本次提示
+#### Scenario: Agree and confirm this prompt
 
-- **WHEN** 用户具有当前有效同意并在可见本次提示下主动按住录音
-- **THEN** 本次手势完成当次确认，松开后允许请求进入音频校验和临时 STT 流程
+- **WHEN** The user has currently valid consent and actively presses and holds to record when this prompt is visible.
+- **THEN** This gesture completes the current confirmation. After releasing, the request is allowed to enter the audio verification and temporary STT process.
 
-#### Scenario: 缺少当次确认
+#### Scenario: Missing current confirmation
 
-- **WHEN** 用户已有持久同意但未确认本次处理提示
-- **THEN** 系统拒绝音频处理且不向 STT provider 发送数据
+- **WHEN** The user has given persistent consent but has not confirmed this processing prompt
+- **THEN** The system refuses audio processing and does not send data to the STT provider

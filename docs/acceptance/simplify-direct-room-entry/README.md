@@ -1,55 +1,54 @@
-# 直接入房验证
+# Direct entry verification
 
-## 最新状态：2026-10-09 自动设备检查补充，尚未发布
+## Latest status: 2026-10-09 Automatic equipment inspection supplement, not yet released
 
-用户最新要求覆盖此前“首次开麦才询问”的行为：现在连接入房后自动检查系统权限、临时麦克风音频轨道和播放状态；Android 检查已启动的 LiveKit AudioSession 可用输出，Web 使用实际播放许可状态。探测不会发布、录制或上传，完成/取消始终 stop，React Native 还调用 MediaStream.release；默认房间麦克风关闭。
+The latest user request covers the previous behavior of "asking after opening the mic for the first time": Now automatically check system permissions, temporary microphone audio track and playback status after connecting to the room; Android checks the available output of the started LiveKit AudioSession, and the Web uses the actual playback permission status. The detection will not be published, recorded or uploaded, completion/cancellation will always stop, React Native also calls MediaStream.release; the room microphone is turned off by default.
 
-拒绝权限、永久拒绝、无输入/输出或播放被阻止在房内给出简洁提示、重试和必要的系统设置/开启声音动作，不要求固定设备准备页面。输出 API 不能证明物理扬声器可听；实际听音仍由用户真机验证。检查未完成就退出、连接迟到及显式开麦与探测竞争都有代次/资源释放测试。进程级原生音频会话按 room 持有者串行获取/释放，防止旧房退出停止新房音频。
+Permission denied, permanent denial, no input/output or playback blocked gives a concise prompt in the room, retry and necessary system settings/turn on sound actions, does not require a fixed device to prepare the page. The output API cannot prove that the physical speaker is audible; actual listening is still verified by the user's physical device. There are generation/resource release tests for exiting before the check is completed, late connection, and explicit opening of microphone and detection competition. Process-level native audio sessions are serially acquired/released by the room holder to prevent the exit of the old room from stopping the audio of the new room.
 
-本地 mobile lint/typecheck、50 suites /162 tests、10 项 Expo Router Web 入口与授权回归、3 项真实组件视觉/交互验证通过；Pages 构建及 Android Hermes bundle 导出通过。原生 adapter 单元测试使用明确 SDK/设备替身，未接真机；没有将这些检查当成真实听音或完整 APK 安装验收。
+Local mobile lint/typecheck, 50 suites/162 tests, 10 Expo Router Web portal and authorization regressions, 3 real component visual/interaction verification passed; Pages build and Android Hermes bundle export passed. The native adapter unit test uses a clear SDK/device stand-in and does not connect to the physical device; these checks are not regarded as real listening or complete APK installation acceptance.
 
-`device-warning-runtime-fixture.png`：390×844 实际房内组件，设备/会话与消息使用明确测试 fixture，展示永久拒绝及重试；没有假装真实 Android 权限状态。原稿 115:1425 不修改，错误提示属于用户批准补充状态。
+`device-warning-runtime-fixture.png`: 390×844 Actual in-room components, devices/sessions and messages using explicit test fixtures, showing permanent deny and retries; no pretending to be true Android permission status. The original manuscript 115:1425 is not modified, and the error message belongs to the user-approved supplementary status.
 
-发布按用户明确要求暂停。此前提交 e89a786 已推送修正分支，但本轮未创建 PR、合并或更新生产 APK；本次自动检查和创建/后台/请求修正只保存在本地。生产状态不由本报告的本地 PASS 推断。
+Publishing is suspended at the explicit request of the user. The previous commit e89a786 has pushed the correction branch, but no PR, merge or update of the production APK has been created in this round; this automatic check and create/background/request corrections are only saved locally. Production status is not inferred from the local PASS for this report.
 
-以下为此前各批次的历史验证记录，设备检查行为以本节为准。
+The following are the historical verification records of previous batches. Equipment inspection behavior shall be subject to this section.
 
-日期：2026-10-09。需求来自用户要求“点击房间，加入房间即可”，对应 OpenSpec `simplify-direct-room-entry`。发布状态须以 PR 与生产记录为准，本文件先记录本地结果。
+Date: 2026-10-09. The demand comes from the user's request to "click on the room and join the room", corresponding to OpenSpec `simplify-direct-room-entry`. The release status must be based on PR and production records. This file first records the local results.
 
-列表卡片一次点击直接进入 session 并发起真实 membership API；双击不重复导航。详情页保留分享链接入口，其加入按钮同样直达 session。密码房只输入四位密码，提交后直达 session。保留后端资格、容量、密码、授权校验及失败重试；不再经过固定的详情、规则、设备三页。首次开麦才请求原生权限，入房默认静音；权限等待中退出后不得发布麦克风。
+Click the list card to directly enter the session and initiate the real membership API; double-click to avoid repeated navigation. The details page retains the sharing link entrance, and its join button also leads directly to the session. You only need to enter a four-digit password in the password room, and you will be directed to the session after submission. Retain backend qualifications, capacity, password, authorization verification and failed retries; no longer go through the fixed three pages of details, rules, and equipment. Request native permissions when the microphone is first enabled; members enter rooms muted by default. Never publish microphone audio after the member exits while a permission request is pending.
 
-`rulesAccepted` 仍为现有 API 合同字段，直接加入意图发送 true；这不代表用户阅读过旧规则页，旧规则前置需求在该 change 中明确移除。语音处理目的授权独立保留：仅缺少当前目的授权时显示同意组件，用户明确接受后才能重试，不自动调用 ACCEPT。旧 rules/device URL 保留兼容，但不在新的列表加入路径上。
+`rulesAccepted` is still an existing API contract field, and is directly added to the intent to send true; this does not mean that the user has read the old rule page, and the prerequisite requirements of the old rules are explicitly removed in this change. Voice processing purpose authorization is reserved independently: the consent component is displayed only when the current purpose authorization is missing, and the user can only retry after explicitly accepting it, and ACCEPT is not automatically called. The old rules/device URL remains compatible, but is not on the new list addition path.
 
-本地：mobile lint、typecheck、46 个测试套件 / 135 项测试通过；4 项 Playwright 流程通过；`build:pages:mobile` 通过；OpenSpec strict 通过。浏览器测试使用合同形状的 fixture，请求顺序与路由由实际组件运行。credentials 故意返回 503，验证已占房位后的失败恢复，不代表真实 LiveKit 连通或线上验收。
+Local: mobile lint, typecheck, 46 test suites / 135 tests passed; 4 Playwright processes passed; `build:pages:mobile` passed; OpenSpec strict passed. Browser testing uses contract-shaped fixtures, with request ordering and routing run by actual components. Credentials intentionally returns 503, which is a failed recovery after verifying the occupied room, and does not represent true LiveKit connectivity or online acceptance.
 
-复现浏览器测试：`pnpm exec playwright test --config tests/direct-entry.playwright.config.ts`。测试自启端口 8083 的 Expo Web，并在结束后关闭它。
+Reproduce browser test: `pnpm exec playwright test --config tests/direct-entry.playwright.config.ts`. Test the Expo Web that starts port 8083 and closes it when finished.
 
-## Figma 与运行证据
+## Figma and running evidence
 
-通过已连接的 Figma Desktop Bridge 读取 Slogan 的 `02 UI`，Section `115:1196`，列表 Frame `115:1197`、房内 Frame `115:1425`。原稿截图 `list-original-figma.png` 原样保留。用户本轮批准交互路径变化，未要求重画列表。
+Read Slogan `02 UI`, Section `115:1196`, List Frame `115:1197`, and Room Frame `115:1425` through the connected Figma Desktop Bridge. Original screenshot `../assets/implement-mobile-room-discovery-join-rooms-list-v2.png` is retained as is. The user approved the interaction path change this round and did not require the list to be redrawn.
 
-| 证据 | 范围 / 结果 |
-| --- | --- |
-| `list-runtime-web-fixture.png` | 390×844 实际列表；点击卡片直达 session。数据与头像为测试 fixture。 |
-| `join-error-runtime-web-fixture.png` | membership 成功、媒体失败时重试或退出，不跳回固定前置页。 |
-| `consents-runtime-web-fixture.png` | 只在授权缺失时显示目的授权；深色页面标题可读，内容过长可滚动。 |
-| 原稿对照 | 现有列表仍有头像、卡片高度等差异，不能将整个手机 UI 标为 1:1 PASS；本轮主要改变入房路径。 |
+| Evidence                             | range/result                                                                                                                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `list-runtime-web-fixture.png`       | 390×844 actual list; click on the card to go directly to the session. The data and avatar are test fixtures.                                                             |
+| `join-error-runtime-web-fixture.png` | Retry or exit when membership is successful or media fails, without jumping back to the fixed front page.                                                                |
+| `consents-runtime-web-fixture.png`   | The purpose authorization is only displayed when the authorization is missing; the title of the dark page is readable, and the content is scrollable if it is too long.  |
+| Original manuscript comparison       | The existing list still has differences in avatars, card heights, etc., and the entire mobile UI cannot be marked as 1:1 PASS; this round mainly changes the entry path. |
 
-Android 权限、真机音频与两机隔离由用户测试。公开部署、后台清理独立云端验证与新 APK 下载需在发布后补充结果。
+Android permissions, physical device audio and two-machine isolation are tested by users. Public deployment, background cleaning, independent cloud verification and new APK downloads need to be supplemented after release.
 
+## 2026-10-09 physical device feedback correction
 
-## 2026-10-09 真机反馈修正
+Previously, only the list and details buttons were covered, and the old rule/device components that could be entered were retained. Details deep linking and sharing would also stop on the details page; at the same time, the old version of the large speaker card was still used in the room. The full user path or new layout cannot be declared complete based on previous partial testing. The APK version used in the user's screenshot is not provided, and it cannot be determined based on the screenshot that the user installed it incorrectly.
 
-之前只覆盖了列表和详情按钮，保留了可进入的旧规则/设备组件，详情深链与分享还会停在详情页；同时房内仍使用旧版大块发言者卡片。不能据之前的局部测试宣称完整用户路径或新版布局完成。用户截图所用 APK 版本没有提供，不能据截图认定用户安装错误。
+This time, the old JoinScreens will be deleted, all details/rules/device/password routing will jump to the session, and the invitation identification will be retained; the shared instant room and invitations will follow the same path. Session does not require a draft memory for public rooms. The password room pops up first and requires valid input before requesting to join. Wrong passwords can be modified in the same pop-up window. Independent use authorization is still processed according to the original explicit authorization, and ACCEPT will never be forged; system permissions are requested only when the microphone is turned on for the first time.
 
-本次删除旧 JoinScreens，实现所有详情/规则/设备/密码路由跳转到 session，保留邀请标识；分享的即时房间和邀请沿同一路径。session 对公开房不要求内存草稿，密码房先弹窗、有效输入后才请求加入，错误密码在同一弹窗修改。独立用途授权仍按原有明确授权处理，绝不伪造 ACCEPT；首次开麦才请求系统权限。
+Bridge reconfirms Slogan / 02 UI / 115:1425, 390×844, original `voice-original-figma.png`. Remove the old 172 high speech card; the rules are always displayed; the member bar is at y220–411, with four columns of members and an empty space in the center; the chat area occupies the remaining height and scrolls to display messages; native-language expression only displays the lower right round button; three parallel controls of input, send and microphone. Flag backgrounds, role badges, mute backgrounds, and the host’s minus button use the original design’s dimensions and colors. The minus button opens the existing removal confirmation; it does not immediately remove the member. Real production avatars are provided by user information, and original character photos are only used for testing fixtures.
 
-Bridge 再次确认 Slogan / 02 UI / 115:1425，390×844，原稿 `voice-original-figma.png`。移除旧 172 高发言卡片；规则始终显示；成员条在 y220–411，四列成员与居中空位；聊天区域占剩余高度、滚动展示消息；母语表达只显示右下圆按钮；输入、发送和麦克风三个并列控件。国旗底、角色标识、静音底和房主减号采用原稿尺寸与颜色；减号进入已有真实移出确认，不立即移出。真实生产头像由用户资料提供，原稿人物照片仅用于测试 fixture。
+Verification: mobile lint/typecheck, 47 suites / 142 tests, 10 real Expo Router Web portal/authorization regressions and 1 in-room component interaction test passed; Pages build, 4 Android delivery unit tests, OpenSpec strict passed. Covers four old URLs, sharing, invitation retention, missing and incorrect passwords, text sending, hold/release translation and room host takeover exit. Playwright configurations must be run serially to avoid the shared test-results directory being cleared by another configuration.
 
-验证：mobile lint/typecheck、47 suites / 142 tests、10 项真实 Expo Router Web 入口/授权回归和 1 项房内组件交互测试通过；Pages build、Android 交付单元测试 4 项、OpenSpec strict 通过。覆盖四条旧 URL、分享、邀请保留、缺少和错误密码、文字发送、按住/松开翻译和房主接替退出。Playwright 配置必须串行运行，避免共享 test-results 目录被另一个配置清除。
+Running comparison `voice-runtime-web-fixture.png` using the same 390×844, Noto Sans SC 400/500/700 loaded, room host status, same original photos, B1·B2 and 38 minutes remaining. System text is explicit visual HTTP fixture data used to measure message layout and does not prove production system message interfaces. `voice-comparison.html` provides side-by-side and transparent overlays of the original image and the final running image, without modifying the original image.
 
-运行对照 `voice-runtime-web-fixture.png` 使用同样 390×844、已加载 Noto Sans SC 400/500/700、房主状态、相同原稿照片、B1·B2 和剩余38分钟。系统文字为明确的视觉 HTTP fixture 数据，用于测量消息布局，不证明生产系统消息接口。`voice-comparison.html` 提供原图与最终运行图并列及透明叠图，未修改原始图像。
+Original draft/running layout check: header 88, rule 76, member 191, old speech card does not exist; chat and bottom bar are independent, bottom bar input 236×56, send 44×44, microphone 44×44, native language button 38×38. Behavior and web layout verified separately, no claims of Android 1:1 or dual-machine audio passed. There is currently no Android emulator or physical device connected to this machine. Native permissions/keyboard/audio are verified by the user according to established arrangements.
 
-原稿/运行布局核对：头部88、规则76、成员191，旧发言卡片不存在；聊天与底栏分别独立，底栏输入236×56、发送44×44、麦克风44×44，母语按钮38×38。行为和 Web 布局分别验证，不宣称 Android 1:1 或双机音频已通过。当前本机没有 Android 模拟器或连接真机，原生权限/键盘/音频由用户按既定安排验证。
-
-本次无 API 合同、数据库迁移、Redis 配置或供应商变更。生产发布和实际 APK 的提交、版本及 SHA-256 由本次 PR/Android workflow 和 release-artifacts 记录；打包器新增检查 APK 内 `voice-room-direct-entry-v2` 标记，避免只核对 app.config 而遗漏 JS 界面版本。
+There are no API contracts, database migrations, Redis configuration or vendor changes at this time. The submission, version and SHA-256 of the production release and actual APK are recorded by this PR/Android workflow and release-artifacts; the packager has added a new check for the `voice-room-direct-entry-v2` mark in the APK to avoid only checking app.config and missing the JS interface version.

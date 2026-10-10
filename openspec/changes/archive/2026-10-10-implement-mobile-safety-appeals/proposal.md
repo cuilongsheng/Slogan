@@ -1,23 +1,23 @@
 ## Why
 
-后端已提供本人限制历史与限时申诉 API，手机端没有入口。受到临时限制的用户无法在应用内看到原因、截止时间或提交申诉。
+The backend has provided personal restriction history and time-limited appeal API, but there is no entrance on the mobile phone. Users who are temporarily restricted cannot see the reason, deadline, or submit an appeal within the app.
 
 ## What Changes
 
-- 在手机端个人入口增加“我的限制与申诉”，读取本人限制和稳定分页历史。
-- 对仍在窗口内且尚未申诉的临时限制显示理由输入与提交，展示待处理/维持/解除结果及服务端错误。
-- 沿用已确认 V2 组件、色彩和页面密度；本页无独立高保真帧，用户已授权按 V2 视觉语言实现。
+- Add "My Restrictions and Appeals" to the personal portal on the mobile phone to read personal restrictions and stable paging history.
+- Display reason input and submission for temporary restrictions that are still in the window and have not yet been appealed, and display pending/maintained/lifted results and server-side errors.
+- Inherit the confirmed V2 components, colors and page density; this page does not have independent high-fidelity frames, the user has authorized the implementation according to the V2 visual language.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mobile-safety-appeals`: 手机端本人限制查看和一次限时申诉交互。
+- `mobile-safety-appeals`: Personal viewing and one-time limited appeal interaction on the mobile phone.
 
 ### Modified Capabilities
 
-无。现有 `safety-restriction-appeals` 后端行为保持不变。
+None. Existing `safety-restriction-appeals` backend behavior remains unchanged.
 
 ## Impact
 
-- `apps/mobile` 路由、个人入口、API feature、文案和测试。使用现有 `/v1/me/safety-restrictions` 与 `/{restrictionId}/appeal`，不变更数据模型或 OpenAPI。
+- `apps/mobile` routing, personal entrance, API feature, copywriting and testing. Use existing `/v1/me/safety-restrictions` and `/{restrictionId}/appeal` without changing the data model or OpenAPI.

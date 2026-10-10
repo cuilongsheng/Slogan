@@ -2,115 +2,144 @@
 
 ## Purpose
 
-定义举报进入后台后的案件创建、分配、查询、证据和处理闭环，使每个安全决定都基于可查看的持久事实，并由当前仍有权限的安全员人工确认。
+Define the closed loop of case creation, assignment, query, evidence and processing after the report enters the backend, so that every safety decision is based on viewable and durable facts and manually confirmed by the safety officer who still has authority.
 
 ## Requirements
 
-### Requirement: 每个受理举报形成唯一安全案件
-系统 MUST 为每个成功受理的举报创建且只创建一个安全案件。案件 MUST 具有稳定标识、来源举报、被举报用户、房间、创建时间、当前状态和可选的当前安全员，并以 `OPEN` 作为初始处理状态。
+### Requirement: Each accepted report forms a unique security case
 
-#### Scenario: 举报受理后查询案件
-- **WHEN** 一条有效举报首次成功受理
-- **THEN** 系统可以通过返回的案件标识查询到唯一 `OPEN` 案件，且案件指向该举报、房间和被举报用户
+The system MUST create one and only one security case for each successfully accepted report. The case MUST have a stable identifier, source report, reported user, room, creation time, current status, and optionally the current safety officer, with `OPEN` as the initial processing status.
 
-#### Scenario: 相同举报请求被安全重试
-- **WHEN** 举报人使用相同请求标识和相同规范化内容重试已经成功的举报
-- **THEN** 系统返回原举报及原案件标识，不创建第二条举报或第二个案件
+#### Scenario: Query the case after the report is accepted
 
-### Requirement: 新案件自动分配且可以恢复未分配状态
-系统 MUST 优先把新案件分配给当前仍持有 `SAFETY_OFFICER` 且账号可用的安全员中未结案件数量最少者，并在负载相同时使用可持续轮转的确定性规则。没有可用安全员时，系统 MUST 保留可查询的未分配案件，并在安全员可用后通过可重试的恢复流程重新分配。
+- **WHEN** A valid report was successfully accepted for the first time
+- **THEN** The system can query the unique `OPEN` case through the returned case ID, and the case points to the report, room and reported user
 
-#### Scenario: 分配给负载最低的安全员
-- **WHEN** 新案件创建时存在多个可用安全员且其中一人的未结案件数量最少
-- **THEN** 系统把案件分配给该安全员，并保存可追踪的分配时间
+#### Scenario: The same report request is safely retried
 
-#### Scenario: 相同负载持续轮转
-- **WHEN** 多名可用安全员的未结案件数量相同且连续创建多个案件
-- **THEN** 系统按确定性的轮转顺序分配，不把并列案件永久集中到同一人
+- **WHEN** The reporter retries a successful report using the same request ID and the same canonical content
+- **THEN** The system returns the original report and original case identification, and does not create a second report or second case.
 
-#### Scenario: 暂无可用安全员
-- **WHEN** 举报受理时没有账号可用且持有安全员角色的用户
-- **THEN** 系统仍成功保存举报和 `OPEN` 案件，将案件标记为未分配且不伪造处理人
+### Requirement: New cases are automatically assigned and can be restored to unassigned status
 
-#### Scenario: 已分配安全员失去资格
-- **WHEN** 未结案件的当前处理人失去安全员角色或账号变为不可用
-- **THEN** 恢复流程清除无效分配并把案件交给当前可用安全员，且重复执行不会产生多个当前处理人
+The system MUST give priority to allocating new cases to the safety officer who currently holds `SAFETY_OFFICER` and has an available account with the smallest number of open cases, and uses the deterministic rule of sustainable rotation when the load is the same. When a safety officer is not available, the system MUST retain unassigned cases that can be queried and reassigned through a retryable recovery process when a safety officer becomes available.
 
-### Requirement: 案件查询遵循后台职责分离
-系统 MUST 允许当前平台管理员查看全部案件，允许当前安全员查看分配给自己的案件和未分配案件。平台管理员没有安全员角色时 MUST 不能推进案件或执行安全处置；安全员 MUST 不能因案件权限获得角色管理或全量后台审计权限。
+#### Scenario: assigned to the safety officer with the lowest load
 
-#### Scenario: 管理员查看全部案件
-- **WHEN** 当前平台管理员分页查询案件并提交有效状态、时间或被举报用户过滤
-- **THEN** 系统返回稳定排序的最小案件摘要和下一页游标
+- **WHEN** There are multiple safety officers available when a new case is created and one of them has the smallest number of open cases.
+- **THEN** The system assigns the case to the safety officer and saves the traceable assignment time
 
-#### Scenario: 安全员查看工作队列
-- **WHEN** 当前安全员查询自己的案件队列
-- **THEN** 系统只返回分配给本人和当前未分配的案件，不返回分配给其他安全员的案件
+#### Scenario: The same load continues to rotate
 
-#### Scenario: 只有管理员角色时尝试处理案件
-- **WHEN** 只持有平台管理员角色的用户直接请求开始、结案、驳回或处罚
-- **THEN** 系统返回稳定权限拒绝且案件和用户状态保持不变
+- **WHEN** Multiple available safety officers have the same number of open cases and multiple cases are created consecutively
+- **THEN** The system allocates in a deterministic rotation order and does not permanently assign parallel cases to the same person.
 
-### Requirement: 安全员显式领取并推进案件状态
-系统 MUST 只允许当前可用的安全员领取未分配案件、开始本人负责案件的处理，并将案件从 `OPEN` 推进为 `UNDER_REVIEW`。案件只能以 `RESOLVED` 或 `DISMISSED` 进入终态，终态案件不得再次开始或作出第二个终态决定。
+#### Scenario: No safety officer available yet
 
-#### Scenario: 安全员领取未分配案件
-- **WHEN** 当前安全员领取一个仍未分配的 `OPEN` 案件
-- **THEN** 系统原子设置当前处理人，并返回与持久状态一致的案件
+- **WHEN** Users who have no account available and hold the role of safety officer when accepting reports
+- **THEN** The system still successfully saves the report and `OPEN` case, marking the case as unassigned and not forging a handler
 
-#### Scenario: 两名安全员并发领取
-- **WHEN** 两名安全员并发领取同一个未分配案件
-- **THEN** 系统只接受一个当前处理人，另一请求返回稳定冲突且不得覆盖获胜结果
+#### Scenario: Assigned safety officer disqualified
 
-#### Scenario: 开始本人负责的案件
-- **WHEN** 当前处理人开始一个 `OPEN` 案件
-- **THEN** 系统把状态更新为 `UNDER_REVIEW` 并记录服务端处理开始时间
+- **WHEN** The current handler of the open case has lost the safety officer role or the account has become unavailable.
+- **THEN** The recovery process clears invalid assignments and hands the case to the currently available safety officer, and repeated execution will not produce multiple current handlers.
 
-#### Scenario: 操作其他安全员负责的案件
-- **WHEN** 安全员尝试推进当前分配给另一名有效安全员的案件
-- **THEN** 系统返回稳定冲突或权限拒绝且案件状态不变
+### Requirement: Case inquiry follows background separation of responsibilities
 
-### Requirement: 案件证据包只组合允许的持久事实
-系统 MUST 提供与单个案件关联的证据包，包含举报信息、举报发生前后可用的房间成员和时间线事实、房主管理事件、相关举报、既往案件与限制摘要、相关的最小房间风险事件、安全能力降级事件以及案件处理记录。证据包 MUST 标识缺失、降级或尚不存在的信号，不得把风险事件解释为已确认违规，不得生成事实、保存或返回原始音频、命中原文或完整转写，也不得返回认证凭证或非必要个人资料。
+The system MUST allow the current platform administrator to view all cases, and allow the current safety officer to view cases assigned to itself and unassigned cases. When the platform administrator does not have the role of safety officer, MUST NOT advance the case or perform safety disposal; safety officer MUST NOT obtain role management or full administrative audit permissions due to case permissions.
 
-#### Scenario: 查看有完整现有事实的证据包
-- **WHEN** 有权限的管理员或案件处理人查看案件证据包
-- **THEN** 系统返回可关联来源与发生时间的允许事实，包括举报相关时间窗口内的最小风险和降级事件，并按稳定顺序组织结果
+#### Scenario: Administrator views all cases
 
-#### Scenario: 部分证据不存在
-- **WHEN** 案件没有房主管理事件、既往限制、风险事件或其他相关信号
-- **THEN** 系统明确返回对应集合为空或信号不可用，不伪造风险结论且仍允许人工处理案件
+- **WHEN** The current platform administrator queries cases in pages and submits valid status, time or filtered by reported users.
+- **THEN** The system returns a stable sorted minimal case summary and a next page cursor
 
-#### Scenario: 举报时安全能力处于降级
-- **WHEN** 举报关联时间窗口内存在房间语音安全能力降级
-- **THEN** 证据包标识受影响组件和时间范围，不补造该期间的风险信号也不声称内容已被检查
+#### Scenario: safety officer View work queue
 
-#### Scenario: 非案件处理人读取证据
-- **WHEN** 只持有安全员角色但案件已分配给另一名有效安全员的用户请求证据包
-- **THEN** 系统拒绝访问且不返回举报说明、成员信息或风险事件
+- **WHEN** The current safety officer queries his own case queue
+- **THEN** The system only returns cases assigned to the person and those that are currently unassigned, and does not return cases assigned to other safety officers.
 
-### Requirement: 案件结论必须由安全员人工提交
-系统 MUST 只允许当前处理人对 `UNDER_REVIEW` 案件提交一次终态结论。驳回 MUST 记录理由且不创建限制；结案 MUST 明确选择无处罚、临时限制或符合条件的永久禁用，并把案件结论、处置事实和成功审计作为一个原子结果提交。任何单条举报、关键词或自动风险信号 MUST 不能自行推进案件或施加处罚。
+#### Scenario: Attempt to handle case when only administrator role
 
-#### Scenario: 驳回案件
-- **WHEN** 当前处理人以有效理由驳回正在处理的案件
-- **THEN** 系统将案件置为 `DISMISSED`，保存处理记录且不创建账号限制
+- **WHEN** Users who only hold the role of platform administrator directly request to start, close, reject or punish
+- **THEN** The system returns a stable permission denial and the case and user status remain unchanged
 
-#### Scenario: 结案但不处罚
-- **WHEN** 当前处理人确认案件已处理并选择无处罚结论
-- **THEN** 系统将案件置为 `RESOLVED`，保存理由且用户账号保持原状态
+### Requirement: safety officer explicitly receives and advances case status
 
-#### Scenario: 自动信号到达
-- **WHEN** 系统收到单条举报、相关举报数量变化或未来接入的关键词风险事件
-- **THEN** 系统只把信号提供给人工复核，不自动改变案件终态、限制或用户账号状态
+The system MUST only allow currently available safety officers to pick up unassigned cases, start processing the cases they are responsible for, and advance the cases from `OPEN` to `UNDER_REVIEW`. The case can only enter the final state with `RESOLVED` or `DISMISSED`. The final state case cannot be started again or a second final decision can be made.
 
-### Requirement: 案件修改命令具有稳定幂等和并发结果
-系统 MUST 要求领取、开始处理、结案和驳回命令携带调用者生成的 UUID 请求标识和规范化理由或决定内容。相同操作者使用相同请求标识重试相同内容 MUST 返回原结果；复用请求标识提交不同内容 MUST 返回稳定冲突。
+#### Scenario: safety officer receives unassigned cases
 
-#### Scenario: 重试已经完成的结案命令
-- **WHEN** 同一安全员使用相同请求标识和相同规范化决定重试已成功的结案命令
-- **THEN** 系统返回原案件、处置和审计关联结果，不创建第二个终态决定或第二次处罚
+- **WHEN** The current safety officer picks up an unassigned `OPEN` case
+- **THEN** The system atomically sets the current handler and returns the case consistent with the persistent state
 
-#### Scenario: 并发提交不同终态决定
-- **WHEN** 多个请求并发尝试驳回或结案同一案件
-- **THEN** 系统只提交一个终态决定，其余请求返回与既有终态一致的稳定冲突
+#### Scenario: Two safety officers collected at the same time
+
+- **WHEN** Two safety officers received the same unassigned case concurrently
+- **THEN** The system only accepts one current handler, another request returns a stable conflict and must not overwrite the winning result
+
+#### Scenario: Start the case I am responsible for
+
+- **WHEN** The current handler started a `OPEN` case
+- **THEN** The system updates the status to `UNDER_REVIEW` and records the server processing start time
+
+#### Scenario: Operate cases responsible for other safety officers
+
+- **WHEN** safety officer attempted to advance a case currently assigned to another active safety officer
+- **THEN** The system returns a stable conflict or permission denial and the case status remains unchanged.
+
+### Requirement: Case evidence package combines only permissible enduring facts
+
+The system MUST provide an evidence package associated with a single case that contains report information, room membership and timeline facts available before and after the report occurred, room host management events, related reports, summary of past cases and restrictions, related minimum room risk events, security capability degradation events, and case handling records. Evidence packages MUST identify signals that are missing, downgraded, or do not yet exist, risk events MUST not be interpreted as confirmed violations, facts MUST not be generated, original audio, original audio, hits, or full transcripts MUST not be saved or returned, and authentication credentials or non-essential personal data MUST not be returned.
+
+#### Scenario: View evidence package with complete existing facts
+
+- **WHEN** The authorized administrator or case handler can view the case evidence package
+- **THEN** The system returns allowed facts that can be correlated to source and time of occurrence, including reporting minimal risk and degrading events within the relevant time window, and organizes the results in a stable order
+
+#### Scenario: Some evidence does not exist
+
+- **WHEN** The case has no room host management events, past restrictions, risk events or other related signals
+- **THEN** The system clearly returns that the corresponding set is empty or the signal is unavailable. It does not falsify risk conclusions and still allows manual processing of the case.
+
+#### Scenario: Security capabilities were downgraded when reporting
+
+- **WHEN** Report the degradation of voice security capability in the room within the associated time window
+- **THEN** The evidence package identifies the affected components and time range, does not redact risk signals during this period, and does not claim that the content has been inspected.
+
+#### Scenario: Non-case handler reads evidence
+
+- **WHEN** A user who only holds the safety officer role but the case is assigned to another valid safety officer requests an evidence package
+- **THEN** The system denies access and does not return reporting instructions, member information or risk events
+
+### Requirement: Case conclusions must be submitted manually by the safety officer
+
+The system MUST allow the current handler to submit a final conclusion only once for case `UNDER_REVIEW`. Dismissal MUST record reasons and does not create restrictions; case close MUST explicitly select no penalty, temporary restrictions, or qualified permanent ban, and submits the case conclusion, disposition facts, and successful audit as an atomic result. Any single report, keyword, or automated risk signal MUST not advance the case or impose penalties on its own.
+
+#### Scenario: Case dismissed
+
+- **WHEN** The current handler dismissed the case being handled with valid reasons
+- **THEN** The system sets the case to `DISMISSED`, saves the processing record, and does not create account restrictions.
+
+#### Scenario: Case closed but no penalty
+
+- **WHEN** The current handler confirms that the case has been handled and chooses a no-punishment conclusion.
+- **THEN** The system sets the case to `RESOLVED`, saves the reason, and keeps the user account in its original state.
+
+#### Scenario: Automatic signal arrival
+
+- **WHEN** The system receives a single report, a change in the number of related reports, or a keyword risk event that will be accessed in the future.
+- **THEN** The system only provides signals for manual review and does not automatically change case final status, restrictions or user account status.
+
+### Requirement: Case modification command has stable idempotent and concurrent results
+
+The system MUST require that pick, start processing, close, and reject commands carry the UUID request identifier generated by the caller and the normalized reason or decision content. The same operator uses the same request ID to retry the same content and MUST return the original result; reusing the request ID to submit different content MUST return a stable conflict.
+
+#### Scenario: Retry completed close command
+
+- **WHEN** The same safety officer decided to retry a successful close command using the same request ID and the same normalization
+- **THEN** The system returns the original case, disposition and audit related results without creating a second final decision or a second penalty
+
+#### Scenario: Concurrent submission of different final decisions
+
+- **WHEN** Multiple requests concurrently attempting to dismiss or close the same case
+- **THEN** The system only submits one final state decision, and the remaining requests return stable conflicts consistent with the existing final state.

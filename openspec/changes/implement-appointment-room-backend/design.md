@@ -1,111 +1,111 @@
 ## Context
 
-动机与确认记录见 [proposal.md](./proposal.md)。2026-09-12 当前代码：Room 仅有 OPEN/ENDING/ENDED，没有 kind 或 reservation；即时创建同时建立房主 ACTIVE membership，默认两小时。rooms 的两个 Prisma repository 共用 Room 行锁；实际 join 只统计 ACTIVE，重进保留 membership 并换 identity。RoomRealtimeService 仅向 ACTIVE 发证，使用实际 membership 作为举报历史基础。
+See [proposal.md](./proposal.md) for motivation and confirmation records. 2026-09-12 Current code: Room only has OPEN/ENDING/ENDED, no kind or reservation; instant creation and establishment of room host ACTIVE membership, default two hours. The two Prisma repositories of rooms share the Room row lock; the actual join only counts ACTIVE, and re-entry retains membership and changes identity. RoomRealtimeService issues credentials only to ACTIVE, using actual membership as the basis for reporting history.
 
-RealtimeRunner 复用一条 BullMQ 队列，启动及每 15 秒恢复到期/host-timeout/outbox。当前 runner 整体受 REALTIME_ENABLED 控制；不能直接将预约业务时间依赖于 provider 配置。历史 PRD 的“预约只表意向”与本次用户明确选择不一致，以本次占位决定为提案输入，不修改历史文档。
+RealtimeRunner reuses a BullMQ queue, starts and resumes expiration/host-timeout/outbox every 15 seconds. The current runner as a whole is controlled by REALTIME_ENABLED; the reservation business time cannot be directly dependent on the provider configuration. The "appointment only expresses intention" in the historical PRD is inconsistent with the user's explicit choice this time. The current placeholder decision will be used as the input for the proposal, and the historical document will not be modified.
 
-本 change 涉及生命周期、资格与共享容量，按 Level 2 给出迁移及回退边界。实现基于已交付的工作区，不把前置未完成 Cloud smoke 当作本次媒体验证。
+This change involves life cycle, qualification and shared capacity, and migration and rollback boundaries are given according to Level 2. The implementation is based on the delivered workspace and does not regard the pre-completed Cloud smoke as this media verification.
 
 ## Goals / Non-Goals
 
-**Goals:** 一个持久 Room 关联独立预约记录，保证时间边界、席位转换和失败恢复；维持现有实际 membership、房主管理和举报的含义。
+**Goals:** A persistent Room is associated with independent reservation records, ensuring time boundaries, seat switching and failure recovery; maintaining the meaning of existing actual membership, room host management and reporting.
 
-**Non-Goals:** 不创建第二个运行时房间或第二套 provider/queue，不引入通用日历系统、改期、提醒、爽约处罚、分布式事务框架或不必要依赖；首次到场的 5 分钟接任和满 5 分钟后空房立即结束按用户补充纳入。产品范围及供审阅的细节见 proposal。
+**Non-Goals:** does not create a second runtime room or a second set of provider/queue, and does not introduce a universal calendar system, rescheduling, reminders, no-show penalties, distributed transaction frameworks or unnecessary dependencies; the 5-minute takeover after the first arrival and the vacancy after 5 minutes will be immediately ended and included according to user supplements. Please see the proposal for product scope and details for review.
 
 ## Decisions
 
-### 1. 同一 Room，独立预约记录
+### 1. Same Room, independent reservation records
 
-为 Room 增加 kind=INSTANT/APPOINTMENT，原记录默认 INSTANT；RoomStatus 追加 SCHEDULED/CANCELLED，现有 OPEN/ENDING/ENDED 继续使用。开始时间复用 startedAt，预约房间将其解释为计划开始时间；不以实际首次连接覆盖计划时间。取消用 cancelledAt 与固定 cancelledReason；取消不得伪装为 provider 清理已完成。另存 initialHostDeadline=startedAt+5min 与首次房主到场/接任完成标记；同一个 startedAt+5min 同时是空房保留期限，不从首次 HTTP 请求重新起算，不需要首次成员上线历史标记或另一套计时。
+Add kind=INSTANT/APPOINTMENT to Room, the original record defaults to INSTANT; add SCHEDULED/CANCELLED to RoomStatus, and continue to use existing OPEN/ENDING/ENDED. The start time reuses startedAt, and the reservation room will interpret it as the planned start time; the actual first connection will not overwrite the planned time. Cancellation is done with canceledAt and fixed canceledReason; cancellation must not be disguised as provider cleanup being completed. Save initialHostDeadline=startedAt+5min with the first room host arrival/takeover completion mark; the same startedAt+5min is also the vacancy retention period, which does not restart from the first HTTP request, and does not require the first member online history mark or another set of timings.
 
-独立 RoomReservation model 保存 id、roomId、userId、status、version、bookedAt、cancelledAt、consumedAt；状态为 BOOKED/CANCELLED/CONSUMED/EXPIRED，(roomId,userId) 唯一。保留记录用于幂等与未来追踪，不实现历史查询界面。预约创建时房主自动占一个 BOOKED 席位，但不创建 RoomMembership；真正 join 成功时仍为指定房主才创建 role=HOST 的 membership；若已经移交则为 MEMBER。其他预约用户同样在实际 join 时创建 MEMBER。
+The independent RoomReservation model saves id, roomId, userId, status, version, bookedAt, canceledAt, consumedAt; the status is BOOKED/CANCELLED/CONSUMED/EXPIRED, (roomId, userId) is unique. Keep records for idempotent and future tracking, and do not implement the historical query interface. When the reservation is created, the room host automatically occupies a BOOKED seat, but RoomMembership is not created; when the actual join is successful, the membership with role=HOST is still created for the specified room host; if it has been transferred, it is MEMBER. Other reservation users also create MEMBER during actual join.
 
-这使“房主已排定房间”和“房主实际进入”不再混淆：创建者没有 membership 就不能借预约访问当前成员、取得实时凭证或举报。保留 Room.hostUserId 表示当前指定房主；本类型 OPEN 房间在房主首次加入前可以没有 ACTIVE HOST，这一明确例外不影响即时房间。用户选择允许此时成员交流，不能创建占位 HOST membership 假造加入事实。
+This eliminates the confusion between "room host has scheduled a room" and "room host actually entered": the creator cannot access current members by appointment, obtain real-time credentials, or report without membership. Reserved Room.hostUserId indicates the currently specified room host; this type of OPEN room may not have an ACTIVE HOST before the room host joins for the first time. This clear exception does not affect the real-time room. The user chooses to allow members to communicate at this time, and cannot create a placeholder HOST membership to fake the fact of joining.
 
-备选在开始时另建即时 Room 会产生两个 ID、复制密码/容量、割裂预约与举报关系，故不采用。仅增加 membership=INVITED 也会污染已有历史加入和举报边界，故不采用。
+The alternative of creating a new instant room at the beginning will generate two IDs, copy the password/capacity, and separate the relationship between reservation and reporting, so it is not adopted. Just adding membership=INVITED will also pollute the existing historical joining and reporting boundaries, so it is not used.
 
-### 2. 同一事务的席位预算
+### 2. Seat budget for the same transaction
 
-所有预约、取消预约、实际 join、邀请容量检查与房间状态变更共用 Room 行锁。定义：
+All reservations, cancellations, actual joins, invitation capacity checks and room status changes share the Room row lock. Definition:
 
-- A：ACTIVE membership 用户集合。
-- R：BOOKED 且尚未实际使用的预约用户集合（房间取消/结束后不再有效）。
-- 已占容量 = |A ∪ R|，对外分别提供 memberCount=|A|、reservedCount=|R−A|、availableCount=capacity−|A∪R|。
+- A: ACTIVE membership user collection.
+- R: A collection of reservation users that are BOOKED and have not been actually used (no longer valid after room cancellation/end).
+- Occupied capacity = |A ∪ R|, memberCount=|A|, reservedCount=|R−A|, availableCount=capacity−|A∪R| are provided to the outside world.
 
-预约用户 join 时，从 BOOKED 转 CONSUMED 与创建/恢复 membership 同一事务完成；既有 ACTIVE 的重复 join 不重复消耗。普通 join 仅能使用 availableCount；LEFT/被重邀用户重进也遵循此预算，不能抢未到场预约人的席位。现有 HostControlsService.invite 的容量检查同步调用相同预算，以免显示可以邀请而实际使用了别人的保留席位；邀请本身依旧不占位。
+When reserving a user join, the same transaction from BOOKED to CONSUMED and membership creation/restoration is completed; duplicate joins of existing ACTIVE are not repeatedly consumed. Ordinary joins can only use availableCount; LEFT/reinvited users also follow this budget when rejoining, and seats for those who have not yet arrived cannot be taken. The existing capacity check of HostControlsService.invite calls the same budget synchronously to avoid showing that the invitation can be invited but actually using someone else's reserved seat; the invitation itself still does not occupy a seat.
 
-预约前校验当前账号、成年资料、规则和密码；join 再校验，不能把预约时的资格快照当作长期通行证。预约用户后续被停用则无法实际 join，席位按本次未设迟到/处罚释放的边界保留，直到其合法取消或房间结束；不自动发明新的账号处罚副作用。
+Verify the current account, adult information, rules and password before making a reservation; verify again after joining. The qualification snapshot at the time of reservation cannot be used as a long-term pass. If the reserved user is subsequently deactivated, he/she will not be able to actually join, and the seat will be retained according to the boundary of no late arrival/penalty release for this time until it is legally canceled or the room is ended; no new account penalty side effects will be automatically created.
 
-创建者的一个 BOOKED 席位在首次 join 时消耗。普通用户未用预约可以在开始前或开放后取消；已 CONSUMED 的预约不能代替 leave。房主不能单独取消自己的未用保留位；开始前可取消整个房间。实际 join 后的 leave/remove 不重新创建 BOOKED，旧 reservation 不能绕过 REMOVED 或新 credential generation。
+One BOOKED seat of the creator is consumed when joining for the first time. Unused reservations for ordinary users can be canceled before starting or after opening; reservations that have been CONSUMED cannot replace leave. The room host cannot individually cancel its own unused reserved slots; it can cancel the entire room before starting. Leave/remove after the actual join does not recreate BOOKED, and old reservations cannot bypass REMOVED or new credential generation.
 
-重用 reservation 行但递增 version：首次预约 expectedVersion=0；新建后 version=1，取消/再次预约继续增加。请求绑定 expectedReservationVersion；当前状态证明同一版本操作已完成时返回当前结果，否则冲突，防止旧取消删除新预约、旧预约复活已取消席位。实际消耗、整房取消和结束也更新 version，使旧请求失效。公开列表只给计数，本人详情给 reservation id/status/version，不暴露他人 userId。
+Reuse the reservation line but increment the version: expectedVersion=0 for the first reservation; version=1 after creating a new one, and continue to increase when canceling/re-reserving. Request to bind expectedReservationVersion; when the current status proves that the operation of the same version has been completed, the current result will be returned, otherwise there will be a conflict to prevent old cancellation and deletion of new reservations, and old reservations to resurrect canceled seats. Actual consumption, whole room cancellation and end also update version, invalidating old requests. The public list only counts, personal details are given to reservation id/status/version, and the userId of others is not exposed.
 
-### 3. 时间事实和房主首次缺席
+### 3. Time fact and room host’s first absence
 
-创建使用带显式时区的 ISO 时间戳并规范化 UTC，start>数据库当前时间、end>start；复用已有主题/CEFR/2–6/密码校验。不开启新预约的边界为 now>=startedAt。未开始的房间可取消；取消请求锁内先比较数据库时间，到开始时刻不再接受整房取消，后续结束由真实入房后的现有房主管理入口处理。
+Create using ISO timestamp with explicit time zone and normalize UTC, start>database current time, end>start; reuse existing topic/CEFR/2–6/password verification. The boundary for not opening new reservations is now>=startedAt. Rooms that have not been started can be canceled; the database time is first compared in the cancellation request lock, and cancellation of the entire room will no longer be accepted at the start time. Subsequent completion will be processed by the existing room host management entrance after the actual room entry.
 
-统一的 rooms 时间转换入口在 Room 锁内执行：先判断 endsAt，再处理 startedAt；now>=endsAt 永不先开放，start<=now<end 才 SCHEDULED→OPEN。该入口供预约详情/列表、join、预约 mutation 和后台 job 共用。列表不能只筛物理 status 而漏掉 worker 延迟的到点房间；候选按时间获取后通过同一公开转换入口核对并投影。READ 路径触发时间结算属于服务器事实更新，不创建 membership 或 provider room。
+The unified rooms time conversion entry is executed in the Room lock: endsAt is judged first, and then startedAt is processed; now>=endsAt is never opened first, start<=now<end is SCHEDULED→OPEN. This entrance is shared by appointment details/list, join, appointment mutation and background job. The list cannot only filter the physical status and miss the delayed arrival room of the worker; the candidates are checked and projected through the same public conversion entrance after being obtained by time. The READ path trigger time settlement is a server fact update and does not create a membership or provider room.
 
-- 开始前 join 返回 ROOM_NOT_STARTED 和 startsAt；预约记录不允许发证。
-- 到点普通预约成员可以先入房，无需 creator 已到场；首次缺席不创建 60 秒 hostDisconnectedAt/deadline，也不伪造 left 事件。首次到场独立使用 startedAt+5min。
-- 房主真正 join 才产生实际 membership，但是否按时“到场”以验签、去重、当前 identity/session 的可信 CONNECTED 观察为准，预约、HTTP join 或签发 token 本身不等于上线。到场后不再执行首次接任，但 5 分钟空房检查仍然有效；此后 60 秒窗口、leave/transfer/end 继续适用，满 5 分钟后的空房立即结束优先于断线等待。重连窗口仍暂停非 ACTIVE join，包括未入房预约者；预约保障不绕过该窗口或账号限制。
-- 满 5 分钟未收到指定房主上线事实时，选择在线、账号有效、ACTIVE 的非房主成员中 joinOrder 最小者（第二麦）接任；不按预约先后，也不选仅持预约的用户。原房主可能尚无 membership，也可能已通过 HTTP join 但未连上媒体：前者只改 hostUserId 与接任者 role，后者还要原子降为 MEMBER。不能直接调用假定 previous membership 必定存在的 transferLocked，需在 rooms 公共事务中兼容此首次场景并复用移交审计/版本规则。
-- 从 startedAt 起未满 5 分钟允许空房；满 5 分钟的同一次结算先检查当前在线成员，为零直接结束（原因 EMPTY_AFTER_START_WINDOW），不再等待后续成员。若仍有人在线但指定房主从未上线，才执行上述第二麦接任。已发生过实际主动结束或更早到达 endsAt 时仍立即结束，不保证房间必须存活满 5 分钟。
-- 满 5 分钟后，每次可信 presence 离线、leave、remove 或对账使当前在线成员归零，都在同一 Room 事务内启动结束并拒绝后续 join/token；即使此前有人上线也一样结束。最后一人断线不再额外等待 60 秒；仍有在线成员时继续既有房主断线规则。在线以当前有效 identity/session 的可信 CONNECTED 状态为准，BOOKED、仅 HTTP join 或离线 ACTIVE 都不算在线。
-- 复用已有验签、事件去重和 provider 对账更新当前 presence，状态变化与空房判定共用 Room 锁；到点任务和请求时结算执行相同判断。provider 清理失败继续现有 ENDING/outbox 恢复，不新加到场历史查询、待核实状态或延后结束期限。迟到或旧身份事件不能复活已结束房间。
-- 定时任务与迟到事件按持久初始 deadline、指定房主和独立版本重新校验；成员普通 stateVersion 变更不取消 timer。超过截止的 job 不赠送新等待窗口，房间已结束的迟到 joined 不能恢复资格。
+- Join returns ROOM_NOT_STARTED and startsAt before starting; reservation records do not allow certificate issuance.
+- Members with ordinary reservations can enter the room first without the creator being present; the first absence will not create a 60-second hostDisconnectedAt/deadline, nor will the left event be forged. First time on site for independent use startedAt+5min.
+- Actual membership will only be generated when the room host actually joins. However, whether the room host "arrives" on time is subject to signature verification, deduplication, and trusted CONNECTED observation of the current identity/session. Reservation, HTTP join or token issuance itself does not mean going online. The first takeover will no longer be performed after arrival, but the 5-minute vacancy check is still valid; thereafter the 60-second window, leave/transfer/end will continue to apply, and the vacancy after 5 minutes will end immediately, taking precedence over disconnection waiting. The reconnection window still suspends non-ACTIVE joins, including those who have not booked a room; the reservation guarantee does not bypass this window or account restrictions.
+- When the specified room host is not online for 5 minutes, the member with the smallest joinOrder (second mic) who is online, has a valid account, and is ACTIVE will be selected to take over; users who only hold reservations will not be selected in order of reservation. The original room host may not have membership yet, or it may have joined through HTTP but not connected to the media: the former only changes the hostUserId and successor role, while the latter needs to be atomically downgraded to MEMBER. You cannot directly call transferLocked, which assumes that the previous membership must exist. You need to be compatible with this first-time scenario in the rooms public transaction and reuse the transfer audit/version rules.
+- Room vacancies are allowed if less than 5 minutes have passed since startedAt; if the same settlement takes more than 5 minutes, the current online members will be checked first, and if it is zero, it will end directly (reason EMPTY_AFTER_START_WINDOW), without waiting for subsequent members. If someone is still online but the specified room host has never been online, the above second microphone takeover will be executed. The actual active end has occurred or endsAt is reached earlier, but it still ends immediately. There is no guarantee that the room must survive for 5 minutes.
+- After 5 minutes, every time a trusted presence goes offline, leaves, removes, or reconciles the current online members to zero, it will start and end in the same Room transaction and reject subsequent join/token; even if someone came online before, it will end. The last person to disconnect will no longer wait for an additional 60 seconds; the existing room host disconnection rules will continue when there are still online members. Online is based on the trusted CONNECTED status of the current valid identity/session. BOOKED, HTTP join only or offline ACTIVE are not considered online.
+- Reuse existing signature verification, event deduplication, and provider reconciliation to update the current presence. Status changes and vacancy determinations share the Room lock; the same determination is performed for end-to-end tasks and request-time settlement. Provider cleanup failed and the existing ENDING/outbox recovery continued without adding new site history query, pending verification status or extending the end period. Late arrival or old identity event cannot resurrect the ended room.
+- Scheduled tasks and late events are re-verified according to the persistent initial deadline, specified room host and independent version; ordinary stateVersion changes of members do not cancel the timer. Jobs that have exceeded the deadline will not be given a new waiting window, and late joiners whose rooms have ended cannot be reinstated.
 
-### 4. 取消、到期和恢复调度
+### 4. Cancellation, expiration and resumption of schedules
 
-SCHEDULED→CANCELLED 只由房主在开始前取消触发，取消后所有未用预约转 CANCELLED，记录 audit。此时没有已授权 membership 或 provider room，不能为清理创建 LiveKit room。取消重复请求幂等；到开始时刻或之后返回稳定已开始冲突。
+SCHEDULED→CANCELLED is only triggered by room host canceling before starting. After cancellation, all unused reservations will be converted to CANCELLED and audit will be recorded. There is no authorized membership or provider room at this time and a LiveKit room cannot be created for cleanup. Cancel duplicate request idempotent; return to stable at or after start time has started conflict.
 
-开放后的主动结束与到期复用 RoomRealtimeService 的公共结束事务：失效所有 BOOKED（转 EXPIRED），拒绝 join/token；存在 providerRoomSid 或 identity 历史则走既有 ENDING/revoke/delete。对于一直无人实际加入、从未建立 provider 的预约，包括服务停机跨过整个时间段的 SCHEDULED，允许在同一公共结束入口直接完成 ENDED 并审计，不调用 provider 的 create/delete；这一优化不得仅凭“当前无人在线”跳过已签发身份的撤销。
+The public end transaction of RoomRealtimeService that actively ends and expires after opening: invalidates all BOOKED (convert to EXPIRED), rejects join/token; if providerRoomSid or identity history exists, existing ENDING/revoke/delete will be used. For reservations that no one has actually joined and a provider has never been established, including SCHEDULED where the service downtime spans the entire time period, ENDED is allowed to be completed and audited directly at the same public end entrance without calling the provider's create/delete; this optimization must not skip the revocation of the issued identity simply based on "no one is currently online".
 
-向现有 RealtimeQueue 增加 appointment-open 和 appointment-start-window（5 分钟，先空房结束、再判断首次房主接任）job，用 room ID、计划 deadline/独立版本组成合法确定性 ID；计划结束仍由原 expiry 处理。数据库 Room 的 kind/status/time 是持久调度事实，启动及周期扫描补排 job；重复、取消后的旧 job 和服务重启均重新锁房确认。不新建一套 Redis 队列或预约 worker 进程。
+Add appointment-open and appointment-start-window (5 minutes, first room vacancy ends, and then determine the first room host to take over) jobs to the existing RealtimeQueue, using the room ID, plan deadline/independent version to form a legal certainty ID; the end of the plan is still processed by the original expiry. The kind/status/time of the database Room is a persistent scheduling fact. Startup and periodic scanning and rescheduling jobs; old jobs after repetition and cancellation and service restarts are all re-locked for confirmation. Do not create a new Redis queue or reserve a worker process.
 
-将业务时间结算与 provider 对账的启用条件分开：REALTIME_ENABLED=false 时预约创建/显示/时间边界仍可运行；Redis 缺失也不能提前开放、允许过期加入或永久卡住 SCHEDULED。周期数据库结算和请求时结算均可执行；只在实际配置 Redis 时排队加速，媒体侧仍使用原开关。检查当前 runner 的启动条件与独立 publisher/consumer 生命周期，避免为了预约偷偷要求 Cloud key。此处仅拆已有职责，不引入新的调度框架。
+Separate the enabling conditions for business time settlement and provider reconciliation: appointment creation/display/time boundaries can still run when REALTIME_ENABLED=false; if Redis is missing, it cannot be opened in advance, expired joins are allowed, or SCHEDULED is permanently stuck. Both periodic database settlement and request-time settlement can be executed; queuing is only accelerated when Redis is actually configured, and the original switch is still used on the media side. Check the current runner's startup conditions and independent publisher/consumer life cycle to avoid secretly requesting Cloud key for reservation. This only removes existing responsibilities and does not introduce a new scheduling framework.
 
-### 5. HTTP 与唯一 contract
+### 5. HTTP and unique contract
 
-新增预约专用路由，复用 Bearer、全局验证和稳定错误。所有 DTO/decorator 由 NestJS code-first 生成唯一 `openapi/openapi.yaml`，不在 planning 阶段修改 contract。
+Added reservation-specific routing, reused Bearer, global verification and stable errors. All DTO/decorators are generated by NestJS code-first and unique `openapi/openapi.yaml`, and the contract is not modified in the planning stage.
 
-| Endpoint | 提议请求/结果 |
-| --- | --- |
-| POST /v1/appointment-rooms | topic、cefrLevel、capacity、startsAt、endsAt、可选 password；201 预约详情及房主 reservation |
-| GET /v1/appointment-rooms | 有限 cursor/limit；展示 SCHEDULED 和未结束 OPEN 预约，时间结算后投影 |
-| GET /v1/appointment-rooms/{roomId} | 返回预约状态、计数和本人 reservation；包括已取消/结束的已知 ID，不提供其他人的预约名单 |
-| POST /v1/appointment-rooms/{roomId}/reservations | rulesAccepted、可选 password、expectedReservationVersion；201 本人预约结果 |
-| POST /v1/appointment-rooms/{roomId}/reservation-cancellations | expectedReservationVersion；200 本人取消结果，已使用或房主单独取消受限 |
-| POST /v1/appointment-rooms/{roomId}/cancellations | 仅房主且未开始；200 房间取消状态，重复取消幂等 |
+| Endpoint                                                      | Proposal Request/Result                                                                                                                          |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST /v1/appointment-rooms                                    | topic, cefrLevel, capacity, startsAt, endsAt, optional password; 201 reservation details and room host reservation                               |
+| GET /v1/appointment-rooms                                     | Limited cursor/limit; display SCHEDULED and unfinished OPEN reservations, projected after time settlement                                        |
+| GET /v1/appointment-rooms/{roomId}                            | Returns reservation status, count and personal reservation; including canceled/ended known IDs, does not provide other people's reservation list |
+| POST /v1/appointment-rooms/{roomId}/reservations              | rulesAccepted, optional password, expectedReservationVersion; 201 My reservation result                                                          |
+| POST /v1/appointment-rooms/{roomId}/reservation-cancellations | expectedReservationVersion; 200 Cancellation result by myself, used or room host individual cancellation is restricted                           |
+| POST /v1/appointment-rooms/{roomId}/cancellations             | only room host and not started; 200 room cancellation status, repeated cancellation idempotent                                                   |
 
-实际 join 仍是 POST /v1/rooms/{roomId}/memberships，发证、当前成员、leave/remove/invite/end/report 继续使用已交付路由。GET /v1/rooms 默认只列 INSTANT，原 POST /rooms 不新增必填字段；预约已经开放后用统一实际会话接口，但未开始/已取消不被误判成普通可加入房间。
+The actual join is still POST /v1/rooms/{roomId}/memberships, and the issued route, current member, leave/remove/invite/end/report continue to use the delivered route. GET /v1/rooms only lists INSTANT by default, and the original POST /rooms does not add required fields; after the reservation has been opened, the unified actual conversation interface is used, but if it has not been started/cancelled, it will not be misjudged as a normal room that can be added.
 
-稳定错误补 ROOM_NOT_STARTED、ROOM_CANCELLED、APPOINTMENT_ALREADY_STARTED、APPOINTMENT_BOOKING_CLOSED、RESERVATION_CONFLICT、RESERVATION_ALREADY_USED、RESERVATION_OWNER_REQUIRED、ROOM_RESERVED（物理空位被其他预约保护），复用 ROOM_FULL、ROOM_HOST_REQUIRED、ROOM_ACCOUNT_RESTRICTED、ROOM_HOST_RECONNECTING/retryAt、ROOM_ENDED 及资格/密码错误。未开始错误带 startsAt；已取消/已结束不包含密码、provider 细节。房主原 end 的 provider pending/unavailable 语义保持一致。
+Stable error compensation ROOM_NOT_STARTED, ROOM_CANCELLED, APPOINTMENT_ALREADY_STARTED, APPOINTMENT_BOOKING_CLOSED, RESERVATION_CONFLICT, RESERVATION_ALREADY_USED, RESERVATION_OWNER_REQUIRED, ROOM_RESERVED (physical vacancies are protected by other reservations), multiplexing ROOM_FULL, ROOM_HOST_REQUIRED, ROOM_ACCOUNT_RESTRICTED, ROOM_HOST_RECONNECTING/retryAt, ROOM_ENDED and eligibility/password errors. Not started error with startsAt; Canceled/Ended does not contain password, provider details. The provider pending/unavailable semantics of the original end of room host remain consistent.
 
-无新增公开预约人列表、他人预约取消或自动通知 API；客户端在后续 Figma change 中适配，不在这里手改 generated client 或前端。
+There is no new public appointment list, other people's appointment cancellation or automatic notification API; the client will be adapted in subsequent Figma changes, and the generated client or front end will not be manually modified here.
 
 ## Risks / Trade-offs
 
-- [Risk] 预约与 ACTIVE 双计或普通 join 抢位 → Room 行锁内统一集合预算，覆盖保留一席时的预约/取消/join/rejoin/invite 竞争；回归即时容量。
-- [Risk] 无 membership 的首次房主被当作断线 → 不为预订生成 membership 或伪造 presence；显式测试成员先进入、5 分钟接任或空房结束、满 5 分钟后末人退出/断线即结束、仍有成员时房主 60 秒断线四类路径。
-- [Risk] 未到场预约长期持有席位 → 本次用户选择保障预约，不擅自引入迟到释放；无 show-up/处罚自动化，不把这描述为已解决反滥用问题。
-- [Risk] 时间任务停机或 Cloud 配置关闭 → 数据库与请求时结算独立于媒体服务；先结束后开放，Redis 只加速，扫描从持久时间恢复。
-- [Risk] 已签发但离线的身份被误当作空房跳过撤销 → 快速结束仅限无 provider SID 且无 identity 历史，其他情况完整复用 revoke/delete。
-- [Risk] shared RoomStatus 扩展影响旧客户端和授权 → 即时 API 默认隔离 kind，新增预约 DTO 明确状态，逐一回归 detail/join/token/host/report 与末位规则。
-- [Trade-off] 预约会保留房主一个名额，即便从未到场 → 容量包括房主，保证其晚到时不会挤掉预约用户；细节随提案审阅，不宣称已获产品验收。
+- [Risk] Double counting of reservations and ACTIVE or ordinary join to grab seats → Unify the collective budget in the Room row lock, covering reservation/cancellation/join/rejoin/invite competition when reserving a seat; return to real-time capacity.
+- [Risk] The first room host without membership is treated as disconnected → no membership is generated for reservations or presence is faked; explicit test members enter first, take over after 5 minutes or the vacancy ends, the last person exits after 5 minutes/disconnection ends, and the room host disconnects for 60 seconds when there are still members. Four types of paths.
+- [Risk] No-show reservations and long-term seat reservations → This time the user chooses to guarantee reservations and does not introduce late release without authorization; there is no show-up/penalty automation, and this is not described as solving the anti-abuse problem.
+- [Risk] Time task is down or Cloud configuration is down → Database and request-time settlement are independent of media services; end first and then open, Redis only accelerates, scan resumes from persistent time.
+- [Risk] Issued but offline identities are mistaken for vacancies and skip revocation → Quick end is limited to no provider SID and no identity history. In other cases, revoke/delete is completely reused.
+- [Risk] shared RoomStatus extension affects old clients and authorization → Instant API default isolation kind, new reservation DTO clear status, return detail/join/token/host/report and last bit rules one by one.
+- [Trade-off] Reservation will reserve a space for the room host, even if you never arrive → The capacity includes the room host to ensure that it will not crowd out the reserved users if it arrives late; details will be reviewed with the proposal, and product acceptance will not be claimed.
 
 ## Migration Plan
 
-1. apply 前确认前置六段迁移、rooms 公共事务、审计、provider/outbox 和 196 测试验收基线仍有效。只添加新的迁移，历史 Room backfill INSTANT，时间/身份/举报不重写。
-2. 新增 kind、两个状态、取消元数据和 RoomReservation model/enum/索引/外键；为历史房间保持 reservation=0。使用数据库约束限制日期关系与预约版本有效值，不改变历史即时房间的时间含义。
-3. 在空库完整升级链，以及带 OPEN/ENDING/ENDED、LEFT/REMOVED、identity/outbox/Report/RoomEvent 的 fixture 上升级，核对数据、RESTRICT 防线与旧即时创建/查询/join 兼容。
-4. 将新 schema 和理解 kind/席位预算的 join/预约/worker 同批部署；未支持预约的旧 join 不能与新实例混跑接收预约房间请求，否则可能忽略保留位。
-5. 回滚先关闭预约创建、预约 mutation 及预约房间 join/token；停止新开放并取消未开始房间，已开放会话通过现有撤销结束后退出新版。保留新增列、reservation 和审计数据，不做破坏性 down migration；provider 不可用时保持入口关闭并保留补偿 worker，优先 forward fix。
+1. Before applying, confirm that the pre-six migration, rooms public affairs, audit, provider/outbox and 196 test acceptance baselines are still valid. Only add new migrations, history Room backfill INSTANT, time/identity/report are not rewritten.
+2. Added kind, two states, cancellation metadata and RoomReservation model/enum/index/foreign key; keep reservation=0 for historical rooms. Use database constraints to limit the date relationship and the effective value of the reservation version, without changing the time meaning of historical instant rooms.
+3. Upgrade on empty library complete upgrade chain, and fixtures with OPEN/ENDING/ENDED, LEFT/REMOVED, identity/outbox/Report/RoomEvent, check data, RESTRICT defense lines are compatible with old instant create/query/join.
+4. Deploy the new schema and the join/reservation/worker that understands kind/seat budget in the same batch; the old join that does not support reservation cannot be mixed with the new instance to receive reservation room requests, otherwise the reserved space may be ignored.
+5. To roll back, first close reservation creation, reservation mutation, and reservation room join/token; stop new openings and cancel unstarted rooms, and exit the new version after the existing session has been revoked. Keep newly added columns, reservation and audit data, and do not perform destructive down migration; keep the entrance closed when the provider is unavailable and retain compensation workers, giving priority to forward fix.
 
 ## Verification and Acceptance
 
-- 定向规则/数据库：UTC与时区输入、开始/结束前后1毫秒、容量/预约消耗、版本重放、房主保留位、事务失败回滚、无实际加入者无举报资格；5 分钟前后1毫秒、满 5 分钟无人在线、之后末人退出/断线/移除、曾上线后为空、房主到场未取消空房检查及迟到旧房主。
-- HTTP：六个新入口的鉴权、最小信息、取消/开始冲突、预约用户及普通用户实际 join、密码/资格复查、首次房主缺席/晚到、已取消/过期拒绝、既有接口兼容。
-- 运行时：真实 PostgreSQL/Redis，丢任务/重启/跨过整个时间段、REALTIME_ENABLED=false 和 Redis 不可用、无 provider 的快速结束与已有 identity 的完整 cleanup。
-- 完成全部实现后运行一次 pnpm verify:api、pnpm format:check、pnpm deps:check；开发中仅跑当前受影响的最小检查，失败先定向修复。验收记录按场景和准确数量归档证据，不将规划校验当作功能通过。
-- 本 change 提案阶段不运行业务测试或媒体 smoke。实施可先交付本地 fake-provider + 真实数据库/队列证据；两成员在预约时间窗口内的真实音频、实际到期断开与 provider 故障恢复需后续隔离 Cloud/设备证据，明确保留未完成项，不冒充已部署或产品已接受。
+- Orientation rules/database: UTC and time zone input, 1 millisecond before and after start/end, capacity/reservation consumption, version replay, room host reserved bit, rollback on transaction failure, no actual participants are eligible to report; 1 millisecond before and after 5 minutes, no one online for 5 minutes, last person exited/disconnected/removed, empty after being online, room host did not cancel the vacancy check upon arrival, and the old room host is late.
+- HTTP: Authentication of six new entrances, minimum information, cancellation/start conflict, actual join of reserved users and ordinary users, password/qualification review, first room host absence/late arrival, canceled/expired rejection, existing interface compatibility.
+- Runtime: real PostgreSQL/Redis, lost tasks/restarts/spanned the entire time period, REALTIME_ENABLED=false and Redis unavailable, quick end without provider and full cleanup of existing identity.
+- After completing all implementations, run pnpm verify:api, pnpm format:check, and pnpm deps:check; during development, only the minimum currently affected check is run, and if it fails, it will be repaired first. The acceptance record archives evidence according to scenarios and exact quantities, and does not regard planning verification as passing the function.
+- No business tests or media smoke will be run during this change proposal stage. The implementation can first deliver the local fake-provider + real database/queue evidence; the real audio of the two members within the reservation time window, actual expiration disconnection and provider failure recovery require subsequent isolation of Cloud/device evidence, clearly retain unfinished items, and do not pretend to have been deployed or the product has been accepted.

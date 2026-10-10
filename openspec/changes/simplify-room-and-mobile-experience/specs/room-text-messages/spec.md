@@ -1,40 +1,42 @@
 ## Purpose
 
-定义语音房底部普通文字消息发送与滚动展示的行为，使当前成员可以通过真实消息交流，并明确与私人英语表达翻译的输入和结果隔离。
+Define the behavior of sending ordinary text messages and scrolling display at the bottom of the voice room, so that current members can communicate through real messages and clearly isolated from the input and results of private English expression translation.
 
 ## ADDED Requirements
 
-### Requirement: 房内同步控制请求频率
+### Requirement: In-room synchronization control request frequency
 
-房间消息 MUST 增量读取，活跃聊天使用两秒同步，连续空页逐步退避至十秒；本地发送立即显示并恢复快速同步。失败重试 MUST 退避至最多三十秒。后台/退出 MUST 停止消息请求，前台恢复立即从游标补齐。房间详情/成员 MUST 合并在途刷新并只在前台保持十五秒兜底，成员事件可以触发服务端核对。
+Room messages MUST be read incrementally, active chats use two seconds for synchronization, and consecutive empty pages are gradually backed off to ten seconds; local transmission is displayed immediately and fast synchronization resumes. Failed retries MUST back off to a maximum of thirty seconds. Background/exit MUST stop message requests, and the foreground resumes immediately filling in from the cursor. Room details/members MUST be merged and refreshed in progress and only remain in the foreground for fifteen seconds. Member events can trigger server-side verification.
 
-#### Scenario: 空闲与前后台切换
-- **WHEN** 房间连续没有新消息，随后应用进入后台并恢复前台
-- **THEN** 空闲轮询逐步减少，后台没有周期请求，前台立即补齐且不创建重复计时器
+#### Scenario: Idle and front-background switching
 
-#### Scenario: 发送后同步
-- **WHEN** 用户在空闲房间成功发送文字
-- **THEN** 自己的文字立即显示，增量同步恢复快速频率且不重复并发 GET
+- **WHEN** There are no new messages in the room continuously, and then the application enters the background and returns to the foreground.
+- **THEN** Idle polling gradually decreases, there are no periodic requests in the background, and the frontend is completed immediately without creating a repeat timer.
 
-### Requirement: 普通文字发送到当前房间
+#### Scenario: Synchronize after sending
 
-房间底部 MUST 提供普通文字输入及发送操作，有效消息 MUST 显示发送者及内容并让当前房间其他合格成员收到；消息区 MUST 支持滚动。该输入 MUST 不触发 AI 表达辅助。
+- **WHEN** User successfully sent text in free room
+- **THEN** Your own text is displayed immediately, incremental synchronization restores fast frequency and does not repeat concurrent GET
 
-#### Scenario: 两名成员发送消息
+### Requirement: Send normal text to the current room
 
-- **WHEN** 房间内成员发送有效普通文字
-- **THEN** 本人与另一当前成员的房间消息区显示该消息且可滚动查看
+The bottom of the room MUST provide ordinary text input and sending operations. Effective messages MUST display the sender and content and allow other qualified members of the current room to receive them; the message area MUST support scrolling. This input MUST not trigger AI expression assistance.
 
-#### Scenario: 空白或重复发送
+#### Scenario: Two members send a message
 
-- **WHEN** 输入为空白或同一发送操作被重复提交
-- **THEN** 空白不产生消息，同一操作不显示多条重复消息
+- **WHEN** Members in the room send valid ordinary text
+- **THEN** This message is displayed in the room message area between myself and another current member and can be scrolled.
 
-### Requirement: 房间消息具有成员边界
+#### Scenario: Blank or repeated
 
-系统 MUST 校验消息发送和读取的当前成员资格，已退出或移除成员不得继续发送或读取，消息 MUST 不包含其他用户私人翻译结果。
+- **WHEN** The input is blank or the same send operation is submitted repeatedly
+- **THEN** Blank does not generate a message, and the same operation does not display multiple duplicate messages.
 
-#### Scenario: 已退出成员请求消息
+### Requirement: Room message has member boundaries
 
-- **WHEN** 已退出成员绕过页面发送或读取房间消息
-- **THEN** 系统拒绝请求且不泄露房间消息
+The system MUST verify the current membership of the message sent and read. Exited or removed members may not continue to send or read. The message MUST not contain other users' private translation results.
+
+#### Scenario: Exited member request message
+
+- **WHEN** Exited members bypass the page to send or read room messages
+- **THEN** The system rejects the request and does not disclose room information

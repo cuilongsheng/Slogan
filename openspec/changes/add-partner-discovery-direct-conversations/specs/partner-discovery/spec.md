@@ -1,38 +1,47 @@
 ## Purpose
 
-定义移动端房间、空闲伙伴与消息三个入口的职责，以及在伙伴列表中根据当前身份展示邀请或单聊动作，避免重复房间列表和越权邀请。
+Define the responsibilities of the three entrances of mobile rooms, idle partners and messages, and display invitations or private chat actions based on the current identity in the partner list to avoid duplication of room lists and unauthorized invitations.
 
 ## ADDED Requirements
 
-### Requirement: 底部入口各自承载独立内容
-系统 MUST 让“发现”展示可发现的房间、“找伙伴”展示符合资格的空闲用户、“消息”展示本人会话与好友入口、“我的”展示本人资料；“找伙伴”和“消息”不得重复呈现房间列表。
+### Requirement: The bottom entrances each carry independent content
 
-#### Scenario: 用户切换入口
-- **WHEN** 用户从“发现”切换到“找伙伴”或“消息”
-- **THEN** 系统展示对应用户列表或本人消息内容，并明确当前选中入口
+The system MUST allow "Discover" to display discoverable rooms, "Find Partners" to display eligible idle users, "Messages" to display personal conversations and friend portals, and "My" to display personal information; "Find Partners" and "Messages" MUST not display room lists repeatedly.
 
-### Requirement: 找伙伴仅展示可见的空闲用户
-系统 MUST 沿用 `user-availability` 的资格和双向屏蔽边界，以有限分页展示允许公开的最小用户资料及空闲状态；不得暴露精确在线时间、位置、设备、房间活动或被屏蔽用户。
+#### Scenario: User switching entrance
 
-#### Scenario: 浏览空闲伙伴
-- **WHEN** 合格用户打开“找伙伴”
-- **THEN** 系统仅展示当前允许其看到的空闲用户，列表为空时提供明确空态
+- **WHEN** User switches from "Discover" to "Find Partners" or "Message"
+- **THEN** The system displays the corresponding user list or personal message content, and clearly identifies the currently selected entrance.
 
-#### Scenario: 空闲状态变更
-- **WHEN** 列表中的用户进入有效房间或在线资格失效
-- **THEN** 系统不再把该用户作为可立即邀请的空闲对象，后续操作仍由服务端复核
+### Requirement: Find partners only display visible idle users
 
-### Requirement: 伙伴动作按房主身份区分
-系统 MUST 仅向目标房间的当前房主提供“邀请入房”动作，并沿用 `room-invitations` 的目标和房间校验；合格用户可从伙伴资料发起文字单聊或请求 1 对 1 语音。非房主不得借伙伴列表发送房间邀请，房主身份也不得绕过单聊限制。
+The system MUST follow the qualifications and two-way blocking boundaries of `user-availability` and display the minimum user information and idle status allowed to be disclosed in limited paging; the precise online time, location, device, room activity or blocked users MUST not be exposed.
 
-#### Scenario: 当前房主邀请空闲用户
-- **WHEN** 当前房主在自己的开放房间中选择合格空闲用户并点击“邀请入房”
-- **THEN** 系统进入现有房间邀请流程，邀请不预占房间名额
+#### Scenario: Browse idle partners
 
-#### Scenario: 普通用户选择空闲伙伴
-- **WHEN** 非房主选择一名可互动的空闲用户
-- **THEN** 系统提供文字单聊和语音请求入口，不展示房主邀请操作
+- **WHEN** Qualified users open "Find a Partner"
+- **THEN** The system only displays idle users that are currently allowed to be seen, and provides a clear empty status when the list is empty.
 
-#### Scenario: 越权邀请
-- **WHEN** 非当前房主绕过界面提交房间邀请
-- **THEN** 系统拒绝请求且不创建邀请
+#### Scenario: Idle status change
+
+- **WHEN** Users in the list have entered valid rooms or their online qualifications have expired.
+- **THEN** The system no longer regards this user as an idle object that can be invited immediately, and subsequent operations are still reviewed by the server.
+
+### Requirement: Partner actions are distinguished by room host identity
+
+The system MUST only provide the "invite in" action to the current room host of the target room, and follow the target and room verification of `room-invitations`; qualified users can initiate text chats or request 1-to-1 voice from partner profiles. Non-room hosts are not allowed to use the partner list to send room invitations, and room host identities are not allowed to bypass single chat restrictions.
+
+#### Scenario: The current room host invites idle users
+
+- **WHEN** The current room host selects qualified idle users in its own open room and clicks "Invite to Room"
+- **THEN** The system enters the existing room invitation process, and the invitation does not pre-occupy the room quota.
+
+#### Scenario: Ordinary users choose idle partners
+
+- **WHEN** Non-room host selects an idle user who can interact
+- **THEN** The system provides text chat and voice request entrances, and does not display the room host invitation operation.
+
+#### Scenario: Invitation beyond authority
+
+- **WHEN** Non-current room host bypasses the interface to submit a room invitation
+- **THEN** The system rejects the request and does not create an invitation

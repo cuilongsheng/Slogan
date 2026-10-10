@@ -1,25 +1,25 @@
 ## ADDED Requirements
 
-### Requirement: 运营和治理权限保持角色分离
+### Requirement: Operational and governance permissions maintain role separation
 
-系统 MUST 允许当前 `OPERATIONS_ANALYST` 只读取达到隐私阈值的匿名指标、异常趋势和治理健康聚合；允许当前 `PLATFORM_ADMIN` 读取完整运营控制面并执行告警、保留和恢复命令；允许当前 `AUDITOR` 只读异常、治理运行、恢复演练和相关审计。任一角色 MUST 不因能够读取聚合而获得用户/房间明细、案件正文、策略修改、清理执行或恢复执行权限。
+The system MUST allow the current `OPERATIONS_ANALYST` to read only anonymous indicators, anomaly trends, and governance health aggregations that reach the privacy threshold; allow the current `PLATFORM_ADMIN` to read the complete operational control plane and execute alarm, retention, and recovery commands; allow the current `AUDITOR` to read only exceptions, governance runs, recovery drills, and related audits. No role MUST gain user/room details, case body, policy modification, clean execution, or resume execution permissions due to being able to read aggregates.
 
-#### Scenario: 运营分析员访问匿名指标
+#### Scenario: Operations Analyst Access Anonymous Metrics
 
-- **WHEN** 当前运营分析员请求匿名指标或治理健康趋势
-- **THEN** 系统允许读取满足最小样本和字段白名单的聚合
+- **WHEN** Current Operations Analyst request for anonymous metrics or governance health trends
+- **THEN** The system allows reading aggregates that meet the minimum sample and field whitelist
 
-#### Scenario: 运营分析员请求清理执行
+#### Scenario: Operations analyst requested clean execution
 
-- **WHEN** 当前运营分析员直接请求启用保留策略、执行清理或启动恢复演练
-- **THEN** 系统拒绝请求且不创建命令或泄露候选数据
+- **WHEN** The current operations analyst has made a direct request to enable a retention policy, perform a cleanup, or initiate a recovery drill
+- **THEN** The system rejects the request without creating the command or leaking candidate data.
 
-#### Scenario: 审计员只读治理证据
+#### Scenario: Auditor read-only governance evidence
 
-- **WHEN** 当前审计员查询告警状态历史、清理运行或恢复演练结果
-- **THEN** 系统返回最小只读投影并拒绝任何状态修改
+- **WHEN** The current auditor queries the alarm status history, cleanup operation or recovery drill results
+- **THEN** The system returns a minimal read-only projection and rejects any status modifications
 
-#### Scenario: 角色撤销后使用旧 token
+#### Scenario: Use old token after role revocation
 
-- **WHEN** 运营、管理员或审计角色已撤销但旧 access token 仍有效
-- **THEN** 下一次运营或治理请求读取当前持久角色并立即拒绝已撤销权限
+- **WHEN** Operations, administrator, or audit role revoked but old access token still valid
+- **THEN** The next operational or governance request reads the current persistent role and immediately denies the revoked permission

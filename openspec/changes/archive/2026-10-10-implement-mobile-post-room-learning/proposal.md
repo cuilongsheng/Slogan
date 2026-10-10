@@ -1,24 +1,24 @@
 ## Why
 
-后端已提供参与者可读的会后关键词汇总和个人词汇 API，手机端却没有对应入口。用户无法查看生成状态，也无法自主保存和管理学习条目。
+The backend has provided post-meeting keyword summary and personal vocabulary API readable by participants, but there is no corresponding entrance on the mobile phone. Users cannot view the generation status, nor can they save and manage learning items independently.
 
 ## What Changes
 
-- 房间历史中为已结束且实际参与的记录提供会后关键词入口，显示 `DISABLED/PENDING/READY/UNAVAILABLE` 状态。
-- `READY` 汇总逐条手动导入个人单词本，重复请求使用同一幂等标识。
-- 个人入口增加词汇列表，支持服务端分页、类型/收藏筛选、编辑文本和备注、收藏及删除，版本冲突不静默覆盖。
-- 无独立高保真帧，按用户确认沿用 V2 样式。
+- The room history provides post-meeting keyword entry for ended and actually participated records, showing the `DISABLED/PENDING/READY/UNAVAILABLE` status.
+- `READY` is summarized and manually imported into the personal vocabulary book one by one, and the same idempotent identifier is used for repeated requests.
+- The personal portal adds a vocabulary list, supports server-side paging, type/favorite filtering, editing text and notes, collection and deletion, and version conflicts are not silently covered.
+- No independent high-fidelity frame, follow V2 style according to user confirmation.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mobile-post-room-learning`: 手机端会后关键词及个人词汇管理。
+- `mobile-post-room-learning`: Post-meeting keyword and personal vocabulary management on the mobile phone.
 
 ### Modified Capabilities
 
-无。只消费当前 OpenAPI；不修改服务端生成和权限规则。
+None. Only consumes the current OpenAPI; does not modify server generation and permission rules.
 
 ## Impact
 
-`apps/mobile` 个人入口、历史入口、学习 feature、路由、文案、测试及本地视觉证据。
+`apps/mobile` personal entrance, historical entrance, learning feature, routing, copywriting, testing and local visual evidence.

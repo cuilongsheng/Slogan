@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="380" viewBox="0 0 1200 380" role="img" aria-labelledby="title desc">
+  <title id="title">Slogan preview and production delivery</title>
+  <desc id="desc">Branch pushes and pull requests produce previews and APK artifacts. Merging to main deploys production applications. The public APK is published only after the deployed API and both frontends match the release commit. Database migrations are a separate operation.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#7861c8"/></marker>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; }
+      .title { font-size: 27px; font-weight: 700; fill: #28213f; }
+      .name { font-size: 20px; font-weight: 700; fill: #28213f; }
+      .body { font-size: 16px; fill: #635c78; }
+      .number { font-size: 16px; font-weight: 700; fill: #6542ed; }
+      .line { stroke: #7861c8; stroke-width: 2.5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1200" height="380" rx="24" fill="#faf8ff"/>
+  <text x="30" y="44" class="title">Slogan / From pull request to installable APK</text>
+  <text x="30" y="76" class="body">Git integrations deploy applications. A release gate controls the public Android download.</text>
+  <rect x="30" y="116" width="200" height="162" rx="18" fill="#eee8ff" stroke="#ded3f7"/>
+  <text x="50" y="147" class="number">01 / CHANGE</text>
+  <text x="50" y="180" class="name">Push + PR</text>
+  <text x="50" y="213" class="body">Code review</text>
+  <text x="50" y="239" class="body">Automated checks</text>
+  <line x1="234" y1="197" x2="258" y2="197" class="line"/>
+  <rect x="265" y="116" width="200" height="162" rx="18" fill="#eee8ff" stroke="#ded3f7"/>
+  <text x="285" y="147" class="number">02 / PREVIEW</text>
+  <text x="285" y="180" class="name">Review builds</text>
+  <text x="285" y="213" class="body">API + Pages previews</text>
+  <text x="285" y="239" class="body">APK workflow artifact</text>
+  <line x1="469" y1="197" x2="493" y2="197" class="line"/>
+  <rect x="500" y="116" width="200" height="162" rx="18" fill="#eee8ff" stroke="#ded3f7"/>
+  <text x="520" y="147" class="number">03 / PRODUCTION</text>
+  <text x="520" y="180" class="name">Merge to main</text>
+  <text x="520" y="213" class="body">Vercel API</text>
+  <text x="520" y="239" class="body">Two Pages projects</text>
+  <line x1="704" y1="197" x2="728" y2="197" class="line"/>
+  <rect x="735" y="116" width="200" height="162" rx="18" fill="#e1f8f3" stroke="#c3e9df"/>
+  <text x="755" y="147" class="number">04 / RELEASE GATE</text>
+  <text x="755" y="180" class="name">Verify versions</text>
+  <text x="755" y="213" class="body">All three deployed SHAs</text>
+  <text x="755" y="239" class="body">APK metadata + hash</text>
+  <line x1="939" y1="197" x2="963" y2="197" class="line"/>
+  <rect x="970" y="116" width="200" height="162" rx="18" fill="#e1f8f3" stroke="#c3e9df"/>
+  <text x="990" y="147" class="number">05 / ANDROID</text>
+  <text x="990" y="180" class="name">Publish APK</text>
+  <text x="990" y="213" class="body">GitHub Releases</text>
+  <text x="990" y="239" class="body">Stable download URL</text>
+  <text x="30" y="323" class="body">PR APKs use the production API. Preview builds do not replace the public APK.</text>
+  <text x="30" y="350" class="body">Database migrations, provider configuration, and device acceptance remain separate operations.</text>
+</svg>

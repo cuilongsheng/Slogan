@@ -1,73 +1,90 @@
 ## Purpose
 
-定义临时账号限制的用户可见信息、一次申诉窗口和安全员处理结果，使用户能在固定时间内陈述理由，同时保持处罚和审计事实可追溯。
+Define user-visible information for temporary account restrictions, an appeal window and safety officer processing results, allowing users to state reasons within a fixed time while keeping penalties and audit facts traceable.
 
 ## ADDED Requirements
 
-### Requirement: 用户可以查看本人的最小限制信息
-系统 MUST 允许已认证用户查看本人的临时限制历史和当前有效限制。每项结果 MUST 只包含限制标识、等级、用户可见理由、开始时间、结束时间、状态、申诉截止时间和申诉状态，不得暴露举报人、后台处理人或内部证据。
+### Requirement: Users can view their own minimum restricted information
 
-#### Scenario: 受限用户查看当前限制
-- **WHEN** 已认证用户请求本人的限制信息
-- **THEN** 系统返回当前有效限制及稳定分页的历史摘要，并标明每项是否仍可申诉
+The system MUST allow authenticated users to view their temporary restriction history and current restrictions in effect. Each result MUST only contain restriction identification, level, user-visible reason, start time, end time, status, appeal deadline, and appeal status, and MUST not expose the whistleblower, backend processor, or internal evidence.
 
-#### Scenario: 用户查看他人限制
-- **WHEN** 用户尝试通过修改路径或参数查看其他用户的限制
-- **THEN** 系统拒绝请求且不返回目标用户是否受限
+#### Scenario: Restricted users view current restrictions
 
-### Requirement: 每条临时限制只接受一次限时申诉
-系统 MUST 允许被限制用户从限制开始时间起 30 分钟内为该临时限制提交一次申诉。申诉 MUST 包含调用者生成的 UUID 请求标识和非空规范化理由；永久禁用、已解除限制、已到期限制或超过截止时间的限制不得接受新申诉。
+- **WHEN** An authenticated user requests his or her restricted information
+- **THEN** The system returns a historical summary of the current effective restrictions and stable paging, and indicates whether each item can still be appealed
 
-#### Scenario: 在窗口内提交首次申诉
-- **WHEN** 被限制用户在 `appealDeadlineAt` 当时或之前提交该限制的首个有效申诉
-- **THEN** 系统保存一条 `PENDING` 申诉并返回稳定申诉标识和提交时间
+#### Scenario: User restrictions on viewing others
 
-#### Scenario: 超过窗口提交申诉
-- **WHEN** 被限制用户在 `appealDeadlineAt` 之后提交首次申诉
-- **THEN** 系统返回稳定的窗口已关闭结果且不创建申诉
+- **WHEN** The user attempts to view other users' restrictions by modifying the path or parameters.
+- **THEN** The system rejects the request and does not return whether the target user is restricted.
 
-#### Scenario: 对同一限制再次申诉
-- **WHEN** 该限制已经存在申诉且用户使用新的请求标识再次提交
-- **THEN** 系统返回稳定冲突且保留原申诉
+### Requirement: Only one time-limited appeal can be accepted for each temporary restriction.
 
-#### Scenario: 对永久禁用提交申诉
-- **WHEN** 用户尝试通过临时限制申诉接口对永久禁用提出申诉
-- **THEN** 系统拒绝请求且不创建申诉
+The system MUST allow the restricted user to submit an appeal for this temporary restriction within 30 minutes from the restriction start time. Appeals MUST contain a caller-generated UUID request identifier and a non-null canonical reason; no new appeals may be accepted for permanently disabled, lifted restrictions, expired restrictions, or restrictions that have exceeded their deadline.
 
-### Requirement: 申诉提交具有稳定幂等和并发结果
-系统 MUST 对相同用户、相同请求标识和相同规范化内容返回原申诉结果；复用请求标识改变限制或理由 MUST 返回稳定冲突。并发的首次申诉 MUST 最多创建一条申诉。
+#### Scenario: Submit your first appeal within the window
 
-#### Scenario: 重试相同申诉
-- **WHEN** 用户使用相同请求标识和相同规范化理由重试已成功提交的申诉
-- **THEN** 系统返回原申诉且不改变提交时间或创建重复记录
+- **WHEN** The restricted user submitted the first valid appeal of the restriction on or before `appealDeadlineAt`
+- **THEN** The system saves a `PENDING` appeal and returns the stable appeal identification and submission time
 
-#### Scenario: 并发提交首次申诉
-- **WHEN** 用户并发为同一限制提交多个不同请求标识的申诉
-- **THEN** 系统只接受一条，其余请求返回稳定冲突
+#### Scenario: Submit appeal beyond the window
 
-### Requirement: 安全员人工处理待处理申诉
-系统 MUST 只允许当前安全员查看与处理 `PENDING` 申诉。安全员 MUST 以有效理由选择 `UPHELD` 或 `LIFTED`；维持时保留原限制结束时间，解除时立即创建提前解除事实。处理结果 MUST 记录处理人和服务端时间，且系统不得承诺尚未确认的响应时限。
+- **WHEN** The restricted user submitted his first appeal after `appealDeadlineAt`
+- **THEN** The system returns a stable window closed result and does not create an appeal
 
-#### Scenario: 安全员维持限制
-- **WHEN** 当前安全员以有效理由将待处理申诉决定为维持
-- **THEN** 系统将申诉置为 `UPHELD`，限制结束时间保持不变
+#### Scenario: Appeal again for the same restriction
 
-#### Scenario: 安全员通过申诉并解除限制
-- **WHEN** 当前安全员以有效理由将待处理申诉决定为解除
-- **THEN** 系统原子将申诉置为 `LIFTED` 并保存提前解除事实，后续访问只受其他有效限制约束
+- **WHEN** This limit has been appealed and the user resubmits it using a new request ID.
+- **THEN** The system returns a stable conflict and retains the original appeal
 
-#### Scenario: 非安全员处理申诉
-- **WHEN** 普通用户、审计员、运营分析员或只有平台管理员角色的用户直接请求处理申诉
-- **THEN** 系统返回稳定权限拒绝且申诉与限制保持不变
+#### Scenario: Submit appeal against permanent ban
 
-#### Scenario: 并发处理同一申诉
-- **WHEN** 多名安全员并发提交不同申诉决定
-- **THEN** 系统只提交一个终态结果，其余请求返回与既有决定一致的稳定冲突
+- **WHEN** The user attempts to appeal the permanent ban through the temporary restriction appeal interface
+- **THEN** The system rejects the request and does not create an appeal
 
-### Requirement: 申诉处理命令保持幂等
-系统 MUST 要求申诉处理命令携带调用者生成的 UUID 请求标识。相同安全员以相同标识重试相同决定 MUST 返回原结果；复用请求标识改变申诉、结果或理由 MUST 返回稳定冲突。
+### Requirement: Appeal submission has stable idempotent and concurrent results
 
-#### Scenario: 重试已通过的申诉
-- **WHEN** 安全员以相同请求标识和相同规范化内容重试成功的解除决定
-- **THEN** 系统返回原申诉和解除结果，不创建第二条解除事实或改变原时间
+The system MUST return the original appeal result for the same user, the same request ID, and the same normalized content; the reuse request ID changes restrictions or reasons and MUST return a stable conflict. Concurrent first appeals MUST create at most one appeal.
 
+#### Scenario: Retry the same appeal
+
+- **WHEN** User retries a successfully submitted appeal using the same request ID and the same canonical reason
+- **THEN** The system returns the original appeal without changing the submission time or creating duplicate records.
+
+#### Scenario: First appeal submitted concurrently
+
+- **WHEN** User concurrently submits multiple appeals with different request IDs for the same restriction
+- **THEN** The system only accepts one request, and the remaining requests return stable conflicts.
+
+### Requirement: safety officer manually handles pending appeals
+
+The system MUST only allow the current safety officer to view and handle the `PENDING` appeal. safety officer MUST select `UPHELD` or `LIFTED` with valid reasons; retain the original restriction end time when maintaining, and immediately create an early release fact when lifting. The processing result MUST record the processor and server time, and the system MUST not promise an unconfirmed response time limit.
+
+#### Scenario: safety officer maintains restrictions
+
+- **WHEN** The current safety officer has decided to maintain the pending appeal with valid reasons.
+- **THEN** The system sets the appeal to `UPHELD` and the limit end time remains unchanged
+
+#### Scenario: safety officer passed the appeal and lifted the restriction
+
+- **WHEN** The current safety officer has decided to cancel the pending appeal with valid reasons.
+- **THEN** The system atom sets the appeal to `LIFTED` and saves the fact of early release. Subsequent access is only subject to other effective restrictions.
+
+#### Scenario: Non-safety officer handles appeals
+
+- **WHEN** Ordinary users, auditors, operations analysts, or users with only platform administrator roles directly request to handle appeals
+- **THEN** The system returns a stable permission denial and appeals and restrictions remain unchanged.
+
+#### Scenario: Concurrent processing of the same appeal
+
+- **WHEN** Multiple safety officers submitted different appeal decisions concurrently
+- **THEN** The system only submits one final result, and the remaining requests return stable conflicts consistent with the existing decision.
+
+### Requirement: Appeal handling command remains idempotent
+
+The system MUST require the appeal handling command to carry the UUID request identifier generated by the caller. Same safety officer Retrying the same decision with the same ID MUST return the original result; reuse request ID changes the appeal, result, or reason MUST return a stable conflict.
+
+#### Scenario: Retry a passed appeal
+
+- **WHEN** safety officer retries successful release decision with same request ID and same normalized content
+- **THEN** The system returns the original appeal and cancellation results, without creating a second cancellation fact or changing the original time.

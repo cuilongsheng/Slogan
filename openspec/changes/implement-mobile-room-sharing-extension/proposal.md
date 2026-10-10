@@ -1,22 +1,22 @@
 ## Why
 
-即时房间详情和预约详情已有稳定分享 URL，但没有可执行的分享动作；语音房也没有房主延长时间入口。现有分享解析和延长 API 已可用，用户仍无法从手机端完成这两个房间操作。
+The instant room details and reservation details have stable sharing URLs, but there is no executable sharing action; there is no room host extension time entry for the voice room. The existing sharing parsing and extension APIs are available, but users still cannot complete these two room operations from the mobile phone.
 
 ## What Changes
 
-- 在即时/预约详情及语音房提供真实分享动作，Web 复制链接，原生调用系统分享面板；失败保留可选中的 URL。
-- 在语音房为当前房主提供延长 15/30/60 分钟的确认流程，提交稳定请求标识，成功后重取服务端房间结束时间并展示实时同步状态。
-- 不在预约未开放、已结束或非房主状态呈现延长命令；服务端仍最终验证权限和次数上限。
+- Provides real sharing actions in instant/reservation details and voice room, Web copy link, native call system sharing panel; retains the selected URL if failed.
+- Provide a 15/30/60 minute extension confirmation process for the current room host in the voice room, submit the stable request identifier, and after success, retrieve the server room end time and display the real-time synchronization status.
+- The extension command is not presented when the reservation is not open, ended, or not a room host; the server still ultimately verifies permissions and the upper limit of times.
 
 ## Capabilities
 
 ### New Capabilities
 
-- mobile-room-sharing-extension: 房间分享操作与语音房延长时间入口。
+- mobile-room-sharing-extension: Room sharing operation and voice room extension time entry.
 
 ### Modified Capabilities
 
-无；规则沿用 room-discovery-sharing 与 room-time-extension。
+None; the rules follow room-discovery-sharing and room-time-extension.
 
 ## Impacted delivery stages
 
@@ -25,4 +25,4 @@
 
 ## Impact
 
-`apps/mobile` 房间详情、预约详情、语音房 API 和文案。无后端合同或数据库改动。现有 Figma 语音房和详情页面未单独覆盖延长/分享操作态，沿用已确认页面视觉语言并记录差异。
+`apps/mobile` room details, reservation details, voice room API and copywriting. No backend contract or database changes. The existing Figma voice room and details page do not cover the extension/sharing operation state separately. The visual language of the confirmed page is used and the differences are recorded.

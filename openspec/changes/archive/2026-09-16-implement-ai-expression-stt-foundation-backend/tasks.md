@@ -1,45 +1,45 @@
-## 1. 数据模型与领域边界
+## 1. Data model and domain boundaries
 
-- [x] 1.1 在 Prisma multi-file schema 中新增表达请求、语音同意事件、用量账本及必要枚举，包含 actor-scoped 幂等、状态转换、lease、输出过期和用量唯一约束，并运行 `pnpm --filter @slogan/api db:generate` 验证 schema。
-- [x] 1.2 新增只向前迁移和索引，使用隔离 schema 集成测试验证空库及含既有用户、房间、预约、安全、历史笔记和社交数据的完整历史迁移链升级且旧数据不变。
-- [x] 1.3 实现文字长度、音频边界、provider 输出、请求状态转换、输入摘要和结果过期的纯 domain policy，并用单元测试覆盖边界值、非法转换和无效结构。
-- [x] 1.4 在 rooms 公开 application 边界新增只读 assistance context，统一返回服务端房间状态、有效 membership、topic、CEFR 和账号/年龄/安全资格，并用集成测试验证非成员、离开、移除、终态房间和新限制不能绕过。
-- [x] 1.5 实现目的/版本化语音同意的追加事件与当前投影规则，并用单元测试验证接受、撤回、版本失效、他人伪造和命令幂等。
+- [x] 1.1 Added expression requests, voice consent events, usage ledgers and necessary enumerations to the Prisma multi-file schema, including actor-scoped idempotent, state transition, lease, output expiration and usage unique constraints, and ran `pnpm --filter @slogan/api db:generate` to verify the schema.
+- [x] 1.2 adds forward-only migration and indexing, using isolated schema integration testing to verify that the empty database and the complete historical migration chain containing existing users, rooms, appointments, security, historical notes and social data are upgraded and the old data remains unchanged.
+- [x] 1.3 Implement pure domain policies for text length, audio boundaries, provider output, request status transitions, input summaries and result expiration, and use unit tests to cover boundary values, illegal conversions and invalid structures.
+- [x] 1.4 Add a read-only assistance context in the public application boundary of rooms, uniformly return server room status, valid membership, topic, CEFR and account/age/security qualifications, and use integration tests to verify that non-member, leave, remove, final room and new restrictions cannot be bypassed.
+- [x] 1.5 Implement append events and current projection rules for purpose/versioned voice consent, and verify acceptance, withdrawal, version invalidation, others' forgery and command idempotent with unit tests.
 
-## 2. Provider、配置与隐私基础
+## 2. Provider, configuration and privacy basics
 
-- [x] 2.1 新增 assistance、AI、STT、额度、超时、retention、region、no-training/deletion mode 和 notice version 的 Zod 环境配置；使用配置测试验证默认关闭、production HTTPS、启用依赖和超过七天政策全部 fail fast 且不泄露配置值。
-- [x] 2.2 定义 `ExpressionGenerator` port 并实现 OpenAI-compatible HTTP adapter、AbortSignal 超时、provider 幂等键、严格结构解析和稳定错误归一化，使用 fake HTTP contract tests 覆盖成功、超时、HTTP 错误、畸形 JSON、越界输出和密钥不出错。
-- [x] 2.3 定义 `SpeechTranscriber` port 并实现 OpenAI-compatible multipart adapter、源语言、实际时长/用量返回、超时及稳定错误归一化，使用 fake HTTP contract tests 验证只发送允许字段且不发送身份、房间或 LiveKit 敏感信息。
-- [x] 2.4 新增 disabled/fake provider wiring，使本地自动化无需真实凭据且启用状态明确；用 bootstrap 测试验证禁用入口稳定失败、只启用文字不要求 STT、启用音频时必须同时具备 STT 与 Redis。
-- [x] 2.5 扩展 HTTP 与结构化日志脱敏，覆盖 multipart metadata、原始文字、输入摘要、结构化表达、provider body/URL/key 和 transcript；用日志单元测试证明上述内容不进入输出而状态、阶段、耗时和归一化错误仍可诊断。
+- [x] 2.1 Added Zod environment configurations for assistance, AI, STT, quota, timeout, retention, region, no-training/deletion mode and notice version; use the configuration test to verify that the default shutdown, production HTTPS, enabled dependencies and more than seven days policy all fail fast without leaking configuration values.
+- [x] 2.2 Define the `ExpressionGenerator` port and implement the OpenAI-compatible HTTP adapter, AbortSignal timeouts, provider idempotent keys, strict structure parsing and stable error normalization, using fake HTTP contract tests to cover success, timeouts, HTTP errors, malformed JSON, out-of-bounds output and keys without errors.
+- [x] 2.3 Define `SpeechTranscriber` port and implement OpenAI-compatible multipart adapter, source language, actual duration/usage return, timeout and stable error normalization, use fake HTTP contract tests to verify that only allowed fields are sent and no identity, room or LiveKit sensitive information is sent.
+- [x] 2.4 adds disabled/fake provider wiring, so that local automation does not require real credentials and the enablement status is clear; use bootstrap testing to verify that the disabled entry fails stably, only text is enabled without requiring STT, and both STT and Redis are required when enabling audio.
+- [x] 2.5 extends HTTP and structured log desensitization, covering multipart metadata, original text, input summary, structured expression, provider body/URL/key and transcript; use log unit testing to prove that the above content does not enter the output but status, stage, time-consuming and normalization errors can still be diagnosed.
 
-## 3. 同意、幂等、额度与处理状态
+## 3. Agree, idempotent, limit and processing status
 
-- [x] 3.1 实现 Prisma assistance repository 和 `RESERVED -> STT_RUNNING -> AI_RUNNING -> SUCCEEDED | FAILED | UNCERTAIN` 状态机，在 PostgreSQL 数据库时间、advisory lock 和 lease token 下提交阶段结果；用集成测试验证迟到响应不能覆盖新 lease。
-- [x] 3.2 实现 `(userId, clientRequestId)` 输入摘要与重放规则，使用集成测试验证成功结果保留期内重放、改变输入/房间/模式冲突、失败重放、处理中返回和正文过期后不重新调用 provider。
-- [x] 3.3 实现同意查询与 ACCEPT/REVOKE application service，使用 PostgreSQL 集成测试验证当前投影、notice 升级、撤回只影响未来请求以及相同/不同幂等命令行为。
-- [x] 3.4 实现 `AiUsageLedger` 的用户 UTC 日额度、音频秒数、平台预算预留和实际用量结算，使用并发集成测试验证最后一个额度只允许一次预留、前置拒绝不扣量、重放不重复扣量且未知 provider 成本受预留上限保护。
-- [x] 3.5 实现 Redis 原子分钟频率与并发限制，使用真实 Redis runtime 测试验证跨实例计数、`retryAfterSeconds`、租约过期和 Redis 故障时 AI/STT fail closed 而房间流程继续可用。
+- [x] 3.1 Implement Prisma assistance repository and `RESERVED -> STT_RUNNING -> AI_RUNNING -> SUCCEEDED | FAILED | UNCERTAIN` state machine, commit stage results under PostgreSQL database time, advisory lock and lease token; use integration tests to verify that late responses cannot cover new leases.
+- [x] 3.2 Implement `(userId, clientRequestId)` input summary and replay rules, use integration tests to verify successful result replay within the retention period, change input/room/mode conflicts, failed replay, return during processing, and do not re-call the provider after the text expires.
+- [x] 3.3 Implement consent query and ACCEPT/REVOKE application service, use PostgreSQL integration test to verify that current projection, notice upgrade, withdrawal only affect future requests and same/different idempotent command behavior.
+- [x] 3.4 Implement `AiUsageLedger`’s user UTC daily quota, audio seconds, platform budget reservation and actual usage settlement. Use concurrent integration testing to verify that the last quota is only allowed to be reserved once, no deduction is allowed for pre-emptive rejection, no repeated deduction is allowed for replay, and unknown provider costs are protected by the reservation upper limit.
+- [x] 3.5 Implementing Redis atomic minute frequency and concurrency limits, using real Redis runtime tests to verify cross-instance count, `retryAfterSeconds`, lease expiration and AI/STT fail closed when Redis fails while room processes continue to be available.
 
-## 4. 文字与短语音表达流程
+## 4. Text and short voice expression process
 
-- [x] 4.1 实现文字表达 application 流程：资格上下文、请求预留、额度、provider 调用、严格输出校验、成功/失败提交和私人结果重放；使用 fake provider 集成测试验证 CEFR/topic 来自服务端且原始文字不进入数据库。
-- [x] 4.2 实现短语音 application 流程：有效同意、本次 notice 确认、音频摘要、临时 STT、30 秒检查、临时 transcript 传递和表达生成；使用 fake provider 集成测试验证 transcript 不持久化、不返回且 STT 失败不调用 AI。
-- [x] 4.3 实现 5 MiB 单文件内存上传、MIME allowlist、一个文件和受控字段校验，使用 HTTP e2e 测试验证空文件、多文件、未知 MIME、越界大小、伪造 topic/CEFR/userId 和缺少 notice 在 provider 前被拒绝。
-- [x] 4.4 验证文字/音频超时、provider 不可用、无效结果、平台预算关闭和 Redis 故障都只返回稳定表达辅助错误；使用集成测试证明房间状态、membership、房主、麦位和现有 realtime credentials 不发生变化。
-- [x] 4.5 验证表达结果只属于请求用户且不进入其他成员、房间事件、私人笔记或公开内容；使用集成与 e2e 负面测试检查他人按结果/请求标识读取、日志扫描和数据库内容边界。
+- [x] 4.1 Implement text expression application process: qualification context, request reservation, quota, provider call, strict output verification, success/failure submission and private result replay; use fake provider integration test to verify that CEFR/topic comes from the server and the original text does not enter the database.
+- [x] 4.2 Implement short voice application process: valid consent, confirmation of this notice, audio summary, temporary STT, 30-second check, temporary transcript delivery and expression generation; use fake provider integration test to verify that transcript is not persisted, does not return, and does not call AI if STT fails.
+- [x] 4.3 implements 5 MiB single file in-memory upload, MIME allowlist, one file and controlled field validation, using HTTP e2e tests to verify empty files, multiple files, unknown MIME, out-of-bounds size, fake topic/CEFR/userId and missing notice rejects before provider.
+- [x] 4.4 Verification text/audio timeouts, provider unavailability, invalid results, platform budget shutdown, and Redis failures all return only stable expression auxiliary errors; use integration tests to prove that room status, membership, room host, location, and existing realtime credentials do not change.
+- [x] 4.5 Verify that expression results belong only to the requesting user and do not enter other members, room events, private notes, or public content; use integration with e2e negative testing to check for others reading by result/request ID, log scans, and database content boundaries.
 
-## 5. 清理、HTTP 合同与迁移证据
+## 5. Cleanup, HTTP contract and migration evidence
 
-- [x] 5.1 实现独立 assistance maintenance queue、`EXPIRE_AI_OUTPUT` 无内容任务和数据库条件清理；用真实 Redis/PostgreSQL runtime 测试验证到期读取立即失效、正文置空、重复任务幂等及丢失任务在重启扫描后恢复。
-- [x] 5.2 新增 consent、文字表达和 multipart 音频 controller/DTO/错误映射，使用 e2e 测试完成“接受同意 → 音频辅助 → 撤回 → 音频拒绝但文字仍可用”及当前成员文字辅助流程。
-- [x] 5.3 使用 e2e 负面测试验证认证、本人边界、房间资格、当前安全限制、同意、429/Retry-After、503 降级、结果隐私和响应不含原始输入、transcript、provider、token 或其他成员资料。
-- [x] 5.4 通过 NestJS code-first 重新生成 `openapi/openapi.yaml`，运行 `pnpm --filter @slogan/api openapi:check` 验证 JSON/multipart、文件边界、同意、统一结果和稳定错误合同无 drift。
+- [x] 5.1 implements independent assistance maintenance queue, `EXPIRE_AI_OUTPUT` content-less tasks and database condition cleaning; uses real Redis/PostgreSQL runtime test to verify that expired reads immediately expire, text is blanked, duplicate tasks idempotent and lost tasks are recovered after restarting the scan.
+- [x] 5.2 adds consent, text expression and multipart audio controller/DTO/error mapping, and uses e2e testing to complete the "Accept consent → Audio assistance → Withdraw → Audio rejection but text is still available" and the current member text assistance process.
+- [x] 5.3 Use e2e negative testing to verify authentication, identity boundaries, room eligibility, current security restrictions, consent, 429/Retry-After, 503 downgrade, result privacy, and responses that do not contain original input, transcript, provider, token, or other member data.
+- [x] 5.4 Regenerate `openapi/openapi.yaml` via NestJS code-first, run `pnpm --filter @slogan/api openapi:check` to verify JSON/multipart, file boundaries, consent, unified results and stable error contract without drift.
 
-## 6. 验收与外部边界
+## 6. Acceptance and external boundaries
 
-- [x] 6.1 执行 assistance 相关 domain、provider contract、PostgreSQL 集成、HTTP e2e、真实 Redis 频率/清理和历史迁移测试，记录套件数量及幂等、额度并发、隐私和清理结果。
-- [x] 6.2 使用合成文字和不含个人信息的短音频执行已配置真实 AI/STT provider smoke，记录模型/区域类别、延迟、输出结构、时长和失败降级；缺少凭据或供应商数据政策证明时明确记为 BLOCKED，不得用 fake 测试代替 PASS。**结果：BLOCKED，仓库与进程均无真实 Provider 配置，详见验收文档。**
-- [x] 6.3 运行一次 `pnpm verify:api`、`pnpm deps:check`、OpenSpec strict validation、格式检查和 `git diff --check`，修复本 change 引入的失败并保存最终数量。
-- [x] 6.4 新增 `docs/acceptance/implement-ai-expression-stt-foundation-backend.md`，记录合同、迁移、自动化、真实 Redis/provider runtime、同意、额度、数据最小化、清理、未部署状态和所有外部 BLOCKED 证据。
+- [x] 6.1 Execute assistance-related domain, provider contract, PostgreSQL integration, HTTP e2e, real Redis frequency/cleaning and historical migration tests, record the number of packages and idempotent, quota concurrency, privacy and cleaning results.
+- [x] 6.2 Execute configured real AI/STT provider smoke using synthesized text and short audio containing no personal information, logging model/region category, latency, output structure, duration and failed degradation; missing credentials or proof of vendor data policy are explicitly marked as BLOCKED, fake testing may not be used in place of PASS. **Result: BLOCKED, neither the repository nor the process has a real Provider configuration, see the acceptance document for details.**
+- [x] 6.3 Run `pnpm verify:api`, `pnpm deps:check`, OpenSpec strict validation, format check and `git diff --check` once to fix the failures introduced by this change and save the final number.
+- [x] Added `docs/acceptance/implement-ai-expression-stt-foundation-backend.md` in 6.4, which records contracts, migrations, automation, real Redis/provider runtime, consents, credits, data minimization, cleanup, undeployed status and all external BLOCKED evidence.

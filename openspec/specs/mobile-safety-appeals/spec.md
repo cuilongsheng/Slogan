@@ -2,30 +2,34 @@
 
 ## Purpose
 
-让登录用户在手机端查看自己的临时限制和申诉结果，并能在服务端允许的短窗口内提交一次理由，避免受限时失去必要的自助处理入口。
+Allow logged-in users to check their temporary restrictions and appeal results on the mobile phone, and submit the reasons once within the short window allowed by the server to avoid losing the necessary self-service processing entrance when restricted.
 
 ## Requirements
 
-### Requirement: 手机端展示本人限制历史
+### Requirement: Display personal restriction history on mobile phone
 
-手机端 MUST 从已认证的本人限制接口读取当前与历史限制，显示用户可见理由、等级、开始和结束时间、状态、申诉截止时间及申诉状态。列表 MUST 支持服务端游标分页、刷新、加载/空态/错误态，不得展示举报人、后台处理人或内部证据。
+The mobile terminal MUST read the current and historical restrictions from the authenticated personal restriction interface, and display the user-visible reason, level, start and end time, status, appeal deadline and appeal status. The list MUST support server-side cursor paging, refresh, loading/empty/error state, and MUST not display whistleblowers, background processors or internal evidence.
 
-#### Scenario: 查看限制历史
-- **WHEN** 已登录用户打开“我的限制与申诉”并翻页
-- **THEN** 页面展示本人限制摘要及后续页，不混用其他账号或设计示例数据
+#### Scenario: View restriction history
 
-#### Scenario: 无限制记录
-- **WHEN** 本人限制接口返回空列表
-- **THEN** 页面显示明确空态，并保持刷新和返回入口
+- **WHEN** The logged in user opens "My Restrictions and Appeals" and turns the page
+- **THEN** The page displays a summary of my restrictions and subsequent pages. Do not mix other accounts or design sample data.
 
-### Requirement: 手机端提交一次有效申诉
+#### Scenario: Unlimited recording
 
-手机端 MUST 仅对当前有效、尚无申诉且截止时间未过的限制显示提交入口。用户 MUST 输入非空且不超过合同长度的理由；同一内容失败重试 MUST 沿用原 UUID 请求标识，修改理由 MUST 生成新标识。提交成功后 MUST 展示服务端返回的待处理状态并刷新列表；服务端拒绝、冲突或窗口关闭时 MUST 展示错误并刷新资格，不得声明成功或承诺处理时限。
+- **WHEN** I restricted the interface to return an empty list
+- **THEN** The page is clearly empty and keeps refreshing and returning to the entrance.
 
-#### Scenario: 窗口内提交
-- **WHEN** 用户在有效窗口内填写理由并提交成功
-- **THEN** 页面显示待处理结果，且该限制不再显示再次申诉入口
+### Requirement: Submit a valid appeal on the mobile phone
 
-#### Scenario: 提交期间窗口关闭
-- **WHEN** 用户打开表单后截止时间到达，服务端拒绝提交
-- **THEN** 页面提示窗口已关闭并刷新限制状态，不产生成功反馈
+The mobile version MUST display the submission portal only for restrictions that are currently valid, have no appeals, and have not passed the deadline. The user MUST enter a reason that is not empty and does not exceed the length of the contract; if the same content fails and retry, the original UUID request identification MUST be used, and the reason MUST be modified to generate a new identification. After a successful submission, MUST display the pending status returned by the server and refresh the list; when the server rejects, conflicts, or the window is closed, MUST displays an error and refreshes the qualifications, and MUST not declare success or commit to a processing time limit.
+
+#### Scenario: Submit within the window
+
+- **WHEN** The user fills in the reason within the valid window and submits successfully
+- **THEN** The page displays the pending results, and this restriction no longer displays the entrance to appeal again.
+
+#### Scenario: Window closed during submission
+
+- **WHEN** After the user opens the form, the deadline is reached and the server refuses to submit.
+- **THEN** The page prompt window has been closed and the restriction status has been refreshed, and no success feedback is generated.

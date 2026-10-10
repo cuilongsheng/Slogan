@@ -1,16 +1,20 @@
 ## MODIFIED Requirements
 
-### Requirement: 网络重连反馈
-系统 MUST 在成员网络异常时提供重连状态、退出能力和可理解的错误反馈；房主进入 60 秒重连窗口期间，当前成员 MUST 可以继续交流和恢复已有会话，但系统 MUST 暂停尚未取得成员资格的用户加入。
+### Requirement: Network reconnection feedback
 
-#### Scenario: 普通成员短暂断网
-- **WHEN** 普通成员的实时连接暂时中断
-- **THEN** 客户端展示重连状态并在连接恢复后恢复其房间会话
+The system MUST provide reconnection status, exit capability, and understandable error feedback when the member network is abnormal; during the 60-second reconnection window of the room host, current members MUST continue to communicate and resume existing sessions, but the system MUST suspend users who have not yet obtained membership to join.
 
-#### Scenario: 房主断线期间现有成员继续交流
-- **WHEN** 房主处于 60 秒重连窗口且其他成员仍保持连接或恢复已有会话
-- **THEN** 这些成员可以继续实时语音交流且房间不会立即移交或结束
+#### Scenario: Ordinary members are temporarily disconnected from the Internet
 
-#### Scenario: 房主断线期间暂停新成员加入
-- **WHEN** 尚未取得该房间成员资格的用户在房主 60 秒重连窗口内尝试加入
-- **THEN** 系统拒绝本次加入、返回可理解的稍后重试结果且不创建成员资格或实时凭证
+- **WHEN** The real-time connection of ordinary members is temporarily interrupted.
+- **THEN** Client shows reconnection status and resumes its room session after connection is restored
+
+#### Scenario: Room host continues to communicate with existing members during the disconnection period
+
+- **WHEN** The room host is in a 60-second reconnection window and other members remain connected or resume existing sessions.
+- **THEN** These members can continue to communicate in real time and the room will not be handed over or ended immediately
+
+#### Scenario: Suspend new members from joining during room host disconnection period
+
+- **WHEN** A user who has not yet obtained membership in the room attempts to join within the room host's 60-second reconnection window.
+- **THEN** The system denies this join, returns an understandable retry-later result, and does not create membership or live credentials.

@@ -1,31 +1,32 @@
 ## Purpose
 
-定义后台运营房间列表的当前状态边界与可读卡片展示，使管理员直接掌握进行中和预约房间信息，避免已结束记录、技术标识及折叠交互干扰日常管理。
+Define the current status boundary and readable card display of the backend operation room list, allowing administrators to directly grasp the information of ongoing and reserved rooms, and avoid completed records, technical labels and folding interactions from interfering with daily management.
 
 ## ADDED Requirements
 
-### Requirement: 后台业务页使用完整内容宽度
+### Requirement: The background business page uses the full content width
 
-后台所有业务页面 MUST 充满侧栏右侧的可用内容区域，保留正常边距、表格滚动和弹层边界，不使用固定内容最大宽度在大屏留下大片空白。
+All business pages in the background MUST fill the available content area on the right side of the sidebar, retain normal margins, table scrolling, and elastic layer boundaries, and do not use a fixed maximum content width to leave a large blank space on the large screen.
 
-#### Scenario: 大屏查看运营页面
-- **WHEN** 用户在大屏打开房间、案件、申诉、降级事件、角色或审计页面
-- **THEN** 内容区域随视口扩展并保持表格/卡片可读，右侧只有正常页边距
+#### Scenario: View the operation page on a large screen
 
-### Requirement: 仅展示当前运营房间
+- **WHEN** The user opens the room, case, appeal, downgrade event, role or audit page on the large screen
+- **THEN** The content area expands with the viewport and keeps the table/card readable, with only normal margins on the right
 
-后台房间管理 MUST 仅显示进行中和预约房间，结束及取消的房间 MUST 从此列表移出；列表计数、筛选与分页 MUST 基于同一状态集合，不删除用于审计等目的的历史事实。
+### Requirement: Only display currently operating rooms
 
-#### Scenario: 房间结束
+Backend room management MUST only display ongoing and reserved rooms, ended and canceled rooms MUST be removed from this list; list counting, filtering and paging MUST be based on the same status collection, and historical facts used for auditing and other purposes MUST not be deleted.
 
-- **WHEN** 进行中的房间结束并刷新列表
-- **THEN** 该房间不再出现，其他当前房间的分页与计数保持正确
+#### Scenario: Room ends
 
-### Requirement: 卡片直接展示可理解信息
+- **WHEN** The ongoing room ends and the list is refreshed
+- **THEN** This room no longer appears, and the paging and counting of other current rooms remain correct.
 
-卡片 MUST 无需展开即可展示该房间运营所需信息；类型 MUST 使用用户语言，如即时房间或预约房间；UUID MUST 不作为主要房间标识展示。
+### Requirement: Cards directly display understandable information
 
-#### Scenario: 管理员浏览卡片
+The card MUST not need to be expanded to display the information required for the operation of the room; the type MUST use the user language, such as an instant room or a reserved room; the UUID MUST not be displayed as the main room identification.
 
-- **WHEN** 管理员打开房间管理
-- **THEN** 可直接看到主题、中文类型、状态、等级范围、人数、时间及已有运营统计，不需点击详情折叠入口
+#### Scenario: Administrator browse card
+
+- **WHEN** The administrator opens room management
+- **THEN** You can directly see the topic, Chinese type, status, level range, number of people, time and existing operation statistics without clicking on the details to collapse the entrance.

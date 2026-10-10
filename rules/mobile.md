@@ -2,35 +2,35 @@
 
 ## Stack and Routing
 
-- 移动端使用 React Native + Expo + TypeScript，不引入第二套移动框架。
-- 移动端使用 React Native StyleSheet 和 semantic theme tokens；不因 PC 使用 Tailwind 而共享 DOM 样式或默认引入 NativeWind。
-- 顶层 `app/` 由 Expo Router 管理文件路由和 route layout；业务实现放在 `src/features/`。
-- Route 文件只读取参数、组合 providers/feature screen 和声明导航选项，不直接实现 API、LiveKit 或权限流程。
+- Mobile uses React Native, Expo, and TypeScript. Do not introduce a second mobile framework.
+- Use React Native StyleSheet and semantic theme tokens. Desktop use of Tailwind does not justify shared DOM styles or introducing NativeWind by default.
+- Expo Router owns file routes and route layouts in top-level `app/`; business implementation lives in `src/features/`.
+- Route files read parameters, compose providers and feature screens, and declare navigation options. They do not implement API, LiveKit, or permission workflows directly.
 
 ## Feature and Device Ownership
 
-- 移动端按 `auth`、`profile`、`room-discovery`、`voice-room` 和 `reporting` 等业务 feature 组织。
-- 麦克风、系统权限、安全存储、设备语言和实时连接 SDK 封装放在 `src/services/`。
-- `voice-room` feature 编排房间行为；`services/realtime` 只封装 LiveKit 技术能力，不决定房主移交、踢人或重入规则。
-- 根 `components/ui` 只放跨 feature 的 React Native primitives；不得从 PC 管理端共享 React DOM 组件。
-- Platform-specific 文件使用 `.ios.*`、`.android.*` 或 `.native.*` 明确表达，禁止在业务组件散落无法测试的平台判断。
+- Organize mobile around business features such as `auth`, `profile`, `room-discovery`, `voice-room`, and `reporting`.
+- Wrap microphones, system permissions, secure storage, device language, and realtime SDKs in `src/services/`.
+- `voice-room` orchestrates room behavior. `services/realtime` wraps LiveKit technical capabilities without deciding host transfer, removal, or reentry rules.
+- Root `components/ui` contains cross-feature React Native primitives; do not share React DOM components from the desktop admin.
+- Express platform-specific behavior through `.ios.*`, `.android.*`, or `.native.*` files. Avoid scattered, untestable platform checks in business components.
 
 ## Permissions and Lifecycle
 
-- 麦克风权限必须显式处理未询问、允许、拒绝、永久拒绝和系统设置返回后的状态。
-- App 前后台切换、系统中断、音频设备变化和网络断开不得静默破坏房间状态。
-- Token、账号凭证和敏感本地状态使用安全存储；不得写入普通日志或未加密持久化。
-- 设备语言只提供默认值；实际语言行为遵循 current requirements，不在服务层自行增加产品规则。
+- Explicitly handle microphone permission states: not requested, allowed, denied, permanently denied, and return from system settings.
+- Foreground/background transitions, system interruptions, audio device changes, and disconnections must not silently corrupt room state.
+- Store tokens, account credentials, and sensitive local state securely, never in ordinary logs or unencrypted persistence.
+- Device language supplies only a default. Actual language behavior follows current requirements; services must not invent product rules.
 
 ## Realtime UI
 
-- 明确区分应用房间状态、LiveKit 连接状态和本地麦克风状态，不以单个布尔值代替三者。
-- 所有订阅、事件监听和重连定时器必须在生命周期结束时清理。
-- 网络恢复后必须重新通过服务端状态确认成员资格，不能只相信客户端缓存或旧 token。
+- Distinguish application room state, LiveKit connection state, and local microphone state; one boolean cannot represent all three.
+- Clean up subscriptions, event listeners, and reconnect timers when their lifecycle ends.
+- After network recovery, reconfirm membership against server state rather than trusting cached client state or old tokens.
 
 ## Testing and Evidence
 
-- 纯逻辑、hooks 和 adapters 使用适合的单元/集成测试。
-- Playwright 可以覆盖相关 Web 管理流程，但不能作为 React Native 真机验收证据。
-- 麦克风权限、系统语言、前后台切换、网络重连和音频发布/订阅需要模拟器或真机 runtime evidence。
-- 涉及 Figma 的移动页面必须在目标设备尺寸下与原始 frame 比较并记录差异。
+- Use suitable unit/integration tests for pure logic, hooks, and adapters.
+- Playwright can cover related web administration flows but does not establish React Native device acceptance.
+- Microphone permissions, system language, app lifecycle, network reconnection, and audio publication/subscription require emulator or physical-device runtime evidence.
+- Compare mobile pages involving Figma against the original frame at the target device dimensions and record differences.

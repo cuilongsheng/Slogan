@@ -1,37 +1,37 @@
 ## Why
 
-现有后端已经具备房间、预约、AI/STT、安全案件和后台角色能力，但缺少统一的运营指标、异常告警和可证明的数据清理边界，无法支持运营分析员履职，也无法在公开测试前证明数据最小化、故障发现与恢复能力。V1 后端需要把这些跨域事实收敛为最小权限、可审计且可恢复的运维闭环。
+The existing backend already has room, reservation, AI/STT, security case and backend role capabilities, but lacks unified operational indicators, exception alarms and provable data cleaning boundaries. It cannot support operations analysts to perform their duties, and cannot prove data minimization, fault discovery and recovery capabilities before public testing. The V1 backend needs to converge these cross-domain facts into a minimally privileged, auditable and recoverable operation and maintenance closed loop.
 
 ## What Changes
 
-- 增加平台汇总与趋势指标，包括资料完成、首次进入、房间与有效交流、预约履约、分享转化、AI/关键词使用、留存及安全处理；指标使用服务端事实和明确口径、时区与新鲜度，不从日志或客户端声明反推。
-- 增加平台管理员的受限运营明细与内部活跃用户排序；运营分析员只能读取达到最小分组阈值的匿名聚合，不得读取用户、房间成员、举报正文、案件证据或私人内容。
-- 增加持久异常事件、去重、状态转换和查询能力，覆盖 provider/Redis/PostgreSQL readiness、durable command 或 job 堆积、处理延迟、清理失败和指标过期；告警失败不阻塞语音房或业务事务。
-- 增加数据分类、保留策略快照、清理运行、dry-run、批量上限、租约/fencing、失败恢复和删除计数证明；临时内容按既有最长七天边界清理，尚未批准期限的举报、处罚、申诉、审计和账号身份事实默认禁止自动物理删除。
-- 增加数据库备份、隔离恢复、完整性检查和恢复演练的运维合同与验收记录；生产凭据、真实部署和公开用户测试仍由目标环境执行，不以本地 fixture 代替。
-- 扩展后台权限和审计：平台管理员可读取全部运营视图与治理运行，运营分析员只读匿名指标，审计员只读告警/治理审计结果；所有敏感查看、策略启用、清理和告警状态操作均留下最小审计。
-- 扩展 OpenAPI、配置、迁移、维护 runner、观测脱敏及本地/真实环境验收文档。
+- Added platform summary and trend indicators, including data completion, first entry, room and effective communication, appointment fulfillment, sharing conversion, AI/keyword usage, retention and security processing; indicators use server-side facts and clear caliber, time zone and freshness, and do not infer from logs or client statements.
+- Added restricted operation details and internal active user sorting for platform administrators; operations analysts can only read anonymous aggregates that reach the minimum grouping threshold, and are not allowed to read users, room members, report text, case evidence, or private content.
+- Add persistent exception events, deduplication, state transition and query capabilities, covering provider/Redis/PostgreSQL readiness, durable command or job accumulation, processing delay, cleanup failure and indicator expiration; alarm failure does not block the voice room or business transactions.
+- Added data classification, retention policy snapshot, cleanup run, dry-run, batch limit, lease/fencing, failed recovery and deletion count proof; temporary content is cleaned according to the existing maximum seven-day boundary, and automatic physical deletion is prohibited by default for reports, penalties, appeals, audits and account identity facts that have not yet been approved.
+- Add operation and maintenance contracts and acceptance records for database backup, isolation recovery, integrity check and recovery drill; production credentials, real deployment and public user testing are still executed by the target environment and are not replaced by local fixtures.
+- Extended background permissions and auditing: Platform administrators can read all operational views and governance operations, operational analysts can only read anonymous indicators, and auditors can only read alarm/governance audit results; all sensitive views, policy enablement, cleanup, and alarm status operations are left with minimal auditing.
+- Extend OpenAPI, configuration, migration, maintenance runner, observation desensitization and local/real environment acceptance documents.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `operations-metrics`: 定义 V1 指标口径、匿名聚合、趋势查询、新鲜度、内部明细和最小权限边界。
-- `operational-alerting`: 定义跨 provider、存储、队列、清理和指标流水线的异常事实、去重、恢复与受限查询。
-- `data-retention-governance`: 定义数据分类、策略快照、安全清理、dry-run、恢复、保留证明和禁止删除边界。
-- `backup-recovery-readiness`: 定义 PostgreSQL/必要配置的备份、隔离恢复、完整性验证和目标环境演练证据。
+- `operations-metrics`: Define V1 indicator caliber, anonymous aggregation, trend query, freshness, internal details and minimum permission boundaries.
+- `operational-alerting`: Define exception facts, deduplication, recovery and restricted queries across provider, storage, queue, cleanup and metrics pipelines.
+- `data-retention-governance`: Define data classification, policy snapshots, security cleanup, dry-run, recovery, proof of retention, and prohibit deletion boundaries.
+- `backup-recovery-readiness`: Define backup, quarantine recovery, integrity verification and target environment walkthrough evidence for PostgreSQL/required configuration.
 
 ### Modified Capabilities
 
-- `backoffice-access-control`: 为平台管理员、运营分析员和审计员增加相互隔离的指标、运营明细、告警与治理权限。
-- `backoffice-audit`: 将运营敏感读取、告警处理、保留策略启用、清理运行和恢复演练纳入最小追加审计。
-- `temporary-speech-processing`: 将临时语音处理的最长保留和删除结果接入统一治理证明，并在删除证明失败时产生降级事实。
+- `backoffice-access-control`: Add mutually isolated indicators, operational details, alarms and governance permissions for platform administrators, operational analysts and auditors.
+- `backoffice-audit`: Incorporate operational sensitive reads, alert handling, retention policy enablement, cleanup runs, and recovery drills into minimum append auditing.
+- `temporary-speech-processing`: Connect the longest retention and deletion results of temporary voice processing to the unified governance certificate, and generate downgrade facts when the deletion certificate fails.
 
 ## Impact
 
-- `apps/api/prisma/`：新增指标快照、异常事件、保留策略/运行/分片和恢复演练事实及相应索引；只使用向前兼容迁移。
-- `apps/api/src/modules/`：新增 operations/governance application 与 infrastructure 边界，并扩展 backoffice、audit、assistance、room-speech-processing、speech-safety、post-room-learning 和 account-lifecycle 的最小公开端口。
-- `apps/api/src/workers/`：增加可独立运行、带租约与 fencing 的指标、告警和清理 runner；复用 PostgreSQL 持久事实与 Redis 协调，不把 Redis 当作审计真相。
-- `openapi/openapi.yaml`：增加后台指标、受限明细、异常和治理查询/命令 API；所有分页、时间范围、聚合阈值与错误保持稳定合同。
-- `apps/api/src/config/` 与部署资料：增加 feature flag、周期、阈值、批量、保留和告警 sink 配置；真实备份恢复与外部告警投递需要目标环境凭据和运行证明。
-- 不包含 PC 管理后台 UI、移动端埋点 SDK、任意原始音频/完整转写采集、数据仓库/BI 产品、审计导出、个人数据下载、未批准的安全证据物理删除或生产环境自动部署。
+- `apps/api/prisma/`: New metric snapshots, exception events, retention policy/run/sharding and recovery drill facts and corresponding indexes; only forward compatible migrations are used.
+- `apps/api/src/modules/`: Add operations/governance application and infrastructure boundaries, and extend the minimum public ports of backoffice, audit, assistance, room-speech-processing, speech-safety, post-room-learning and account-lifecycle.
+- `apps/api/src/workers/`: Add indicators, alarms and cleanup runner that can run independently, with leases and fencing; reuse PostgreSQL persistent facts to coordinate with Redis, and do not treat Redis as audit truth.
+- `openapi/openapi.yaml`: Added background metrics, restricted details, exceptions, and governance query/command APIs; all paging, time ranges, aggregation thresholds, and errors remain stable contracts.
+- `apps/api/src/config/` and deployment information: Add feature flag, cycle, threshold, batch, retention and alarm sink configuration; real backup recovery and external alarm delivery require target environment credentials and running certificates.
+- Does not include PC management backend UI, mobile end point buried SDK, any original audio/complete transcription collection, data repository/BI products, audit export, personal data download, physical deletion of unapproved security evidence, or automatic deployment of production environment.

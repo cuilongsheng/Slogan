@@ -1,37 +1,37 @@
-## 1. 数据模型与领域规则
+## 1. Data model and domain rules
 
-- [x] 1.1 在 Prisma multi-file schema 中新增好友请求、好友关系、用户屏蔽、社交命令和普通房间邀请枚举与模型，执行 `pnpm --filter @slogan/api db:generate` 验证 schema 可生成。
-- [x] 1.2 新增只向前迁移及规范化用户对、非自关联、活动关系唯一性和必要查询索引，并用迁移集成测试验证空库与现有完整迁移链升级。
-- [x] 1.3 实现好友请求状态机、规范化用户对、目标资格、邀请状态和游标校验的纯 domain policy，并用单元测试覆盖自关联、非法转换、双向请求和边界输入。
-- [x] 1.4 实现 `(actorUserId, clientRequestId)` 社交命令摘要与重放规则，并用单元测试验证相同命令重试及改变目标/动作冲突。
+- [x] 1.1 Add enums and models for friend requests, friendships, user blocks, social commands, and ordinary room invitations to the Prisma multi-file schema. Run `pnpm --filter @slogan/api db:generate` to verify schema generation.
+- [x] 1.2 adds forward-only migration and normalized user pairs, non-self-relevance, active relationship uniqueness and necessary query indexes, and uses migration integration testing to verify empty database and existing complete migration chain upgrades.
+- [x] 1.3 Implement the pure domain policy of friend request state machine, normalized user pairs, target qualifications, invitation status and cursor verification, and use unit tests to cover self-association, illegal conversion, two-way requests and boundary input.
+- [x] 1.4 Implement `(actorUserId, clientRequestId)` social command summary and replay rules, and use unit tests to verify retries of the same command and change target/action conflicts.
 
-## 2. 好友、屏蔽与空闲状态
+## 2. Friends, blocking and idle status
 
-- [x] 2.1 新增 `social` 模块公开边界和 Prisma repository，实现好友请求发起、分页、接受、拒绝、撤回、好友分页与删除，并用 PostgreSQL 集成测试验证双方同意、权限、幂等和并发互发收敛。
-- [x] 2.2 实现用户屏蔽、本人屏蔽列表和解除屏蔽，在规范化用户对锁内原子清理好友、待处理请求与待处理邀请，并用集成测试验证双向隔离、事务回滚和解除后不恢复。
-- [x] 2.3 实现数据库资格投影，统一排除禁用/删除账号、资料未完成、未成年、当前安全限制、有效 membership 和双向屏蔽，并用集成测试验证直接查询与并发写入都不能绕过。
-- [x] 2.4 实现 Redis presence adapter、90 秒默认 TTL、批量读取和安全降级，并用 adapter 单元测试及 Redis runtime 测试验证刷新、过期、无 key scan 和连接失败行为。
-- [x] 2.5 实现好友列表的实时 `isAvailable` 和可邀请用户 keyset 分页，使用集成测试验证最小资料、陌生人可见、好友状态、屏蔽隔离及游标上下文错误。
+- [x] 2.1 adds the `social` module public boundary and Prisma repository to implement friend request initiation, paging, acceptance, rejection, withdrawal, friend paging and deletion, and uses PostgreSQL integration testing to verify mutual consent, permissions, idempotent and concurrency and mutual convergence.
+- [x] 2.2 Implement user blocking, the caller’s block list, and unblocking. Under a normalized user-pair lock, atomically remove friendships, pending requests, and pending invitations. Integration tests verify bidirectional isolation, transaction rollback, and no automatic restoration after unblocking.
+- [x] 2.3 Implement database eligibility projections excluding disabled/deleted accounts, incomplete profiles, minors, current safety restrictions, active memberships, and blocks in either direction. Integration tests verify that neither direct queries nor concurrent writes can bypass eligibility.
+- [x] 2.4 Implement the Redis presence adapter, a default 90-second TTL, batch reads, and safe degradation. Adapter unit tests and Redis runtime tests verify refresh, expiry, absence of key scans, and connection-failure behavior.
+- [x] 2.5 Implement realtime `isAvailable` on the friend list and keyset pagination for invitable users. Integration tests verify minimal profiles, stranger visibility, friend state, blocking isolation, and cursor-context errors.
 
-## 3. 普通房间邀请与加入事务
+## 3. Ordinary room invitation and joining affairs
 
-- [x] 3.1 在 rooms 模块新增普通邀请 repository/service，校验当前房主、好友或实时空闲目标及房间/目标资格，并用集成测试验证非房主、在房成员、屏蔽和终态房间拒绝。
-- [x] 3.2 实现本人邀请分页、拒绝、房间终态收敛和命令幂等，并用集成测试验证他人不可代读代写、重复拒绝及相同房间/目标只有一个待处理邀请。
-- [x] 3.3 扩展现有加入命令接受可选邀请标识，在锁定房间事务中重新校验并于 membership 成功后消费邀请，使用集成测试验证失败不消费和成功原子提交。
-- [x] 3.4 验证邀请不能绕过密码、容量、预约名额、规则确认、年龄、账号、安全限制或双向屏蔽，并覆盖仅剩一个名额时受邀与普通加入的并发竞争。
-- [x] 3.5 验证 `REMOVED` membership 只能使用既有 host-controls 重新邀请流程，普通邀请、旧 token 和直接加入均不能恢复资格。
+- [x] 3.1 Add the ordinary invitation repository/service to rooms. Validate the current room host, friend or currently idle target, and room/target eligibility. Integration tests verify rejection of non-hosts, existing room members, blocked users, and terminal rooms.
+- [x] 3.2 Implement pagination and rejection of the caller’s invitations, convergence for terminal rooms, and command idempotency. Integration tests verify that others cannot read or write on the caller’s behalf, repeated rejection is safe, and only one pending invitation exists per room/target.
+- [x] 3.3 Extend the existing join command with an optional invitation identifier. Revalidate it inside the locked room transaction and consume it after membership succeeds. Integration tests verify that failure does not consume invitations and success commits atomically.
+- [x] 3.4 Verify that invitations cannot bypass passwords, capacity, appointment quotas, rule confirmation, age, account status, safety restrictions, or blocking in either direction. Cover concurrent invited and ordinary joins competing for the final seat.
+- [x] 3.5 Verify that `REMOVED` memberships can only use the existing host-controls re-invitation flow. Ordinary invitations, old tokens, and direct joins must not restore eligibility.
 
-## 4. HTTP 合同与权限
+## 4. HTTP Contract and Permissions
 
-- [x] 4.1 新增好友请求、好友列表、屏蔽、presence 和可邀请用户 controller/DTO/错误映射，使用 e2e 测试验证认证、本人边界、稳定状态码和响应无敏感字段。
-- [x] 4.2 新增发送/查询/拒绝房间邀请入口并扩展加入 DTO，使用 e2e 测试完成“心跳 → 好友接受 → 房主邀请 → 受邀加入”和陌生空闲用户邀请流程。
-- [x] 4.3 使用 e2e 负面测试验证屏蔽双方从列表消失、直接伪造目标或时间失败、非房主邀请失败，以及邀请不返回密码摘要、LiveKit 凭证或其他成员资料。
-- [x] 4.4 通过 NestJS code-first 重新生成 `openapi/openapi.yaml`，运行 `pnpm --filter @slogan/api openapi:check` 验证唯一合同无 drift 且旧客户端不带 `invitationId` 仍兼容。
+- [x] 4.1 Add controllers, DTOs, and error mapping for friend requests, friend lists, blocking, presence, and invitable users. E2E tests verify authentication, caller-only boundaries, stable status codes, and responses without sensitive fields.
+- [x] 4.2 Add send/read/reject room-invitation endpoints and extend the join DTO. E2E tests cover “heartbeat → friend acceptance → host invitation → invited join” and invitations to idle strangers.
+- [x] 4.3 Use negative E2E tests to verify that both blocked parties disappear from lists, directly forged targets/times fail, non-host invitations fail, and responses do not expose password digests, LiveKit credentials, or other members’ profiles.
+- [x] 4.4 Regenerate `openapi/openapi.yaml` through NestJS code-first and run `pnpm --filter @slogan/api openapi:check` to verify that the sole contract has no drift and older clients remain compatible without `invitationId`.
 
-## 5. 验收与交付证据
+## 5. Evidence of acceptance and delivery
 
-- [x] 5.1 执行社交与房间相关单元、PostgreSQL 集成和 HTTP e2e 测试，记录好友并发、屏蔽清理、presence 过期、邀请消费和容量竞争结果。
-- [x] 5.2 在本地真实 Redis 执行 presence TTL、批量查询和故障恢复 smoke，确认 Redis 不可用时不误报空闲且现有房间流程继续可用。
-- [x] 5.3 对完整历史迁移链执行隔离升级验证并记录回退边界，确认既有用户、房间、预约、安全、历史笔记和限制数据保持不变。
-- [x] 5.4 运行一次 `pnpm verify:api`、`pnpm deps:check`、OpenSpec strict validation 和格式检查，修复本 change 引入的失败并保存最终数量。
-- [x] 5.5 新增 `docs/acceptance/implement-friends-availability-invitations-backend.md`，记录合同、迁移、自动化、Redis runtime、隐私边界、未部署状态和不包含推送/私信的范围。
+- [x] 5.1 Execute social and room-related units, PostgreSQL integration and HTTP e2e tests, record friend concurrency, screen cleaning, presence expiration, invitation consumption and capacity competition results.
+- [x] 5.2 Execute presence TTL, batch query and fault recovery smoke on the local real Redis to confirm that there is no false idle report when Redis is unavailable and that the existing room process continues to be available.
+- [x] 5.3 Perform isolation upgrade verification on the complete historical migration chain and record the rollback boundary to confirm that existing users, rooms, reservations, security, historical notes, and restriction data remain unchanged.
+- [x] 5.4 Run `pnpm verify:api`, `pnpm deps:check`, OpenSpec strict validation and format check once, fix the failures introduced by this change and save the final quantity.
+- [x] Added `docs/acceptance/implement-friends-availability-invitations-backend.md` in 5.5, recording contracts, migrations, automation, Redis runtime, privacy boundaries, undeployed status and scope excluding push/private messages.

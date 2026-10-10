@@ -1,24 +1,24 @@
-## 1. 数据模型与领域规则
+## 1. Data model and domain rules
 
-- [x] 1.1 核验预约 change 的 Room/RoomMembership/RoomReservation、举报历史资格和七段迁移基线，在验收记录写明实际 revision、测试数量及未完成边界。
-- [x] 1.2 新增一人一房唯一的 RoomNote model 与 additive migration，使用空库和含即时/预约、各 membership lifecycle、reservation、identity、report/event fixture 的升级测试验证历史数据和 RESTRICT 关系保留。
-- [x] 1.3 实现笔记文本规范化、2000 Unicode 字符上限、控制字符拒绝及稳定错误，以最小单元测试覆盖空白清空、边界字符和非法输入。
+- [x] 1.1 Verify the Room/RoomMembership/RoomReservation of the reservation change, the reporting history qualification and the seven-segment migration baseline, and indicate the actual revision, test number and unfinished boundary in the acceptance record.
+- [x] 1.2 Added a unique RoomNote model and additive migration for one person, one room, using an empty library and an upgrade test including instant/reservation, each membership lifecycle, reservation, identity, report/event fixture to verify historical data and RESTRICT relationship retention.
+- [x] 1.3 implements note text normalization, 2000 Unicode character upper limit, control character rejection and stable errors, covering whitespace clearing, boundary characters and illegal input with minimal unit tests.
 
-## 2. 本人历史查询
+## 2. Personal history query
 
-- [x] 2.1 实现以当前 userId 限定的 membership/reservation 并集查询，同房优先 PARTICIPATED 并返回本人最小投影；用真实 PostgreSQL 测试覆盖 BOOKED/CANCELLED/CONSUMED/EXPIRED 与 ACTIVE/LEFT/REMOVED/INVITED 的去重和隔离。
-- [x] 2.2 实现 `(occurredAt,roomId)` 确定性倒序游标和有限分页，以同时间记录、跨页插入、非法游标和页尾测试验证无重复及稳定边界。
-- [x] 2.3 提供 `GET /v1/me/room-history`，以认证 HTTP E2E 验证仅返回本人关系、笔记存在标志和允许字段，不泄露密码、provider identity、其他成员/预约人、举报或笔记正文。
+- [x] 2.1 Implement the union query of membership/reservation limited by the current userId, prioritize PARTICIPATED in the same room and return the minimum projection of the user; use real PostgreSQL tests to cover the deduplication and isolation of BOOKED/CANCELLED/CONSUMED/EXPIRED and ACTIVE/LEFT/REMOVED/INVITED.
+- [x] 2.2 Implement `(occurredAt,roomId)` deterministic reverse order cursor and limited paging, and verify no duplication and stable boundaries with simultaneous recording, cross-page insertion, illegal cursor and end-of-page tests.
+- [x] 2.3 provides `GET /v1/me/room-history` to authenticate HTTP E2E verification only returns personal relationship, note existence flag and allowed fields, without revealing password, provider identity, other members/appointers, reports or note text.
 
-## 3. 私人会后笔记
+## 3. Notes after private meeting
 
-- [x] 3.1 实现笔记读取资格：仅历史 membership 且 Room 为 ENDING/ENDED；以集成测试验证 LEFT/REMOVED 仍可读取、仅预约/陌生用户统一隐藏、SCHEDULED/OPEN 被拒绝。
-- [x] 3.2 实现 expectedVersion 条件保存和相同内容安全重试，以真实 PostgreSQL 并发测试验证同版本最多一个不同编辑成功、事务失败回滚且其他用户笔记不受影响。
-- [x] 3.3 实现 nullable tombstone 清空且递增版本，以清空后迟到保存、重复清空和从未保存 version=0 测试验证旧内容不能复活。
-- [x] 3.4 提供 `GET/PUT /v1/rooms/{roomId}/note` 并生成唯一 OpenAPI contract，以 HTTP E2E 验证本人授权、状态、版本冲突、内容边界和响应字段。
+- [x] 3.1 Implement note reading qualification: only historical membership and Room is ENDING/ENDED; use integration test to verify that LEFT/REMOVED can still be read, only reservations/strange users are hidden uniformly, and SCHEDULED/OPEN is rejected.
+- [x] 3.2 implements expectedVersion conditional saving and safe retry of the same content, and uses real PostgreSQL concurrency testing to verify that at most one different edit of the same version is successful, transaction failure is rolled back, and other user notes are not affected.
+- [x] 3.3 Implement nullable tombstone clear and increment version to clear late save, repeated clear and never save version=0 test to verify that old content cannot be revived.
+- [x] 3.4 provides `GET/PUT /v1/rooms/{roomId}/note` and generates a unique OpenAPI contract to verify personal authorization, status, version conflicts, content boundaries and response fields with HTTP E2E.
 
-## 4. 回归与验收
+## 4. Regression and acceptance
 
-- [x] 4.1 使用真实 PostgreSQL 完成“仅预约历史 → 实际参与去重 → 房间结束 → 保存/读取/清空笔记”闭环，回归即时房间、预约、举报资格及旧 API，并保存脱敏证据。
-- [x] 4.2 全部实现完成后只运行一次 `pnpm verify:api`、`pnpm format:check` 和 `pnpm deps:check`；失败先跑最小失败范围修复，再重跑一次完整检查并记录准确测试数量。
-- [x] 4.3 对照全部 delta 场景完成验收、迁移和回退记录，并执行 OpenSpec 严格校验；前端、产品验收和部署保持未完成，不把本 change 记为 AI/STT 或生产交付。
+- [x] 4.1 Use real PostgreSQL to complete the closed loop of "only reservation history → actual participation deduplication → room end → save/read/clear notes", return to real-time rooms, reservations, reporting qualifications and old APIs, and save desensitization evidence.
+- [x] 4.2 Only run `pnpm verify:api`, `pnpm format:check` and `pnpm deps:check` once after all implementations are completed; if it fails, run the minimum failure range repair first, then rerun a complete check and record the accurate number of tests.
+- [x] 4.3 Complete the acceptance, migration and rollback records against all delta scenarios, and perform OpenSpec strict verification; the front-end, product acceptance and deployment remain incomplete, and this change will not be recorded as AI/STT or production delivery.

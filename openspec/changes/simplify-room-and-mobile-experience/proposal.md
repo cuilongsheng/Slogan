@@ -1,42 +1,42 @@
 ## Why
 
-实际体验中，后台房间列表暴露技术字段且混入历史房间，手机端缺少退出入口、键盘遮挡输入、房间消息入口错误地连接 AI 翻译，录音和退出流程过于繁琐。需要按用户反馈及新版 Figma 修正完整交互，并将房间退出与外部媒体清理解耦。
+In actual experience, the background room list exposed technical fields and was mixed with historical rooms. The mobile phone lacked an exit entrance, the keyboard blocked input, the room message entrance was incorrectly connected to AI translation, and the recording and exit process was too cumbersome. The complete interaction needs to be corrected based on user feedback and the new version of Figma, and the room exit and external media clearance need to be decoupled.
 
 ## What Changes
 
-- 后台房间管理仅展示进行中和预约房间；结束或取消后移出运营列表。卡片信息直接展开，类型采用中文；不将 UUID 当作用户需要理解的房间名称。
-- “我的”仅保留“我的限制与申诉”“我的词汇”“退出”；复用已有真实登出与凭证清理。
-- 手机端输入聚焦时输入框、发送或提交操作可见；按更新后的手机 Figma 校正页面，不新增无依据装饰。
-- 创建即时/预约房间使用 A1～A2、B1～B2、C1～C2 三个范围选项，直接可见；取消可发现性和房间音频处理设置，新建手机房间默认 PUBLIC 且两项音频处理关闭。服务端仍兼容任意合法上下限、已有单级房间与旧客户端。
-- 新增普通房间文字消息，发送后在房间内滚动显示；与私人翻译入口彻底分开。
-- 母语表达使用按住录音、松开自动提交，显示主要英文结果；按新版 Figma 限制前端录音最长 10 秒。录音期间房间麦克风静音，停止私人录音后恢复开启；保留必要首次同意及权限判断，将当次明确按住操作用于确认本次处理，去掉反复确认/模式切换/可选表达堆叠。
-- 普通成员直接退出；仍有其他成员的房主选择接任者后退出，独自一人时直接退出。退出不展示重新入房界面。**BREAKING**：有在线接任成员时，房主不能再省略接任者并由服务端自动选第二麦；发布需同步升级前端。
-- 后端提交成员退出、移交或房间关闭后即可返回成功，LiveKit 撤销/删除由持久命令及后台恢复处理；用户不等待 provider。
+- The background room management only displays ongoing and reserved rooms; it will be removed from the operation list after completion or cancellation. The card information is expanded directly, and the type is in Chinese; the UUID is not regarded as the room name that the user needs to understand.
+- "My" only retains "My Restrictions and Appeals", "My Vocabulary" and "Exit"; reuse the existing real logout and credential cleanup.
+- The input box, send or submit operations are visible when the mobile phone input is focused; the page is corrected according to the updated mobile Figma, and no unfounded decorations are added.
+- When creating an instant/reservation room, use the three range options A1~~A2, B1~~B2, and C1~C2, which are directly visible; cancel the discoverability and room audio processing settings, and the default for new mobile rooms is PUBLIC and the two audio processing are turned off. The server is still compatible with any legal upper and lower limits, existing single-level rooms and old clients.
+- Added ordinary room text messages, which will be scrolled and displayed in the room after being sent; completely separated from the private translation entrance.
+- native-language expression uses hold to record and release to automatically submit, showing the main English results; according to the new version of Figma, the front-end recording is limited to a maximum of 10 seconds. The room microphone is muted during recording, and is turned back on after stopping private recording; the necessary first consent and permission judgment are retained, and the current explicit press and hold operation is used to confirm this processing, and repeated confirmation/mode switching/optional expression stacking are removed.
+- Ordinary members exit directly; room hosts that still have other members choose a successor and exit, and they exit directly when they are alone. Exit without displaying the re-entry interface. **BREAKING**: When there is a successor member online, the room host can no longer omit the successor and the server automatically selects the second microphone; the front end needs to be upgraded simultaneously when publishing.
+- The backend can return success after submitting member exit, handover or room closing. LiveKit undo/deletion is handled by persistent commands and background recovery; the user does not wait for the provider.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `admin-active-room-management`: 仅当前房间运营视图及直接展开的可读卡片。
-- `mobile-experience-navigation`: 三项个人入口、真实登出、键盘可见性及新版视觉校正。
-- `room-level-ranges`: 房间等级范围合同、创建、展示、发现及旧数据兼容。
-- `room-text-messages`: 当前房间普通文字发送、滚动显示及成员权限。
-- `private-expression-hold-to-talk`: 私人按住录音翻译、麦克风隔离、自动提交及简洁结果。
+- `admin-active-room-management`: Only the current room operation view and directly expanded readable cards.
+- `mobile-experience-navigation`: Three personal entrances, real logout, keyboard visibility and new visual correction.
+- `room-level-ranges`: Room class range contracts, creation, display, discovery and legacy data compatibility.
+- `room-text-messages`: Normal text sending, scrolling display and member permissions in the current room.
+- `private-expression-hold-to-talk`: Private press and hold recording translation, microphone isolation, automatic submission and concise results.
 
 ### Modified Capabilities
 
-- `host-controls`: 主动退出时明确选择接任者，普通/最后一人快速退出，清理异步化。
-- `temporary-speech-processing`: 当次录音的明确按住手势及持续可见用途说明可完成本次确认，无需录后再确认。
+- `host-controls`: When voluntarily exiting, the successor is clearly selected, the normal/last person exits quickly, and the cleanup is asynchronous.
+- `temporary-speech-processing`: The clear hold gesture and the continuously visible usage description of the current recording can complete this confirmation, and there is no need to confirm after recording.
 
 ## Impact
 
-- 影响 Architecture、Prototype/Figma、Backend/API、Frontend、Test/Acceptance 和 Deployment（重新打包 Android、记录版本与回滚）。iOS 不在本次范围。
-- 代码涉及 admin rooms、mobile profile/room-creation/voice-room/auth、键盘页面壳、rooms/voice/assistance 后端、Prisma 与唯一 OpenAPI 生成客户端。
-- 分三批：A 基础页面与等级范围；B 普通消息与按住翻译；C 快速退出及后台清理。各批内部先合同/后端，再前端，最后验收；C 不依赖 B，可以优先交付。
-- 已确认 Figma 文件 `56nIowZmvBhb0QJvOlDQdU`，页 `102:2766 / 02 UI`。原始节点和冲突记录见 design。
-- 非目标：删除历史业务记录、移除独立能力后端、自动播报翻译、公开私人录音/转写、商店发布、iOS。
-- 已按用户补充授权创建“我的”设计：`152:1467 / 02 UI / Me / 精简个人中心 · V3`，位于 `09 手机端 / 我的 · 精简版`，截图与可编辑结构检查通过。
-- 已补充等级上下限选择 `153:1485` 和当前房间完整卡片 `153:1524`，原始 Frame 保留。已保存创建、预约、语音房、翻译、移交和我的原图；完整运行视觉与 Android 状态仍须逐项验收，不能以补画 Frame 代替原稿到运行页面的验证。
-- 设计默认值供审核：普通消息仅在当前房间可读、结束后不提供历史聊天；等级范围服务端支持 A1–C2 中任意合法上下限，保留单级兼容，手机创建 UI 按用户最新要求仅三个固定组合。它们不增加历史聊天或按等级强制拒绝入房的产品范围。
+- Affects Architecture, Prototype/Figma, Backend/API, Frontend, Test/Acceptance, and Deployment (repackage Android, record versions, and rollbacks). iOS is not in this scope.
+- The code involves admin rooms, mobile profile/room-creation/voice-room/auth, keyboard page shell, rooms/voice/assistance backend, Prisma and the only OpenAPI generated client.
+- Divided into three batches: A. Basic page and level range; B. Normal messages and press and hold translation; C. Quick exit and background cleanup. Within each batch, the contract/backend is first, then the frontend, and finally acceptance; C does not depend on B and can be delivered first.
+- Confirmed Figma file `56nIowZmvBhb0QJvOlDQdU`, page `102:2766 / 02 UI`. See design for original node and conflict records.
+- Non-target: delete historical business records, remove independent capability backend, automatic broadcast translation, public private recording/transcription, store publishing, iOS.
+- "My" design has been created under user supplementary authorization: `152:1467 / 02 UI / Me / 精简个人中心 · V3`, located at `09 手机端 / 我的 · 精简版`, screenshot and editable structure check passed.
+- The upper and lower limit selection of level `153:1485` and the complete card of the current room `153:1524` have been supplemented, and the original Frame is retained. The creation, reservation, voice room, translation, handover and my original drawings have been saved; the complete running visual and Android status must still be accepted one by one, and the verification of the original to the running page cannot be replaced by a supplementary frame.
+- Design default values ​​for review: ordinary messages can only be read in the current room, and no historical chats are provided after the end; the level range server supports any legal upper and lower limits in A1–C2, retaining single-level compatibility, and the mobile phone creation UI only has three fixed combinations according to the latest user requirements. They do not add to the product range of chat history or forced denial of entry by level.
 
-2026-10-09 补充范围：修正主题标题裁切、后台业务页撑满可用宽度、消息空闲退避及后台暂停/恢复、房间在途刷新合并。按用户要求暂停发布，本批留本地并记录视觉与设备验证边界。
+2026-10-09 Supplementary scope: Correct topic title cropping, background business page to fill available width, message idle backoff and background pause/resume, room refresh and merge in transit. The release is suspended according to the user's request. This batch will be kept locally and the visual and device verification boundaries will be recorded.

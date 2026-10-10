@@ -2,49 +2,61 @@
 
 ## Purpose
 
-定义即时房间内可观察的实时语音会话行为，包括默认静音、成员状态、网络重连和房间结束后的访问边界，确保会话状态在客户端与服务端之间保持可理解的一致边界。
+Define the observable real-time voice conversation behavior in the real-time room, including default mute, member status, network reconnection and access boundaries after the room ends, ensuring that the session state maintains understandable and consistent boundaries between the client and the server.
 
 ## Requirements
 
-### Requirement: 实时语音交流
-系统 MUST 允许至少两名已成功加入房间的成员发布和订阅麦克风音频，并展示成员昵称、CEFR、房主身份和麦克风状态。
+### Requirement: Real-time voice communication
 
-#### Scenario: 两名成员完成语音交流
-- **WHEN** 两名成员已加入同一开放房间并分别打开麦克风
-- **THEN** 双方能够发布和接收对方的实时音频
+The system MUST allow at least two members who have successfully joined the room to publish and subscribe to microphone audio and display member nicknames, CEFR, room host identity, and microphone status.
 
-### Requirement: 加入时默认静音
-系统 MUST 在成员进入房间时默认关闭其麦克风，由成员主动决定何时打开或再次静音。
+#### Scenario: Two members completed voice communication
 
-#### Scenario: 新成员进入房间
-- **WHEN** 用户成功加入语音房
-- **THEN** 其初始麦克风状态为静音且可以主动切换
+- **WHEN** Two members have joined the same open room and turned on their microphones separately
+- **THEN** Both parties can publish and receive each other's real-time audio
 
-### Requirement: 网络重连反馈
-系统 MUST 在成员网络异常时提供重连状态、退出能力和可理解的错误反馈。
+### Requirement: Mute by default when joining
 
-#### Scenario: 普通成员短暂断网
-- **WHEN** 普通成员的实时连接暂时中断
-- **THEN** 客户端展示重连状态并在连接恢复后恢复其房间会话
+The system MUST disable a member’s microphone by default when they enter the room. The member decides when to enable or mute it again.
 
-### Requirement: 房间结束
-系统 MUST 在房间结束时通知所有在线成员、断开当前语音会话，并拒绝普通加入或旧凭证重入。
+#### Scenario: New member enters the room
 
-#### Scenario: 房主结束房间
-- **WHEN** 房主确认结束当前房间
-- **THEN** 所有成员收到结束结果且该语音会话不可恢复
+- **WHEN** The user successfully joined the voice room
+- **THEN** Its initial microphone status is mute and can be actively switched
 
-### Requirement: 当前版本不处理房间音频
-系统 MUST 在 `0.0.1` 房间以及未明确启用敏感语音识别的后续房间中不处理房间音频。明确启用且所有加入成员满足当前处理同意的房间可以临时处理短音频窗口以识别风险表达，但任何版本都 MUST 不产生可回放录音、完整转写、公开回放或成员可搜索的语音内容。
+### Requirement: Network reconnection feedback
 
-#### Scenario: 进行实时语音交流
-- **WHEN** 成员在 `0.0.1` 房间内交流
-- **THEN** 系统只传输实时语音且不产生可回放的房间录音、完整转写或敏感词识别
+The system MUST provide reconnection status, exit capability, and understandable error feedback when a member network is abnormal.
 
-#### Scenario: 在未启用识别的后续房间交流
-- **WHEN** 成员在未启用敏感语音识别的房间内交流
-- **THEN** 系统不把房间音频发送给 STT provider，也不产生风险提醒
+#### Scenario: Ordinary members are temporarily disconnected from the Internet
 
-#### Scenario: 在明确启用的房间交流
-- **WHEN** 已同意成员在明确启用敏感语音识别的房间内交流
-- **THEN** 系统可以按房间安全语音规范临时处理短窗口，但不提供录音、完整转写、公开回放或内容搜索
+- **WHEN** The real-time connection of ordinary members is temporarily interrupted.
+- **THEN** Client shows reconnection status and resumes its room session after connection is restored
+
+### Requirement: Room ends
+
+The system MUST notify all online members when the room ends, disconnect the current voice session, and deny normal join or re-entry with old credentials.
+
+#### Scenario: Room host end room
+
+- **WHEN** Room host Confirm to end the current room
+- **THEN** All members received the end result and the voice session cannot be restored
+
+### Requirement: Current version does not handle room audio
+
+The system MUST not process room audio in the `0.0.1` room and subsequent rooms where sensitive speech recognition is not explicitly enabled. Rooms that are explicitly enabled and all joining members meet current processing consents may temporarily process short audio windows to identify risky expressions, but any version MUST not produce playable recordings, full transcripts, public replays, or member-searchable speech content.
+
+#### Scenario: Live voice communication
+
+- **WHEN** Members communicate in the `0.0.1` room
+- **THEN** The system only transmits real-time speech and does not generate playable room recordings, complete transcriptions, or sensitive word recognition
+
+#### Scenario: Communicating in subsequent rooms without recognition enabled
+
+- **WHEN** Members are communicating in a room where sensitive speech recognition is not enabled
+- **THEN** The system does not send the room audio to the STT provider and does not generate a risk alert.
+
+#### Scenario: Communicate in explicitly enabled rooms
+
+- **WHEN** Members have consented to communicate in rooms where sensitive speech recognition is explicitly enabled
+- **THEN** The system can temporarily handle short windows according to room safety voice specifications, but does not provide recording, full transcription, public playback or content search

@@ -2,131 +2,164 @@
 
 ## Purpose
 
-定义首个技术验证版本的基础举报、关键事件审计和服务端权限保护，使房主操作与成员生命周期可以追踪且不能仅靠客户端界面限制。
+Defines the first technical verification version of basic reporting, key event auditing and server-side permission protection, so that room host operations and member life cycles can be tracked and cannot be restricted by the client interface alone.
 
 ## Requirements
 
-### Requirement: 提交基础举报
-系统 MUST 允许通过现有身份认证的当前或历史房间成员，举报曾加入同一房间的其他成员，保存房间、举报人、被举报人、服务端提交时间、类别和文字说明，并返回提交结果。类别 MUST 限定为骚扰辱骂、歧视仇恨、色情低俗、垃圾广告和其他；说明 MUST 为去除首尾空白后 1–2000 个 Unicode 码点的文字。举报人和提交时间 MUST 由服务端确定，不接受客户端伪造。举报、唯一安全案件和可用时的初始分配 MUST 在同一数据库事务中提交；无可用安全员不得导致举报丢失。成功响应 MUST 保持现有举报受理字段兼容，并返回可用于后续追踪的案件标识。
+### Requirement: Submit a basic report
 
-#### Scenario: 成员提交有效举报
-- **WHEN** 房间成员选择举报对象、五种有效类别之一并提交有效说明
-- **THEN** 系统保存举报记录和唯一 `OPEN` 安全案件，并返回举报标识、服务端提交时间和案件标识
+The system MUST allow current or historical room members who have passed existing identity authentication to report other members who have joined the same room, save the room, reporter, reported person, server submission time, category and text description, and return the submission results. Categories MUST be limited to harassment/abuse, discrimination/hate, sexually explicit/vulgar content, spam, and other. The description MUST contain 1–2000 Unicode code points after trimming leading and trailing whitespace. The reporter and submission time MUST be determined by the server, and client forgery is not accepted. Reports, unique safety cases, and initial assignments when available MUST be submitted in the same database transaction; unavailability of a safety officer MUST not cause reports to be lost. A successful response MUST maintain compatibility with existing report acceptance fields and return a case ID that can be used for follow-up tracking.
 
-#### Scenario: 历史成员提交举报
-- **WHEN** 举报人已离开或被移除，或房间已结束，但举报人与被举报人都曾实际加入该房间且举报人仍通过现有身份认证
-- **THEN** 系统允许提交，不因当前 membership 状态、房间结束或双方离线而拒绝
+#### Scenario: A member submitted a valid report
 
-#### Scenario: 房主作为举报对象
-- **WHEN** 成员提交对同一房间当前或历史房主的有效举报
-- **THEN** 系统按与其他成员相同的规则保存，不要求被举报房主批准
+- **WHEN** Room members select the target of the report, one of the five valid categories and submit a valid explanation
+- **THEN** The system saves the report record and the unique `OPEN` security case, and returns the report ID, server submission time and case ID
 
-#### Scenario: 伪造举报身份或时间
-- **WHEN** 客户端在提交内容中额外指定举报人或服务端提交时间
-- **THEN** 系统拒绝非法字段，不保存举报或成功审计事件
+#### Scenario: Historical members submitted reports
 
-#### Scenario: 无效类别或说明
-- **WHEN** 类别不在固定五类内，或说明为空、仅含空白、超过 2000 个 Unicode 码点
-- **THEN** 系统返回稳定的校验错误，不保存举报或成功审计事件
+- **WHEN** The reporter has left or been removed, or the room has ended, but both the reporter and the person being reported have actually joined the room and the reporter still passes the current identity authentication
+- **THEN** The system allows submission and will not reject it due to current membership status, room end, or both parties being offline.
 
-#### Scenario: 提交时没有可用安全员
-- **WHEN** 有效举报提交时没有账号可用且持有安全员角色的用户
-- **THEN** 系统原子保存举报和未分配案件并返回成功，不因分配暂时不可用丢弃举报
+#### Scenario: Room host as the reporting target
 
-#### Scenario: 案件创建失败
-- **WHEN** 举报记录可以写入但其安全案件或必要关联无法提交
-- **THEN** 整个受理事务失败且系统不留下没有案件的已受理举报
+- **WHEN** A member submitted a valid report on the current or historical room host of the same room
+- **THEN** The system saves according to the same rules as other members and does not require approval by the reported room host.
 
-#### Scenario: 相同请求安全重试
-- **WHEN** 举报人使用相同请求标识和相同规范化内容重试已经成功的举报
-- **THEN** 系统返回原举报和原案件标识，不创建重复举报、案件或初始分配
+#### Scenario: Forged reporting identity or time
 
-### Requirement: 关键房间事件审计
-系统 MUST 记录举报、成员移除、成员重新邀请、房主移交、房主断线和房间结束事件，并保留事件主体、操作者、时间、原因或结果等必要信息。成功提交举报 MUST 同时产生可关联到该举报的审计事件；举报记录和成功审计事件 MUST 全部保存或全部失败，不得产生只有一方成功的结果。
+- **WHEN** The client additionally specifies the reporter or server submission time in the submission content.
+- **THEN** The system rejects illegal fields and does not save reports or successful audit events.
 
-#### Scenario: 房主执行管理动作
-- **WHEN** 房主移除成员、重新邀请成员、移交权限或结束房间
-- **THEN** 系统生成可追踪的审计事件
+#### Scenario: Invalid category or description
 
-#### Scenario: 实时连接状态变化
-- **WHEN** 实时语音服务通知成员加入、离开、异常断开或房间结束
-- **THEN** 系统将事件与对应房间和成员关联并更新必要状态
+- **WHEN** The category is not within the five fixed categories, or the description is empty, contains only blanks, or exceeds 2000 Unicode code points
+- **THEN** The system returns a stable verification error and does not save the report or successful audit event.
 
-#### Scenario: 举报成功审计
-- **WHEN** 系统成功接受一条举报
-- **THEN** 审计事件关联举报、房间、举报人与被举报人，并记录类别、服务端提交时间和提交成功结果
+#### Scenario: No safety officer available at time of submission
 
-#### Scenario: 举报或审计保存失败
-- **WHEN** 保存举报或对应审计事件任一步骤失败
-- **THEN** 系统不返回成功凭据，且不存在单独保存的举报或成功审计事件
+- **WHEN** A user who has no account available and holds the role of safety officer when submitting a valid report
+- **THEN** The system atomically saves reports and unallocated cases and returns success, and does not discard reports due to temporary unavailability of allocations.
 
-### Requirement: 服务端权限校验
-系统 MUST 在服务端校验所有房间加入、房主管理、邀请和结束操作，不得只依赖客户端隐藏按钮或本地状态。
+#### Scenario: Case creation failed
 
-#### Scenario: 非房主直接调用房主管理接口
-- **WHEN** 普通成员绕过客户端直接请求移除成员、移交房主或结束房间
-- **THEN** 系统拒绝请求且不改变房间状态
+- **WHEN** The report record can be written but the security case or necessary association cannot be submitted.
+- **THEN** The entire acceptance transaction failed and the system does not leave accepted reports without cases.
 
-### Requirement: 限定房间的实时凭证
-系统 MUST 只向通过加入校验的用户发放短期、限定到目标房间和目标身份的实时语音凭证。
+#### Scenario: Safe retry of the same request
 
-#### Scenario: 合法加入请求
-- **WHEN** 用户通过账号、规则确认、密码、容量和房间状态校验
-- **THEN** 系统发放只能用于该房间的短期凭证
+- **WHEN** The reporter retries a successful report using the same request ID and the same canonical content
+- **THEN** The system returns the original report and original case identification and does not create duplicate reports, cases or initial assignments
 
-#### Scenario: 使用旧凭证重入
-- **WHEN** 已被移除或房间已结束的用户尝试使用旧凭证重新连接
-- **THEN** 系统拒绝其恢复房间成员身份
+### Requirement: Critical room event audit
 
-### Requirement: 举报资格由服务端验证
-系统 MUST 验证举报人的有效身份和双方曾加入同一房间的持久事实，MUST 拒绝举报自己、未加入房间者的提交、举报跨房间对象，以及仅有邀请但从未加入的身份。普通成员和房主 MUST 遵循相同规则；房主、客户端和实时在线状态不能授予额外举报资格。
+The system MUST record reporting, member removal, member re-invitation, room host handover, room host disconnection and room end events, and retain necessary information such as event subject, operator, time, cause or result. A successful report submission MUST also generate an audit event that can be associated with the report; both the report record and the successful audit event MUST be saved or both failed, and only one party MUST succeed.
 
-#### Scenario: 未认证或已失效会话
-- **WHEN** 未提供有效身份认证或会话已失效的调用者直接请求提交举报
-- **THEN** 系统返回认证失败且不写入举报或成功审计事件
+#### Scenario: Room host performs management actions
 
-#### Scenario: 无有效同房间关系
-- **WHEN** 房间不存在、举报人从未加入该房间，或被举报人从未加入该房间
-- **THEN** 系统返回一致的举报上下文不可用错误，不泄露其他房间成员关系且不保存记录
+- **WHEN** Room host remove members, re-invite members, transfer permissions or end the room
+- **THEN** The system generates traceable audit events
 
-#### Scenario: 举报自己
-- **WHEN** 合法房间成员将自己选为被举报人
-- **THEN** 系统返回举报对象无效错误且不保存记录
+#### Scenario: Real-time connection status changes
 
-#### Scenario: 离线状态不能伪造资格
-- **WHEN** 调用者仅持有房间链接、邀请或客户端声称的在线状态，但没有实际加入事实
-- **THEN** 系统拒绝其举报请求
+- **WHEN** Real-time voice service notifies members to join, leave, abnormal disconnection or room end
+- **THEN** The system associates the event with the corresponding room and member and updates the necessary status
 
-### Requirement: 举报提交可安全重试
-系统 MUST 为每次提交接受调用者生成的 UUID 请求标识，并在同一举报人范围内去重。相同标识和相同规范化内容的重试 MUST 返回原举报标识和时间，只生成一条举报和一条成功审计；相同标识绑定不同房间、对象、类别或说明时 MUST 返回稳定冲突。不同举报人使用相同请求标识 MUST 相互隔离。
+#### Scenario: Report successfully audited
 
-#### Scenario: 响应丢失后重试或并发提交
-- **WHEN** 同一举报人并发或重复发送相同请求标识与内容
-- **THEN** 所有成功响应指向同一举报与时间，持久记录和成功审计各只有一条
+- **WHEN** The system successfully accepted a report
+- **THEN** The audit event is associated with the report, room, reporter and reported person, and records the category, server submission time and submission success result
 
-#### Scenario: 重用标识修改内容
-- **WHEN** 同一举报人使用既有请求标识提交不同的有效内容
-- **THEN** 系统返回冲突，不修改原举报且不生成新的成功审计
+#### Scenario: Report or audit save failed
 
-#### Scenario: 不同举报人使用相同标识
-- **WHEN** 两名有资格的举报人使用相同请求标识提交举报
-- **THEN** 系统分别保存各自的举报，不返回对方记录
+- **WHEN** Failed to save the report or any step corresponding to the audit event
+- **THEN** The system does not return successful credentials, and there are no separately saved reports or successful audit events.
 
-### Requirement: 举报内容保持私密且不触发处罚
-系统 MUST 仅向提交者返回最小提交凭据，不在普通响应、日志、房间事件广播或通知中泄露举报正文和举报人资料。审计 MUST 保存关联标识及必要类别和结果，不复制举报正文、音频或转写。提交举报 MUST 不改变房间状态、成员身份或账号权限，也不代表已判定违规。
+### Requirement: Server permission verification
 
-#### Scenario: 返回最小提交结果
-- **WHEN** 举报提交成功或成功重试
-- **THEN** 业务响应仅包含举报标识、提交时间和用于后续追踪的案件标识，不返回其他举报、被举报人的隐私资料或举报正文
+The system MUST verify all room joining, room host management, invitation and end operations on the server side and MUST not rely solely on client hidden buttons or local state.
 
-#### Scenario: 举报不通知被举报人
-- **WHEN** 成员提交举报
-- **THEN** 系统不向房主或被举报人广播举报内容、举报身份或发送举报通知
+#### Scenario: Non-room host directly calls the room host management interface
 
-#### Scenario: 安全日志与失败响应
-- **WHEN** 举报提交、校验失败或持久化失败被记录
-- **THEN** 日志和错误响应不包含举报正文、认证凭证、SQL 或其他隐私资料
+- **WHEN** Ordinary members bypass the client and directly request to remove members, transfer room host or end the room
+- **THEN** The system rejects the request and does not change the room status
 
-#### Scenario: 举报不执行处罚
-- **WHEN** 一条或多条举报被接受
-- **THEN** 房间状态、房主归属、成员资格和账号权限保持不受举报提交动作影响
+### Requirement: Real-time voucher for limited rooms
+
+The system MUST only issue short-term, real-time voice credentials limited to the target room and target identity to users who pass the verification.
+
+#### Scenario: Legal join request
+
+- **WHEN** User passes account, rule confirmation, password, capacity and room status verification
+- **THEN** The system issues a short-term voucher that can only be used for this room.
+
+#### Scenario: Reentry using old credentials
+
+- **WHEN** A user who has been removed or whose room has ended attempts to reconnect using old credentials
+- **THEN** The system refuses to restore the room membership
+
+### Requirement: Reporting qualifications are verified by the server
+
+The system MUST verify the valid identity of the reporter and the persistent fact that both parties have joined the same room, and MUST reject reports of self, submissions from people who have not joined the room, reports of cross-room subjects, and identities that were only invited but never joined. Ordinary members and room hosts MUST follow the same rules; room hosts, clients, and real-time online status cannot grant additional reporting qualifications.
+
+#### Scenario: Unauthenticated or expired session
+
+- **WHEN** The caller who did not provide valid identity authentication or whose session has expired directly requested to submit a report.
+- **THEN** The system returns authentication failure and does not write a report or successful audit event.
+
+#### Scenario: No valid room relationship
+
+- **WHEN** The room does not exist, the reporter has never joined the room, or the person being reported has never joined the room
+- **THEN** The system returns a consistent reporting context unavailable error, does not reveal other room membership relationships and does not save records.
+
+#### Scenario: Report yourself
+
+- **WHEN** A legitimate room member selects himself as the person to be reported
+- **THEN** The system returns an invalid reporting object error and does not save the record.
+
+#### Scenario: You cannot forge qualifications when offline
+
+- **WHEN** The caller only holds a room link, invitation, or client-claimed online status, but no actual joining fact
+- **THEN** The system rejected its reporting request
+
+### Requirement: Report submission can be safely retried
+
+The system MUST accept a caller-generated UUID request identifier for each commit and deduplicate it within the same reporter scope. Retries with the same identification and the same standardized content MUST return the original report identification and time, and only generate one report and one successful audit; when the same identification is bound to different rooms, objects, categories or descriptions, MUST return stable conflicts. Different whistleblowers using the same request identifier MUST be isolated from each other.
+
+#### Scenario: Retry or concurrent submission after response loss
+
+- **WHEN** The same reporter sends the same request ID and content concurrently or repeatedly
+- **THEN** All successful responses point to the same report and time, and there is only one persistent record and one successful audit each.
+
+#### Scenario: Reuse identifier to modify content
+
+- **WHEN** The same reporter submitted different valid content using the existing request ID.
+- **THEN** The system returns a conflict, does not modify the original report and does not generate a new successful audit.
+
+#### Scenario: Different whistleblowers use the same identifier
+
+- **WHEN** Two qualified whistleblowers submitted a report using the same request ID
+- **THEN** The system saves each report separately and does not return the other party's record.
+
+### Requirement: Reported content remains private and does not trigger penalties
+
+The system MUST return only minimal submission credentials to the submitter and not disclose the report text and whistleblower information in ordinary responses, logs, room event broadcasts, or notifications. Audit MUST save the associated identification and necessary categories and results, and do not copy the report text, audio, or transcribe. Submitting a report MUST not change the room status, membership status, or account permissions, nor does it mean that a violation has been determined.
+
+#### Scenario: Return the minimum submission result
+
+- **WHEN** Report submitted successfully or retry successfully
+- **THEN** The business response only contains the report identification, submission time and case identification for follow-up tracking, and does not return other reports, the private information of the person being reported or the text of the report.
+
+#### Scenario: Report without notifying the person being reported
+
+- **WHEN** Member submits report
+- **THEN** The system does not broadcast the report content, report identity, or send report notification to the room host or the person being reported.
+
+#### Scenario: Security log and failure response
+
+- **WHEN** Report submission, verification failure or persistence failure is recorded
+- **THEN** Logs and error responses do not contain report text, authentication credentials, SQL or other private information
+
+#### Scenario: Failure to implement punishment for reporting
+
+- **WHEN** One or more reports were accepted
+- **THEN** Room status, room host ownership, membership and account permissions remain unaffected by report submission actions

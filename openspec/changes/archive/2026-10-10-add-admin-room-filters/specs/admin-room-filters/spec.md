@@ -1,33 +1,38 @@
 ## Purpose
 
-使有权查看运营房间明细的后台人员按真实服务端数据定位房间，并在组合筛选和翻页时获得一致、可复核的全量查询结果。
+Enables back-end personnel who have the right to view operating room details to locate rooms based on real server data, and obtain consistent and reviewable full query results when combining filtering and page turning.
 
 ## ADDED Requirements
 
-### Requirement: 后台房间列表支持组合筛选
+### Requirement: The background room list supports combination filtering
 
-后台房间列表 MUST 允许有 `OPERATIONS_DETAILS_READ` 权限的用户组合使用主题包含查询或完整房间 UUID、房间状态、可见性和创建时间下界。主题查询 MUST 去除首尾空白并忽略大小写；无筛选时 MUST 保留原有倒序列表语义。未授权用户 MUST 不能通过筛选参数读取房间。
+The backend room list MUST allow users with `OPERATIONS_DETAILS_READ` permissions to use a combination of topics containing query or full room UUIDs, room status, visibility, and creation time lower bounds. Topic query MUST remove leading and trailing blanks and ignore case; when there is no filtering, MUST retain the original inverted list semantics. Unauthorized users MUST not read rooms via filter parameters.
 
-#### Scenario: 组合查询房间
-- **WHEN** 有权用户提交主题、状态、可见性和创建时间下界
-- **THEN** 只返回同时符合各条件的房间，并保持创建时间和房间 ID 的稳定倒序
+#### Scenario: Combined query room
 
-#### Scenario: 搜索完整房间标识
-- **WHEN** 有权用户提交完整房间 UUID
-- **THEN** 查询该标识对应的房间，不把 UUID 当成普通主题搜索
+- **WHEN** Authorized user submission topic, status, visibility and creation time lower bound
+- **THEN** Only return rooms that meet all conditions at the same time, and maintain a stable reverse order of creation time and room ID.
 
-#### Scenario: 无权限查询
-- **WHEN** 无运营明细权限的账号提交任意筛选条件
-- **THEN** 服务端拒绝并不返回房间信息
+#### Scenario: Search for complete room identification
 
-### Requirement: 房间筛选与游标绑定
+- **WHEN** Authorized user to submit complete room UUID
+- **THEN** Query the room corresponding to this ID, do not use UUID as a normal topic search
 
-后台房间列表 MUST 对已规范化的筛选条件绑定分页游标。更改任一条件后客户端 MUST 返回第一页；用旧条件的游标查询新条件 MUST 被拒绝，不得混用页面结果。无结果时 MUST 显示空态而非设计稿示例数据。
+#### Scenario: No permission to query
 
-#### Scenario: 稳定翻页
-- **WHEN** 用户使用同一组筛选条件和上一页游标请求下一页
-- **THEN** 返回该范围后续记录，不重复上一页房间
+- **WHEN** Accounts without operation details permission submit any filter conditions
+- **THEN** The server refused and did not return room information.
 
-#### Scenario: 切换条件后误用游标
-- **WHEN** 用户将旧筛选游标用于新的筛选条件
-- **THEN** 服务端返回验证错误，客户端从第一页重新查询
+### Requirement: Room filtering and cursor binding
+
+The background room list MUST bind a paging cursor to the normalized filter conditions. After changing any condition, the client MUST return to the first page; using the cursor of the old condition to query the new condition MUST be rejected, and the page results MUST not be mixed. When there are no results, MUST display an empty state instead of the design draft sample data.
+
+#### Scenario: Stable page turning
+
+- **WHEN** The user requested the next page using the same set of filter conditions and the previous page cursor.
+- **THEN** Return to subsequent records in this range without repeating the room on the previous page
+
+#### Scenario: Misuse of cursor after switching conditions
+
+- **WHEN** User used old filter cursor for new filter criteria
+- **THEN** The server returned a verification error, and the client requeried from the first page.

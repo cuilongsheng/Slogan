@@ -1,41 +1,43 @@
-# 房间体验修正：Vercel 队列发布方案
+# Room experience changes: Vercel Queues deployment
 
-适用 OpenSpec：`simplify-room-and-mobile-experience`。当前状态：2026-10-07 已备份线上数据库并成功执行四个迁移；2026-10-08 的 fc7bbf8 已部署，但真实云端清理检查失败。下述请求内播种恢复补丁已通过本地完整 API 检查，待部署重验。
+Applies to OpenSpec change `simplify-room-and-mobile-experience`. Historical status: the production database was backed up and four migrations succeeded on 2026-10-07. Commit fc7bbf8 was deployed on 2026-10-08, but the real cloud cleanup check failed. The request-scoped recovery-seeding patch described below passed the complete local API checks and awaits deployment and cloud verification.
 
-## 问题和处理
+## Problem and solution
 
-旧 leave 接口在数据库提交后继续等待 LiveKit；provider 失败会把已提交的退出误报为 503。新接口返回成员 LEFT、房间业务状态和 PENDING 清理状态，清理命令保留在 PostgreSQL。客户端立即开始静音、断开，退出确认失败时以原成员代次重试。
+The old leave endpoint continued waiting for LiveKit after the database transaction committed. A provider failure could therefore report an already-committed departure as a 503. The new endpoint returns the member's LEFT state, the room's business state, and PENDING cleanup status. Cleanup commands remain durable in PostgreSQL. The client immediately starts muting and disconnecting; if departure confirmation fails, it retries with the original membership generation.
 
-普通 Nest/BullMQ worker 需要存活的进程。Vercel 可以使用平台托管的 Queues 消费函数承接这项工作，无须另买常驻服务器。这里的队列消费者负责短任务，不承担持续订阅音频的房间语音 worker。
+A normal Nest/BullMQ worker needs a persistent process. Vercel can instead use a platform-managed Queues consumer function without an additional persistent server. This consumer handles short tasks; it does not replace a room-speech worker that continuously subscribes to audio.
 
-## 拓扑和恢复
+## Topology and recovery
 
-- 公开 Nest API：`apps/api/src/main.ts`；Vercel 模式在请求上下文内播种恢复扫描消息，平台 `waitUntil` 追踪发布，不阻塞 HTTP 返回。
-- 私有消费者：`apps/api/api/realtime.ts`；`apps/api/vercel.json` 绑定 `queue/v2beta` 和主题 `slogan-realtime`。独立函数很重要：队列触发函数在 Vercel 上不是公开 HTTP API。
-- 适配器：`RealtimeQueue` 在 `VERCEL=1` 时发布托管队列消息，不启动 BullMQ Worker；其他环境沿用 Redis/BullMQ。
-- 消费者读取 PostgreSQL 的持久命令，执行撤销身份、删除房间、到期及预约任务。数据库和下一次扫描发布失败向 SDK 抛错，按退避重投递。
-- 有待清理命令或活跃房间时，下一次扫描延迟 30 秒；空闲时 300 秒。消息只包含任务类型和标识，不包含消息正文、音频或凭证。
-- 并发 HTTP 请求共用一个在途播种；只有成功发送才进入五分钟冷却，失败在下一请求重试。后续请求也能重新播种中断的扫描链。启动阶段不发送恢复消息，避免缺少请求 OIDC 上下文。
-- 即使单次命令发布失败，扫描仍会再次读取 PostgreSQL。重复投递由既有事务、命令代次和状态检查吸收；不回退已退出成员的业务状态。
+- Public Nest API: `apps/api/src/main.ts`. In Vercel mode, it seeds recovery-scan messages within the request context. Platform `waitUntil` tracks publication without blocking the HTTP response.
+- Private consumer: `apps/api/api/realtime.ts`. `apps/api/vercel.json` binds `queue/v2beta` to topic `slogan-realtime`. A separate function matters because a queue-triggered function is not a public HTTP API on Vercel.
+- Adapter: `RealtimeQueue` publishes managed queue messages when `VERCEL=1` and does not start a BullMQ Worker. Other environments continue using Redis/BullMQ.
+- The consumer reads durable PostgreSQL commands and performs identity revocation, room deletion, expiry, and appointment tasks. Database failures or failures to publish the next scan are thrown to the SDK for redelivery with backoff.
+- The next scan is delayed by 30 seconds while cleanup commands or active rooms remain, and by 300 seconds when idle. Messages contain only task types and identifiers, never message content, audio, or credentials.
+- Concurrent HTTP requests share one in-flight seed operation. The five-minute cooldown starts only after publication succeeds; failure allows the next request to retry. Later requests can reseed interrupted scan chains. Startup does not publish recovery messages because request OIDC context would be missing.
+- Even when publication of one command fails, the scan rereads PostgreSQL. Existing transactions, command generations, and state checks absorb duplicate delivery. Departed members' business state is never rolled back.
 
-Vercel Queues 当前为 beta，有用量限制及按操作计费规则；本实现不能承诺无限免费或与服务故障无关的即时撤销。SDK 保留期设为 7 天，过期消息不能承担无限期恢复。如果首轮播种失败、扫描链停止或停机超过保留期，应检查日志、恢复数据库/队列并重新播种（部署后或冷却到期后的 HTTP 请求），从数据库重建任务；命令本身不因队列过期而删除。上线须验证该恢复路径，不能用本地 SDK mock 代替。
+Vercel Queues is in beta with usage limits and per-operation billing. This implementation does not promise unlimited free usage or immediate revocation regardless of service failures. SDK retention is set to 7 days; expired messages cannot be recovered indefinitely. If initial seeding fails, the scan chain stops, or downtime exceeds retention, inspect logs, restore the database/queue, and reseed through an HTTP request after deployment or cooldown expiry. Tasks are rebuilt from the database; queue expiry does not delete their durable commands. Verify recovery before release; local SDK mocks cannot establish cloud recovery.
 
-## 发布顺序
+## Release order
 
-1. 在确认的数据库目标备份后，执行 Prisma 增量迁移：`20261007100000_room_level_ranges`、`20261007100100_room_text_messages`、`20261007100200_room_level_range_upper_bound`、`20261007100300_room_message_foreign_keys`。已发布的历史迁移不改写。
-2. Vercel 项目保持 API 根目录 `apps/api` / NestJS 构建；发布本次 API 与独立消费者，确认控制台出现 `slogan-realtime` 的消费者。平台的 `VERCEL` 标识自动提供；不要手工在常驻环境设置它。
-3. 复用已批准的数据库、LiveKit 和 `REALTIME_ENABLED` 配置，检查消费者也能访问这些配置。本次不修改供应商、密钥、Google 登录或远程环境变量。
-4. 验证正常 leave 与 LiveKit 故障下 leave 都返回业务成功；停止所有客户端和请求后，仍有消费者执行及 PostgreSQL 命令从 PENDING 到 COMPLETED 的记录。再验证重投递、消费者重启、provider 恢复及旧身份不能重入。
-5. API 合同就绪后发布 admin/mobile Pages 和 Android 包。旧在线 API 没有新增消息/等级字段时，不把新版 APK 的网络失败认定为新功能验收通过。
+1. Confirm and back up the target database, then apply incremental Prisma migrations: `20261007100000_room_level_ranges`, `20261007100100_room_text_messages`, `20261007100200_room_level_range_upper_bound`, and `20261007100300_room_message_foreign_keys`. Do not overwrite previously published migrations.
+2. Keep the Vercel API root at `apps/api` with the NestJS build. Publish both the API and standalone consumer, then confirm that the console shows the `slogan-realtime` consumer. Vercel supplies `VERCEL` automatically; do not set it manually in persistent-process environments.
+3. Reuse the approved database, LiveKit, and `REALTIME_ENABLED` configuration and confirm that the consumer can access it too. This change does not alter providers, secrets, Google login, or remote environment variables.
+4. Verify business success for ordinary departures and departures during LiveKit failure. After stopping all clients and HTTP requests, consumer execution must still be recorded and PostgreSQL commands must move from PENDING to COMPLETED. Verify reauthentication, redelivery, consumer restart, provider recovery, and rejection of old identities.
+5. Publish admin/mobile Pages and Android packages after the API contract is ready. If the old production API lacks new message/proficiency fields, network failures in the new APK do not establish feature acceptance.
 
-## 回滚
+## Rollback
 
-保留新增字段和消息表；旧单级请求兼容。房主接任选择属于客户端兼容性变化，不能把旧 APK 与新行为组合称为已验收。停止新前端入口后可以回滚前端版本，但不要回退 LEFT、ENDING、ENDED 或删除未处理命令。先排空命令或确认另一个消费者已接管，再移除队列函数/触发配置。回滚消费者时保留主题和数据库，以恢复扫描重建任务。
+Retain the new fields and message table; older single-level requests remain compatible. Host-successor selection is a client compatibility change, and the combination of an old APK with new behavior cannot be called accepted. After disabling new frontend entry points, the frontend version may be rolled back. Do not revert LEFT, ENDING, or ENDED states or delete pending commands. Before removing queue functions or triggers, drain commands or confirm that another consumer has taken over. Preserve topics and the database during consumer rollback so scan-based reconstruction remains possible.
 
-## 已有证据和发布门槛
+## Existing evidence and release gate
 
-本地 `vercel build` 成功产出公开 `index.func` 与独立 `api/realtime.func`，后者具有 `queue/v2beta` / `slogan-realtime` 触发配置。托管 runner 与 queue adapter 的测试覆盖响应外处理、失败重投递、扫描重建、延迟及播种去重；PostgreSQL 集成覆盖 provider 故障和恢复。四个迁移已于 2026-10-07 成功应用到已确认的 Neon main / neondb，共 25 个完成迁移、0 个失败；现有 5 个用户和 4 个房间保留，等级字段及消息外键已核对。见 [迁移证据](../acceptance/simplify-room-and-mobile-experience/production-migrations.json)。云端队列实际触发仍待发布后验证，因此 OpenSpec 5.3 保持未完成。
+Local `vercel build` produced public `index.func` and standalone `api/realtime.func`; the latter contains the `queue/v2beta` / `slogan-realtime` trigger configuration. Managed-runner and queue-adapter tests covered processing after response, failed redelivery, scan reconstruction, delays, and seed deduplication. PostgreSQL integration tests covered provider failure and recovery.
 
-依据：[Vercel Queues](https://vercel.com/docs/queues)、[SDK](https://vercel.com/docs/queues/sdk)。这些文档证明平台能力，不能证明本项目已经上线运行。
+Four migrations were applied successfully to the confirmed Neon main/neondb on 2026-10-07, with 25 completed migrations and 0 failures. Existing 5 users and 4 rooms were retained; proficiency fields and message foreign keys were inspected. See [migration evidence](../acceptance/simplify-room-and-mobile-experience/production-migrations.json). Actual cloud queue triggering still requires post-release verification, so OpenSpec task 5.3 remains unfinished.
 
-2026-10-08 实际生产检查发现清理命令六分钟仍未执行。请求内播种补丁与日志安全分类已有本地测试；云端触发未通过前，5.3 不勾选，具体错误仍需对照线上日志。
+References: [Vercel Queues](https://vercel.com/docs/queues), [SDK](https://vercel.com/docs/queues/sdk). These sources establish platform capabilities, not this project's deployment success.
+
+The actual production check on 2026-10-08 found that cleanup commands did not execute for six minutes. Request-scoped seeding and safe log classification were verified locally. Task 5.3 remains unchecked until cloud triggering passes; the specific failure still needs comparison with production logs.
