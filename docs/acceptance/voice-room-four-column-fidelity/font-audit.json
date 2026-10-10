@@ -1,0 +1,51 @@
+{
+  "faces": [
+    {
+      "weight": 400,
+      "postScriptName": "NotoSansSC-Regular",
+      "unchangedTables": {
+        "glyf": true,
+        "cmap": true,
+        "hmtx": true
+      }
+    },
+    {
+      "weight": 500,
+      "postScriptName": "NotoSansSC-Medium",
+      "unchangedTables": {
+        "glyf": true,
+        "cmap": true,
+        "hmtx": true
+      }
+    },
+    {
+      "weight": 600,
+      "postScriptName": "NotoSansSC-SemiBold",
+      "unchangedTables": {
+        "glyf": true,
+        "cmap": true,
+        "hmtx": true
+      }
+    },
+    {
+      "weight": 700,
+      "postScriptName": "NotoSansSC-Bold",
+      "unchangedTables": {
+        "glyf": true,
+        "cmap": true,
+        "hmtx": true
+      }
+    }
+  ],
+  "regularGlyphInkArea": {
+    "figma": 1460.4031499335233,
+    "asset": 1460.6635042083335,
+    "ratio": 1.0001782756184976
+  },
+  "browserActualRegularFont": "NotoSansSC-Regular",
+  "mediumTitleGlyphInkArea": {
+    "figma": 184.954104265625,
+    "asset": 185.01036629166666,
+    "ratio": 1.0003041945257989
+  }
+}

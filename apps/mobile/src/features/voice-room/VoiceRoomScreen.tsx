@@ -39,21 +39,23 @@ import profileIcon from '../../../assets/icons/profile.png';
 import micIcon from '../../../assets/icons/mic.png';
 import backIcon from '../../../assets/icons/voice-back.png';
 import exitIcon from '../../../assets/icons/voice-exit.png';
-import moreIcon from '../../../assets/icons/voice-more.png';
 import rulesIcon from '../../../assets/icons/voice-rules.png';
 import sparklesIcon from '../../../assets/icons/voice-sparkles.png';
 import hostIcon from '../../../assets/icons/voice-host.png';
 import sendIcon from '../../../assets/icons/voice-send.png';
 import roomMicIcon from '../../../assets/icons/voice-mic.png';
 import micOffIcon from '../../../assets/icons/voice-mic-off.png';
+import emptySeatIcon from '../../../assets/icons/voice-empty-seat.png';
 import gbFlag from '../../../assets/icons/flag-gb.png';
 import jpFlag from '../../../assets/icons/flag-jp.png';
 import usFlag from '../../../assets/icons/flag-us.png';
 import inFlag from '../../../assets/icons/flag-in.png';
 
-const countryFlags: Record<string, number> = { GB: gbFlag, JP: jpFlag, US: usFlag, IN: inFlag };
+// Measured at 390 logical pixels, in a 359px row: original avatar centres.
+const firstRowOpticalOffsets = [-0.875, -12.625, -6.375, -5.125] as const;
+const lastPairOpticalOffsets = [-0.625, -0.375] as const;
 
-const rules = [t('voiceRulesBody')];
+const countryFlags: Record<string, number> = { GB: gbFlag, JP: jpFlag, US: usFlag, IN: inFlag };
 
 function voiceError(code: string | null): string {
   switch (code) {
@@ -308,7 +310,9 @@ function MemberSeat({
   snapshot,
   onPress,
   onRemove,
+  columnIndex,
 }: {
+  columnIndex: number;
   member: RoomMember;
   snapshot: VoiceSessionSnapshot;
   onPress: () => void;
@@ -318,20 +322,25 @@ function MemberSeat({
     (participant) => participant.identity === member.participantIdentity,
   );
   return (
-    <View style={styles.seat}>
+    <View
+      testID={`room-seat-${member.membershipId}`}
+      style={[styles.seat, columnIndex >= 2 && { transform: [{ translateY: -1 }] }]}
+    >
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={member.displayName}
         onPress={onPress}
         style={styles.seatPress}
       >
-        <View
-          style={[
-            styles.avatar,
-            member.role === 'HOST' && styles.avatarHost,
-            media?.speaking && styles.avatarSpeaking,
-          ]}
-        >
+        <View style={[styles.avatar, member.avatarUrl && styles.photoAvatar]}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.avatarRing,
+              member.role === 'HOST' && styles.avatarHost,
+              media?.speaking && styles.avatarSpeaking,
+            ]}
+          />
           <Image
             source={member.avatarUrl ? { uri: member.avatarUrl } : profileIcon}
             style={styles.avatarPhoto}
@@ -368,7 +377,10 @@ function MemberSeat({
           accessibilityRole="button"
           accessibilityLabel={`${t('roomRemoveMember')} ${member.displayName}`}
           onPress={onRemove}
-          style={styles.removeBadge}
+          style={[
+            styles.removeBadge,
+            { right: [-3, -3, 5, 1][columnIndex], top: [-1, -1, 0, 1][columnIndex] },
+          ]}
         >
           <View style={styles.removeMark} />
         </TouchableOpacity>
@@ -422,11 +434,20 @@ function VoiceRoomBody({
   } | null>(null);
   const [successorMembershipId, setSuccessorMembershipId] = useState<string | null>(null);
   const members = [...snapshot.members].sort((a, b) => a.position - b.position);
+  const [seatRowWidth, setSeatRowWidth] = useState(359);
   const room = snapshot.room;
   if (!room) return null;
+  const seats: (RoomMember | null)[] = [
+    ...members,
+    ...Array.from({ length: Math.max(0, room.capacity - members.length) }, () => null),
+  ];
+  const seatRows = Array.from({ length: Math.ceil(seats.length / 4) }, (_, row) =>
+    seats.slice(row * 4, row * 4 + 4),
+  );
   return (
     <VoicePage>
       <View style={styles.header}>
+        <View pointerEvents="none" style={styles.headerBackground} />
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel={t('back')}
@@ -446,11 +467,6 @@ function VoiceRoomBody({
           <Text numberOfLines={1} style={styles.headerTopic}>
             {room.topic}
           </Text>
-          <Text style={styles.headerMeta}>
-            {room.memberCount} / {room.capacity} {t('voiceOnline')} ·{' '}
-            {tf('roomRemainingMinutes', { minutes: remainingMinutes(room.endsAt) })}
-          </Text>
-          <Text style={styles.headerLevel}>{roomLevelLabel(room).replace('–', ' · ')}</Text>
         </View>
         {
           <TouchableOpacity
@@ -475,9 +491,20 @@ function VoiceRoomBody({
           style={styles.moreHit}
           onPress={() => setShareOpen(true)}
         >
-          <Image source={moreIcon} style={styles.moreIcon} />
+          <View style={styles.moreDots}>
+            {[0, 1, 2].map((dot) => (
+              <View key={dot} style={styles.moreDot} />
+            ))}
+          </View>
         </TouchableOpacity>
-        <Text style={styles.live}>● LIVE</Text>
+        <View testID="room-header-status" style={styles.headerStatus}>
+          <Text numberOfLines={1} style={styles.headerMeta}>
+            {room.memberCount} / {room.capacity} {t('voiceOnline')} ·{' '}
+            {tf('roomRemainingMinutes', { minutes: remainingMinutes(room.endsAt) })}
+          </Text>
+          <Text style={styles.headerLevel}>{roomLevelLabel(room).replace('–', ' ～ ')}</Text>
+          <Text style={styles.live}>{'●  LIVE'}</Text>
+        </View>
       </View>
       <ScrollView style={styles.memberScroll} contentContainerStyle={styles.bodyContent}>
         <View style={styles.rulesBanner}>
@@ -486,7 +513,7 @@ function VoiceRoomBody({
           </View>
           <View style={styles.rulesText}>
             <Text style={styles.rulesTitle}>{t('voiceRoomRules')}</Text>
-            <Text style={styles.rulesPreview}>{rules.join(' ')}</Text>
+            <Text style={styles.rulesPreview}>{t('voiceRulesBody')}</Text>
           </View>
         </View>
         {snapshot.role === 'HOST' &&
@@ -522,35 +549,70 @@ function VoiceRoomBody({
               {t('voiceRoomMembers')} · {members.length} / {room.capacity} {t('voicePeople')}
             </Text>
           </TouchableOpacity>
-          <View style={styles.membersGrid}>
-            {members.map((member) => (
-              <MemberSeat
-                key={member.membershipId}
-                member={member}
-                snapshot={snapshot}
-                onPress={() => setControlsOpen(true)}
-                onRemove={
-                  snapshot.role === 'HOST' && member.role !== 'HOST'
-                    ? () => {
-                        setRemoveTarget(member);
-                        setControlsOpen(true);
-                      }
-                    : undefined
-                }
-              />
-            ))}
-            {Array.from({ length: Math.max(0, room.capacity - members.length) }, (_, index) => (
-              <TouchableOpacity
-                key={`empty-${index}`}
-                accessibilityRole="button"
-                accessibilityLabel={t('voiceEmptySeat')}
-                onPress={() => setShareOpen(true)}
-                style={[styles.seat, styles.inviteSeat]}
+          <View testID="room-seat-grid" style={styles.membersGrid}>
+            {seatRows.map((row, rowIndex) => (
+              <View
+                key={rowIndex}
+                testID={`room-seat-row-${rowIndex}`}
+                onLayout={({ nativeEvent }) => setSeatRowWidth(nativeEvent.layout.width)}
+                style={styles.seatRow}
               >
-                <View style={styles.emptySeat}>
-                  <Text style={styles.emptyPlus}>+</Text>
-                </View>
-              </TouchableOpacity>
+                {row.map((member, index) => (
+                  <View key={member?.membershipId ?? `empty-${index}`} style={styles.seatColumn}>
+                    <View
+                      // Original 390px frame supplies these avatar centre offsets.
+                      // Columns own their width; optical offsets cannot trigger Yoga wrapping.
+                      style={[
+                        styles.seatContent,
+                        {
+                          transform: [
+                            {
+                              translateX:
+                                ((row.length === 4
+                                  ? firstRowOpticalOffsets[index]!
+                                  : row.length === 2
+                                    ? lastPairOpticalOffsets[index]!
+                                    : 0) *
+                                  seatRowWidth) /
+                                359,
+                            },
+                          ],
+                        },
+                      ]}
+                    >
+                      {member ? (
+                        <MemberSeat
+                          member={member}
+                          columnIndex={index}
+                          snapshot={snapshot}
+                          onPress={() => setControlsOpen(true)}
+                          onRemove={
+                            snapshot.role === 'HOST' && member.role !== 'HOST'
+                              ? () => {
+                                  setRemoveTarget(member);
+                                  setControlsOpen(true);
+                                }
+                              : undefined
+                          }
+                        />
+                      ) : (
+                        <TouchableOpacity
+                          testID={`room-empty-seat-${rowIndex * 4 + index}`}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('voiceEmptySeat')}
+                          onPress={() => setShareOpen(true)}
+                          style={[styles.seat, styles.inviteSeat]}
+                        >
+                          <View style={styles.emptySeat}>
+                            <Image source={emptySeatIcon} style={styles.emptySeatImage} />
+                            <Text style={styles.emptyPlus}>+</Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
             ))}
           </View>
         </View>
@@ -605,42 +667,44 @@ function VoiceRoomBody({
           onRetry={() => session.recheckDevices()}
           onEnableAudio={() => session.enableAudioPlayback()}
         />
-        <View style={styles.controls}>
-          <View style={styles.messageEntry}>
-            <TextInput
-              accessibilityLabel={t('voiceComposerLater')}
-              placeholder={t('voiceComposerLater')}
-              placeholderTextColor="#D5CFE3"
-              value={chat.text}
-              onChangeText={chat.setText}
-              maxLength={2000}
-              style={[styles.composerInput, styles.composerText]}
-              onSubmitEditing={() => void chat.send()}
-              returnKeyType="send"
-            />
+        <View testID="room-composer-clip" style={styles.composerClip}>
+          <View style={styles.controls}>
+            <View style={styles.messageEntry}>
+              <TextInput
+                accessibilityLabel={t('voiceComposerLater')}
+                placeholder={t('voiceComposerLater')}
+                placeholderTextColor="#D5CFE3"
+                value={chat.text}
+                onChangeText={chat.setText}
+                maxLength={2000}
+                style={[styles.composerInput, styles.composerText]}
+                onSubmitEditing={() => void chat.send()}
+                returnKeyType="send"
+              />
+            </View>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('roomSendMessage')}
+              disabled={chat.sending || chat.tooLong || !chat.text.trim()}
+              onPress={() => void chat.send()}
+              style={styles.sendButton}
+            >
+              <Image source={sendIcon} style={styles.sendImage} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={
+                snapshot.media.microphoneEnabled ? t('voiceMute') : t('voiceUnmute')
+              }
+              onPress={() => void session.setMicrophoneEnabled(!snapshot.media.microphoneEnabled)}
+              style={[styles.micButton, snapshot.media.microphoneEnabled && styles.micOn]}
+            >
+              <Image
+                source={snapshot.media.microphoneEnabled ? micIcon : roomMicIcon}
+                style={styles.micImage}
+              />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={t('roomSendMessage')}
-            disabled={chat.sending || chat.tooLong || !chat.text.trim()}
-            onPress={() => void chat.send()}
-            style={styles.sendButton}
-          >
-            <Image source={sendIcon} style={styles.sendImage} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={
-              snapshot.media.microphoneEnabled ? t('voiceMute') : t('voiceUnmute')
-            }
-            onPress={() => void session.setMicrophoneEnabled(!snapshot.media.microphoneEnabled)}
-            style={[styles.micButton, snapshot.media.microphoneEnabled && styles.micOn]}
-          >
-            <Image
-              source={snapshot.media.microphoneEnabled ? micIcon : roomMicIcon}
-              style={styles.micImage}
-            />
-          </TouchableOpacity>
         </View>
       </View>
       {(endConfirm || leaveConfirm) && (
@@ -956,18 +1020,19 @@ const styles = StyleSheet.create({
   assistanceButton: {
     width: 38,
     height: 38,
-    borderRadius: 20,
+    borderRadius: 19,
+    marginBottom: 1,
+    overflow: 'hidden',
     backgroundColor: '#443263',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarHost: { borderColor: '#6546EC' },
-  seatPress: { width: 76, height: 74, alignItems: 'center' },
+  seatPress: { width: '100%', height: 74, alignItems: 'center' },
   participantStrip: {
-    minHeight: 191,
-    marginTop: 8,
-    marginLeft: -3,
-    marginRight: 2,
+    marginTop: 11,
+    marginLeft: -1,
+    marginRight: 0,
     backgroundColor: '#38295B',
     paddingBottom: 9,
   },
@@ -976,7 +1041,7 @@ const styles = StyleSheet.create({
   removeBadge: {
     position: 'absolute',
     right: 0,
-    top: -3,
+    top: -1,
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -1011,8 +1076,8 @@ const styles = StyleSheet.create({
   },
   seatMuted: {
     position: 'absolute',
-    left: 10,
-    top: 10,
+    left: 12,
+    top: 11,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -1022,8 +1087,8 @@ const styles = StyleSheet.create({
   },
   flagBadge: {
     position: 'absolute',
-    left: -9,
-    top: -2,
+    left: -7,
+    top: 0,
     width: 18,
     height: 18,
     borderRadius: 9,
@@ -1054,10 +1119,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingLeft: 16,
+    paddingLeft: 12,
     paddingRight: 11,
-    paddingBottom: 6,
-    gap: 5,
+    paddingBottom: 5,
+    gap: 9,
   },
   chatArea: { flex: 1, minHeight: 44, overflow: 'hidden' },
   messagesContent: { flexGrow: 1, justifyContent: 'flex-end', gap: 6 },
@@ -1065,10 +1130,10 @@ const styles = StyleSheet.create({
   consentHeading: { color: '#fff' },
   consentStateCard: { marginTop: 24 },
   messages: { flex: 1 },
-  avatarPhoto: { width: 48, height: 48, borderRadius: 24 },
+  avatarPhoto: { position: 'absolute', top: 1, left: 2, width: 48, height: 48, borderRadius: 24 },
   message: {
-    backgroundColor: '#503589',
-    borderRadius: 16,
+    backgroundColor: '#523587',
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 8,
     flexDirection: 'row',
@@ -1095,7 +1160,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     marginTop: 2,
-    paddingLeft: 5,
+    alignSelf: 'stretch',
+    marginLeft: 16,
   },
   hostIcon: { width: 12, height: 12 },
   action: {
@@ -1163,29 +1229,42 @@ const styles = StyleSheet.create({
   endedTopic: { color: tokens.color.foreground, fontSize: 17, fontWeight: '700', marginTop: 16 },
   endedMeta: { color: tokens.color.muted, fontSize: 12, marginTop: 18 },
   header: {
-    height: 88,
+    height: 68,
     flexShrink: 0,
     marginHorizontal: 16,
+  },
+  headerBackground: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 88,
     backgroundColor: '#30204E',
     borderRadius: 12,
   },
   backHit: { position: 'absolute', left: -6, top: -2, width: 36, height: 38 },
-  backIcon: { position: 'absolute', left: 9, top: 5, width: 24, height: 24 },
-  headerMiddle: { position: 'absolute', left: 36, top: 3, width: 232 },
+  backIcon: { position: 'absolute', left: 3, top: 5, width: 24, height: 24 },
+  headerMiddle: { position: 'absolute', left: 36, right: 90, top: 3 },
   headerTopic: { color: '#fff', fontSize: 18, lineHeight: 25, fontWeight: '700', height: 31 },
-  headerMeta: { color: '#C8BBFF', fontSize: 12, lineHeight: 17, marginTop: 5, height: 24 },
-  headerLevel: { color: '#C8BBFF', fontSize: 11, lineHeight: 15, fontWeight: '500', marginTop: 2 },
-  exitHit: { position: 'absolute', left: 270, top: 0, width: 34, height: 34 },
-  exitIcon: { position: 'absolute', left: 13, top: 3, width: 18, height: 18 },
-  moreHit: { position: 'absolute', right: 0, top: -2, width: 46, height: 42 },
-  moreIcon: { position: 'absolute', left: 8, top: 2, width: 24, height: 24, tintColor: '#FFFFFF' },
-  live: {
+  headerStatus: {
     position: 'absolute',
-    left: 283,
-    width: 68,
+    left: 0,
+    right: 0,
+    top: 43,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+  },
+  headerMeta: { flex: 1, minWidth: 0, color: '#C8BBFF', fontSize: 12, lineHeight: 17 },
+  headerLevel: { width: 44, color: '#C8BBFF', fontSize: 11, lineHeight: 15, fontWeight: '500' },
+  exitHit: { position: 'absolute', right: 54, top: 0, width: 34, height: 34 },
+  exitIcon: { position: 'absolute', left: 13, top: 3, width: 24, height: 24 },
+  moreHit: { position: 'absolute', right: -4, top: -2, width: 34, height: 42 },
+  moreDots: { position: 'absolute', left: 8, top: 12, flexDirection: 'row', gap: 3 },
+  moreDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF' },
+  live: {
+    width: 39,
     textAlign: 'right',
-    top: 40,
-    color: '#71E8CD',
+    color: '#77E5C9',
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '500',
@@ -1195,7 +1274,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 4,
     minHeight: 76,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: '#150F29',
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1234,7 +1313,8 @@ const styles = StyleSheet.create({
   membersHeading: {
     color: '#D7CFF0',
     fontSize: 12,
-    lineHeight: 22,
+    lineHeight: 17,
+    height: 22,
     fontWeight: '500',
     marginHorizontal: 16,
     marginTop: 9,
@@ -1242,48 +1322,69 @@ const styles = StyleSheet.create({
   membersGrid: {
     marginHorizontal: 16,
     marginTop: 3,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    columnGap: 14,
-    rowGap: 18,
-    justifyContent: 'center',
+    gap: 18,
   },
-  seat: { width: 76, height: 74, alignItems: 'center' },
+  seatRow: { flexDirection: 'row', flexWrap: 'nowrap', justifyContent: 'center' },
+  seatColumn: { width: '25%', minWidth: 0, flexShrink: 0, alignItems: 'center' },
+  seatContent: { width: 76, maxWidth: '100%' },
+  seat: { width: '100%', height: 74, alignItems: 'center' },
   inviteSeat: { height: 56, justifyContent: 'flex-start', paddingTop: 2 },
   avatar: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    borderWidth: 2,
-    borderColor: 'transparent',
     backgroundColor: '#B4A7D9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarSpeaking: { borderColor: '#23C8BE' },
-  seatName: { color: '#FFFFFF', fontSize: 12, lineHeight: 20, fontWeight: '500', maxWidth: 58 },
+  photoAvatar: { backgroundColor: 'transparent' },
+  avatarRing: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  avatarSpeaking: { borderColor: '#1FC7A4' },
+  seatName: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 20,
+    fontWeight: '500',
+    flexShrink: 1,
+    width: 39,
+    maxWidth: 39,
+    textAlign: 'center',
+  },
   emptySeat: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: '#B8A9D4',
-    backgroundColor: '#463864',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyPlus: { color: '#FFFFFF', fontSize: 29, lineHeight: 40, fontWeight: '500' },
+  emptySeatImage: { position: 'absolute', width: 48, height: 48 },
+  emptyPlus: {
+    color: '#FFFFFF',
+    fontSize: 29,
+    lineHeight: 40,
+    fontWeight: '500',
+    transform: [{ translateY: -4 }],
+  },
   composer: {
-    backgroundColor: '#271D3E',
-    paddingBottom: Platform.OS === 'web' ? 17 : 8,
+    backgroundColor: '#241A3E',
+    paddingBottom: Platform.OS === 'web' ? 22 : 13,
     paddingLeft: 16,
     paddingRight: 24,
     paddingTop: 8,
     flexShrink: 0,
   },
-  sparklesIcon: { width: 20, height: 20, marginTop: 6, marginLeft: 7 },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sparklesIcon: { position: 'absolute', left: 15, top: 19, width: 20, height: 20 },
+  composerClip: { height: 51, overflow: 'hidden' },
+  controls: { height: 56, flexDirection: 'row', alignItems: 'center', gap: 10 },
   messageEntry: {
     flex: 1,
     height: 56,
@@ -1299,7 +1400,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  composerText: { fontFamily: 'NotoSansSC', color: '#FFFFFF', fontSize: 14 },
+  composerText: {
+    fontFamily: 'NotoSansSC',
+    color: '#FFFFFF',
+    fontSize: 14,
+    lineHeight: 20,
+    paddingVertical: 0,
+  },
   micButton: {
     width: 44,
     height: 44,

@@ -1,0 +1,163 @@
+{
+  "file": "56nIowZmvBhb0QJvOlDQdU",
+  "page": "02 UI",
+  "nodeId": "115:1425",
+  "width": 390,
+  "height": 844,
+  "exportScale": 3,
+  "capturedAt": "2026-10-10T03:15:13.489Z",
+  "regions": [
+    {
+      "id": "121:3903",
+      "name": "Voice room / coral ambient",
+      "x": 318,
+      "y": 597,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "115:1426",
+      "name": "Ambient bottom",
+      "x": -130,
+      "y": 660,
+      "width": 260,
+      "height": 260
+    },
+    {
+      "id": "115:1427",
+      "name": "Status time",
+      "x": 24,
+      "y": 13,
+      "width": 60,
+      "height": 23
+    },
+    {
+      "id": "115:1428",
+      "name": "Status system",
+      "x": 286,
+      "y": 14,
+      "width": 82,
+      "height": 21
+    },
+    {
+      "id": "115:1429",
+      "name": "RoomHeader / V1",
+      "x": 16,
+      "y": 44,
+      "width": 358,
+      "height": 88
+    },
+    {
+      "id": "163:1656",
+      "name": "SVG icon / arrow-left",
+      "x": 13,
+      "y": 47,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "163:1652",
+      "name": "More dot 1",
+      "x": 352,
+      "y": 54,
+      "width": 4,
+      "height": 4
+    },
+    {
+      "id": "163:1653",
+      "name": "More dot 2",
+      "x": 359,
+      "y": 54,
+      "width": 4,
+      "height": 4
+    },
+    {
+      "id": "163:1654",
+      "name": "More dot 3",
+      "x": 366,
+      "y": 54,
+      "width": 4,
+      "height": 4
+    },
+    {
+      "id": "163:1650",
+      "name": "Level",
+      "x": 278,
+      "y": 88,
+      "width": 44,
+      "height": 15
+    },
+    {
+      "id": "163:1648",
+      "name": "Status",
+      "x": 16,
+      "y": 87,
+      "width": 147,
+      "height": 17
+    },
+    {
+      "id": "115:1430",
+      "name": "Participant strip",
+      "x": -1,
+      "y": 203,
+      "width": 391,
+      "height": 191
+    },
+    {
+      "id": "115:1450",
+      "name": "Action / native language to English",
+      "x": 341,
+      "y": 719,
+      "width": 38,
+      "height": 38
+    },
+    {
+      "id": "115:1441",
+      "name": "Live mark",
+      "x": 335,
+      "y": 87,
+      "width": 39,
+      "height": 15
+    },
+    {
+      "id": "115:1445",
+      "name": "Composer zone",
+      "x": 0,
+      "y": 763,
+      "width": 390,
+      "height": 81
+    },
+    {
+      "id": "115:1447",
+      "name": "Home indicator",
+      "x": 145,
+      "y": 834,
+      "width": 100,
+      "height": 4
+    },
+    {
+      "id": "115:1448",
+      "name": "Hit area / exit room",
+      "x": 286,
+      "y": 44,
+      "width": 34,
+      "height": 34
+    },
+    {
+      "id": "115:1451",
+      "name": "RoomRules / Always visible",
+      "x": 16,
+      "y": 116,
+      "width": 358,
+      "height": 76
+    },
+    {
+      "id": "118:2948",
+      "name": "Chat / System",
+      "x": 12,
+      "y": 724,
+      "width": 320,
+      "height": 34
+    }
+  ]
+}

@@ -15,7 +15,7 @@ export function VoicePage({ children }: { children: ReactNode }) {
       {Platform.OS === 'web' && (
         <View style={styles.previewStatus} accessibilityElementsHidden>
           <Text style={styles.previewText}>9:41</Text>
-          <Text style={styles.previewText}>●●● 100%</Text>
+          <Text style={[styles.previewText, styles.previewSystem]}>●●● 100%</Text>
         </View>
       )}
       <KeyboardAvoidingView
@@ -42,9 +42,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingTop: 11,
+    paddingTop: 13,
   },
   previewText: { color: '#fff', fontSize: 14, fontWeight: '500', lineHeight: 20 },
+  previewSystem: { fontSize: 12, lineHeight: 17, marginTop: 1 },
   homeIndicator: {
     position: 'absolute',
     width: 100,
