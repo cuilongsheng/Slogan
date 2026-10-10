@@ -260,3 +260,39 @@ test('original six-seat geometry matches; four seats reclaim the unused second r
   expect(await page.getByRole('textbox').boundingBox()).toEqual(composer);
   await page.screenshot({ path: `${fidelityDir}/runtime-390-two-of-four.png` });
 });
+
+test('empty-seat invitation selects an idle partner through the generated API client', async ({
+  page,
+}) => {
+  await page.route('**/v1/rooms/visual-room/messages*', (route) =>
+    route.fulfill({ json: { items: [], nextCursor: 'cursor', hasMore: false } }),
+  );
+  await page.route('**/v1/people/available*', (route) =>
+    route.fulfill({
+      json: {
+        items: [
+          { userId: 'idle-partner', displayName: '空闲伙伴', cefrLevel: 'B1', isAvailable: true },
+        ],
+        nextCursor: null,
+      },
+    }),
+  );
+  let invited = false;
+  await page.route('**/v1/rooms/visual-room/invitations', (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.targetUserId).toBe('idle-partner');
+    expect(body.clientRequestId).toMatch(/^[a-f0-9-]{36}$/);
+    invited = true;
+    return route.fulfill({ json: { id: 'fixture-invitation', status: 'PENDING' } });
+  });
+  await page.goto('/?count=2&capacity=4&role=host');
+  await page.getByTestId('room-empty-seat-2').click();
+  await expect(page.getByText('空闲伙伴')).toBeVisible();
+  await expect(page.getByText('复制链接')).toHaveCount(0);
+  await page.getByRole('button', { name: '邀请 空闲伙伴', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '邀请已发送 空闲伙伴', exact: true }),
+  ).toBeDisabled();
+  expect(invited).toBe(true);
+  await page.screenshot({ path: 'docs/acceptance/in-app-partner-invitations/runtime-invite.png' });
+});

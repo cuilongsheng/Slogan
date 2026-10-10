@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
+import { AppText as Text } from '../../components/ui/AppText';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
@@ -33,6 +33,7 @@ export function RoomControls({
   refresh,
   onClose,
   initialRemoveTarget,
+  initialMode,
 }: {
   roomId: string;
   members: RoomMember[];
@@ -42,8 +43,15 @@ export function RoomControls({
   refresh: () => Promise<void>;
   onClose: () => void;
   initialRemoveTarget?: RoomMember;
+  initialMode?: 'invite';
 }) {
-  const [mode, setMode] = useState<Mode>(initialRemoveTarget && isHost ? 'remove' : 'members');
+  const [mode, setMode] = useState<Mode>(
+    isHost && initialMode === 'invite'
+      ? 'invite'
+      : initialRemoveTarget && isHost
+        ? 'remove'
+        : 'members',
+  );
   const [target, setTarget] = useState<RoomMember | null>(
     isHost ? (initialRemoveTarget ?? null) : null,
   );
@@ -51,70 +59,73 @@ export function RoomControls({
   const [description, setDescription] = useState('');
   const [requestId, setRequestId] = useState(() => randomUUID());
   const [receipt, setReceipt] = useState<{ id: string; caseId: string } | null>(null);
+  const [search, setSearch] = useState('');
   const [people, setPeople] = useState<AvailablePerson[]>([]);
   const [removed, setRemoved] = useState<RemovedMember[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [nextFriendCursor, setNextFriendCursor] = useState<string | null>(null);
-  const [peopleLoading, setPeopleLoading] = useState(false);
+  const [peopleLoading, setPeopleLoading] = useState(isHost && initialMode === 'invite');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sentTo, setSentTo] = useState<string[]>([]);
   const invitationIds = useRef(new Map<string, string>());
 
-  async function loadPeople(cursor?: string) {
-    if (peopleLoading) return;
-    setPeopleLoading(true);
-    setError('');
-    try {
-      const [page, friends] = await Promise.all([
-        api.availablePeople(cursor),
-        cursor ? Promise.resolve(null) : api.friends(),
-      ]);
-      const candidates = [
-        ...(friends?.items.map((item) => ({ ...item.friend, isAvailable: item.isAvailable })) ??
-          []),
-        ...page.items,
-      ].filter(
-        (person, index, all) => all.findIndex((item) => item.userId === person.userId) === index,
-      );
-      setPeople((current) =>
-        cursor
-          ? [
-              ...current,
-              ...candidates.filter(
-                (person) => !current.some((item) => item.userId === person.userId),
-              ),
-            ]
-          : candidates,
-      );
-      setNextCursor(page.nextCursor);
-      if (!cursor) setNextFriendCursor(friends?.nextCursor ?? null);
-    } catch {
-      setError(t('roomControlsFailed'));
-    } finally {
-      setPeopleLoading(false);
-    }
-  }
+  const loadingPeople = useRef(false);
+  const loadPeople = useCallback(
+    async (cursor?: string) => {
+      if (loadingPeople.current) return;
+      loadingPeople.current = true;
+      setPeopleLoading(true);
+      setError('');
+      try {
+        // Available people already combines authenticated presence, room occupancy,
+        // account eligibility and bilateral blocking on the server.
+        const page = await api.availablePeople(cursor);
+        const candidates = page.items.filter((person) => person.isAvailable);
+        setPeople((current) =>
+          cursor
+            ? [
+                ...current,
+                ...candidates.filter(
+                  (person) => !current.some((item) => item.userId === person.userId),
+                ),
+              ]
+            : candidates,
+        );
+        setNextCursor(page.nextCursor);
+      } catch {
+        setError(t('roomControlsFailed'));
+      } finally {
+        loadingPeople.current = false;
+        setPeopleLoading(false);
+      }
+    },
+    [api],
+  );
 
-  async function loadMoreFriends() {
-    if (!nextFriendCursor || peopleLoading) return;
-    setPeopleLoading(true);
-    setError('');
-    try {
-      const page = await api.friends(nextFriendCursor);
-      setPeople((current) => [
-        ...current,
-        ...page.items
-          .map((item) => ({ ...item.friend, isAvailable: item.isAvailable }))
-          .filter((person) => !current.some((item) => item.userId === person.userId)),
-      ]);
-      setNextFriendCursor(page.nextCursor);
-    } catch {
-      setError(t('roomControlsFailed'));
-    } finally {
-      setPeopleLoading(false);
-    }
-  }
+  useEffect(() => {
+    if (!isHost || initialMode !== 'invite') return;
+    let disposed = false;
+    loadingPeople.current = true;
+    void api
+      .availablePeople()
+      .then((page) => {
+        if (disposed) return;
+        setPeople(page.items.filter((person) => person.isAvailable));
+        setNextCursor(page.nextCursor);
+      })
+      .catch(() => {
+        if (!disposed) setError(t('roomControlsFailed'));
+      })
+      .finally(() => {
+        if (!disposed) {
+          loadingPeople.current = false;
+          setPeopleLoading(false);
+        }
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [initialMode, isHost, api]);
 
   async function loadRemoved() {
     setPeopleLoading(true);
@@ -214,7 +225,9 @@ export function RoomControls({
 
   const isMembers = mode === 'members';
   const visiblePeople = people.filter(
-    (person) => !members.some((member) => member.userId === person.userId),
+    (person) =>
+      !members.some((member) => member.userId === person.userId) &&
+      person.displayName.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
   );
   return (
     <View style={styles.overlay}>
@@ -224,9 +237,21 @@ export function RoomControls({
         style={styles.scrim}
         onPress={onClose}
       />
-      <View style={[styles.sheet, isMembers && styles.membersSheet]}>
+      <View
+        style={[
+          styles.sheet,
+          isMembers && styles.membersSheet,
+          mode === 'invite' && styles.inviteSheet,
+        ]}
+      >
         <View style={styles.headingRow}>
-          <Text style={[styles.title, isMembers && styles.darkTitle]}>
+          <Text
+            style={[
+              styles.title,
+              isMembers && styles.darkTitle,
+              mode === 'invite' && styles.inviteTitle,
+            ]}
+          >
             {mode === 'members'
               ? t('roomManageMembers')
               : mode === 'remove'
@@ -244,9 +269,24 @@ export function RoomControls({
             accessibilityLabel={t('roomCloseSheet')}
             onPress={onClose}
           >
-            <Text style={[styles.close, isMembers && styles.darkTitle]}>×</Text>
+            <Text
+              style={[
+                styles.close,
+                isMembers && styles.darkTitle,
+                mode === 'invite' && styles.inviteClose,
+              ]}
+            >
+              ×
+            </Text>
           </TouchableOpacity>
         </View>
+        {mode === 'invite' && (
+          <View pointerEvents="none" style={styles.brandDots}>
+            <View style={[styles.brandDot, { backgroundColor: '#FF6F70' }]} />
+            <View style={[styles.brandDot, { backgroundColor: '#FFD65A', marginTop: 3 }]} />
+            <View style={[styles.brandDot, { backgroundColor: '#23C8BE' }]} />
+          </View>
+        )}
         {error ? (
           <Text accessibilityRole="alert" style={styles.error}>
             {error}
@@ -383,24 +423,37 @@ export function RoomControls({
         )}
         {mode === 'invite' && (
           <>
-            <Text style={styles.body}>{t('roomInviteHint')}</Text>
-            <ScrollView style={styles.scroll}>
+            <TextInput
+              accessibilityLabel={t('roomInviteSearch')}
+              placeholder={t('roomInviteSearch')}
+              placeholderTextColor="#C8BCE0"
+              value={search}
+              onChangeText={setSearch}
+              style={styles.inviteSearch}
+            />
+            <Text style={styles.inviteListTitle}>{t('roomInviteListTitle')}</Text>
+            <ScrollView style={styles.inviteScroll}>
               {visiblePeople.map((person) => (
-                <View key={person.userId} style={styles.inviteRow}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{person.displayName.slice(0, 1)}</Text>
+                <View key={person.userId} style={[styles.inviteRow, styles.onlineInviteRow]}>
+                  <View style={[styles.avatar, styles.onlineInviteAvatar]}>
+                    <Text style={styles.onlineInviteInitial}>{person.displayName.slice(0, 1)}</Text>
                   </View>
                   <View style={styles.memberInfo}>
-                    <Text style={styles.lightName}>{person.displayName}</Text>
-                    <Text style={styles.lightMeta}>{person.cefrLevel}</Text>
+                    <Text numberOfLines={1} style={styles.onlineInviteName}>
+                      {person.displayName}
+                    </Text>
+                    <Text style={styles.onlineInviteMeta}>
+                      {person.cefrLevel} · {t('roomInviteIdle')}
+                    </Text>
                   </View>
                   <TouchableOpacity
                     accessibilityRole="button"
+                    accessibilityLabel={`${t(sentTo.includes(person.userId) ? 'roomInviteSent' : 'roomInviteAction')} ${person.displayName}`}
                     disabled={busy || sentTo.includes(person.userId)}
                     onPress={() => void invite(person)}
-                    style={styles.inviteButton}
+                    style={[styles.inviteButton, styles.onlineInviteButton]}
                   >
-                    <Text style={styles.primaryText}>
+                    <Text style={styles.onlineInviteLabel}>
                       {sentTo.includes(person.userId) ? t('roomInviteSent') : t('roomInviteAction')}
                     </Text>
                   </TouchableOpacity>
@@ -417,13 +470,9 @@ export function RoomControls({
                   <Text style={styles.loadMore}>{t('roomLoadMorePeople')}</Text>
                 </TouchableOpacity>
               )}
-              {nextFriendCursor && (
-                <TouchableOpacity accessibilityRole="button" onPress={() => void loadMoreFriends()}>
-                  <Text style={styles.loadMore}>{t('roomLoadMorePeople')}</Text>
-                </TouchableOpacity>
-              )}
               {peopleLoading && <ActivityIndicator color="#fff" />}
             </ScrollView>
+            <Text style={styles.inviteCapacityNote}>{t('roomInviteHint')}</Text>
           </>
         )}
         {mode === 'report' && (
@@ -516,6 +565,78 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 50,
   },
+  // Desktop Bridge source: 111:884 (390×518); fixed viewport for list scrolling.
+  inviteSheet: {
+    height: 518,
+    minHeight: 0,
+    backgroundColor: '#34274F',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingBottom: 24,
+  },
+  inviteTitle: { fontSize: 20, lineHeight: 30, fontWeight: '500' },
+  inviteClose: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '500',
+    width: 28,
+    textAlign: 'center',
+    color: '#D6CBE9',
+  },
+  inviteSearch: {
+    height: 44,
+    flexShrink: 0,
+    borderRadius: 22,
+    backgroundColor: '#45365E',
+    marginTop: 18,
+    paddingHorizontal: 14,
+    fontFamily: 'NotoSansSC',
+    fontSize: 13,
+    color: '#FFF',
+  },
+  inviteListTitle: {
+    height: 22,
+    marginTop: 20,
+    fontSize: 12,
+    lineHeight: 22,
+    fontWeight: '500',
+    color: '#C8BCE0',
+  },
+  inviteScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    height: 166,
+    minHeight: 0,
+    marginTop: 12,
+  },
+  inviteCapacityNote: { fontSize: 11, lineHeight: 18, color: '#BFB2D7', marginTop: 24 },
+  onlineInviteRow: {
+    height: 70,
+    minHeight: 70,
+    marginVertical: 0,
+    marginBottom: 12,
+    borderRadius: 12,
+    backgroundColor: '#45365E',
+    gap: 12,
+  },
+  onlineInviteAvatar: { backgroundColor: '#66559A', alignSelf: 'flex-start', marginTop: 0 },
+  onlineInviteInitial: { color: '#FFF', fontSize: 16, fontWeight: '500', lineHeight: 25 },
+  onlineInviteName: { color: '#FFF', fontSize: 14, lineHeight: 23, fontWeight: '500' },
+  onlineInviteMeta: { color: '#C8BCE0', fontSize: 11, lineHeight: 18, marginTop: 3 },
+  onlineInviteButton: {
+    minWidth: 64,
+    height: 36,
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    backgroundColor: '#6D4DE3',
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  onlineInviteLabel: { color: '#FFF', fontSize: 12, lineHeight: 20, fontWeight: '500' },
+  brandDots: { position: 'absolute', top: 24, right: 81, flexDirection: 'row', gap: 5 },
+  brandDot: { width: 7, height: 7, borderRadius: 4 },
   membersSheet: { backgroundColor: '#FFF9F6', minHeight: '65%' },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { color: '#fff', fontSize: 20, fontWeight: '700' },

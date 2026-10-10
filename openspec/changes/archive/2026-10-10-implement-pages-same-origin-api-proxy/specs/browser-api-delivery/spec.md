@@ -17,7 +17,7 @@
 
 ### Requirement: 固定上游与失败安全
 
-代理 SHALL 仅访问运维配置的 Render HTTPS origin，禁止缓存 API 请求和响应、自动重放失败请求、将客户端转发/IP头当可信身份或将凭证发送到重定向外域；代理自身错误 SHALL 为脱敏 JSON。
+代理 SHALL 仅访问运维配置且通过受控上游白名单校验的 HTTPS origin。白名单 MUST 保留单层 `*.onrender.com` 和已批准的 `slogan-api-pi.vercel.app`，不得放行其他 Vercel 项目、相似域名、含凭证、路径、查询、fragment 或非默认端口的配置。代理 MUST 禁止缓存 API 请求和响应、自动重放失败请求、将客户端转发/IP头当可信身份或将凭证发送到重定向外域；代理自身错误 SHALL 为脱敏 JSON。
 
 #### Scenario: 配置或传输失败
 

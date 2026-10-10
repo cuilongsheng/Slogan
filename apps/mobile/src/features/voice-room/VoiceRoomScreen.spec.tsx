@@ -1,4 +1,5 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { AppState, type AppStateStatus } from 'react-native';
 import { VoiceRoomScreen } from './VoiceRoomScreen';
 import type { VoiceSessionSnapshot } from './session';
 
@@ -150,4 +151,88 @@ test('password rejection stays in a dialog and retries the same session with inv
     invitationId: 'invite-a',
   });
   expect(mockReplace).not.toHaveBeenCalled();
+});
+
+test('an empty seat opens in-app people selection and sends a room invitation', async () => {
+  mockSnapshot = { ...mockSnapshot, role: 'HOST' };
+  const availablePeople = jest.fn(async () => ({
+    items: [
+      { userId: 'idle-user', displayName: 'Idle partner', cefrLevel: 'B1', isAvailable: true },
+    ],
+    nextCursor: null,
+  }));
+  const inviteUser = jest.fn(async () => ({ id: 'invitation' }));
+  Object.assign(mockApi, { availablePeople, inviteUser });
+  const screen = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(screen.getByTestId('room-empty-seat-0'));
+  await waitFor(() => expect(screen.getByText('Idle partner')).toBeTruthy());
+  expect(screen.queryByText('Share link')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Invite Idle partner' }));
+  await waitFor(() =>
+    expect(inviteUser).toHaveBeenCalledWith('room', 'idle-user', expect.any(String)),
+  );
+});
+
+test.each(['reconnecting-back', 'reconnecting-leave'])(
+  'automatic reconnect exposes %s as a real session exit',
+  async (control) => {
+    mockSnapshot.media.connection = 'reconnecting';
+    const screen = await render(<VoiceRoomScreen roomId="room" />);
+    expect(screen.getByText('Reconnecting')).toBeTruthy();
+    expect(screen.queryByLabelText('Say something…')).toBeNull();
+    await fireEvent.press(screen.getByTestId(control));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/rooms'));
+    expect(mockSession.leave).toHaveBeenCalledTimes(1);
+  },
+);
+
+test('reconnect countdown uses the host deadline, stops in background and cleans up on recovery', async () => {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date('2026-10-10T00:00:00Z'));
+  AppState.currentState = 'active';
+  const changes = new Set<(state: AppStateStatus) => void>();
+  const remove = jest.fn();
+  const listener = jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, handler) => {
+    changes.add(handler);
+    return {
+      remove: () => {
+        changes.delete(handler);
+        remove();
+      },
+    };
+  });
+  try {
+    mockSnapshot.role = 'HOST';
+    mockSnapshot.media.connection = 'reconnecting';
+    mockSnapshot.room!.hostReconnectDeadline = '2026-10-10T00:00:42Z';
+    const screen = await render(<VoiceRoomScreen roomId="room" />);
+    expect(screen.getByText('00:42')).toBeTruthy();
+    await act(async () => {
+      jest.advanceTimersByTime(2_000);
+    });
+    expect(screen.getByText('00:40')).toBeTruthy();
+    await act(async () => {
+      AppState.currentState = 'background';
+      changes.forEach((change) => change('background'));
+      jest.advanceTimersByTime(50_000);
+    });
+    expect(screen.getByText('00:40')).toBeTruthy();
+    await act(async () => {
+      AppState.currentState = 'active';
+      changes.forEach((change) => change('active'));
+    });
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(mockSession.leave).not.toHaveBeenCalled();
+    await act(async () => {
+      mockSnapshot = { ...mockSnapshot, media: { ...mockSnapshot.media, connection: 'connected' } };
+      mockListener(mockSnapshot);
+    });
+    expect(screen.queryByTestId('reconnecting-panel')).toBeNull();
+    expect(remove).toHaveBeenCalledTimes(1);
+    await screen.unmount();
+  } finally {
+    listener.mockRestore();
+    AppState.currentState = 'active';
+    jest.useRealTimers();
+  }
 });

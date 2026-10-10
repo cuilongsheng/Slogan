@@ -1,4 +1,4 @@
-/* global crypto, history, location, URL, Blob */
+/* global crypto, history, location, URL, Blob, setTimeout, clearTimeout */
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
@@ -90,6 +90,11 @@ export class VoiceRoomSession {
     if (new URL(location.href).searchParams.get('device') === 'blocked') {
       this.state.media.deviceCheck = { microphone: 'blocked', playback: 'ready' };
     }
+    if (query.get('connection') === 'reconnecting') {
+      this.state.media.connection = 'reconnecting';
+      this.state.room.hostReconnectDeadline = new Date(Date.now() + 42_000).toISOString();
+      this.recoverAfter = Number(query.get('recoverAfter') ?? 0);
+    }
   }
   state = {
     phase: 'active',
@@ -132,7 +137,13 @@ export class VoiceRoomSession {
     listener(this.state);
     return () => this.listeners.delete(listener);
   }
-  async start() {}
+  async start() {
+    if (this.recoverAfter > 0)
+      this.recoveryTimer = setTimeout(() => {
+        this.state = { ...this.state, media: { ...this.state.media, connection: 'connected' } };
+        this.listeners.forEach((listener) => listener(this.state));
+      }, this.recoverAfter);
+  }
   async refresh() {}
   async recheckDevices() {
     this.state = {
@@ -141,7 +152,9 @@ export class VoiceRoomSession {
     };
     this.listeners.forEach((listener) => listener(this.state));
   }
-  async dispose() {}
+  async dispose() {
+    clearTimeout(this.recoveryTimer);
+  }
   async setMicrophoneEnabled(enabled) {
     this.state = { ...this.state, media: { ...this.state.media, microphoneEnabled: enabled } };
     this.listeners.forEach((listener) => listener(this.state));

@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: '.',
-  testMatch: 'voice.spec.ts',
+  testMatch: ['voice.spec.ts', 'rooms.spec.ts', 'reconnecting.spec.ts'],
   use: {
     baseURL: 'http://localhost:8094',
     viewport: { width: 390, height: 844 },

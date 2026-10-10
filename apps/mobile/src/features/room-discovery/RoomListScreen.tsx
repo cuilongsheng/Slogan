@@ -5,23 +5,26 @@ import {
   FlatList,
   Image,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 
+import { AppText as Text } from '../../components/ui/AppText';
 import { RoomPage } from '../../components/ui/RoomPage';
 import { useAuth } from '../auth';
 import { t, tf } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
-import addIcon from '../../../assets/icons/add.png';
-import discoverIcon from '../../../assets/icons/discover.png';
-import partnersIcon from '../../../assets/icons/partners.png';
-import messagesIcon from '../../../assets/icons/messages.png';
-import profileIcon from '../../../assets/icons/profile.png';
+import addIcon from '../../../assets/icons/room-discovery/add.png';
+import speechBurstIcon from '../../../assets/icons/room-discovery/speech-burst.png';
+import discoverIcon from '../../../assets/icons/room-discovery/discover.png';
+import partnersIcon from '../../../assets/icons/room-discovery/partners.png';
+import messagesIcon from '../../../assets/icons/room-discovery/messages.png';
+import profileIcon from '../../../assets/icons/room-discovery/profile.png';
 import { RoomDiscoveryApi, RoomListPager, type RoomSummary } from './api';
 import { RoomCard } from './RoomCard';
 import { useJoinDraft } from './join';
+
+const colors = tokens.discovery.color;
 
 export function RoomListScreen() {
   const router = useRouter();
@@ -80,12 +83,12 @@ export function RoomListScreen() {
   };
 
   return (
-    <RoomPage ambient>
+    <RoomPage discovery>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>{t('roomsTitle')}</Text>
-          <Text style={styles.subtitle}>{t('roomsSubtitle')}</Text>
         </View>
+        <Image source={speechBurstIcon} style={styles.brand} />
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel={t('createRoomTitle')}
@@ -95,13 +98,12 @@ export function RoomListScreen() {
           <Image source={addIcon} style={styles.addIcon} />
         </TouchableOpacity>
       </View>
-      <View style={styles.filter}>
-        <Text style={styles.filterText}>{t('roomsAll')}</Text>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('roomsOngoing')}</Text>
+      <View style={styles.filterRow}>
+        <View style={styles.filter}>
+          <Text style={styles.filterText}>{t('roomsAll')}</Text>
+        </View>
         <Text style={styles.count}>
-          {tf(rooms.length === 1 ? 'roomsLoadedCountOne' : 'roomsLoadedCount', {
+          {tf(cursor ? 'roomsLoadedCount' : rooms.length === 1 ? 'roomsCountOne' : 'roomsCount', {
             count: rooms.length,
           })}
         </Text>
@@ -157,6 +159,7 @@ export function RoomListScreen() {
       )}
       <View style={styles.nav}>
         <View style={styles.navItem}>
+          <View style={styles.navHalo} />
           <Image source={discoverIcon} style={styles.navIcon} />
           <Text style={styles.navText}>{t('navDiscover')}</Text>
         </View>
@@ -184,69 +187,98 @@ export function RoomListScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    marginHorizontal: 20,
-    height: 75,
+    marginLeft: 16,
+    marginRight: 20,
+    height: 46,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  title: { fontSize: 24, fontWeight: '700', color: tokens.color.foreground },
-  subtitle: { fontSize: 12, color: tokens.color.muted, marginTop: 3 },
+  title: {
+    marginTop: 2,
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 32,
+    color: tokens.color.foreground,
+  },
+  brand: { position: 'absolute', right: 56, top: 4, width: 32, height: 32 },
   add: {
+    marginTop: 4,
     width: 42,
     height: 42,
     borderRadius: 21,
     backgroundColor: tokens.color.coral,
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0.5,
   },
   addIcon: { width: 24, height: 24 },
-  filter: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 },
-  filterText: {
-    overflow: 'hidden',
-    borderRadius: 16,
-    backgroundColor: tokens.color.purple,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  ongoing: {
-    color: tokens.color.purple,
-    borderWidth: 1,
-    borderColor: tokens.color.border,
-    borderRadius: 16,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    fontSize: 12,
-  },
-  section: {
-    height: 36,
-    marginHorizontal: 20,
+  filterRow: {
+    height: 47,
+    marginLeft: 15,
+    marginRight: 17,
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  sectionTitle: { color: tokens.color.foreground, fontSize: 17, fontWeight: '700' },
-  count: { color: tokens.color.muted, fontSize: 11 },
-  list: { paddingTop: 1, paddingBottom: 92, flexGrow: 1 },
+  filter: {
+    height: 32,
+    width: 57,
+    borderRadius: 16,
+    backgroundColor: colors.filterSelected,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterText: { fontSize: 12, fontWeight: '500', lineHeight: 23, color: colors.tabAccent },
+  count: {
+    marginTop: 13,
+    color: colors.countMuted,
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  list: { paddingBottom: 16, flexGrow: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   message: { color: tokens.color.muted, fontSize: 14, textAlign: 'center', padding: 24 },
   retry: { color: tokens.color.purple, fontWeight: '700', textAlign: 'center', padding: 12 },
   errorBanner: { color: tokens.color.error, fontSize: 12, textAlign: 'center', paddingVertical: 8 },
   nav: {
     height: 80,
+    flexShrink: 0,
     borderTopWidth: 1,
-    borderColor: tokens.color.border,
+    borderColor: colors.navBorder,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: tokens.color.surface,
+    paddingLeft: 23,
+    paddingRight: 13,
+    justifyContent: 'space-between',
+    backgroundColor: tokens.color.panel,
   },
-  navItem: { minWidth: 58, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  navIcon: { width: 24, height: 24 },
-  navText: { color: tokens.color.purple, fontSize: 10 },
-  navInactive: { color: tokens.color.muted, fontSize: 10 },
+  navItem: { width: 72, flexShrink: 1, height: 62, marginTop: 5, alignItems: 'center' },
+  navHalo: {
+    position: 'absolute',
+    top: -2,
+    left: 11,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.cardLavender,
+  },
+  navIcon: { width: 24, height: 24, marginTop: 5 },
+  navText: {
+    position: 'absolute',
+    left: 22,
+    top: 38,
+    color: colors.tabAccent,
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 16,
+  },
+  navInactive: {
+    position: 'absolute',
+    left: 22,
+    top: 38,
+    color: colors.tabMuted,
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 16,
+  },
 });

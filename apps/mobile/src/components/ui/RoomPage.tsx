@@ -20,9 +20,11 @@ import backIcon from '../../../assets/icons/back.png';
 export function RoomPage({
   children,
   ambient = false,
+  discovery = false,
 }: {
   children: ReactNode;
   ambient?: boolean;
+  discovery?: boolean;
 }) {
   const content = (
     <SafeAreaView
@@ -33,8 +35,10 @@ export function RoomPage({
       {ambient && <View pointerEvents="none" style={styles.ambient} />}
       {Platform.OS === 'web' && (
         <View style={styles.previewStatus} accessibilityElementsHidden>
-          <Text style={styles.previewTime}>9:41</Text>
-          <Text style={styles.previewSystem}>●●● 100%</Text>
+          <Text style={[styles.previewTime, discovery && styles.discoveryTime]}>9:41</Text>
+          <Text style={[styles.previewSystem, discovery && styles.discoverySystem]}>
+            {discovery ? '●●●  100%' : '●●● 100%'}
+          </Text>
         </View>
       )}
       <KeyboardAvoidingView
@@ -146,6 +150,15 @@ const styles = StyleSheet.create({
     color: tokens.color.foreground,
     fontSize: 11,
     fontWeight: '400',
+  },
+  discoveryTime: { fontSize: 14, fontWeight: '500', lineHeight: 20 },
+  discoverySystem: {
+    width: 82,
+    marginRight: -2,
+    marginTop: 1,
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
   },
   homeIndicator: {
     position: 'absolute',
