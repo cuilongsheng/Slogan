@@ -82,19 +82,23 @@ describe('room controls', () => {
     await waitFor(() => expect(page.getByText('Report received')).toBeTruthy());
   });
 
-  it('offers an offline friend as a room invitation candidate', async () => {
+  it('opens the invitation list directly and only offers online idle candidates', async () => {
     const inviteUser = jest.fn(async () => ({ id: 'invite-1' }));
     const api = {
-      availablePeople: jest.fn(async () => ({ items: [], nextCursor: null })),
-      friends: jest.fn(async () => ({
+      availablePeople: jest.fn(async () => ({
         items: [
+          { userId: 'person-1', displayName: 'Online idle', cefrLevel: 'B1', isAvailable: true },
           {
-            friend: { userId: 'friend-1', displayName: 'Friend', cefrLevel: 'B1' },
-            isAvailable: false,
+            userId: 'other-user',
+            displayName: 'Already in room',
+            cefrLevel: 'B1',
+            isAvailable: true,
           },
+          { userId: 'offline', displayName: 'Offline', cefrLevel: 'B1', isAvailable: false },
         ],
         nextCursor: null,
       })),
+      friends: jest.fn(),
       inviteUser,
     };
     const page = await render(
@@ -103,16 +107,42 @@ describe('room controls', () => {
         members={members}
         ownMembershipId="own"
         isHost
+        initialMode="invite"
         api={api as never}
         refresh={jest.fn()}
         onClose={jest.fn()}
       />,
     );
-    await fireEvent.press(page.getByRole('button', { name: 'Invite to room' }));
-    await waitFor(() => expect(page.getByText('Friend')).toBeTruthy());
-    await fireEvent.press(page.getByRole('button', { name: 'Invite' }));
+    await waitFor(() => expect(page.getByText('Online idle')).toBeTruthy());
+    expect(page.queryByText('Already in room')).toBeNull();
+    expect(page.queryByText('Offline')).toBeNull();
+    expect(api.friends).not.toHaveBeenCalled();
+    await fireEvent.changeText(page.getByLabelText('Search available people'), 'No match');
+    expect(page.queryByText('Online idle')).toBeNull();
+    await fireEvent.changeText(page.getByLabelText('Search available people'), 'Online');
+    expect(page.getByText('Online idle')).toBeTruthy();
+    await fireEvent.press(page.getByRole('button', { name: 'Invite Online idle' }));
     await waitFor(() =>
-      expect(inviteUser).toHaveBeenCalledWith('room-1', 'friend-1', expect.any(String)),
+      expect(inviteUser).toHaveBeenCalledWith('room-1', 'person-1', expect.any(String)),
     );
+    expect(page.getByText('Invitation sent')).toBeTruthy();
+  });
+
+  it('cannot open invitations as an ordinary member', async () => {
+    const api = { availablePeople: jest.fn() };
+    const page = await render(
+      <RoomControls
+        roomId="room-1"
+        members={members}
+        ownMembershipId="other"
+        isHost={false}
+        initialMode="invite"
+        api={api as never}
+        refresh={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    );
+    expect(api.availablePeople).not.toHaveBeenCalled();
+    expect(page.queryByText('Invite to room')).toBeNull();
   });
 });

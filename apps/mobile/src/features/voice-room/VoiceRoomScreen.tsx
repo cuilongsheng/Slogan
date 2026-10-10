@@ -33,6 +33,7 @@ import { RoomControls } from './RoomControls';
 import { RoomExtensionSheet } from './RoomExtensionSheet';
 import { RoomSafetyAlertsSheet } from './RoomSafetyAlertsSheet';
 import { createVoiceMedia } from './media';
+import { ReconnectingScreen } from './ReconnectingScreen';
 import { RoomDeviceNotice } from './RoomDeviceNotice';
 import { VoiceRoomSession, type VoiceSessionSnapshot } from './session';
 import profileIcon from '../../../assets/icons/profile.png';
@@ -150,6 +151,9 @@ function SessionState({
     ['ROOM_PASSWORD_INVALID', 'ROOM_PASSWORD_REQUIRED', 'ROOM_RULES_NOT_ACCEPTED'].includes(
       snapshot.errorCode ?? '',
     );
+  if (snapshot.phase === 'active' && snapshot.media.connection === 'reconnecting') {
+    return <ReconnectingScreen snapshot={snapshot} onLeave={() => void session.leave()} />;
+  }
   if (needsPassword)
     return (
       <VoicePage>
@@ -423,6 +427,7 @@ function VoiceRoomBody({
   const [endConfirm, setEndConfirm] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<RoomMember | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
@@ -600,7 +605,8 @@ function VoiceRoomBody({
                           testID={`room-empty-seat-${rowIndex * 4 + index}`}
                           accessibilityRole="button"
                           accessibilityLabel={t('voiceEmptySeat')}
-                          onPress={() => setShareOpen(true)}
+                          disabled={snapshot.role !== 'HOST'}
+                          onPress={() => setInviteOpen(true)}
                           style={[styles.seat, styles.inviteSeat]}
                         >
                           <View style={styles.emptySeat}>
@@ -870,7 +876,7 @@ function VoiceRoomBody({
           onClose={() => setExtendOpen(false)}
         />
       )}
-      {controlsOpen && (
+      {(controlsOpen || (inviteOpen && snapshot.role === 'HOST')) && (
         <RoomControls
           roomId={room.id}
           members={members}
@@ -878,9 +884,11 @@ function VoiceRoomBody({
           isHost={snapshot.role === 'HOST'}
           api={api}
           refresh={() => session.refresh()}
+          {...(inviteOpen ? { initialMode: 'invite' as const } : {})}
           {...(removeTarget ? { initialRemoveTarget: removeTarget } : {})}
           onClose={() => {
             setControlsOpen(false);
+            setInviteOpen(false);
             setRemoveTarget(null);
           }}
         />

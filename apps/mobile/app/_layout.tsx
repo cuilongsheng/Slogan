@@ -9,6 +9,7 @@ import { AuthProvider } from '../src/features/auth/context';
 import { EmailFlowProvider } from '../src/features/auth/emailFlow';
 import { ProfileDraftProvider } from '../src/features/profile/draft';
 import { JoinProvider } from '../src/features/room-discovery/join';
+import { PresenceHeartbeat } from '../src/features/social/PresenceHeartbeat';
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -21,6 +22,7 @@ export default function RootLayout() {
   if (!loaded) return null;
   return (
     <AuthProvider>
+      <PresenceHeartbeat />
       <EmailFlowProvider>
         <ProfileDraftProvider>
           <JoinProvider>

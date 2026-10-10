@@ -4,7 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export function VoicePage({ children }: { children: ReactNode }) {
+export function VoicePage({
+  children,
+  connection = false,
+}: {
+  children: ReactNode;
+  connection?: boolean;
+}) {
   const page = (
     <SafeAreaView
       testID="voice-room-direct-entry-v2"
@@ -13,9 +19,20 @@ export function VoicePage({ children }: { children: ReactNode }) {
     >
       <StatusBar style="light" />
       {Platform.OS === 'web' && (
-        <View style={styles.previewStatus} accessibilityElementsHidden>
-          <Text style={styles.previewText}>9:41</Text>
-          <Text style={[styles.previewText, styles.previewSystem]}>●●● 100%</Text>
+        <View
+          style={[styles.previewStatus, connection && styles.connectionStatus]}
+          accessibilityElementsHidden
+        >
+          <Text style={[styles.previewText, connection && styles.connectionTime]}>9:41</Text>
+          <Text
+            style={[
+              styles.previewText,
+              styles.previewSystem,
+              connection && styles.connectionSystem,
+            ]}
+          >
+            ●●● 100%
+          </Text>
         </View>
       )}
       <KeyboardAvoidingView
@@ -46,6 +63,16 @@ const styles = StyleSheet.create({
   },
   previewText: { color: '#fff', fontSize: 14, fontWeight: '500', lineHeight: 20 },
   previewSystem: { fontSize: 12, lineHeight: 17, marginTop: 1 },
+  connectionStatus: { height: 49 },
+  connectionTime: { fontSize: 12, fontWeight: '400', lineHeight: 17 },
+  connectionSystem: {
+    width: 85,
+    marginRight: -5,
+    marginTop: 0,
+    fontSize: 11,
+    fontWeight: '400',
+    lineHeight: 15,
+  },
   homeIndicator: {
     position: 'absolute',
     width: 100,
