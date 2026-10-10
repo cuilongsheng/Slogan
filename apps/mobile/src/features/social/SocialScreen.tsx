@@ -340,10 +340,10 @@ export function SocialScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
         {loading && entries.length === 0 ? <ActivityIndicator color={tokens.color.purple} /> : null}
         {/* Event handlers created by card access request refs only when the user presses an action. */}
-        {/* eslint-disable-next-line react-hooks/refs */}
         {!loading && !error && entries.length === 0 ? (
           <Text style={styles.empty}>{t('socialEmpty')}</Text>
         ) : (
+          // eslint-disable-next-line react-hooks/refs -- card only reads refs in user action handlers.
           entries.map(card)
         )}
         {cursor ? (
