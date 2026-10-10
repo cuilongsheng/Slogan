@@ -35,6 +35,6 @@ The four migrations in this delivery were backed up and completed successfully; 
 
 ## Verification boundaries
 
-Local verification does not replace actual Actions runs, public downloads, cloud queue execution, or device audio. The first online release must record the PR/main SHA, Actions run, all three deployments, Release URL, and download hash. Device testing is performed by the user. Google remains disabled; iOS and store releases are outside this delivery's scope.
+Local verification does not replace actual Actions runs, public downloads, cloud queue execution, or device audio. The first online release must record the PR/main SHA, Actions run, all three deployments, Release URL, and download hash. Device testing is performed by the user. Google activation requires the [provider configuration](google-sign-in.md), including the public client ID used by Actions; this guide does not claim OAuth acceptance. iOS and store releases are outside this delivery's scope.
 
 References: [Cloudflare file limits](https://developers.cloudflare.com/pages/platform/limits/), [GitHub workflow triggers](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow), [Expo local builds](https://docs.expo.dev/build-reference/local-builds/).

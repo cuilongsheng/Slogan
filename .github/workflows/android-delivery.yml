@@ -19,6 +19,7 @@ jobs:
       CI: '1'
       EXPO_NO_DOTENV: '1'
       EXPO_PUBLIC_API_BASE_URL: https://slogan-api-pi.vercel.app
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.SLOGAN_GOOGLE_WEB_CLIENT_ID }}
       SLOGAN_RELEASE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
       SLOGAN_ANDROID_VERSION_NAME: 0.0.${{ github.run_number }}
     steps:

@@ -1,6 +1,6 @@
 # README image notes
 
-The project README uses English text and images.
+The root project README supports English / Simplified Chinese switching. Both versions use the same English images.
 
 ## Runtime screenshots
 
@@ -33,4 +33,4 @@ The capture starts a local server at `localhost:8094`, writes only these six ima
 - [Architecture](architecture.svg): hand-authored SVG showing current runtime boundaries and optional providers.
 - [Delivery](delivery.svg): hand-authored SVG showing the preview / production distinction and APK release gate.
 
-Diagram labels are English and are used by the project README. They are documentation illustrations, not exports from or replacements for the original Figma designs.
+Diagram labels are English and are shared by both README language versions. They are documentation illustrations, not exports from or replacements for the original Figma designs.
