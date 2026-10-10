@@ -1,39 +1,39 @@
-# 站内邀请与社交入口审计（本地修复，尚未发布）
+# Site invitation and social portal audit (local fix, not yet released)
 
-检查基线：production/main `0152ba27c22b20ec70109ab7e68c203230225d11`。
+Check baseline: production/main `0152ba27c22b20ec70109ab7e68c203230225d11`.
 
-## 确认的问题
+## Confirmed problem
 
-- `VoiceRoomScreen` 的空位邀请调用 `setShareOpen(true)`，打开外部分享链接弹层。
-- `RoomListScreen` 的“找伙伴”和“消息”是没有点击回调的静态 View；没有对应的独立路由。
-- `/me/social` 有好友、可邀请用户、关系请求、屏蔽、本人房间邀请；它没有私人会话或消息历史。
-- 已存在 `/v1/people/available`、`/v1/me/presence/heartbeat` 和房间邀请接口。后端按近期在线信号、有效房间占用、账号资格和双向屏蔽筛选空闲候选。
-- 原心跳仅绑定 `SocialScreen` 的页面焦点，其他页面的在线空闲用户会因信号过期从候选列表消失。
-- 一对一私聊尚无模型、迁移、OpenAPI 操作、后端实现或移动路由；`add-partner-discovery-direct-conversations` 是仍未完成的方案（同时还包含一对一语音）。房间内文字消息不是私聊。
+- The free invitation of `VoiceRoomScreen` calls `setShareOpen(true)` to open the external sharing link popup.
+- `RoomListScreen`'s "Find a Partner" and "Message" are static views without click callbacks; there is no corresponding independent route.
+- `/me/social` has friends, inviteable users, relationship requests, blocks, and room invites; it has no private conversations or message history.
+- `/v1/people/available`, `/v1/me/presence/heartbeat` and room invitation interfaces already exist. The backend screens idle candidates based on recent online signals, valid room occupancy, account qualifications and two-way blocking.
+- The original heartbeat is only bound to the page focus of `SocialScreen`. Online idle users on other pages will disappear from the candidate list due to signal expiration.
+- There are no models, migrations, OpenAPI operations, backend implementations, or mobile routing for one-to-one private chat yet; `add-partner-discovery-direct-conversations` is a work in progress (also including one-to-one voice). Text messages in the room are not private chats.
 
-## 本地修复范围
+## Local repair scope
 
-- 房主点空位直接打开站内选择弹层；普通成员不能发送房主邀请。
-- 候选使用真实 available API，不再合并离线好友；排除当前成员；发送使用既有幂等邀请接口，不宣称对方已加入。
-- 在登录后的根布局统一维护合格账号的前台在线信号。后台停止续期、恢复前台刷新、退出/换账号清理，旧请求不会重新启动定时器；presence 故障不阻断房间行为。
-- 邀请弹层列表不再以零高度溢出到其他控件下面。原始 Desktop Bridge 目标 `Slogan / 02 UI / 111:882`（390×844，底部 sheet 390×518）；标题、搜索、候选行、按钮和说明使用该节点的几何与字体。
-- 搜索筛选已加载候选；后续游标继续由现有“加载更多”操作读取，未虚构服务端全文搜索。
+- Room host Click on the empty space to directly open the site selection popup; ordinary members cannot send room host invitations.
+- Candidates use the real available API and no longer merge offline friends; exclude current members; send using the existing idempotent invitation interface and do not declare that the other party has joined.
+- Uniformly maintain the front-end online signal of qualified accounts in the root layout after login. Stop renewal in the background, resume refresh in the foreground, clean up after exiting/changing accounts, old requests will not restart the timer; presence failure does not block room behavior.
+- The invitation pop-up list no longer overflows below other controls at zero height. Original Desktop Bridge target `Slogan / 02 UI / 111:882` (390×844, bottom sheet 390×518); title, search, candidate lines, buttons, and descriptions use this node's geometry and font.
+- The search filter has loaded candidates; subsequent cursors continue to be read by the existing "load more" operation, and the server-side full-text search is not created.
 
-## 验证边界
+## Validation boundaries
 
-- 本地手机端 typecheck、lint、51 suites / 167 tests 通过（包含直接打开与发送、候选过滤、前后台和旧账号请求清理）。
-- 浏览器生成客户端邀请发送流程通过（1 test）；使用实际 VoiceRoomScreen、RoomControls 与生成客户端，HTTP 响应是明确的测试 fixture；不是线上双账号邀请验收。
-- Android Hermes export 通过；不是 APK 构建、发布或真机验收。
-- `figma-invite.png` 是 Desktop Bridge 导出的原始目标；`runtime-invite.png` 是测试运行页面。用户、发送状态和底层房间不同，不宣称整图像素一致。
-- 本次未推送、提 PR、迁移数据库、部署或更新公共 APK。
+- Local mobile phone typecheck, lint, 51 suites / 167 tests passed (including direct opening and sending, candidate filtering, front and backend and old account request cleaning).
+- The browser-generated client invitation sending process passes (1 test); using actual VoiceRoomScreen, RoomControls and generated clients, the HTTP response is a clear test fixture; it is not an online dual-account invitation acceptance.
+- Android Hermes export passed; not APK build, release, or physical device acceptance.
+- `figma-invite.png` is the original target exported by Desktop Bridge; `runtime-invite.png` is the test run page. The user, sending status and underlying room are different, and the entire image pixels are not claimed to be consistent.
+- There is no push, PR, database migration, deployment or update of public APK this time.
 
-## 仍缺失
+## Still missing
 
-- 独立“找伙伴”页面和可点击导航。
-- 一对一消息会话列表、持久历史、发送、未读、单方删除及安全交互。
-- 现有服务允许离线好友通过普通邀请 API（朋友路径不要求 presence）；若整个产品统一只允许在线空闲目标，还需更新该服务端规则与当前 OpenSpec，并验证发送期间资格变化。
-- 当前连接的 02 UI 未找到独立伙伴/私聊页面，不能将旧社交页面冒充已确认的新设计。
+- Independent "find a partner" page and clickable navigation.
+- One-to-one message conversation list, persistent history, sent, unread, unilateral deletion and safe interaction.
+- The existing service allows offline friends to invite through the ordinary API (the friend path does not require presence); if the entire product only allows online idle targets, the server rules and the current OpenSpec need to be updated, and the qualification changes during the sending period must be verified.
+- No independent partner/private chat page found for the currently connected 02 UI, old social pages cannot be passed off as the confirmed new design.
 
-## 2026-10-10 发布前复核
+## 2026-10-10 Review before publishing
 
-用户已恢复测试与发布授权。本批完整手机端 typecheck/lint、51 suites / 170 tests、浏览器 harness 14/14（含本功能路径）、Android Hermes export 与两个 Pages 构建通过。原有功能、视觉及 provider/设备缺口保留，不因打包发布被记为完成。生产提交和 APK 将通过既有发布门槛核对；未将本地测试当成线上双账号或原生设备证据。
+The user has resumed testing and release authorization. This batch of complete mobile version typecheck/lint, 51 suites / 170 tests, browser harness 14/14 (including this function path), Android Hermes export and two Pages were built and passed. The original functions, visuals and provider/device gaps are retained and will not be recorded as completed due to packaging and release. Production submissions and APKs will be checked against existing release thresholds; local testing will not be considered as evidence of online dual accounts or native devices.

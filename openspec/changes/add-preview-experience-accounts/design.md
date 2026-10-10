@@ -1,142 +1,142 @@
 ## Context
 
-动机与确认范围见 `proposal.md`。本 change 为认证/授权 Level 2，仅完成规划，不连接任何实际数据库。
+See `proposal.md` for motivation and confirmation scope. This change is authentication/authorization Level 2. It only completes planning and does not connect to any actual database.
 
-已读代码显示：
+Read code display:
 
-- `EmailAuthService.login()` 校验用户名和密码、消费 Redis 配额，经正常 `SessionService` 建立会话，不发送邮件。`environment.ts` 的 `EMAIL_PASSWORD_AUTH_ENABLED` 却要求 SMTP、AES/HMAC 密钥环、可信邮件链接和 Redis；邮件请求、配额实例和 worker 也共用此开关。
-- `EmailCredential.verifiedAt` 非空，正常注册只有邮件确认后才创建正式 User/credential。`EmailCredentialView` 与会话签发需同步识别凭据来源，不能仅因数据库存在一行就放行无验证凭据。
-- `/v1/me/login-methods` 的 `verifiedAt` 当前非空，controller 调用 `toISOString()`；因此新增来源并让体验账号验证时间为空必须联动 domain、repository、DTO、OpenAPI 和生成客户端。
-- 两个 Web 应用均已有 `/v1/auth/web/password/exchange` 与 Google 登录；后台 `SignInView` 已有密码表单，登录后通过 `/v1/backoffice/me` 验证实时角色，不存在“后台仅 Google”的冲突。
-- Web 密码、Google、刷新和退出都经 `BrowserAuthController.requireOrigin()`；现有实现要求来源同时匹配 `GOOGLE_OAUTH_REDIRECT_URIS` 与 `CORS_ALLOWED_ORIGINS`，不能只配 CORS 后声称密码会话可用。
-- 后台四角色为 `PLATFORM_ADMIN`、`SAFETY_OFFICER`、`OPERATIONS_ANALYST`、`AUDITOR`；本 change 只使用前两个。管理员不自动有安全处置权，安全员不自动有角色管理权。
-- 当前 bootstrap 给首个 ACTIVE 用户同时授予管理员和安全员，且仅在最终仍有两角色时支持同一目标重试。角色 grant/revoke 是有原因、请求 UUID、审计、最新权限重查和最后管理员保护的现有能力。
-- `seedAdult()` 等仅为隔离测试 fixture；相关 cleanup 含全表删除，不能作为实际环境 seed/清理工具。现有 API scripts 没有普通体验账号命令。
-- active email/mobile/admin changes 尚未完全同步；发布准备文档提及较宽的无邮件注册/恢复，但它不是当前需求授权。本 change 仅为限定试用模式，普通用户邮件验证要求不变，Google 新用户继续现有 onboarding。
+- `EmailAuthService.login()` verifies user name and password, consumes Redis quota, establishes session through normal `SessionService`, and does not send email. `EMAIL_PASSWORD_AUTH_ENABLED` of `environment.ts` requires SMTP, AES/HMAC keyring, trusted email links, and Redis; this switch is also shared by email requests, quota instances, and workers.
+- `EmailCredential.verifiedAt` is not empty. For normal registration, the official User/credential will only be created after email confirmation. `EmailCredentialView` and session issuance need to identify the source of the credentials simultaneously. Unverified credentials cannot be released just because there is a row in the database.
+- `verifiedAt` of `/v1/me/login-methods` is currently not empty, and the controller calls `toISOString()`; therefore, when adding a source and making the experience account verification time empty, domain, repository, DTO, OpenAPI and generated client must be linked.
+- Both web applications already have `/v1/auth/web/password/exchange` and Google logins; the backend `SignInView` already has a password form, and the real-time role is verified through `/v1/backoffice/me` after logging in. There is no conflict with "backend only Google".
+- Web passwords, Google, refresh and exit all go through `BrowserAuthController.requireOrigin()`; the existing implementation requires the source to match both `GOOGLE_OAUTH_REDIRECT_URIS` and `CORS_ALLOWED_ORIGINS`, and cannot only claim that the password session is available after CORS is configured.
+- The four administrative roles are `PLATFORM_ADMIN`, `SAFETY_OFFICER`, `OPERATIONS_ANALYST`, and `AUDITOR`; this change only uses the first two. The administrator does not automatically have safety disposal rights, and the safety officer does not automatically have role management rights.
+- Currently bootstrap grants both administrator and safety officer to the first ACTIVE user, and only supports retrying with the same target when there are still two roles in the end. Role grant/revoke is an existing capability with reason, request UUID, audit, latest permission review and last administrator protection.
+- `seedAdult()`, etc. are only isolation test fixtures; the related cleanup contains full table deletion and cannot be used as an actual environment seed/cleaning tool. Existing API scripts do not have common experience account commands.
+- active email/mobile/admin changes are not fully synced yet; the release preparation document mentions wider emailless registration/recovery, but it is not a current requirement authorization. This change is only a limited trial mode, the email verification requirements for ordinary users remain unchanged, and new Google users will continue to have existing onboarding.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-使用现有认证和持久 RBAC，通过明确的预置来源与环境绑定提供五个独立账号；邮件关闭可安全运行，账号创建、角色初始化和清理可核对并恢复。所有可执行数据库、凭证和环境操作放在审核后实施/运维阶段。
+Uses existing authentication and persistent RBAC to provide five independent accounts with clear provisioning sources and environment bindings; email shutdown can operate safely, and account creation, role initialization and cleanup can be verified and restored. All executable database, credential and environmental operations are placed in the post-audit implementation/operation and maintenance phase.
 
 **Non-Goals:**
 
-不引入新认证系统、公开 seed API、全局房主角色、永久演示房间或无邮件账号恢复服务；不修改后台权限矩阵，不自动合并 Google 与密码身份，不把当前源代码/CLI 验证作为公网、SMTP 或真机证明。
+Does not introduce a new authentication system, public seed API, global room host role, permanent demo room or no-email account recovery service; does not modify the backend permission matrix, does not automatically merge Google and password identities, and does not use current source code/CLI verification as public network, SMTP or physical device proof.
 
 ## Decisions
 
-### 1. 独立配置密码与邮件，保持旧配置兼容
+### 1. Configure password and email independently to maintain compatibility with old configurations
 
-新增邮件流程开关 `EMAIL_AUTH_MAIL_ENABLED`。旧部署未显式设置时按 `EMAIL_PASSWORD_AUTH_ENABLED` 推导，以保持已有邮件模式；本次试用必须显式设为 false。旧密码开关保留，控制正常密码登录、Redis/HMAC 配额、密码注销 proof 与会话边界；邮件为 true 但密码为 false 属于非法组合并启动失败。
+Added mail process switch `EMAIL_AUTH_MAIL_ENABLED`. The old deployment deduces as `EMAIL_PASSWORD_AUTH_ENABLED` when not explicitly set to maintain existing mail mode; this trial must be explicitly set to false. The old password switch is retained to control normal password login, Redis/HMAC quota, password account deletion proof and session boundary; if the email is true but the password is false, it is an illegal combination and the startup fails.
 
-新增 `PREVIEW_ACCOUNTS_ENABLED`（默认 false）、`PREVIEW_ENVIRONMENT_ID`（显式环境绑定，无默认实际数据库），初始化命令同时要求操作者明确提供目标连接与同一环境标识。公开试用仍使用 `NODE_ENV=production` 的 Cookie/TLS 安全行为，不借 `NODE_ENV=test` 或 `LOCAL_TEST` 放宽校验。
+Added `PREVIEW_ACCOUNTS_ENABLED` (default false), `PREVIEW_ENVIRONMENT_ID` (explicit environment binding, no default actual database), the initialization command also requires the operator to explicitly provide the target connection and the same environment identification. The public trial still uses the Cookie/TLS security behavior of `NODE_ENV=production`, and does not relax the verification by `NODE_ENV=test` or `LOCAL_TEST`.
 
-| 模式         | 密码开关 | 邮件开关 | 体验开关 | 启动必需配置                                          |
-| ------------ | -------- | -------- | -------- | ----------------------------------------------------- |
-| 全关闭       | false    | false    | false    | 原 API 基础配置                                       |
-| 普通邮箱模式 | true     | true     | false    | Redis、HMAC/AES、SMTP、固定可信验证/重置 URL          |
-| 本次试用     | true     | false    | true     | Redis、HMAC、明确体验环境标识；无需 SMTP/AES/邮件 URL |
+| Mode                  | Password switch | Email switch | Experience switch | Required configuration for startup                                                       |
+| --------------------- | --------------- | ------------ | ----------------- | ---------------------------------------------------------------------------------------- |
+| Fully closed          | false           | false        | false             | Original API basic configuration                                                         |
+| Ordinary mailbox mode | true            | true         | false             | Redis, HMAC/AES, SMTP, fixed trusted authentication/reset URL                            |
+| This trial            | true            | false        | true              | Redis, HMAC, clear experience environment identification; no SMTP/AES/email URL required |
 
-基础配置继续包含 PostgreSQL、JWT 签名/issuer/audience、refresh pepper、CORS 和原房间配置；Google 使用独立 `GOOGLE_OAUTH_ENABLED`、client ID/secret、redirect 白名单及两端前端 client ID。trial 时保留 Google 配置，不重构 origin 机制。真实三人语音另需 LiveKit、Redis、HTTPS 和公网 webhook，不能通过初始化账号宣称已满足。
+The basic configuration continues to include PostgreSQL, JWT signature/issuer/audience, refresh pepper, CORS and original room configuration; Google uses independent `GOOGLE_OAUTH_ENABLED`, client ID/secret, redirect whitelist and both-end front-end client ID. Keep the Google configuration during trial and do not reconstruct the origin mechanism. Real three-person voice requires LiveKit, Redis, HTTPS and public webhook, which cannot be claimed by initializing the account.
 
-备选“填假 SMTP 配置但不启动 worker”仍开放邮箱申请和回收积压，不能满足邮件停用；关闭现有总开关会同时关闭密码，故不采用。
+The alternative "fill in the false SMTP configuration but do not start the worker" still opens the mailbox application and recycling backlog, which cannot satisfy the mail deactivation; turning off the existing main switch will also turn off the password, so it is not used.
 
-### 2. 单一密码凭据模型，来源和验证事实分开
+### 2. Single password credential model, source and verification facts separated
 
-扩展现有 `EmailCredential`，加入 `origin`（`EMAIL_VERIFIED` / `PREVIEW_PROVISIONED`），允许 `verifiedAt` 为 null；新增环境/账号槽位的受控初始化记录，关联现有 User 与凭据，用唯一 `(environmentId, slot)` 和唯一 userId 保证五个独立身份。记录包含创建/完成/退役时间、初始化批次和角色阶段命令 ID，不包含密码、hash 快照、token、完整邮箱或真实数据库 URL。
+Extend the existing `EmailCredential`, add `origin` (`EMAIL_VERIFIED` / `PREVIEW_PROVISIONED`), allow `verifiedAt` to be null; add a controlled initialization record for the environment/account slot, associate the existing User and credentials, and use the unique `(environmentId, slot)` and the unique userId to ensure five independent identities. The record contains creation/completion/retirement time, initialization batch and role stage command ID, but does not contain password, hash snapshot, token, full email or real database URL.
 
-- 既有凭据回填 `EMAIL_VERIFIED`，保留原 `verifiedAt`，不变更 password hash/version 或 session。
-- 新体验凭据为 `PREVIEW_PROVISIONED`、`verifiedAt=null`，真实 provision 时间在专用记录中。创建仅来自受控命令；注册/验证 API 不接受 origin、环境、槽位或角色输入。
-- 因现有 email 字段及唯一索引仍必需，体验凭据使用命令生成的独立不可投递内部占位地址（保留 `.invalid` 域），不冒用第三方邮箱，不代表任何邮箱所有权。实际映射不写 Git/日志，普通 API 仍脱敏。
-- 登录允许正常已验证 ACTIVE 凭据，或开关开启、环境匹配且受控记录有效的 ACTIVE 体验凭据。预置例外仅适用于五个已登记身份；pending 注册、伪造来源、缺初始化记录、注销/禁用、跨环境账号一律拒绝。来源判断覆盖会话签发、refresh 与 access 验证，不能用旧 token 绕过环境/体验关闭。
-- 登录方式投影增加来源；体验方式 `verifiedAt=null`，不能把 provision 时间映射为邮件验证时间。正常手机/Google/邮箱身份时间保持原事实。所有现有消费者处理可空时间，前端只展示必要来源，不暴露占位地址。
+- Backfill the existing credentials `EMAIL_VERIFIED`, retain the original `verifiedAt`, and do not change the password hash/version or session.
+- The new experience credentials are `PREVIEW_PROVISIONED` and `verifiedAt=null`, and the real provision time is in the dedicated record. Creation is from controlled commands only; registration/validation API does not accept origin, environment, slot or role input.
+- Since the existing email field and unique index are still required, the experience credential uses an independent non-deliverable internal placeholder address generated by the command (retaining the `.invalid` domain). It does not impersonate a third-party mailbox and does not represent any mailbox ownership. The actual mapping does not write Git/log, and the ordinary API is still desensitized.
+- Login allows normal authenticated ACTIVE credentials, or ACTIVE experience credentials with the switch on, environment matching, and controlled logging valid. The preset exception only applies to five registered identities; pending registration, forged sources, missing initialization records, account deletion/disabled, and cross-environment accounts are all rejected. Source judgment covers session issuance, refresh and access verification, and old tokens cannot be used to bypass environment/experience shutdown.
+- Login method projection adds source; experience method `verifiedAt=null`, provision time cannot be mapped to email verification time. The normal mobile phone/Google/email identity time remains the same. All existing consumers process available time. The front end only displays necessary sources and does not expose placeholder addresses.
 
-备选填一个假的 `verifiedAt` 会混淆审计事实；独立第二套密码表会重复 hash/version/session 规则且扩大用户名跨表冲突，因此选择最小明确的来源扩展。
+Filling in a false `verifiedAt` as an alternative will confuse the audit facts; a separate second set of password tables will repeat hash/version/session rules and expand username cross-table conflicts, so choose the smallest and clearest source extension.
 
-### 3. 五槽位创建与角色授权分阶段恢复
+### 3. Five-slot creation and role authorization restored in stages
 
-| 槽位       | 最终后台角色        | 移动房间行为               |
-| ---------- | ------------------- | -------------------------- |
-| 后台管理员 | 仅 `PLATFORM_ADMIN` | 本轮不作为房间测试参与者   |
-| 后台安全员 | 仅 `SAFETY_OFFICER` | 本轮不作为房间测试参与者   |
-| 移动 A     | 无                  | 正常创建房间，本次成为房主 |
-| 移动 B     | 无                  | 正常加入                   |
-| 移动 C     | 无                  | 正常加入                   |
+| slot                 | Final admin role      | Move room behavior                                                |
+| -------------------- | --------------------- | ----------------------------------------------------------------- |
+| Admin administrator  | `PLATFORM_ADMIN` only | Not a room test participant in this round                         |
+| Admin safety officer | `SAFETY_OFFICER` only | Not a room test participant in this round                         |
+| Move A               | None                  | The room is created normally and becomes the room host this time. |
+| Move B               | None                  | Join normally                                                     |
+| Move C               | None                  | Join normally                                                     |
 
-CLI 通过 auth 拥有的 application API 与 repository 事务初始化，不从 controller 或其他模块深层导入认证 repository；profiles 使用公开 service/policy 校验成年资料。新增脚本/命令不写公网运维 endpoint，不复用测试 fixture。
+CLI is initialized through the application API and repository transactions owned by auth, and does not deeply import the authentication repository from the controller or other modules; profiles use public service/policy to verify adult information. The new script/command does not write the public network operation and maintenance endpoint, and does not reuse the test fixture.
 
-预检显式目标和环境；实际连接凭据仅从秘密环境传入，禁止默认回落到本机数据库。初次创建要求五个唯一用户名、五个独立秘密输入和合法资料，拒绝 username/email/User/槽位冲突、重复身份、弱密码及意外已有管理员（显式 existing-admin 模式可保留其权限并等待真实会话授权）。五账号和资料/初始化映射在一个事务内创建，密码计算在事务外，事务内重查唯一性与目标；失败不留下半套账号。重复执行只核对已有精确映射和有效凭据，不能覆盖密码/资料、恢复已撤销角色或复活 DELETED 账号。
+Preflight explicit targets and environments; actual connection credentials are only passed in from the secret environment, disabling default fallback to the native database. Initial creation requires five unique usernames, five independent secret inputs and legitimate data, rejects username/email/User/slot conflicts, duplicate identities, weak passwords and accidental existing administrators (explicit existing-admin mode retains their permissions and waits for real session authorization). Five accounts and data/initialization mapping are created in one transaction, the password is calculated outside the transaction, and the uniqueness and target are rechecked within the transaction; failure does not leave half a set of accounts. Repeated execution only checks the existing accurate mapping and valid credentials. It cannot overwrite passwords/data, restore revoked roles, or revive DELETED accounts.
 
-数据库创建与合法角色授权不是伪装成单事务：
+Database creation and legal role authorization are not disguised as single transactions:
 
-1. 五账号数据事务完成后，通过现有 `BackofficeBootstrapCommand` 为该批管理员建立首个后台账号，产生原有 SYSTEM_BOOTSTRAP 审计，暂时持有双角色。
-2. 操作者以该管理员的真实用户名密码经正常会话登录，使用现有角色接口向安全员槽位授予 `SAFETY_OFFICER`，再撤销管理员的 `SAFETY_OFFICER`。每个命令使用稳定 UUID、原因和已认证 identity；禁止 CLI 仅从 manifest 取 actorUserId 伪装已认证管理员或直接插角色表。
-3. 验证最终两角色分离、移动用户无角色后标记角色阶段完成。命令可输出非秘密的阶段/槽位状态及操作说明，不输出密码、hash、token 或完整邮箱。
+1. After the five-account data transaction is completed, the first background account for this batch of administrators is established through the existing `BackofficeBootstrapCommand`, which generates the original SYSTEM_BOOTSTRAP audit and temporarily holds dual roles.
+2. The operator logs in through a normal session with the administrator's real username and password, uses the existing role interface to grant `SAFETY_OFFICER` to the safety officer slot, and then revokes the administrator's `SAFETY_OFFICER`. Use stable UUID, reason and authenticated identity for each command; disable CLI from just taking actorUserId from manifest to pretend to be authenticated administrator or insert role table directly.
+3. After verifying that the two roles are finally separated and the mobile user has no role, the role marking stage is completed. The command can output non-secret stage/slot status and operation instructions, but does not output password, hash, token or complete email address.
 
-恢复时根据 durable 阶段记录和实时角色核对：bootstrap 仅在尚未建立管理员时使用；最终管理员只有单角色后不能重新调用 bootstrap。原命令响应丢失优先用原 UUID 重放验证；已完成阶段不重复成功审计。未知管理员、额外角色、后续合法角色撤销或用户禁用均报告冲突供操作者处理，不自动“修好”并重授权限。该命令的成功定义为完成五身份和最终角色核验；只完成数据时明确为待角色授权，不能报告整体成功。
+Check against durable stage records and real-time roles during recovery: bootstrap can only be used when an administrator has not yet been created; bootstrap cannot be re-invoked after the final administrator has only a single role. If the original command response is lost, the original UUID will be used first for replay verification; the successful audit will not be repeated in the completed stage. Unknown administrators, additional roles, subsequent legal role revocation, or user bans all report conflicts for the operator to handle and do not automatically "fix" and reauthorize permissions. The success of this command is defined as the completion of five identities and the final role verification; when only the data is completed, it is clearly pending role authorization, and the overall success cannot be reported.
 
-### 4. 资料完整与正常房间流程
+### 4. Complete information and normal room procedures
 
-移动三个槽位经当前 `ProfilePolicy` 校验并保存可实际加载的头像 URL、不同昵称、合法性别、国家或城市、1–10 个合法兴趣、合法 CEFR、明确成年出生年月和 `completedAt`；不能只写完成时间绕过校验。使用虚构体验资料，不引入真实访客个人信息。
+Move three slots to verify the current `ProfilePolicy` and save the avatar URL that can actually be loaded, different nicknames, legal gender, country or city, 1–10 legal interests, legal CEFR, clear adult birth date and `completedAt`; you cannot just write the completion time to bypass the verification. Use fictional experience data and do not introduce personal information of real visitors.
 
-登录后 `GET /v1/me` 应返回 `ELIGIBLE`。房间测试由 A 在 UI 正常创建容量至少 3 的房间、B/C 使用独立 session 加入并接受现有房间规则；结束后可以换人创建。seed 不新增 Room、membership 或固定 HOST 权限，不绕过容量、同意、封禁、麦克风和 LiveKit 资格。
+`GET /v1/me` should return `ELIGIBLE` after logging in. The room test consists of A normally creating a room with a capacity of at least 3 in the UI, and B/C using an independent session to join and accept the existing room rules; after the end, it can be created by changing people. The seed does not add room, membership or fixed HOST permissions, and does not bypass capacity, consent, ban, microphone and LiveKit qualifications.
 
-### 5. 邮件停止与期限清理分开
+### 5. Separate mail stopping and deadline cleaning
 
-邮件开关为 false 时，注册、重发、确认、密码恢复请求/提交、邮箱绑定及绑定专用 OAuth/phone proof 全部在产生持久申请、配额发送副作用或调用外部 provider 前返回现有 `EMAIL_AUTH_UNAVAILABLE`（503）。有效旧 token 同样不能消费，不能返回 202 伪装“已发送”。普通 Google exchange 与正常密码登录/密码注销 proof 保留。
+When the email switch is false, registration, resending, confirmation, password recovery request/submission, email binding, and binding-specific OAuth/phone proof all return the existing `EMAIL_AUTH_UNAVAILABLE` (503) before generating persistent applications, quota sending side effects, or calling external providers. Valid old tokens cannot be consumed and cannot return 202 pretending to be "sent". Normal Google exchange with normal password login/password account deletion proof reserved.
 
-worker 改为 cleanup-only 时钟与 delivery 开关独立：无邮件配置也能执行不需要解密的清理；邮件关闭不 claim/send，不把任何 row 记为 DELIVERED。部署关闭时先停止/排空投递进程，再通过明确的停用维护动作取消未终结投递、清空加密载荷和临时申请可还原信息、失效挑战/proof并递增 generation fencing，避免重开邮件后发送旧积压。保留既有审计与正式账号事实。清理只能覆盖邮件流程临时数据，不取消仍需使用的 ACCOUNT_DELETE proof；到期 proof 仍清理。
+The worker is changed to cleanup-only. The clock is independent of the delivery switch: cleanup without decryption can be performed without email configuration; email is closed without claim/send, and no row is recorded as DELIVERED. When the deployment is closed, first stop/drain the delivery process, then cancel the unfinished delivery through explicit deactivation maintenance actions, clear the encrypted payload and temporary application restoreable information, invalidate the challenge/proof, and increment generation fencing to avoid sending old backlogs after reopening emails. Keep existing audit and official account facts. Cleaning can only overwrite the temporary data of the mail process, and does not cancel the ACCOUNT_DELETE proof that still needs to be used; expired proofs will still be cleaned.
 
-不能保证已向 SMTP 提交的邮件被撤回，runbook 需说明切换顺序与该边界。全新体验 DB 没有投递积压时动作幂等空操作；隔离测试必须另构造旧 PENDING/RUNNING 记录验证。仅关闭 worker 会延误旧申请/载荷清理，故不采用。
+There is no guarantee that emails submitted to SMTP will be withdrawn. The runbook needs to explain the switching sequence and this boundary. New experience: idempotent no-op when DB has no delivery backlog; isolation testing must construct another old PENDING/RUNNING record for verification. Just shutting down the worker will delay the cleanup of old applications/loads, so it is not used.
 
-### 6. Web 入口与视觉边界
+### 6. Web entrance and visual boundary
 
-提供最小、非敏感的认证能力查询（建议 `GET /v1/auth/capabilities`），仅输出密码/Google/邮件流程可用布尔值，不输出五槽位、邮箱、环境 ID 或提供商秘密；错误/未知时邮件入口按关闭处理。这样 UI 和后端部署状态一致，不新增第二份合同。正常邮箱模式可保留原页面入口；本次试用登录页隐藏邮件注册/找回入口，保留密码与 Google。
+Provides minimal, non-sensitive authentication capability query (recommended `GET /v1/auth/capabilities`), only outputs the password/Google/Boolean value available for the mail process, and does not output the five slots, mailboxes, environment IDs or provider secrets; when errors/unknowns occur, the mail entry is closed. In this way, the UI and backend deployment status are consistent, and the second contract is not added. In normal email mode, the original page entrance can be retained; this trial login page hides the email registration/retrieval entrance, and keeps the password and Google.
 
-直接打开注册、验证、找回、重置、绑定页时呈现统一的“当前试用暂不提供此功能”，提供返回登录，不触发网络邮件请求；从链接读到旧 token 时仍清除地址栏 fragment，并不自动确认。页面不展示“已发送”成功状态。登录方式页面能展示未邮件验证的体验来源。中英文文案使用已有 i18n，复用当前布局/组件；不创建新页面视觉体系。
+When directly opening the registration, verification, retrieval, reset, and binding pages, a unified "This function is not available for the current trial" is displayed, and a return login is provided without triggering a webmail request; when reading the old token from the link, the address bar fragment is still cleared and is not automatically confirmed. The page does not display the "Sent" success status. The login method page can display the experience source that has not been verified by email. Chinese and English copywriting uses existing i18n and reuses the current layout/components; no new page visual system is created.
 
-UI 应用项目 `figma-to-frontend` 技能。仓库证据目标为 Figma 文件 `56nIowZmvBhb0QJvOlDQdU` 的认证 V2 登录 `118:2970`、注册 `118:3001`、验证 `118:3063`、找回 `118:3186`（390×844）；来自 `docs/acceptance/implement-mobile-email-password-auth.md`，本轮没有实时核验。Desktop Bridge status 为无活动 transport/未连接，禁止 cloud/REST/browser fallback。实现 UI 前必须恢复 Bridge、核对实际页面/frame、在原页确认停用注释/状态；本次规划不授权编辑原稿。后台已有密码/Google 表单保持原视觉，仅使用现有状态做权限验收。
+UI application project `figma-to-frontend` skill. The repository evidence target is the authentication V2 of Figma file `56nIowZmvBhb0QJvOlDQdU`. Log in `118:2970`, register `118:3001`, verify `118:3063`, and retrieve `118:3186` (390×844); from `docs/acceptance/implement-mobile-email-password-auth.md`, there is no real-time verification in this round. Desktop Bridge status is inactive transport/not connected, cloud/REST/browser fallback is disabled. Before implementing the UI, you must restore Bridge, check the actual page/frame, and confirm the deactivation comment/status on the original page; this plan does not authorize editing of the original manuscript. There is a password/Google form in the background to keep the original view, and only use the existing status for permission acceptance.
 
-### 7. 唯一合同与证据
+### 7. The only contract and evidence
 
-仍使用 NestJS code-first 生成 `openapi/openapi.yaml`，新增 capabilities 和可空来源投影后更新 `packages/api-client` 生成结果及所有消费者，不手写第二 DTO。静态生成与 openapi check 只证明合同一致。
+Still use NestJS code-first to generate `openapi/openapi.yaml`, add capabilities and nullable source projection and update `packages/api-client` to generate results and all consumers, without handwriting the second DTO. Static generation and openapi check only prove that the contract is consistent.
 
-实施中的最小检查：配置组合、原验证路径保留、来源/环境门控、错误密码/未知用户同错、Redis fail-closed、幂等/并发唯一性、停用邮件 HTTP 无副作用、worker cleanup-only、角色矩阵/最后管理员、注销旧会话与预置来源失效、清理不复活身份。Web 用 Playwright 验证五账号分开会话、HttpOnly Cookie、后台 direct-route/直接 API 拒绝、Google mock 边界与中英文停用状态；真实 Google 单独 smoke。
+Minimum implementation checks cover configuration combinations, preservation of existing verification paths, source/environment gating, identical errors for wrong passwords and unknown users, Redis fail-closed behavior, idempotency/concurrent uniqueness, disabled-email HTTP calls without side effects, cleanup-only workers, role matrices/last-administrator protection, revocation of old sessions and provisioned sources after account deletion, and cleanup that never revives identities. Web uses Playwright to verify five account separate sessions, HttpOnly Cookie, background direct-route/direct API rejection, Google mock boundary and Chinese and English disabled status; real Google smoke alone.
 
-UI 需要 Bridge 原稿截图与浏览器 390×844 比较；三人网页需要真实麦克风/LiveKit 发布订阅、结束/换房主的新房流程的 runtime 证据。Web 测试不替代 Android/iOS 真机；本轮正式上线/SMTP 与原 changes 的外部任务继续 BLOCKED/DEFERRED。全部实现完成后只运行一次完整受影响检查；失败或后续改动才重跑。
+The UI needs to compare the Bridge original screenshot with the browser 390×844; the three-person webpage needs runtime evidence of the new room process of real microphone/LiveKit publishing and subscription, ending/changing room host. Web testing does not replace Android/iOS physical device; this round of official launch/SMTP and external tasks of the original changes continue to be BLOCKED/DEFERRED. Only run a complete affected check once after all implementations are completed; rerun only after failure or subsequent changes.
 
 ## Risks / Trade-offs
 
-- [体验来源扩大到普通注册] → 只有受控 CLI 写来源/槽位映射，HTTP DTO 不接受这些字段；验证缺映射、跨环境、旧 token 和普通 pending 账号拒绝路径。
-- [高权限账号被共享可改变角色或处置数据] → 保持真实服务端权限、原因/确认/审计、环境隔离、会话撤销和可核对回滚。建议限制分发对象，当前尚未获用户确认；不通过暗中删权限降低体验真实性。
-- [旧版本把 null 当 Date 或仅凭 hash 发会话] → 同步发布后端/两端客户端并完成合同兼容检查；旧二进制不能直接回滚到包含体验凭据的状态，回滚版本需具备拒绝体验来源的兼容处理。
-- [角色流程中断留下管理员双角色] → 明确阶段、真实管理员认证、稳定命令 UUID、只验证不自动重授、最终矩阵检查；部分完成不报告可交付。
-- [邮件关闭后旧载荷长期残留/重开发送] → 独立 cleanup 与停用 drain/cancel/fencing，验证过期清理和 provider 不被调用；在发布记录中标明最后一次投递及切换时间。
-- [共享移动账号互相修改资料/占用活跃房间] → 五个槽位身份独立，测试使用三个独立客户端并正常结束房间；不把共享体验凭据作为长期个人账号或生产用户资料。
-- [运行 seed 指向错误 DB 或重复修改未知用户] → 无默认目标、环境标识匹配、备份/预检、dry-run、唯一映射、冲突拒绝；不调用测试全表 cleanup。
-- [没有自动密码找回] → 首轮已关闭邮件且无自助恢复；不顺手加入无邮件找回。丢失凭证须另行批准受控轮换操作，初始化重跑不替换密码。
+- [Experience source expanded to ordinary registration] → Only controlled CLI writes source/slot mapping, HTTP DTO does not accept these fields; verification of missing mapping, cross-environment, old token and ordinary pending account rejects the path.
+- [High-privilege accounts are shared to change roles or dispose of data] → Maintain true server-side permissions, reasons/confirmations/auditing, environment isolation, session revocation and verifiable rollback. It is recommended to limit distribution objects, which has not yet been confirmed by users; do not reduce the authenticity of the experience by secretly deleting permissions.
+- [The old version treated null as Date or only sent the session based on hash] → Synchronously publish the backend/both-end clients and complete the contract compatibility check; the old binary cannot be directly rolled back to a state containing experience credentials, and the rolled-back version must have compatibility processing to reject the experience source.
+- [The role process is interrupted, leaving the administrator with dual roles] → Clear stage, real administrator authentication, stable command UUID, only verification without automatic re-award, final matrix check; partially completed without reporting and deliverable.
+- [Old payload remains for a long time after mail is closed/restarts sending] → Independently cleanup and disable drain/cancel/fencing, verify that expired cleanup and provider are not called; indicate the last delivery and switching time in the release record.
+- [Shared mobile accounts modify each other’s data/occupy active rooms] → The five slots have independent identities. The test uses three independent clients and ends the room normally; the shared experience credentials are not used as long-term personal accounts or production user data.
+- [The running seed points to the wrong DB or the unknown user is repeatedly modified] → No default target, environment identifier matching, backup/preflight, dry-run, unique mapping, conflict rejection; test full table cleanup is not called.
+- [No automatic password retrieval] → The first round of emails has been closed and there is no self-service recovery; there is no email retrieval if you do not join smoothly. Lost credentials must be separately approved for controlled rotation operation, and the password will not be replaced during initial re-run.
 
 ## Migration Plan
 
-1. 审核本 proposal 与相关 active changes 的限定例外，确认不放宽普通注册验证；UI 实施前确认原稿状态。代码实施/测试与实际环境操作分开授权。
-2. 在隔离测试库增加 origin、nullable verifiedAt、初始化记录的 additive migration 和约束：既有 origin 保持 EMAIL_VERIFIED 且有 verifiedAt；体验 origin 的验证时间为空并有可核验的映射。检查升级前后普通账号、hash/version、会话/审计完全保留。禁止改历史 migration。
-3. 所有真实环境操作前由用户指定数据库/环境 ID、公网 HTTPS 来源和秘密注入渠道；备份并验证 dry-run、当前管理员集合、五槽位冲突及迁移状态。本机目标与秘密本地文件渠道已由用户指定；远程目标/HTTPS/发布仍未授权。
-4. 先迁移、发布能识别来源的 API/客户端，保持体验开关关闭；配置 Google、CORS、Cookie 安全及邮件关闭，排空投递并执行临时数据停用清理。再启用环境绑定体验能力，完成五身份初始化和合法 bootstrap/认证角色分离。
-5. 核对三个移动用户 ELIGIBLE、后台最终矩阵、错误权限与旧凭据拒绝，再按用户决定的分发渠道提供秘密；runbook 和运行日志仅保留脱敏执行结果。目标环境五账号、真实 Google、三人 LiveKit、公开 webhook 的验收全部分别记录；无目标时保留 BLOCKED，不用本地 fake PASS 替代。
-6. 回滚优先关闭体验能力并撤销其所有平台会话、结束/退出正常测试房间，保留 Google；保留表、来源映射和审计，不删表/恢复旧 hash/恢复注销身份。保持对体验来源的 access/refresh 拒绝。
-7. 完全清理时先结束房间、撤销安全员；管理员只有在向受控承接账号合法移交并核验至少一个有效管理员后才能撤销自身角色。然后使用正常密码 proof/明确注销流程销毁 hash、撤销全部会话、保留唯一身份占用和审计，标记预置映射 RETIRED；重跑 seed 拒绝退役身份。若没有承接管理员，则管理员清理保持待执行，不绕过最后管理员规则。
+1. Review the limited exceptions of this proposal and related active changes, and confirm that ordinary registration verification will not be relaxed; confirm the original status before UI implementation. Code implementation/testing and actual environment operation are licensed separately.
+2. Add additive migration and constraints of origin, nullable verifiedAt, and initialization records in the isolated test library: the existing origin maintains EMAIL_VERIFIED and has verifiedAt; experience that the verification time of origin is empty and has verifiable mapping. Check that normal accounts, hash/version, sessions/audits are completely retained before and after the upgrade. It is forbidden to change the migration history.
+3. Before all real environment operations, the user specifies the database/environment ID, public HTTPS source and secret injection channel; back up and verify dry-run, current administrator set, five-slot conflicts and migration status. The local target and secret local file channel have been specified by the user; the remote target /HTTPS/Publish is still not authorized.
+4. Migrate and publish the API/client that can identify the source first, and keep the experience switch turned off; configure Google, CORS, cookie security and email shutdown, drain delivery and perform temporary data deactivation cleanup. Enable environment binding experience capability again, complete five-identity initialization and legal bootstrap/authentication role separation.
+5. Check three mobile user ELIGIBLE, background final matrix, incorrect permissions and old credential rejection, and then provide secrets according to the distribution channel decided by the user; only the desensitized execution results are retained in the runbook and run logs. The acceptance of five accounts in the target environment, real Google, three-person LiveKit, and public webhook are all recorded separately; BLOCKED is retained when there is no target, and does not need to be replaced by a local fake PASS.
+6. Rollback gives priority to turning off the experience capability and revoking all its platform sessions, ending/exiting the normal test room, retaining Google; retaining tables, source mappings and audits, and not deleting tables/restoring old hashes/recovering account deletion identities. Keep access/refresh denial on experience source.
+7. When completely cleaning, first end the room and revoke the safety officer; the administrator can only revoke his or her role after legally transferring the account to the controlled account and verifying at least one valid administrator. Then use the normal password proof/clear account deletion process to destroy the hash, revoke all sessions, retain the unique identity occupation and audit, mark the preset mapping RETIRED; rerun the seed to refuse to retire the identity. If there is no successor administrator, the administrator cleanup remains pending and the last administrator rule is not bypassed.
 
 ## Open Questions
 
-- 执行时选哪个独立体验数据库/环境标识、HTTPS API/admin/mobile 地址及备份位置？这些决定改变环境值，不改变认证与授权设计。
-- 五账号实际用户名、秘密输入/交付渠道、体验者名单何时提供？高权限账号分发范围需由用户决定。
-- Bridge 恢复后既有 frame 的停用状态注释是否可直接复用？具体视觉证据待 UI 实施前核验，不能以本文件当作已批准视觉设计。
+- Which independent experience database/environment identifier, HTTPS API/admin/mobile address and backup location should be selected during execution? These decisions change the environment values ​​and do not change the authentication and authorization design.
+- When will the actual user names of the five accounts, secret input/delivery channels, and experiencer lists be provided? The distribution scope of high-privilege accounts must be determined by the user.
+- Can the disabled status annotation of the existing frame be directly reused after Bridge is restored? Specific visual evidence needs to be verified before UI implementation, and this document cannot be regarded as approved visual design.
 
-### 本机旧开发账号清理例外（2026-10-03 用户明确授权）
+### Exception for cleanup of old development accounts on this machine (explicitly authorized by user on 2026-10-03)
 
-最终仅五个 ACTIVE 可用账号。旧身份没有符合本次环境映射/凭据事实时，受控 `cleanup-local` CLI 可先撤销旧开发角色（含最后管理员），逐用户复用 account-lifecycle repository 的注销事务销毁 hash、撤会话、释放房间/社交资格，保留历史审计与外键。该例外没有注册为 provider 或 HTTP API；必须明确 `--authorization-mode local-rebuild`、NODE_ENV=development、固定 loopback 127.0.0.1:5432/slogan、environment=local-preview，并检查 owner-only 0600 PostgreSQL custom-format 备份。拒绝 production/远程/其他数据库/缺备份/其他环境映射。重跑只处理尚未注销且未登记的旧身份，绝不恢复 RETIRED 身份。
+In the end, only five ACTIVE accounts were available. When the old identity does not comply with the current environment mapping/credential facts, the controlled `cleanup-local` CLI can first revoke the old development role (including the last administrator), reuse the account-lifecycle repository's account deletion transaction to destroy the hash, cancel the session, release the room/social qualifications, and retain historical audits and foreign keys on a user-by-user basis. This exception is not registered as a provider or HTTP API; must specify `--authorization-mode local-rebuild`, NODE_ENV=development, fixed loopback 127.0.0.1:5432/slogan, environment=local-preview, and check owner-only 0600 PostgreSQL custom-format backup. Reject production/remote/other databases/missing backup/other environment mappings. Rerun only processes old identities that have not been deleted and registered, and will never restore RETIRED identities.
 
-备份先于 additive migration 与清理；服务停止期间执行，避免并发创建。中断可能留下部分旧身份已注销或角色已撤销，CLI 重跑可收敛，或停止服务后从安全备份恢复到独立本机数据库进行核对，再人工决定原库恢复。不可直接降级旧二进制读取 nullable verifiedAt。清理结束后，新管理员仍经原 bootstrap，真实密码登录和正常审计角色 HTTP 命令完成角色分离；线上最后管理员保护不变。此例外不适用于一般体验退役/远程环境。
+Backup precedes additive migration and cleanup; performed during service stop to avoid concurrent creation. The interruption may leave some old identities deleted or roles revoked. The CLI can be rerun to converge, or the service can be stopped and restored from a safe backup to an independent local database for verification, and then the original database can be restored manually. Cannot directly downgrade old binary read nullable verifiedAt. After the cleanup, the new administrator still completes role separation through the original bootstrap, real password login and normal audit role HTTP command; the last online administrator protection remains unchanged. This exception does not apply to general experience decommissioning/remote environments.
 
-旧角色表 revokedByUserId 外键仍保留成对约束；本地清理为撤角色创建一个从未可登录的 DELETED、无凭据维护标记，撤销 FK 指向该标记，而角色审计明确为 SYSTEM_JOB 并记录 markerId。该终态历史行不计入五个可用身份，未伪造已认证 USER 操作者。
+The old role table revokedByUserId foreign key still retains the pairwise constraint; local cleanup creates a DELETED, no-credentials maintenance marker for the revoked role, the revoked FK points to that marker, and the role audit is explicitly SYSTEM_JOB and the markerId is logged. This final state history line does not count against the five available identities and does not forge an authenticated USER operator.

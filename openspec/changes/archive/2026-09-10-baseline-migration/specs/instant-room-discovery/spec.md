@@ -1,46 +1,56 @@
 ## Purpose
 
-定义当前版本即时语音房的发现、创建、容量和加入资格，使已完成资料的成年用户能够形成可运行的小房间交流入口。
+Define the discovery, creation, capacity and joining qualifications of the current version of the instant voice room, so that adult users who have completed the information can form a runnable small room communication entrance.
 
 ## ADDED Requirements
 
-### Requirement: 创建即时房间
-系统 MUST 允许已完成资料、年满 18 岁且未处于平台限制状态的用户创建即时房间；房主必须设置 CEFR、主题和 2 至 6 人的人数上限，房间默认时长为 2 小时。
+### Requirement: Create instant room
 
-#### Scenario: 合格用户创建房间
-- **WHEN** 合格用户提交有效的即时房间配置
-- **THEN** 系统立即创建并开放房间，同时生成明确的结束时间
+The system MUST allow users who have completed their profile, are over 18 years old, and are not restricted by the platform to create instant rooms; the room host MUST set CEFR, theme, and a maximum number of people from 2 to 6 people, and the default room duration is 2 hours.
 
-#### Scenario: 不合格用户创建房间
-- **WHEN** 用户未完成资料、未满 18 岁或处于平台限制状态
-- **THEN** 系统拒绝创建房间并返回对应原因
+#### Scenario: Qualified users create rooms
 
-### Requirement: 公开房间和密码房间
-系统 MUST 支持公开即时房间和带 4 位数字密码的即时房间，并在房间信息中明确展示密码状态。
+- **WHEN** Qualified user submits valid instant room configuration
+- **THEN** The system immediately creates and opens the room and generates a clear end time.
 
-#### Scenario: 加入公开房间
-- **WHEN** 合格用户加入未满员且未结束的公开房间
-- **THEN** 系统不要求房主逐一批准并继续执行入房流程
+#### Scenario: Unqualified user creates a room
 
-#### Scenario: 加入密码房间
-- **WHEN** 合格用户为密码房间提交正确的 4 位数字密码
-- **THEN** 系统继续执行入房流程
+- **WHEN** The user has not completed the information, is under 18 years old, or is in a platform restricted state
+- **THEN** The system refuses to create a room and returns the corresponding reason
 
-#### Scenario: 密码错误
-- **WHEN** 用户提交错误的房间密码
-- **THEN** 系统拒绝加入且不得泄露正确密码
+### Requirement: Public rooms and password rooms
 
-### Requirement: 房间列表和详情
-系统 MUST 提供即时房间列表和详情，至少展示主题、CEFR、当前人数与上限、开始时间、结束时间、房主昵称和密码状态。
+The system MUST support public instant rooms and instant rooms with 4-digit passwords, and clearly display the password status in the room information.
 
-#### Scenario: 浏览可加入房间
-- **WHEN** 合格用户打开房间列表或房间详情
-- **THEN** 系统展示当前可用的房间信息和实时容量状态
+#### Scenario: Join a public room
 
-### Requirement: 并发容量边界
-系统 MUST 保证并发加入成功人数不会超过房主设置的人数上限。
+- **WHEN** A qualified user joins a public room that is not full and has not ended.
+- **THEN** The system does not require the room host to approve one by one and continue the room check-in process.
 
-#### Scenario: 只剩一个名额时并发加入
-- **WHEN** 两个或更多符合条件的加入请求同时竞争最后一个名额
-- **THEN** 最多只有一个请求成功，其余请求收到房间已满结果
+#### Scenario: Join password room
 
+- **WHEN** Qualified user submits correct 4-digit password for password room
+- **THEN** The system continues to execute the check-in process
+
+#### Scenario: Wrong password
+
+- **WHEN** User submitted wrong room password
+- **THEN** The system refuses to join and the correct password must not be revealed
+
+### Requirement: Room list and details
+
+The system MUST provide real-time room lists and details, showing at least the theme, CEFR, current number of people and upper limit, start time, end time, room host nickname and password status.
+
+#### Scenario: Browse to join the room
+
+- **WHEN** Qualified user opens room list or room details
+- **THEN** The system displays currently available room information and real-time capacity status
+
+### Requirement: Concurrency capacity boundary
+
+The system MUST ensure that the number of people who successfully join concurrently will not exceed the upper limit set by the room host.
+
+#### Scenario: Join concurrently when there is only one quota left
+
+- **WHEN** Two or more eligible join requests compete for the last spot at the same time
+- **THEN** At most one request is successful, and the remaining requests receive the result that the room is full.

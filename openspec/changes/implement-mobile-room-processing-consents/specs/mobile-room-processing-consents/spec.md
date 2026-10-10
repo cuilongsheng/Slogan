@@ -1,29 +1,32 @@
 ## Purpose
 
-让用户在手机端明确选择房间语音处理目的，并在加入前独立控制本人同意。
+Allow users to clearly select the purpose of room voice processing on the mobile phone and independently control their consent before joining.
 
 ## ADDED Requirements
 
-### Requirement: 两个房间语音处理目的默认关闭且加入前可见
+### Requirement: Both room voice processing purposes are turned off by default and visible before joining.
 
-手机端 MUST 在即时和预约建房时独立选择敏感语音识别与会后关键词，默认都关闭；房间发现和详情 MUST 在加入前显示服务端保存的选择。服务端拒绝不可用能力时页面 MUST 显示不可用，不得当作已创建成功。
+The mobile phone MUST independently select sensitive speech recognition and post-meeting keywords when building a house instantly and by reservation, both of which are turned off by default; room discovery and details MUST display the selection saved on the server before joining. When the server rejects the unavailable capability, the page MUST be displayed as unavailable and MUST not be regarded as successfully created.
 
-#### Scenario: 未选择处理目的
-- **WHEN** 用户创建房间且没有开启任一语音处理目的
-- **THEN** 请求显式提交两个关闭值，房间按普通真人语音继续
+#### Scenario: No processing purpose selected
 
-### Requirement: 加入启用房间必须逐目的接受当前说明
+- **WHEN** The user created a room and did not enable any voice processing purpose.
+- **THEN** Request to explicitly submit two closing values, and the room will continue with normal human voice.
 
-手机端 MUST 从服务端读取两个目的的当前同意状态与版本，并只要求该房间启用的目的。用户 MUST 分别主动点击接受，旧版本、撤回或缺少同意 MUST 阻止进入设备准备和加入。失败重试同一命令 MUST 保留请求标识。
+### Requirement: To join an enabled room, you must accept the current instructions one by one.
 
-#### Scenario: 只同意一个目的
-- **WHEN** 房间同时启用两项目的，用户只接受其中一项
-- **THEN** 页面仍不允许继续入房
+The mobile terminal MUST read the current consent status and version of the two purposes from the server, and only require the purpose enabled in the room. Users MUST proactively click Accept, and old versions, withdrawn or lack of consent MUST block access to device preparation and joining respectively. Retrying the same command on failure MUST retain the request ID.
 
-### Requirement: 用户可独立撤回未来处理
+#### Scenario: Only agree to one purpose
 
-个人隐私页 MUST 展示各目的当前状态并提供逐目的撤回。撤回 MUST 使用当前服务端说明版本和独立请求标识；页面 MUST 不把撤回解释为删除历史审计或已产生的安全案件。
+- **WHEN** If two items are enabled in the room at the same time, the user can only accept one of them.
+- **THEN** The page still does not allow entry to the room.
 
-#### Scenario: 撤回会后关键词同意
-- **WHEN** 用户主动撤回会后关键词目的且服务端确认
-- **THEN** 页面显示撤回状态，未来处理资格以服务端为准
+### Requirement: Users can independently withdraw future processing
+
+Personal privacy page MUST display the current status of each purpose and provide purpose-by-purpose withdrawal. Retraction MUST use the current server specification version and independent request identifier; the page MUST not interpret retraction as deletion of historical audits or generated security cases.
+
+#### Scenario: Withdraw post-meeting keyword consent
+
+- **WHEN** The user actively withdraws the keyword purpose after the meeting and the server confirms it
+- **THEN** The page shows withdrawal status, and future processing qualifications are subject to the server.

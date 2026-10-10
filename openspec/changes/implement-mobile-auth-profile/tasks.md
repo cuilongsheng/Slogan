@@ -1,26 +1,26 @@
-## 1. 合同与资料等级
+## 1. Contract and data level
 
-- [x] 1.1 在 profile 域与 Prisma 枚举追加三个区间值并保留旧六值；用资料策略测试和迁移检查验证新旧值可读写、房间等级仍只接受单级。
-- [x] 1.2 由 NestJS code-first 生成 OpenAPI 并重新生成 `packages/api-client`；运行两边合同漂移检查确认移动端使用同一合同。
+- [x] 1.1 Add three interval values ​​to the profile field and Prisma enumeration and retain the old six values; use data policy testing and migration checks to verify that the old and new values ​​can be read and written, and the room level still only accepts a single level.
+- [x] 1.2 Generate OpenAPI by NestJS code-first and regenerate `packages/api-client`; run contract drift check on both sides to confirm that the mobile terminal uses the same contract.
 
-## 2. 登录与会话
+## 2. Login and session
 
-- [x] 2.1 添加 Google 原生 SDK、开发构建、安全存储和语言依赖及配置，验证依赖安装、类型检查和无 secret 进入客户端。
-- [x] 2.2 实现 Google 原生 server authorization code 兑换、服务端 ID token 验签及登录页加载/取消/失败态；测试请求参数、签名拒绝和取消时不建立会话。
-- [x] 2.3 实现 token 安全存储、启动恢复、单飞刷新、401 清理和登出；用相关单元/集成测试验证轮换及失效路径。
-- [x] 2.4 为 Mac 浏览器预览实现 Google Web code popup、origin 兑换与可点击的主登录按钮；验证成功码、取消和缺配置错误，不将预览当作原生登录验收。
-- [x] 2.5 为 Web 预览实现后端 `HttpOnly` refresh Cookie、同会话页面刷新恢复与安全退出；验证原生 SecureStore 不变、无浏览器普通存储 token、来源限制和刷新轮换。
+- [x] 2.1 Add Google native SDK, development build, secure storage and language dependencies and configuration, verify dependency installation, type checking and enter the client without secret.
+- [x] 2.2 implements Google native server authorization code redemption, server ID token verification and login page loading/cancellation/failure state; no session is established when testing request parameters, signature rejection and cancellation.
+- [x] 2.3 Implement token secure storage, startup recovery, solo refresh, 401 cleanup and logout; use relevant unit/integration tests to verify rotation and failure paths.
+- [x] 2.4 implements Google Web code popup, origin redemption and clickable main login button for Mac browser preview; verification success code, cancellation and missing configuration errors do not accept preview as native login.
+- [x] 2.5 implements backend `HttpOnly` refresh Cookie, same-session page refresh recovery and safe exit for web preview; verifies that the native SecureStore remains unchanged, without browser normal storage tokens, source restrictions and refresh rotation.
 
-## 3. 首次资料与导航
+## 3. First time information and navigation
 
-- [x] 3.1 实现两步资料页面、有效的 Google 头像预填、表单校验、中英文文案和设计状态；用界面测试核对必填/错误/区间选择。
-- [x] 3.2 对接 `/v1/me` 与 `/v1/me/profile`，按服务端状态限制路由并展示未成年页；测试 `PROFILE_REQUIRED`、`AGE_RESTRICTED`、`ELIGIBLE` 分支。
-- [x] 3.3 明确微信扫码和头像上传的 `BLOCKED` 体验及产品/合同差异，核对没有假二维码、假上传或假登录成功。
+- [x] 3.1 Implement two-step information page, effective Google avatar pre-filling, form verification, Chinese and English copywriting and design status; use interface testing to check required/error/interval selection.
+- [x] 3.2 Connect `/v1/me` and `/v1/me/profile`, restrict routing and display minor pages according to server status; test `PROFILE_REQUIRED`, `AGE_RESTRICTED`, `ELIGIBLE` branches.
+- [x] 3.3 Clarify the `BLOCKED` experience and product/contract differences between WeChat code scanning and avatar uploading, and verify that there are no fake QR codes, fake uploads or fake login successes.
 
-## 4. 验证与验收
+## 4. Verification and acceptance
 
-- [x] 4.1 运行受影响的 format、lint、typecheck、测试、构建、合同与 OpenSpec strict 检查，记录准确结果。
-- [x] 4.2 记录 Figma 390×844 对照、可获得的运行时/设备证据和真实 provider/头像/微信阻塞；仅把实际执行的项目标为 PASS。
-- [x] 4.3 用用户提供的设计图复核 390×844 登录页，记录明确的视觉差异和 Desktop Bridge/真实 provider 的阻塞，并完成新增 Web 路径的静态、测试与构建检查。
-- [x] 4.4 对真实浏览器 Google 登录、页面刷新恢复、退出及已有账号的 `/ready` 导航做运行时验证，更新合同、测试及验收记录。
-- [ ] 4.5 用新账号验证真实首次资料页面与提交；原生设备验证和缺失的头像/微信合同继续按验收记录标注阻塞。
+- [x] 4.1 Runs affected format, lint, typecheck, tests, builds, contracts and OpenSpec strict checks, logging accurate results.
+- [x] 4.2 Record Figma 390×844 comparison, available runtime/device evidence and real provider/avatar/WeChat blocking; only mark actual executed projects as PASS.
+- [x] 4.3 Reviewed the 390×844 landing page with user-provided blueprints, documented clear visual differences and Desktop Bridge/real provider blocking, and completed static, test, and build checks of the new web path.
+- [x] 4.4 Perform runtime verification on the real browser Google login, page refresh recovery, logout and `/ready` navigation with an existing account, and update the contract, test and acceptance records.
+- [ ] 4.5 Use the new account to verify the real first-time information page and submit; native device verification and missing avatar/WeChat contracts continue to be blocked according to the acceptance record.

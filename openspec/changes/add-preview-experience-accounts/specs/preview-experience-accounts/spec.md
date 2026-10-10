@@ -1,114 +1,114 @@
 ## Purpose
 
-定义五个独立体验账号的受控创建、完整移动资料、真实后台权限及正常房间角色，保证重复执行和失败恢复不覆盖既有用户或泄露秘密，并提供遵循最后管理员、注销和审计规则的清理边界。
+Define the controlled creation of five independent experience accounts, complete mobile data, real background permissions and normal room roles, ensuring that repeated executions and failed recovery do not cover existing users or leak secrets, and provide cleanup boundaries that follow the last administrator, account deletion and audit rules.
 
 ## ADDED Requirements
 
-### Requirement: 五个独立账号通过受控环境初始化
+### Requirement: Five independent accounts initialized through a controlled environment
 
-系统 MUST 提供仅限指定体验环境的受控初始化入口，建立后台管理员、安全员、移动 A/B/C 五个独立身份；每个身份 MUST 有唯一用户名、独立符合现有策略的密码散列和受控来源映射。入口 MUST 要求显式目标和匹配的环境标识，不提供公网初始化接口或默认目标数据库，不创建房间、房间成员、预发会话或固定全局 HOST 角色。
+The system MUST provide a controlled initialization entrance limited to the designated experience environment, and establish five independent identities: backend administrator, safety officer, and mobile A/B/C; each identity MUST have a unique user name, independent password hashing and controlled source mapping that conforms to existing policies. The entry MUST require explicit targets and matching environment identifiers, does not provide a public network initialization interface or default target database, and does not create rooms, room members, pre-release sessions or fixed global HOST roles.
 
-#### Scenario: 初始化五身份
+#### Scenario: Initialize five identities
 
-- **WHEN** 操作者显式指定允许的体验目标、五个无冲突身份及合规秘密输入
-- **THEN** 账号、资料及映射原子建立为五个独立 ACTIVE 身份，无邮件、预发 token 或持久房间；输出仅给出非秘密状态
+- **WHEN** Operator explicitly specifies allowed experience goals, five conflict-free identities, and compliant secret inputs
+- **THEN** Accounts, information and mapping atoms are established as five independent ACTIVE identities, no emails, pre-issued tokens or persistent rooms; the output only gives the non-secret status
 
-#### Scenario: 错误目标或不合规输入
+#### Scenario: Wrong target or illegal input
 
-- **WHEN** 未指定目标、环境不匹配、秘密/用户名不合规、槽位重复或身份已被未知用户占用
-- **THEN** 拒绝初始化且不改变目标账号、凭据、资料或角色，不回显敏感输入
+- **WHEN** No target specified, environment mismatch, secret/username non-compliance, slot duplication or identity occupied by unknown user
+- **THEN** Reject initialization without changing the target account, credentials, profile or role, and do not echo sensitive input
 
-### Requirement: 初始化重试不覆盖和不复活身份
+### Requirement: Initialization retry does not overwrite or revive the identity
 
-系统 MUST 以环境及五槽位的持久映射识别重试，成功重试只核对已登记身份和最终状态，不替换密码、重置版本、覆盖用户资料、重复角色或审计。并发创建 MUST 不产生重复身份；退役、注销、禁用或未知角色冲突 MUST 明确拒绝，不自动恢复权限。
+The system MUST identify retries based on the environment and the persistent mapping of five slots. Successful retries only check the registered identity and final status, and do not replace passwords, reset versions, overwrite user information, duplicate roles, or audit. Concurrent creation MUST not generate duplicate identities; retirement, account deletion, disabled or unknown role conflicts MUST be explicitly denied and permissions will not be automatically restored.
 
-#### Scenario: 成功后再次执行
+#### Scenario: Execute again after success
 
-- **WHEN** 同一环境和槽位映射再次初始化且当前身份/角色符合最终状态
-- **THEN** 返回相同五身份核验结果，不重复创建或修改密码、资料、角色和成功审计
+- **WHEN** The same environment and slot mapping are initialized again and the current identity/role meets the final state
+- **THEN** Returns the same five identity verification results, does not repeatedly create or modify passwords, information, roles and successful audits
 
-#### Scenario: 并发和中断
+#### Scenario: Concurrency and Interrupts
 
-- **WHEN** 同批初始化并发执行或执行中断后恢复
-- **THEN** 数据阶段最多形成一套完整五身份；已完成阶段可核对，未完成角色阶段明确呈现，不把部分完成报告为整体成功
+- **WHEN** Concurrent execution of initialization in the same batch or recovery after execution interruption
+- **THEN** The data stage can form a complete set of five identities at most; completed stages can be verified, unfinished role stages are clearly presented, and partial completions are not reported as overall success.
 
-#### Scenario: 用户之后被注销或撤权
+#### Scenario: The user was later deleted or revoked
 
-- **WHEN** 已登记账号退役、注销、禁用或其后台角色发生后续合法撤销
-- **THEN** 重跑初始化拒绝自动复活账号或恢复角色，并报告稳定冲突
+- **WHEN** The registered account is retired, canceled, disabled, or its administrative role is subsequently legally revoked
+- **THEN** Rerun initialization refuses to automatically resurrect the account or restore the character, and reports a stable conflict
 
-### Requirement: 后台体验权限映射到真实角色
+### Requirement: Backend experience permissions are mapped to real roles
 
-初始化完成时，后台管理员 MUST 仅持有 `PLATFORM_ADMIN`，安全员 MUST 仅持有 `SAFETY_OFFICER`，三个移动账号 MUST 没有后台角色。后台授权 MUST 通过既有受控 bootstrap 与已认证管理员的审计角色命令完成，保留原因、请求标识、当前权限重查、幂等和最后管理员保护，不直接写角色表或伪造 actor。
+When initialization is completed, the backend administrator MUST only holds `PLATFORM_ADMIN`, the safety officer MUST only holds `SAFETY_OFFICER`, and the three mobile accounts MUST have no backend roles. Background authorization MUST be completed through the existing controlled bootstrap and audit role commands of authenticated administrators, retaining the reason, request identification, current permission review, idempotent and final administrator protection, without directly writing the role table or forging actors.
 
-#### Scenario: 首个管理员与独立安全员
+#### Scenario: The first administrator and independent safety officer
 
-- **WHEN** 新目标没有既有管理员，操作者完成 bootstrap 并以真实管理员会话完成角色授予/撤销
-- **THEN** 最终管理员和安全员分别只持上述一个角色，移动三账号无后台角色，审计能对应各步真实操作者和系统 bootstrap
+- **WHEN** The new target does not have an existing administrator, the operator completes bootstrap and completes role grant/revocation with a real administrator session
+- **THEN** The final administrator and safety officer only hold the above-mentioned roles respectively. The three mobile accounts have no administrative roles. The audit can correspond to the real operators and system bootstrap at each step.
 
-#### Scenario: 不存在隐含超级权限
+#### Scenario: There is no implicit super permission
 
-- **WHEN** 仅平台管理员执行安全员专属处置，或仅安全员管理角色/查询全量审计
-- **THEN** 服务端按当前权限矩阵拒绝，不能因账号用于体验而扩大权限
+- **WHEN** Only platform administrators perform safety officer exclusive actions, or only safety officer management roles/query full audits
+- **THEN** The server refused according to the current permission matrix, and the permissions cannot be expanded because the account is used for experience.
 
-#### Scenario: 普通账号和旧角色 token
+#### Scenario: Normal account and old character token
 
-- **WHEN** 移动账号直接调用后台接口，或已撤销角色的后台用户用旧 token 访问原权限接口
-- **THEN** 服务端按最新持久权限拒绝并不返回后台数据
+- **WHEN** The mobile account directly calls the backend interface, or the backend user whose role has been revoked uses the old token to access the original permission interface.
+- **THEN** The server rejects the latest persistent permissions and does not return admin data.
 
-#### Scenario: 已存在未知管理员或角色阶段恢复
+#### Scenario: An unknown administrator or role stage recovery already exists
 
-- **WHEN** 初始化目标已有未知管理员，或最终单角色管理员所在批次再次恢复
-- **THEN** 前者默认拒绝擅自接管；显式 existing-admin 模式保留其权限并要求真实管理员会话授权，或按另行明确批准的本机开发清理例外处理，后者核对既有阶段而不重新 bootstrap 或重新授予双角色
+- **WHEN** The initialization target already has an unknown administrator, or the batch of the final single-role administrator is restored again.
+- **THEN** The former denies unauthorized takeover by default; explicit existing-admin mode retains its permissions and requires real administrator session authorization, or handles it as an otherwise explicitly approved native development cleanup exception; the latter checks the existing stage without re-bootstrap or re-grant dual roles
 
-### Requirement: 三个移动账号满足正常成年资料资格
+### Requirement: Three mobile accounts meet the qualifications of normal adult information
 
-移动 A/B/C MUST 具有分别可识别、合法、完整的虚构体验资料：有效头像、昵称、性别、国家或城市、合法兴趣、CEFR、成年出生年月及资料完成事实。系统 MUST 经过当前资料规则校验并返回 ELIGIBLE；仅持有正确密码不能绕过资料或成年限制。
+Mobile A/B/C MUST have individually identifiable, legal, and complete fictional experience profiles: valid avatar, nickname, gender, country or city, legitimate interests, CEFR, adult birth date, and profile completion facts. The system MUST be verified by the current profile rules and return ELIGIBLE; only having the correct password cannot bypass profile or adult restrictions.
 
-#### Scenario: 三个移动用户登录
+#### Scenario: Three mobile users logged in
 
-- **WHEN** 初始化完成后三个移动账号分别正常登录并查询自己的资料
-- **THEN** 返回各自完整资料及 ELIGIBLE，可按正常流程进入房间列表
+- **WHEN** After the initialization is completed, the three mobile accounts can log in normally and query their own information.
+- **THEN** Return their complete information and ELIGIBLE, and you can enter the room list according to the normal process.
 
-#### Scenario: 非法或未成年资料
+#### Scenario: Illegal or underage material
 
-- **WHEN** 输入缺必需字段、非法值或不满足成年资格的体验资料
-- **THEN** 初始化拒绝，不能通过设置完成时间或体验标签绕过年龄和资料限制
+- **WHEN** Enter experience data that is missing required fields, illegal values, or does not meet adult qualifications
+- **THEN** Initialization rejected, cannot bypass age and profile restrictions by setting completion time or experience tags
 
-### Requirement: 房主由正常建房产生
+### Requirement: Room host is generated by normal house construction
 
-三个移动账号 MUST 保持普通用户能力；初轮移动 A 正常创建容量至少三人的房间成为当次房主，B/C 正常加入。系统 MUST 保持房间规则接受、容量、资格、处罚和语音授权边界，不在账号上持久化房主角色；结束后其他移动账号可正常创建新房间成为其房主。
+The three mobile accounts MUST maintain ordinary user capabilities; in the first round of mobile A, a room with a capacity of at least three people can be created normally and become the current room host, and B/C can join normally. The system MUST maintain room rule acceptance, capacity, qualifications, penalties and voice authorization boundaries, and do not persist the room host role on the account; after the end, other mobile accounts can create new rooms normally and become their room hosts.
 
-#### Scenario: 一人建房两人加入
+#### Scenario: One person builds a house and two people join in
 
-- **WHEN** A 正常建房，B/C 在独立会话中按规则加入
-- **THEN** 同一房间呈现三个独立成员和正确当次房主，权限及语音 token 来自正常房间流程
+- **WHEN** A builds the house normally, B/C joins according to the rules in an independent session
+- **THEN** The same room presents three independent members and the correct room host. The permissions and voice token are from the normal room process.
 
-#### Scenario: 交换建房者
+#### Scenario: Exchange house builders
 
-- **WHEN** 本轮结束后 B 或 C 正常创建新房间
-- **THEN** 新创建者成为新房间房主，A 不因其体验槽位继续获得房主权限
+- **WHEN** After the end of this round, B or C creates a new room normally
+- **THEN** The new creator becomes the new room room host, and A will not continue to obtain the room host permission due to his experience slot.
 
-### Requirement: 秘密输入输出与账号清理受控
+### Requirement: Secret input and output and account cleaning are controlled
 
-系统 MUST 从交互秘密输入或部署秘密注入读取密码，不把明文密码、散列、token、完整邮箱、真实数据库连接或 provider secret 写入 Git、命令参数、普通日志或初始化报告。一般清理 MUST 只作用于已登记体验身份；用户明确授权的原本机开发库重建例外 MAY 注销未登记旧开发身份，保留原审计/唯一占用与最后管理员保护，通过正常注销撤销会话并销毁密码，不运行全表测试清理。
+Systems MUST read passwords from interactive secret input or deployment secret injection and not write clear text passwords, hashes, tokens, full email addresses, real database connections, or provider secrets to Git, command parameters, normal logs, or initialization reports. General cleanup MUST only apply to registered experience identities; the original native development library reconstruction exception explicitly authorized by the user MAY delete the account the unregistered old development identity, retain the original audit/only occupation and last administrator protection, revoke the session and destroy the password through normal account deletion, and do not run the full table test cleanup.
 
-#### Scenario: 捕获初始化输入输出
+#### Scenario: Capture initialization input and output
 
-- **WHEN** 执行 dry-run、初始化、重试、错误或清理并捕获命令参数、日志和报告
-- **THEN** 无秘密泄露，报告能核对非秘密槽位、阶段和结果，dry-run 不改变数据库
+- **WHEN** Perform dry-run, initialization, retry, error or cleanup and capture command parameters, logs and reports
+- **THEN** No secrets leaked, reports can verify non-secret slots, stages and results, dry-run does not change the database
 
-#### Scenario: 普通体验账号注销
+#### Scenario: delete the account of normal experience account
 
-- **WHEN** 已登记移动账号结束/退出房间并完成正常重新认证和明确注销
-- **THEN** 密码散列销毁、会话撤销、映射退役，身份占用与审计保留，重跑初始化不能复活它
+- **WHEN** The registered mobile account has ended/exited the room and completed normal re-authentication and clear account deletion.
+- **THEN** Password hashing is destroyed, session is revoked, mapping is retired, identity occupation and audit are retained, and re-run initialization cannot revive it.
 
-#### Scenario: 后台管理员清理
+#### Scenario: Background administrator cleanup
 
-- **WHEN** 清理将撤销最后一个有效管理员但没有合法承接账号
-- **THEN** 阻止该步并报告需要先移交；完成合法移交和角色撤销后才允许正常注销，不绕过保护或删除审计
+- **WHEN** The cleanup will remove the last valid administrator but there is no legal account.
+- **THEN** Block this step and report that transfer is required first; normal account deletion is allowed after completing legal transfer and role revocation, without bypassing protection or deletion auditing
 
-#### Scenario: 用户批准原本机开发库仅保留五个可用身份
+#### Scenario: The user approved this native development library to retain only five available identities.
 
-- **WHEN** 用户明确批准旧开发身份清理，受控 CLI 验证固定本机 development 目标、显式 local-rebuild 模式及安全恢复备份
-- **THEN** 可撤销旧开发角色并按正常生命周期注销未登记旧身份，保留审计/外键历史，随后通过原 bootstrap 与真实管理员会话建立五账号最终矩阵；远程/production/其他库/缺备份拒绝，公开权限接口不获得该例外
+- **WHEN** Explicit user approval of old development identity cleanup, controlled CLI verification of pinned native development target, explicit local-rebuild mode, and safe recovery of backups
+- **THEN** The old development role can be revoked and the unregistered old identity can be deleted according to the normal life cycle, the audit/foreign key history is retained, and then a final matrix of five accounts is established through the original bootstrap session with the real administrator; remote/production/other libraries/missing backups are rejected, and the public permission interface does not obtain this exception.

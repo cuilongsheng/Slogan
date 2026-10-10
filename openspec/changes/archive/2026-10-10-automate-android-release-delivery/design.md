@@ -1,27 +1,27 @@
 ## Context
 
-既有 Vercel 与两个 Pages 已绑定本仓库，推送即触发构建，main 为生产分支。APK 约 85 MB，超过 Pages 单文件 25 MiB 限制。用户已授权完成实施、提交和 PR 发布，真机测试由用户执行。
+Vercel and two Pages have been bound to this repository. Pushing triggers the build, and main is the production branch. The APK is approximately 85 MB, exceeding the Pages single file limit of 25 MiB. The user has authorized implementation, submission and PR release, and physical device testing is performed by the user.
 
 ## Goals / Non-Goals
 
-目标：同一 PR 交付代码与构建，合并后生成可安装的生产 APK，固定入口不指向失败版本。非目标：iOS、商店发行、改动 Google/AI 配置、自动在任意 PR 执行生产数据库迁移、扩大现有供应商访问权限。
+Goal: Deliver code and build from the same PR, merge them to generate an installable production APK, and fix the entry not pointing to the failed version. Non-target: iOS, store distribution, changing Google/AI configurations, automatically performing production database migrations on any PR, extending existing supplier access.
 
 ## Decisions
 
-- 复用现有 Git 集成；GitHub Actions 用固定 action commit、Node 24.21.0/pnpm 12.3.4/Java 21，Expo Android-only prebuild 后 Gradle assembleRelease，arm64-v8a。PR 使用只读权限，仅 main 发布 job 获取 contents:write，不使用 pull_request_target。
-- APK 存 GitHub Releases，标签绑定完整提交；先创建草稿并上传 APK、SHA256SUMS、android-release.json，再标为 latest。相较 R2 无新增账号/token/账单；相较 Pages 直接上传满足体积限制。
-- `/downloads/android.apk`、`/downloads/android.json`、`/downloads/android` 通过 Pages worker 固定重定向到本仓库 latest 资产/说明。仅 GET/HEAD，不转发凭证、忽略查询参数，不新增 UI。
-- API 响应提供经严格 SHA 格式检查的 x-slogan-commit；Pages 包装 release.json 包含 CF_PAGES_COMMIT_SHA。发布 job 校验三个 provider 的对应提交状态和三个实际生产地址的提交，不只看 HTTP 200。
-- 保持现有 Expo 受控 debug 签名证书并校验固定指纹；自动版本 code=1000+run_number。它不是商店生产签名。APK 内 app.config 保存公开提交/API 元数据；验证器检查包名、版本、arm64、adjustResize、非 debuggable、证书和实际 bundle URL。
-- 发布前再检查 main HEAD，防止旧构建覆盖新版本；失败草稿不标 latest。当前四个迁移已完成；未来 schema 变更需备份与兼容迁移后再发布，不给不受信任 PR 生产数据库秘密。
+- Reuse existing Git integration; GitHub Actions uses fixed action commit, Node 24.21.0/pnpm 12.3.4/Java 21, Gradle assembleRelease after Expo Android-only prebuild, arm64-v8a. PR uses read-only permissions, only main releases job to get contents:write, pull_request_target is not used.
+- APK is stored in GitHub Releases, and the label binding is completed and submitted; first create a draft and upload APK, SHA256SUMS, android-release.json, and then mark it as latest. Compared with R2, there is no new account/token/bill; compared with Pages, direct upload meets the size limit.
+- `/downloads/android.apk`, `/downloads/android.json`, `/downloads/android` are fixedly redirected to the latest assets/descriptions of this repository through Pages worker. Only GET/HEAD, does not forward credentials, ignore query parameters, and does not add a new UI.
+- API response provides x-slogan-commit with strict SHA format check; Pages wrapper release.json contains CF_PAGES_COMMIT_SHA. Publish a job to verify the corresponding submission status of three providers and the submission of three actual production addresses, not just HTTP 200.
+- Keep existing Expo controlled debug signing certificate and verify fixed fingerprint; automatic version code=1000+run_number. It is not a store production signature. In-APK app.config holds public commit/API metadata; validator checks package name, version, arm64, adjustResize, non-debuggable, certificate and actual bundle URL.
+- Check main HEAD again before publishing to prevent old builds from overwriting new versions; failed drafts are not marked latest. The current four migrations have been completed; future schema changes need to be backed up and migrated before being released, and no secrets will be given to the untrusted PR production database.
 
 ## Risks / Trade-offs
 
-- [第三方部署迟到] → 有界等待和明确失败，保留上一下载版本。
-- [并行版本覆盖] → 发布串行 + main HEAD 复核 + 草稿上传完成后发布。
-- [签名漂移] → APK 证书指纹不符立即失败；正式私钥迁移需要独立受控流程。
-- [Beta 队列、供应商故障] → 原房间 change 的真实云端队列验收独立记录；自动构建不宣称音频已验证。
+- [Third Party Deployment Late] → Bounded waits and explicit failures, retaining the last downloaded version.
+- [Parallel version coverage] → Publish serial + main HEAD review + publish after draft upload is completed.
+- [Signature Drift] → The APK certificate fingerprint does not match and fails immediately; formal private key migration requires an independent controlled process.
+- [Beta Queue, Provider Failure] → Independent record of real cloud queue acceptance of original room change; automatic build does not claim audio verified.
 
 ## Migration Plan
 
-将工作流与固定入口随现有发布分支提交，通过 PR 合并到 main；跟踪生产部署及工作流，确认公开下载与校验元数据。失败先修复后重跑；无需回退已成功的增量迁移。回滚时保留历史 Release，显式选择上一已验证包与匹配服务端，不回退业务 LEFT/ENDING 状态。
+Submit the workflow and fixed entrance with the existing release branch and merge it into main through PR; track production deployment and workflow, confirm public download and verify metadata. Repair the failure first and then rerun; there is no need to roll back the successful incremental migration. Keep the historical Release when rolling back, explicitly select the last verified package and matching server, and do not roll back the business LEFT/ENDING state.

@@ -1,104 +1,104 @@
 ## Context
 
-动机与范围见 `proposal.md`，行为见本 change 的 `backoffice-access-control` 和 `backoffice-audit` delta specs。
+See `proposal.md` for motivation and scope, and the `backoffice-access-control` and `backoffice-audit` delta specs of this change for behavior.
 
-2026-09-14 检查到的当前代码事实：
+Current code facts checked on 2026-09-14:
 
-- `AccessTokenGuard` 是全局认证 guard，通过 `SessionService` 校验 JWT、持久会话和用户状态，并只向请求写入 `userId`、`sessionId`；token 与身份上下文没有角色字段。
-- `auth` 已有 OAuth、access/refresh token、会话撤销和公开模块入口；`users` 仍是空目录骨架，Prisma `User` 只有 `ACTIVE`、`DISABLED`、`DELETED` 状态，没有后台角色关系。
-- `audit` 目前只有供房间事务复用的 `appendRoomEvent` infrastructure 入口，`RoomEvent` 服务房间生命周期与举报关联，不能承载所有后台资源和权限事件。
-- 全局 DTO 校验拒绝额外字段，`ApiExceptionFilter` 提供稳定错误体；`StructuredLogger` 和日志脱敏已有基础，但后台 role/reason/filter 仍需字段白名单与实际输出测试。
-- 当前没有 `/backoffice` API、角色 bootstrap、后台审计查询或 PC 管理端业务实现。OpenAPI 由 NestJS Swagger decorators 确定性生成。
+- `AccessTokenGuard` is the global authentication guard. It uses `SessionService` to validate JWTs, persistent sessions, and user state, and writes only `userId` and `sessionId` to the request. Neither the token nor the identity context contains role fields.
+- `auth` already provides OAuth, access/refresh tokens, session revocation, and public module interfaces. `users` is still an empty directory skeleton; Prisma `User` has only `ACTIVE`, `DISABLED`, and `DELETED` states and no administrative role relationship.
+- `audit` currently only has the `appendRoomEvent` infrastructure entrance for room transaction reuse. The `RoomEvent` service room life cycle is associated with reporting and cannot carry all background resources and permission events.
+- The global DTO verification rejects additional fields, and `ApiExceptionFilter` provides a stable error body; `StructuredLogger` and log desensitization are already based, but the administrative role/reason/filter still needs field whitelisting and actual output testing.
+- There is currently no `/backoffice` API, role bootstrap, administrative audit query or PC admin app business implementation. OpenAPI is generated deterministically by NestJS Swagger decorators.
 
 ## Goals / Non-Goals
 
-**Goals:** 以 PostgreSQL 角色事实为每次请求的授权依据；提供首个管理员建立、最小角色管理和即时撤销；让角色变更与审计具备原子性；为后续安全案件提供可复用的后台权限与审计公共入口。
+**Goals:** uses PostgreSQL role facts as the authorization basis for each request; provides the first administrator establishment, minimal role management and instant revocation; makes role changes and audits atomic; provides reusable background permissions and audit public entrances for subsequent security cases.
 
-**Non-Goals:** 不建立第二套认证、策略语言或租户系统；不在 JWT/LiveKit token 中缓存角色；不预建案件、指标或房间处罚接口；不把 `RoomEvent` 改造成通用后台审计表。
+**Non-Goals:** does not build a second set of authentication, policy language or tenant systems; does not cache roles in JWT/LiveKit tokens; does not pre-build case, indicator or room penalty interfaces; does not transform `RoomEvent` into a general backend audit table.
 
 ## Decisions
 
-### 1. 认证与后台授权分层
+### 1. Authentication and background authorization layering
 
-现有 `AccessTokenGuard` 继续只负责身份认证。新增 `backoffice` 模块拥有角色分配、角色策略、管理 API 和授权查询；后台 controller 及后续安全模块通过其公开 decorator/guard 声明所需权限。授权 guard 在认证完成后按 `userId` 查询当前有效角色和用户状态，不读取客户端角色，也不把角色放入长生命周期 token。
+The existing `AccessTokenGuard` continues to be only responsible for identity authentication. The new `backoffice` module has role assignment, role policy, management API and authorization query; the background controller and subsequent security modules declare the required permissions through its public decorator/guard. The authorization guard presses `userId` to query the current valid role and user status after the authentication is completed. It does not read the client role or put the role into a long life cycle token.
 
-本 change 定义当前真实端点需要的三个权限：查看当前后台身份、管理角色、读取后台审计。角色到权限的映射集中维护：任一后台角色可查看本人最小后台身份，`PLATFORM_ADMIN` 可管理角色并读取审计，`AUDITOR` 只可读取审计；`SAFETY_OFFICER` 和 `OPERATIONS_ANALYST` 的业务权限由后续实际 capability 增加。用户拥有多角色时取权限并集，但管理员角色不会自动获得安全员权限。
+This change defines the three permissions required by the current real endpoint: view the current background identity, manage roles, and read administrative audit. The mapping of roles to permissions is maintained centrally: any backend role can view the minimum backend identity of the person, `PLATFORM_ADMIN` can manage roles and read audits, `AUDITOR` can only read audits; the business permissions of `SAFETY_OFFICER` and `OPERATIONS_ANALYST` are increased by subsequent actual capabilities. When a user has multiple roles, the permissions are combined, but the administrator role will not automatically obtain safety officer permissions.
 
-备选把角色写入 access token 会使撤销延迟到 token 过期；每个 controller 手写角色判断容易漂移；引入通用 ABAC/策略引擎超出四个固定角色的实际需要。均不采用。
+The alternative of writing the role into the access token will delay the revocation until the token expires; the handwritten role judgment of each controller is easy to drift; the introduction of a general ABAC/policy engine exceeds the actual need for four fixed roles. None are used.
 
-### 2. 独立角色分配模型保留授权事实
+### 2. Independent role assignment model retains authorization facts
 
-新增 `BackofficeRoleAssignment`，保存 UUID id、userId、固定角色、grantedAt/grantedByUserId、revokedAt/revokedByUserId 和 version，并对 `(userId,role)` 建唯一约束。bootstrap 的 grantedBy 为空并由对应后台审计的 `SYSTEM_BOOTSTRAP` actor 解释；普通角色修改必须有关联 actor。目标和 actor 用户关系使用 RESTRICT，软删除不会抹掉角色历史。
+Add `BackofficeRoleAssignment`, save UUID id, userId, fixed role, grantedAt/grantedByUserId, revokedAt/revokedByUserId and version, and create unique constraints on `(userId,role)`. The grantedBy of bootstrap is empty and interpreted by the `SYSTEM_BOOTSTRAP` actor corresponding to the administrative audit; ordinary role modifications must have associated actors. Target and actor user relationships use RESTRICT, soft deletion does not erase character history.
 
-角色撤销保留原分配行并设置撤销字段；重新授予更新同一分配和版本，不创建无法区分当前状态的重复行。授权查询只接受未撤销且用户仍为 ACTIVE 的分配。API 不直接暴露 Prisma enum，domain 与 transport 做显式映射。
+Revoking a role retains its assignment row and sets revocation fields. Regranting updates the same assignment and version rather than creating duplicate rows with ambiguous current state. Authorization query only accepts assignments that have not been revoked and the user is still ACTIVE. The API does not directly expose Prisma enum, and domain and transport are explicitly mapped.
 
-备选在 `User` 上增加单个 role 字段无法支持管理员兼安全员；使用 Redis 或 JWT 作为事实不能跨重启并保证即时撤销；删除 assignment 会丢失授权时间线。均不采用。
+The alternative of adding a single role field on `User` cannot support administrators and safety officers; using Redis or JWT as facts cannot span restarts and guarantee instant revocation; deleting assignments will lose the authorization timeline. None are used.
 
-### 3. 首个管理员由一次性 CLI bootstrap
+### 3. First administrator bootstrapped by one-time CLI
 
-提供仓库命令，输入一个已有平台 UUID。事务先取得固定的 PostgreSQL transaction advisory lock，再读取目标账号和现有有效管理员：
+Provide repository command, enter an existing platform UUID. The transaction first obtains the fixed PostgreSQL transaction advisory lock, and then reads the target account and existing effective administrators:
 
-- 没有有效管理员时，为目标原子授予 `PLATFORM_ADMIN`、`SAFETY_OFFICER` 并追加一条系统 bootstrap 审计；
-- 指定目标已经完整持有两个角色时返回幂等结果，不重复审计；
-- 目标不存在/不可用、已有其他管理员，或当前状态只部分匹配时稳定失败，不自动修补或替换管理员。
+- When there is no valid administrator, grant `PLATFORM_ADMIN` and `SAFETY_OFFICER` to the target atom and add a system bootstrap audit;
+- The idempotent result is returned when the specified target already holds two roles, and the audit is not repeated;
+- Stability fails when the target does not exist/is unavailable, there is already another administrator, or the current status only partially matches, and the administrator is not automatically patched or replaced.
 
-命令不接受邮箱、provider subject 或显示名，不创建用户、不修改账号状态，也不在日志输出数据库连接、token 或 provider 信息。后续角色变更只能走已认证管理员 API；bootstrap 不能充当日常 break-glass 绕过。
+The command accepts neither email addresses, provider subjects, nor display names. It does not create users, modify account state, or log database connections, tokens, or provider information. Subsequent role changes can only use the authenticated administrator API; bootstrap cannot be used as a daily break-glass bypass.
 
-备选 migration seed 不知道目标用户；环境变量每次启动自动授予会在撤销后重新提升权限；直接手改数据库缺少不变量和审计。均不采用。
+The target user is not known for the alternative migration seed; the environment variable is automatically granted every time it is started, and the permissions are re-elevated after being revoked; the direct manual modification of the database lacks invariants and auditing. None are used.
 
-### 4. 角色命令使用数据库幂等和最后管理员锁
+### 4. Role command uses database idempotent and last administrator lock
 
-授予/撤销请求携带 `clientRequestId`、role 和 1–500 Unicode 码点的 reason。`BackofficeAuditEvent` 对普通 actor 的 `(actorUserId,clientRequestId)` 建条件唯一约束，并保存规范化命令字段；重试先比较 action、target、role 和 trim 后 reason，相同返回首次结果，不同返回 `BACKOFFICE_REQUEST_CONFLICT`。
+Grant/revoke request carries `clientRequestId`, role, and reason in 1–500 Unicode code points. `BackofficeAuditEvent` uniquely constrains the `(actorUserId,clientRequestId)` construction conditions of ordinary actors, and saves the normalized command fields; retry first compares action, target, role and trim and then reason. If the same results are the same, the first result will be returned. If they are different, `BACKOFFICE_REQUEST_CONFLICT` will be returned.
 
-角色 mutation 在同一事务中锁定目标 assignment。涉及 `PLATFORM_ADMIN` 时，再用固定 advisory lock 串行化管理员集合检查，保证并发撤销不能将有效管理员降为零。幂等 no-op 仍返回当前分配，但只保留首次接受命令的一条审计。已通过管理员授权但因最后管理员规则拒绝的命令提交一条 `REJECTED` 审计后，再映射为稳定冲突；未通过认证/角色 guard 的请求只写脱敏安全日志，避免未授权流量填满持久审计。
+Role mutation locks target assignment in the same transaction. When `PLATFORM_ADMIN` is involved, use a fixed advisory lock to serialize the administrator set check to ensure that concurrent revocation cannot reduce the effective administrator to zero. idempotent no-op still returns the current allocation, but only keeps an audit of the first accepted command. A command that has been authorized by the administrator but rejected due to the last administrator rule is submitted to a `REJECTED` audit and then mapped to a stable conflict; requests that fail authentication/role guard only write desensitized security logs to prevent unauthorized traffic from filling up the persistent audit.
 
-备选仅使用内存/Redis 幂等无法在进程重启后保证结果；单纯先 count 再 update 存在并发撤空管理员；把异常抛出事务会连拒绝审计一起回滚。均不采用。
+The alternative of using only memory/Redis idempotent cannot guarantee the result after the process is restarted; simply count first and then update will cause concurrent evacuation of the administrator; throwing an exception will cause the transaction to be rolled back even if the audit is rejected. None are used.
 
-### 5. 后台审计与 RoomEvent 分开拥有
+### 5. Background auditing is owned separately from RoomEvent
 
-新增 `BackofficeAuditEvent`，至少保存 id、actorType、actorUserId、actorRoles 快照、action、targetType、targetId、reason、result、clientRequestId、requestId、occurredAt 和有限的结构化 details。action/target/result 在 domain 使用显式允许值；details 由每类事件的白名单构造，不接收 controller DTO 或异常对象。
+Added `BackofficeAuditEvent`, saving at least id, actorType, actorUserId, actorRoles snapshot, action, targetType, targetId, reason, result, clientRequestId, requestId, occurredAt and limited structured details. action/target/result uses explicit allowed values ​​in domain; details are constructed from a whitelist of events of each type and do not receive controller DTO or exception objects.
 
-`audit` 模块拥有审计追加和查询。为满足角色 mutation 与审计原子性，它通过公开的 infrastructure integration 接受调用者已有的 Prisma `TransactionClient`；Prisma 类型只在 `backoffice`/`audit` 的 infrastructure 边界传递，不进入 controller、application 或 domain。现有 RoomEvent 保持房间事件模型，两个审计事实不互相复制。
+The `audit` module has audit appends and queries. In order to meet role mutation and audit atomicity, it accepts the caller's existing Prisma `TransactionClient` through public infrastructure integration; the Prisma type is only passed at the infrastructure boundary of `backoffice`/`audit` and does not enter the controller, application or domain. Existing RoomEvent maintains the room event model and the two audit facts do not copy each other.
 
-角色列表和审计列表在事务内先按稳定 `(occurredAt,id)` 或 `(grantedAt,id)` 游标读取，再追加对应查看审计；审计写入失败则整个请求失败且不返回已读数据。本批次不提供审计 update/delete/export API，也不承诺永久保留；后续数据治理只能通过独立 change 制定保留和受控清理规则。
+The role list and audit list are first read according to the stable `(occurredAt,id)` or `(grantedAt,id)` cursor within the transaction, and then the corresponding view audit is appended; if the audit write fails, the entire request fails and the read data is not returned. This batch does not provide audit update/delete/export API, nor does it promise permanent retention; subsequent data governance can only establish retention and controlled cleanup rules through independent changes.
 
-### 6. HTTP 与稳定错误
+### 6. HTTP and stability errors
 
-新增以下 `/v1/backoffice` contract，全部复用 Bearer 认证：
+Add the following `/v1/backoffice` contract, all of which reuse Bearer certification:
 
-- `GET /v1/backoffice/me`：任一后台角色可读，返回 `{userId,roles}`；
-- `GET /v1/backoffice/role-assignments`：平台管理员分页读取，可按 userId/role/active 过滤；
-- `POST /v1/backoffice/users/{userId}/roles/{role}/grant`：平台管理员授予；
-- `POST /v1/backoffice/users/{userId}/roles/{role}/revoke`：平台管理员撤销；
-- `GET /v1/backoffice/audit-events`：平台管理员或审计员分页读取允许的过滤条件。
+- `GET /v1/backoffice/me`: Readable by any administrative role, return `{userId,roles}`;
+- `GET /v1/backoffice/role-assignments`: Platform administrator reads in pages and can be filtered by userId/role/active;
+- `POST /v1/backoffice/users/{userId}/roles/{role}/grant`: Granted by the platform administrator;
+- `POST /v1/backoffice/users/{userId}/roles/{role}/revoke`: revoked by the platform administrator;
+- `GET /v1/backoffice/audit-events`: The platform administrator or auditor reads the allowed filter conditions in pages.
 
-稳定错误新增 `BACKOFFICE_ACCESS_DENIED`（403）、`BACKOFFICE_USER_NOT_FOUND`（404）、`LAST_PLATFORM_ADMIN_REQUIRED`（409）和 `BACKOFFICE_REQUEST_CONFLICT`（409）；格式、UUID、role、reason、filter 和 cursor 非法沿用 `VALIDATION_FAILED`。身份失败继续使用现有 401 边界，持久化失败对外为 `INTERNAL_ERROR`。错误不得回显 reason、游标、token、SQL 或 stack。
+Stable errors include `BACKOFFICE_ACCESS_DENIED` (403), `BACKOFFICE_USER_NOT_FOUND` (404), `LAST_PLATFORM_ADMIN_REQUIRED` (409) and `BACKOFFICE_REQUEST_CONFLICT` (409); format, UUID, role, reason, filter and cursor illegally follow `VALIDATION_FAILED`. If the identity fails, the existing 401 boundary will continue to be used, and the persistence failure will be externally `INTERNAL_ERROR`. Error must not echo reason, cursor, token, SQL or stack.
 
-继续使用 NestJS code-first Swagger 生成唯一 `openapi/openapi.yaml`，不手写第二份 contract；前端 client 和 PC 管理页面不在本 change 范围。
+Continue generating the sole `openapi/openapi.yaml` through NestJS code-first Swagger; do not hand-maintain a second contract. The frontend client and desktop admin pages are outside this change’s scope.
 
-### 7. 验收分层
+### 7. Acceptance layering
 
-domain 单元测试验证角色/权限映射、reason 规范化、幂等内容比较和最后管理员 policy。真实 PostgreSQL 集成测试验证 migration、bootstrap 并发、角色授予/撤销与审计原子性、并发最后管理员保护、重启后幂等和审计查询分页。HTTP E2E 验证认证、权限绕过、即时撤销、最小响应、稳定错误和 OpenAPI。
+domain unit tests verify role/permission mapping, reason normalization, idempotent content comparison and finally administrator policy. Real PostgreSQL integration tests verify migrations, concurrent bootstrap, atomic role grant/revocation and audit, concurrent protection of the last administrator, idempotency after restart, and audit-query pagination. HTTP E2E authentication, permission bypass, instant revocation, minimal response, stable errors and OpenAPI.
 
-至少执行一次本地真实 PostgreSQL 闭环：建立普通用户 → bootstrap 为管理员兼安全员 → 授予/撤销其他角色 → 旧 access token 立即失权 → 管理员/审计员读取审计，并直接查询持久表核对角色与审计数量。该证据不需要真实 Google/微信 provider、LiveKit、前端或设备，不得把 fake OAuth 结果记成 provider smoke。
+Execute the local real PostgreSQL closed loop at least once: create a normal user → bootstrap as administrator and safety officer → grant/revoke other roles → lose the old access token immediately → the administrator/auditor reads the audit, and directly queries the persistent table to check the role and audit number. This evidence does not require a real Google/WeChat provider, LiveKit, front-end or device, and the fake OAuth result must not be recorded as provider smoke.
 
 ## Risks / Trade-offs
 
-- [Risk] 通用后台审计 details 可能逐步装入隐私数据 → 每个 action 使用显式 schema/白名单，禁止原始 DTO、header、异常和自由 JSON 透传，并测试实际 logger/response。
-- [Risk] 每次后台请求查询 PostgreSQL 增加少量延迟 → 当前后台流量低且即时撤销优先；先使用索引查询，不在没有证据时加入 Redis 缓存。
-- [Risk] CLI 拥有生产数据库写权限 → 仅允许没有有效管理员时执行，按 UUID 定位、事务锁、固定角色组合和审计约束；凭证保管与执行人由部署流程控制。
-- [Risk] 管理员账号被后续账号限制会导致后台不可用 → 当前 change 不改变账号状态；后续 restriction change 必须显式处理最后管理员和 break-glass 风险，不能静默绕过现有认证。
-- [Risk] 角色撤销与并发请求交错 → 每个请求在执行受保护 use case 前读取当前角色；长事务不跨越外部 provider，角色 mutation 使用数据库锁和版本。
-- [Risk] 当前工作区多个前置 change 尚未归档 → apply 前核对真实 auth/audit/schema 和迁移顺序，以现有代码为集成事实；不修改旧 migration，也不把 active planning 当作实现证据。
+- [Risk] Generic administrative audit details could gradually accumulate private data → use explicit schemas/allowlists for each action; prohibit forwarding raw DTOs, headers, exceptions, or arbitrary JSON, and test actual logger/response output.
+- [Risk] Querying PostgreSQL for every admin request adds some latency → current admin traffic is low and immediate revocation takes priority. Start with indexed queries; do not introduce Redis caching without evidence.
+- [Risk] The CLI has production database write access → allow execution only when no effective administrator exists, with UUID targeting, transaction locks, fixed role combinations, and audit constraints. Deployment procedures control credential custody and the operator.
+- [Risk] Later account restrictions could disable the administrator and make the admin app unavailable → this change does not alter account state. Subsequent restriction changes must explicitly address last-administrator and break-glass risks rather than silently bypass authentication.
+- [Risk] Role revocation can interleave with concurrent requests → each request reads current roles before executing a protected use case. Long transactions do not span external providers; role mutations use database locks and versions.
+- [Risk] Multiple previous changes in the current workspace have not been archived → Check the real auth/audit/schema and migration sequence before applying, and use the existing code as the integration fact; do not modify the old migration, nor use active planning as evidence of implementation.
 
 ## Migration Plan
 
-1. apply 前记录当前 Prisma migration 链、`User`/session 模型、audit 公开入口和后端验证基线；确认工作区修改归属，避免覆盖前置 change。
-2. 添加后台角色 enum、角色分配和后台审计的 additive migration；不创建默认角色、不修改现有用户/会话/RoomEvent，验证空库与含完整前置数据的升级。
-3. 实现服务、guard、API、CLI 和 code-first contract 后，先在隔离测试数据库创建普通测试用户并运行 bootstrap 闭环；真实生产用户不进入测试或仓库。
-4. 部署时先应用 migration，再部署兼容新表的应用；由授权运维人员只执行一次 bootstrap，核对目标 UUID、两个角色和审计结果后再开放后台入口。
-5. 应用回退时停止暴露新后台 API，保留角色和审计表及数据，不执行破坏性 down migration；旧版本不读取新表。通过 forward fix 恢复后续服务，避免删除安全审计。
+1. Before apply, record the current Prisma migration chain, `User`/session models, public audit interface, and backend verification baseline. Confirm ownership of workspace changes to avoid overwriting prerequisite changes.
+2. Add administrative role enums, role assignments, and administrative audit through an additive migration. Do not create default roles or modify existing users, sessions, or RoomEvent records. Verify upgrades from both an empty database and complete prerequisite data.
+3. After implementing services, guards, APIs, the CLI, and the code-first contract, create ordinary test users in an isolated test database and run the complete bootstrap flow. Real production users must not enter tests or the repository.
+4. When deploying, apply migration first, and then deploy applications compatible with the new table; authorized operation and maintenance personnel only perform bootstrap once, check the target UUID, two roles, and audit results before opening the backend entrance.
+5. On application rollback, stop exposing the new administrative APIs, retain role/audit tables and their data, and do not run destructive down migrations. Older versions do not read the new tables. Restore subsequent services through forward fix to avoid deleting security audits.
 
 ## Open Questions
 
-生产 bootstrap 的具体执行人、管理员 provider 凭证恢复和 MFA/break-glass 机制由部署安全加固 change 决定；这些选择不改变本 change 的数据模型、API 权限或任务边界，且当前不得在仓库保存真实身份或凭证。
+A deployment-security change determines the production bootstrap operator, administrator provider-credential recovery, and MFA/break-glass mechanisms. These choices do not alter this change’s data model, API permissions, or task boundaries. Real identities and credentials must not be stored in the repository.

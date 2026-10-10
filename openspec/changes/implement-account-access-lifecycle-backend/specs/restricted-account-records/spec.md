@@ -1,43 +1,52 @@
 ## Purpose
 
-定义后台对已注销账号必要状态和安全关联的最小受限读取，使安全调查可以保留连续性，同时避免普通运营、审计或无关后台角色访问认证秘密与非必要私人资料。
+Define the minimally restricted backend access to the necessary status and security associations of deleted accounts so that security investigations can retain continuity while preventing ordinary operations, auditing, or unrelated backend roles from accessing authentication secrets and non-essential private information.
 
 ## ADDED Requirements
 
-### Requirement: 已注销账号记录只对管理员和安全员开放
-系统 MUST 只允许当前仍持有 `PLATFORM_ADMIN` 或 `SAFETY_OFFICER` 的用户查询已注销账号必要记录。普通用户、仅 `OPERATIONS_ANALYST` 或仅 `AUDITOR` 的用户不得访问；一个角色不得因另一个角色的权限被隐式放宽。
+### Requirement: Canceled account records are only open to administrators and safety officers
 
-#### Scenario: 管理员或安全员查询已注销账号
-- **WHEN** 当前有效后台用户持有平台管理员或安全员角色并请求指定 userId 的受限账号记录
-- **THEN** 系统按该角色的当前权限返回最小记录并写读取审计
+The system MUST only allow users who currently hold `PLATFORM_ADMIN` or `SAFETY_OFFICER` to query the necessary records of canceled accounts. Not accessible to regular users, only `OPERATIONS_ANALYST`, or only `AUDITOR` users; one role may not be implicitly relaxed by another role's permissions.
 
-#### Scenario: 未授权角色直接调用
-- **WHEN** 普通用户、运营分析员或审计员在没有管理员/安全员角色时直接请求该记录
-- **THEN** 系统拒绝访问、不返回账号是否存在的额外信息，并记录拒绝审计
+#### Scenario: Administrator or safety officer queries canceled accounts
 
-#### Scenario: 角色已被撤销
-- **WHEN** 用户使用角色撤销前签发的 access token 请求受限记录
-- **THEN** 系统根据当前持久角色拒绝访问，旧 token 不保留已撤销权限
+- **WHEN** The current valid backend user holds the platform administrator or safety officer role and requests a restricted account record with the specified userId
+- **THEN** The system returns the minimum record according to the current permissions of the role and writes and reads the audit
 
-### Requirement: 受限账号响应采用最小字段集合
-系统 MUST 只返回调查必要的账号标识、账号状态、创建/注销时间、登录方式类别、资料最小快照以及相关安全案件、有效或历史限制和申诉的引用/状态。响应 MUST 不包含完整手机号、手机号查找摘要、OAuth issuer/subject、authorization code、access/refresh token、验证码、provider 响应、密钥、房间密码、私人笔记或完整语音内容。
+#### Scenario: Unauthorized role direct call
 
-#### Scenario: 查询存在的已注销账号
-- **WHEN** 获授权的管理员或安全员查询一个 `DELETED` 账号
-- **THEN** 系统返回最小账号与安全关联，不返回认证秘密或与调查无关的私人内容
+- **WHEN** Ordinary users, operations analysts or auditors who do not have the administrator/safety officer role directly request this record
+- **THEN** The system denies access, does not return additional information on whether the account exists, and records the denial for audit.
 
-#### Scenario: 查询不存在或不允许查看的目标
-- **WHEN** 目标不存在或调用者没有对应记录权限
-- **THEN** 系统返回稳定的非泄露结果，不通过状态码或正文区分目标存在性
+#### Scenario: Role has been revoked
 
-### Requirement: 受限读取必须可审计且不得修改账号
-系统 MUST 为成功和拒绝的受限查询记录 actor、当前角色、目标 userId、服务端时间、请求标识、结果和规范化原因；审计不得复制响应中的私人字段。该查询 MUST 是只读操作，不得恢复账号、解绑身份、解除处罚或修改安全事实。
+- **WHEN** The user requested restricted records using an access token issued before the role was revoked.
+- **THEN** The system denies access based on the current persistent role, the old token does not retain revoked permissions
 
-#### Scenario: 成功读取留下审计
-- **WHEN** 管理员或安全员成功读取已注销账号记录
-- **THEN** 系统提交对应读取审计且审计只包含最小元数据
+### Requirement: Restricted account response uses minimum field set
 
-#### Scenario: 重复读取
-- **WHEN** 同一后台用户重复查询同一账号
-- **THEN** 每次独立读取均可追踪，但不会改变账号、身份、安全案件或限制状态
+The system MUST return only the account ID, account status, creation/account deletion time, login method category, minimum snapshot of data, and references/status of relevant security cases, active or historical restrictions, and appeals necessary for investigation. The response MUST not contain the full phone number, phone number lookup summary, OAuth issuer/subject, authorization code, access/refresh token, verification code, provider response, key, room password, private note, or full voice content.
 
+#### Scenario: Query existing canceled accounts
+
+- **WHEN** An authorized administrator or safety officer queries a `DELETED` account
+- **THEN** The system returns minimal accounts and security associations, and does not return authentication secrets or private content not relevant to the investigation.
+
+#### Scenario: Query a target that does not exist or is not allowed to be viewed
+
+- **WHEN** The target does not exist or the caller does not have the corresponding recording permission.
+- **THEN** The system returns stable non-leakage results and does not distinguish the existence of the target through status code or text.
+
+### Requirement: Restricted reads must be auditable and must not modify the account
+
+The system MUST log the actor, current role, target userId, server time, request ID, result, and normalized reason for successful and rejected restricted queries; auditing MUST not copy private fields in responses. This query MUST be a read-only operation and may not restore accounts, unbind identities, lift penalties, or modify security facts.
+
+#### Scenario: Successful read leaving audit
+
+- **WHEN** The administrator or safety officer successfully read the canceled account record
+- **THEN** The system submits a corresponding read audit and the audit only contains minimal metadata
+
+#### Scenario: Repeated reading
+
+- **WHEN** The same admin user repeatedly queries the same account
+- **THEN** Each independent read can be tracked, but it will not change the account, identity, security case or restriction status

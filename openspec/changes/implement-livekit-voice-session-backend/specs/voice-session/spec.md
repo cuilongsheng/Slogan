@@ -1,12 +1,15 @@
 ## MODIFIED Requirements
 
-### Requirement: 房间结束
-系统 MUST 在房主主动结束或房间到达既定结束时间时立即结束房间，通知所有在线成员、断开当前语音会话，并拒绝普通加入或旧凭证重入，不提供额外宽限。
+### Requirement: Room ends
 
-#### Scenario: 房主结束房间
-- **WHEN** 房主确认结束当前房间
-- **THEN** 所有成员收到结束结果且该语音会话不可恢复
+The system MUST end the room immediately when the room host actively ends or the room reaches the scheduled end time, notify all online members, disconnect the current voice session, and refuse ordinary joining or re-entry with old credentials, without providing additional grace.
 
-#### Scenario: 房间到达既定结束时间
-- **WHEN** 当前时间到达房间的既定结束时间
-- **THEN** 系统立即结束房间并断开所有在线成员，且任何成员不能通过旧凭证恢复会话
+#### Scenario: Room host end room
+
+- **WHEN** Room host Confirm to end the current room
+- **THEN** All members received the end result and the voice session cannot be restored
+
+#### Scenario: The room reaches the scheduled end time
+
+- **WHEN** The current time reaches the scheduled end time of the room
+- **THEN** The system immediately ends the room and disconnects all online members, and no member can resume the session with old credentials

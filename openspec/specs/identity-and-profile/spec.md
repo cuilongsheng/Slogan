@@ -2,39 +2,48 @@
 
 ## Purpose
 
-定义用户进入语音房产品前必须完成的身份认证、首次资料初始化和成年访问边界，避免未完成资料或未成年账号进入当前版本的房间能力。
+Define the identity authentication, first data initialization and adult access boundaries that users must complete before entering the voice room product to prevent uncompleted data or underage accounts from entering the current version of the room.
 
 ## Requirements
 
-### Requirement: 第三方账号登录
-系统 MUST 支持用户通过微信或 Google 账号登录；首次成功认证时创建平台账号，后续认证关联回同一第三方身份。
+### Requirement: Third-party account login
 
-#### Scenario: 首次第三方登录
-- **WHEN** 用户首次通过微信或 Google 完成认证
-- **THEN** 系统创建平台账号并引导用户完成首次资料初始化
+The system MUST support users to log in through WeChat or Google accounts; create a platform account when successfully authenticating for the first time, and associate it back to the same third-party identity for subsequent authentications.
 
-#### Scenario: 已存在第三方身份再次登录
-- **WHEN** 已关联的第三方身份再次完成认证
-- **THEN** 系统登录对应的平台账号且不得创建重复账号
+#### Scenario: First third-party login
 
-### Requirement: 首次资料初始化
-系统 MUST 要求首次登录用户填写头像、名称、性别、国籍或城市、兴趣爱好、CEFR 英语等级和出生年月；资料未完成时不得浏览、创建或加入房间。
+- **WHEN** User completes authentication through WeChat or Google for the first time
+- **THEN** The system creates a platform account and guides the user to complete the first data initialization
 
-#### Scenario: 资料未完成
-- **WHEN** 已登录用户尚未完成必填资料
-- **THEN** 系统只允许其继续完善资料，不允许进入房间业务
+#### Scenario: There is already a third-party identity to log in again
 
-#### Scenario: 资料完成
-- **WHEN** 用户提交的所有必填资料通过校验
-- **THEN** 系统将其标记为资料已完成并允许继续执行符合资格的房间操作
+- **WHEN** The associated third-party identity has been authenticated again.
+- **THEN** The system logs in to the corresponding platform account and no duplicate accounts are allowed to be created.
 
-### Requirement: 成年访问边界
-系统 MUST 依据用户填写的出生年月执行年龄校验；未满 18 岁的用户不得创建、加入房间或接受房间邀请。
+### Requirement: First data initialization
 
-#### Scenario: 未满 18 岁
-- **WHEN** 用户年龄校验结果小于 18 岁
-- **THEN** 系统拒绝其创建、加入房间或接受房间邀请，并展示年龄限制说明
+The system MUST require users who log in for the first time to fill in their avatar, name, gender, nationality or city, hobbies, CEFR English level, and date of birth; they are not allowed to browse, create, or join rooms without completing the information.
 
-#### Scenario: 已满 18 岁
-- **WHEN** 用户已满 18 岁且满足其他访问条件
-- **THEN** 系统允许其进入当前版本支持的房间业务
+#### Scenario: Data not completed
+
+- **WHEN** The logged in user has not completed the required information.
+- **THEN** The system only allows him to continue to complete the information and does not allow him to enter the room business.
+
+#### Scenario: Data completed
+
+- **WHEN** All required information submitted by the user passed verification
+- **THEN** The system marks this as profile complete and allows qualifying room operations to proceed
+
+### Requirement: Adult access boundary
+
+The system MUST perform age verification based on the birth year and month filled in by the user; users under the age of 18 are not allowed to create, join rooms, or accept room invitations.
+
+#### Scenario: Under 18 years old
+
+- **WHEN** The user age verification result is less than 18 years old
+- **THEN** The system refuses to create, join a room, or accept room invitations, and displays an age restriction description.
+
+#### Scenario: Over 18 years old
+
+- **WHEN** The user is over 18 years old and meets other access conditions
+- **THEN** The system allows it to enter the room services supported by the current version

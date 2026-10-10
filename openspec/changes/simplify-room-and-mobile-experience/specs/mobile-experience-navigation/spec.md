@@ -1,32 +1,32 @@
 ## Purpose
 
-定义手机端简洁个人入口与输入可见性，使用户能够找到限制申诉、词汇及真实账号退出，同时确保系统键盘弹出后仍能操作当前输入及提交。
+Define a simple personal entrance and input visibility on the mobile phone, so that users can find restriction appeals, vocabulary and real account exit, while ensuring that current input and submission can still be operated after the system keyboard pops up.
 
 ## ADDED Requirements
 
-### Requirement: 个人中心仅保留三个入口
+### Requirement: There are only three entrances to the personal center.
 
-“我的” MUST 仅展示“我的限制与申诉”“我的词汇”“退出”三个业务入口，前两项进入对应实际功能，退出 MUST 调用现有登出流程并清除本地会话凭证。
+"My" MUST only displays three business entrances: "My Restrictions and Appeals", "My Vocabulary" and "Exit". The first two items enter the corresponding actual functions. Exit MUST call the existing logout process and clear the local session credentials.
 
-#### Scenario: 用户退出账号
+#### Scenario: User logs out of account
 
-- **WHEN** 已登录用户点击退出
-- **THEN** 返回登录入口且本地授权凭证被清除，后端撤销无法确认时不得宣称已完成服务端撤销
+- **WHEN** Logged-in user clicks to log out
+- **THEN** Return to the login portal and the local authorization credentials are cleared. When the back-end revocation cannot be confirmed, the server-side revocation must not be claimed to have been completed.
 
-### Requirement: 键盘不遮挡输入操作
+### Requirement: The keyboard does not block input operations
 
-手机端 MUST 在系统键盘出现时保持聚焦输入框及对应发送或提交操作可见，并允许滚动至后续表单字段。
+The mobile version MUST keep the focused input box and corresponding send or submit operations visible when the system keyboard appears, and allow scrolling to subsequent form fields.
 
-#### Scenario: 创建房间输入靠近底部字段
+#### Scenario: Create room input near bottom field
 
-- **WHEN** Android 用户聚焦底部字段并弹出键盘
-- **THEN** 当前输入与提交操作可以看见及操作，键盘关闭后布局恢复
+- **WHEN** Android user focuses bottom field and keyboard pops up
+- **THEN** The current input and submission operations can be seen and operated, and the layout is restored after the keyboard is closed.
 
-### Requirement: 新版手机视觉一致
+### Requirement: The new version of the mobile phone has the same visual appearance
 
-手机端 MUST 按已确认的最新 Figma 原始节点实现页面结构、样式及交互状态，不得根据旧实现补入额外入口或装饰。
+The mobile terminal MUST implement the page structure, style and interaction state according to the latest confirmed Figma original nodes, and no additional entries or decorations may be added based on the old implementation.
 
-#### Scenario: 个人中心与设计对照
+#### Scenario: Personal center and design comparison
 
-- **WHEN** 查看个人中心
-- **THEN** 展示与精简个人中心设计一致的三个入口和导航
+- **WHEN** View personal center
+- **THEN** Shows three entrances and navigation consistent with streamlined personal center design

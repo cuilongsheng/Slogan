@@ -1,22 +1,22 @@
-## 1. 合同与会话
+## 1. Contract and conversation
 
-- [x] 1.1 补齐房间运营明细 code-first DTO，生成 OpenAPI 与客户端，验证响应结构
-- [x] 1.2 建立后台 API 客户端、内存 access token、单飞刷新、登录/退出和当前角色边界
-- [x] 1.3 按六张 Figma frame 建立共享后台布局、路由和中文资源
+- [x] 1.1 Complete the room-operation-detail code-first DTO, generate OpenAPI and the client, and verify the response structure.
+- [x] 1.2 Establish the admin API client, in-memory access tokens, single-flight refresh, login/logout, and current-role boundaries.
+- [x] 1.3 Build the shared admin layout, routes, and Chinese localization resources from the six Figma frames.
 
-## 2. 页面
+## 2. Page
 
-- [x] 2.1 房间管理只读分页页面及权限/错误/空态
-- [x] 2.2 安全案件列表、详情和合同支持的安全员操作
-- [x] 2.3 限制申诉列表与合同支持的决定流程
-- [x] 2.4 安全降级事件只读列表、筛选与分页
-- [x] 2.5 后台角色列表、授予/撤销确认及结果反馈
-- [x] 2.6 操作审计只读列表、筛选与分页
-- [x] 2.7 案件/申诉全量统计合同、权限与三张统计卡
+- [x] 2.1 Room management read-only paging page and permissions/error/null status
+- [x] 2.2 Implement safety case lists, details, and contract-supported safety-officer actions.
+- [x] 2.3 Decision process for limiting appeal list and contract support
+- [x] 2.4 Read-only list, filtering and paging of security downgrade events
+- [x] 2.5 Backend role list, grant/revocation confirmation and result feedback
+- [x] 2.6 Implement read-only operation audit lists, filtering, and pagination.
+- [x] 2.7 Full statistics contract, authority and three statistics cards for cases/grievances
 
-## 3. 验证与交付
+## 3. Verification and Delivery
 
-- [x] 3.1 完成权限、会话、过滤、分页和高权限确认的自动化验证
-- [x] 3.2 以 1440×900 运行时截图逐页对比 Figma 并记录剩余差异
-- [x] 3.3 记录真实 API、环境配置和移动端剩余工作盘点，运行受影响范围检查
-- [x] 3.4 按四张已确认的详情/确认覆盖稿实现并截图对照案件、申诉、角色授权及敏感操作弹层
+- [x] 3.1 Complete automated verification of permissions, sessions, filtering, paging and high permission confirmation
+- [x] 3.2 Compare Figma page by page with 1440×900 running screenshots and record the remaining differences
+- [x] 3.3 Record the real API, environment configuration and remaining work inventory of the mobile terminal, and run the affected scope check
+- [x] 3.4 According to the four confirmed details/confirmation coverage draft, realize and take screenshots to compare cases, appeals, role authorization and sensitive operation elastic layers

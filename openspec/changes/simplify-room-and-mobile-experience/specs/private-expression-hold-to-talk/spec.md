@@ -1,42 +1,42 @@
 ## Purpose
 
-定义用户主动按住说母语并在松开后取得私人英文表达的最短交互，确保录音期间房间音频隔离，停止后可以继续交流，并避免重复确认和无关模式操作。
+Defines the shortest interaction in which the user actively presses and holds to speak their native language and obtains private English expressions after releasing it, ensuring room audio isolation during recording, allowing continued communication after stopping, and avoiding repeated confirmations and irrelevant mode operations.
 
 ## ADDED Requirements
 
-### Requirement: 按住说母语松开生成英文
+### Requirement: Press and hold to speak native language and release to generate English
 
-在权限与有效用途同意满足后，用户 MUST 能按住录音并在松开后自动提交生成主要英文表达；页面 MUST 不要求录后确认上传、选择语气或切换输入模式。前端录音最长 MUST 为 10 秒，到限后执行停止和提交。
+After the permissions and valid usage are met, the user MUST be able to press and hold the recording and release it to automatically submit and generate the main English expression; the page MUST not require confirmation of uploading, selecting a tone, or switching input modes after recording. The maximum front-end recording MUST be 10 seconds. Stop and submit after the limit is reached.
 
-#### Scenario: 成员按住后松开
+#### Scenario: Member presses and releases
 
-- **WHEN** 成员在有效权限及同意下按住入口说母语并松开
-- **THEN** 自动生成并仅向该成员展示主要英文表达，无需额外上传确认
+- **WHEN** With valid permission and consent, members press and hold the entrance to speak their native language and release it
+- **THEN** Automatically generate and show only the main English expressions to this member without additional upload confirmation.
 
-#### Scenario: 达到录音时限
+#### Scenario: Recording time limit reached
 
-- **WHEN** 用户连续按住录音达到 10 秒
-- **THEN** 自动停止且只提交一次，后续松开不重复提交
+- **WHEN** User presses and holds recording continuously for 10 seconds
+- **THEN** Automatically stop and only submit once, subsequent releases will not resubmit.
 
-### Requirement: 私人录音与房间麦克风隔离
+### Requirement: Private recording and room microphone isolation
 
-客户端 MUST 在确认房间麦克风静音后才开始私人录音，并在松开且私人录音已停止后开启房间麦克风，无需等待翻译返回；无法静音时 MUST 不启动录音。成员已离房、房间结束或权限被收回时 MUST 不重新开启房间麦克风。
+The client MUST start private recording after confirming that the room microphone is muted, and turn on the room microphone after releasing the phone and private recording has stopped, without waiting for translation to return; MUST not start recording when muting is not possible. The room microphone MUST not be re-enabled when a member has left the room, the room has ended, or the permission has been revoked.
 
-#### Scenario: 录音期间隐私隔离
+#### Scenario: Privacy isolation during recording
 
-- **WHEN** 成员启动私人录音
-- **THEN** 其他成员无法听到该段私人母语录音，松开并停止录音后能继续房间交流
+- **WHEN** Member starts private recording
+- **THEN** Other members cannot hear the private native language recording. After releasing and stopping the recording, room communication can continue.
 
-#### Scenario: 翻译失败
+#### Scenario: Translation failed
 
-- **WHEN** 松开后的翻译请求失败
-- **THEN** 提供简洁重试反馈，私人录音停止，房间交流不等待翻译服务恢复
+- **WHEN** Translation request after release failed
+- **THEN** Provide concise retry feedback, private recording stops, room communication does not wait for translation service to resume
 
-### Requirement: 取消与权限失败不遗留录音
+### Requirement: Cancellation and permission failure do not leave recordings behind
 
-取消、页面关闭、应用中断或离房 MUST 停止并释放私人录音资源；取消的录音 MUST 不自动上传，同一次音频重试 MUST 使用原请求标识以避免重复扣减。
+Canceling, page closing, application interruption, or leaving the room MUST stop and release private recording resources; canceled recordings MUST not be automatically uploaded, and the same audio retry MUST use the original request identifier to avoid repeated deductions.
 
-#### Scenario: 用户录音时关闭页面
+#### Scenario: The user closes the page while recording
 
-- **WHEN** 用户在录音过程中关闭翻译界面
-- **THEN** 录音停止且该段音频不提交，临时资源被释放
+- **WHEN** The user closes the translation interface during the recording process
+- **THEN** The recording stops and the audio segment is not submitted, and the temporary resources are released.

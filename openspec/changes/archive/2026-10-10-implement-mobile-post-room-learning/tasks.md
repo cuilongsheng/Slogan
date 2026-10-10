@@ -1,12 +1,12 @@
 ## 1. API
 
-- [x] 1.1 生成客户端类型接入汇总、导入和私有词汇分页/命令
+- [x] 1.1 Generate client type access summary, import and private vocabulary paging/commands
 
-## 2. 页面
+## 2. Page
 
-- [x] 2.1 历史已参与记录增加汇总入口，处理四种状态及幂等导入
-- [x] 2.2 个人词汇列表、筛选、编辑、收藏和删除，处理版本冲突
+- [x] 2.1 Add a summary entry to historical participation records to handle four states and idempotent import
+- [x] 2.2 Personal vocabulary list, filtering, editing, favorites and deletion, handling version conflicts
 
-## 3. 验收
+## 3. Acceptance
 
-- [x] 3.1 lint/typecheck/test/iOS export、390×844 夹具与设备/provider 边界记录
+- [x] 3.1 lint/typecheck/test/iOS export, 390×844 fixture and equipment/provider boundary records

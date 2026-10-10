@@ -1,39 +1,39 @@
-# 预约房间后端验收记录
+# Room reservation back-end acceptance record
 
-## 范围和基线
+## Range and Baseline
 
-2026-09-13，基于当前未提交工作区实施。前置身份资料、即时房间、LiveKit、房主管理及举报后端的六段迁移均保留；既有安全举报验收基线为 196 个本地测试，本次未将其视为新增实现的验证结果。
+2026-09-13, based on the current uncommitted workspace implementation. The six-stage migration of front-end identity information, instant room, LiveKit, room host management and reporting backend are all retained; the existing security reporting acceptance baseline is 196 local tests, which are not considered as verification results of the new implementation this time.
 
-用户确认：预约占位；到点成员可先进入；满 5 分钟无人在线立即结束，有在线成员且房主从未到场则由加入最早的在线成员接任；此后末人退出或可信断线使房间为空，立即结束。取消 10 分钟规则，不做爽约处罚。
+User confirmation: Reserve a seat; arriving members can enter first; if no one is online for 5 minutes, it will end immediately. If there are online members and the room host has never arrived, the earliest online member will take over; after that, the last person exits or the room host is trusted to be disconnected, leaving the room empty, and it will end immediately. Cancel the 10-minute rule and no penalty for no-shows.
 
-## 实现与证据
+## Implementation and Evidence
 
-- 六个预约 API：创建、分页列表、本人详情、预约、取消预约、开始前房主取消整房。预约仅投影本人的 id/status/version，不返回密码摘要或他人预约名单。
-- 创建者保留一席但无 membership；实际 join 同一事务消耗 BOOKED。普通加入、重进和邀请容量检查保护未用预约。失败请求不消耗席位。
-- 共享 RoomLifecycle 与行锁内上下文供预约、join、实时发证、事件及房主管理使用；到期和空房结束在拒绝请求后仍提交，不能因为抛出业务错误回滚结束事实。
-- 使用既有 RealtimeQueue，增加开始和 5 分钟检查；Redis 丢任务由数据库扫描恢复。REALTIME_ENABLED=false 不禁用预约时间规则。
-- 满 5 分钟仍空房不等待接任；已到场房主不能取消空房检查。既有 60 秒断线窗口仅在仍有在线成员时保留其作用。
-- 已签发身份或创建过媒体房间走原 ENDING/revoke/delete；无身份历史且无 provider SID 时可直接 ENDED，避免为结束而创建媒体房间。
+- Six reservation APIs: creation, paging list, personal details, reservation, cancellation of reservation, room host cancellation before starting. Reservation only projects my id/status/version and does not return the password summary or other people's reservation list.
+- The creator reserves a seat but no membership; actually joining the same transaction consumes BOOKED. Normal join, re-entry and invite capacity checks protect unused reservations. Failed requests do not consume seats.
+- Shared RoomLifecycle and row lock context are used for reservation, join, real-time issuance, event and room host management; expiration and vacancy end are still submitted after rejecting the request, and the end fact cannot be rolled back due to a business error being thrown.
+- Use the existing RealtimeQueue, add start and 5-minute checks; Redis lost tasks are recovered by database scan. REALTIME_ENABLED=false does not disable reservation time rules.
+- The room is still vacant after 5 minutes and does not wait for takeover; the room host has arrived and cannot cancel the vacancy check. The existing 60 second disconnection window only retains its effect while there are still members online.
+- The identity has been issued or the media room has been created. ENDING/revoke/delete; when there is no identity history and no provider SID, you can directly ENDED to avoid creating a media room for the end.
 
-### 定向证据
+### Directional evidence
 
-- `test/integration/appointments.spec.ts`：真实 PostgreSQL 席位竞争、版本重放、取消、实际加入、接任、空房结束、provider 失败与真实 Redis 丢任务恢复。
-- `test/unit/appointment-lifecycle.spec.ts`：开始、5 分钟、计划结束前后 1 毫秒及已到场后空房、已签发身份清理。
-- `test/e2e/appointments.e2e.spec.ts`：真实认证 HTTP 六入口、密码、隐私、非法时间，以及仅预约不能获得举报资格（沿用 REPORT_CONTEXT_NOT_FOUND 隐私边界）。
-- `test/integration/appointment-migration.spec.ts`：隔离空 schema 与含 OPEN/ENDING/ENDED、ACTIVE/LEFT/REMOVED 历史数据升级，旧 Room backfill INSTANT、预约版本约束和 RESTRICT 删除约束。
+- `test/integration/appointments.spec.ts`: Real PostgreSQL seat competition, version replay, cancellation, actual joining, takeover, vacancy end, provider failure and real Redis lost task recovery.
+- `test/unit/appointment-lifecycle.spec.ts`: Start, 5 minutes, 1 millisecond before and after the end of the plan and vacancy after arrival, identity clearing issued.
+- `test/e2e/appointments.e2e.spec.ts`: Real authentication HTTP six entries, password, privacy, illegal time, and only making an appointment cannot be qualified for reporting (remember the REPORT_CONTEXT_NOT_FOUND privacy boundary).
+- `test/integration/appointment-migration.spec.ts`: Isolate empty schema from historical data upgrades containing OPEN/ENDING/ENDED, ACTIVE/LEFT/REMOVED, old Room backfill INSTANT, reservation version constraints and RESTRICT deletion constraints.
 
-## 迁移和回退
+## Migration and rollback
 
-新增 `20260913000000_appointment_rooms`，不改写前六段迁移。新增 RoomKind、两种状态、首次房主标记与 RoomReservation；历史房间默认 INSTANT。完整七段迁移在隔离测试数据库应用成功。
+Add `20260913000000_appointment_rooms` without rewriting the first six migration segments. Added RoomKind, two states, first room host mark and RoomReservation; historical rooms default to INSTANT. The complete seven-segment migration was successfully applied to the isolated test database.
 
-发布必须让理解预约占位的 join/预约/worker 同批部署，旧版本不得并行接收预约房间加入请求。回退先关闭预约入口与预约 join/token，取消未开始房间、结束已开放会话；保留新增表列和历史数据，不进行破坏性 down migration。媒体失败时保留补偿 worker，优先向前修复。未执行生产发布或回退。
+Release must allow join/appointment/worker that understands reservation space to be deployed in the same batch. Old versions must not receive reservation room join requests in parallel. When rolling back, first close the reservation entrance and reservation join/token, cancel unstarted rooms, and end open sessions; retain newly added table columns and historical data, and do not perform destructive down migration. Keep the compensation worker when the media fails, and give priority to forward repair. No production release or rollback performed.
 
-## 验证状态
+## Verification status
 
-最终 `pnpm verify:api` PASS：102 个单元测试、81 个集成测试、46 个 HTTP E2E，共 229 个；lint、typecheck、build、OpenAPI drift 均通过。`pnpm format:check`、`pnpm deps:check`（180 modules / 583 dependencies）与 OpenSpec 严格校验通过。定向测试夹具曾修正 ESM mock 引用、历史 participantIdentity 必填值和举报错误格式；这些不作为产品行为变更。
+Final `pnpm verify:api` PASS: 102 unit tests, 81 integration tests, 46 HTTP E2E, a total of 229; lint, typecheck, build, and OpenAPI drift all passed. `pnpm format:check`, `pnpm deps:check` (180 modules / 583 dependencies) passed strict verification with OpenSpec. The directed test fixture had fixes for ESM mock references, historical participantIdentity required values, and reporting error formats; these are not considered product behavior changes.
 
-## 未完成边界
+## Unfinished boundary
 
-LiveKit Cloud 配置未提供，按用户决定保留真实媒体验证未完成。Google/微信 provider 验证仍沿用前置记录。前端、双设备真实语音、网络断线识别延迟、产品验收和生产部署未完成，不记 PASS。
+LiveKit Cloud configuration not provided, retaining real media at user discretion verification not completed. Google/WeChat provider verification still uses prefix records. Front-end, dual-device real voice, network disconnection recognition delay, product acceptance and production deployment are not completed, PASS will not be recorded.
 
-“在线”来自有效 identity/session 的可信 presence；实际网络断线需 provider 观察送达。结束立即撤销平台新增资格，媒体断开仍依赖异步 provider 清理；不得将本地 fake-provider 验证描述为真实音频或 Cloud 验证通过。
+"Online" comes from a trusted presence with a valid identity/session; actual network disconnection requires provider observation for delivery. End of immediate revocation of new platform qualifications, media disconnection still relies on asynchronous provider cleanup; local fake-provider verification must not be described as real audio or Cloud verification passed.

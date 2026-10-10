@@ -1,62 +1,62 @@
 ## Context
 
-参见 `proposal.md` 的 Why。当前连接的 `Slogan` Figma 文件只有空白 `Page 1`，没有本地变量、样式、组件或页面；移动端代码中只有少量基础中性色、间距、圆角和字号 Token，可作为原型的初始参考但不是视觉事实。本次只在 Figma 中建立两个移动端页面及相关覆盖层，不修改任何实现。
+See Why of `proposal.md`. The currently connected `Slogan` Figma file is only a blank `Page 1`, with no local variables, styles, components or pages; there are only a few basic neutral colors, spacing, rounded corners and font size Tokens in the mobile code, which can be used as an initial reference for the prototype but are not visual facts. This time only two mobile pages and related overlays are created in Figma without modifying any implementation.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- 清楚表达登录、注册、邮箱验证、密码找回、微信二维码和 Google 账户选择之间的产品路径。
-- 以两个移动端主页面及其覆盖层状态验证信息层级、表单密度和第三方登录理解度。
-- 建立足够组装本轮页面的最小 Token 与 Components，并输出可点击原型和视觉证据。
+- Clearly express the product path between login, registration, email verification, password retrieval, WeChat QR code and Google account selection.
+- Verify information level, form density and third-party login understandability with two mobile main pages and their overlay status.
+- Create the minimum Token and Components that are enough to assemble this round of pages, and output clickable prototypes and visual evidence.
 
 **Non-Goals:**
 
-- 不在本 change 中设计 PC 管理端；其现代 AI 产品后台风格不复用移动端页面结构。
-- 不设计或实现 API、数据库、认证服务、邮件服务、OAuth、`.env`、移动端代码或服务端代码。
-- 不实现手机号、短信验证码或跨登录方式账号合并。
-- 不把 HelloTalk 的品牌、图标、插画或页面结构复制到项目中，只提取大留白、圆润卡片、鲜明主操作和轻量层级等风格特征。
+- The PC management terminal is not designed in this change; its modern AI product backend style does not reuse the mobile terminal page structure.
+- Does not design or implement APIs, databases, authentication services, email services, OAuth, `.env`, mobile code or server code.
+- Does not implement mobile phone number, SMS verification code or account merging across login methods.
+- Do not copy HelloTalk's brand, icon, illustration or page structure into the project, only extract the style features such as large white space, rounded cards, distinctive main operations and lightweight hierarchy.
 
 ## Decisions
 
-### Decision: 登录页以用户名密码为主路径
+### Decision: The login page uses username and password as the main path
 
-默认页面直接展示用户名和密码输入、主登录按钮、注册与忘记密码入口；微信和 Google 作为分隔线下方的次级登录方式，避免多个入口争抢同一视觉层级。
+The default page directly displays username and password input, main login button, registration and forgotten password portals; WeChat and Google serve as secondary login methods below the divider to avoid multiple portals competing for the same visual level.
 
-注册使用用户名、邮箱和密码。用户名明确标注“用于登录”，首次资料页则使用“显示名称”，避免两个概念混淆。邮箱验证和密码找回都使用覆盖层或结果状态返回登录页，不额外增加主页面数量。
+Register using username, email and password. The username is clearly marked "for login", and the first profile page uses "display name" to avoid confusion between the two concepts. Both email verification and password retrieval use overlay or result status to return to the login page, without additionally increasing the number of main pages.
 
-### Decision: 第三方登录使用可理解的覆盖层
+### Decision: Use understandable overlay for third-party logins
 
-微信入口打开二维码 modal，包含“请使用另一台设备扫码”、等待、成功、已过期和刷新状态；Google 入口打开账户选择 bottom sheet，展示账号头像、名称、邮箱、取消和授权失败状态。真实二维码和真实账号数据不进入原型，使用明确标注的演示内容。
+The WeChat portal opens the QR code modal, which includes "Please use another device to scan the code", waiting, success, expired and refresh status; the Google portal opens the account and selects the bottom sheet, which displays the account avatar, name, email, cancellation and authorization failure status. Real QR codes and real account data do not enter the prototype, and clearly marked demonstration content is used.
 
-未来开发所需 app/client id、secret、provider URL 和 redirect URL 不属于本轮设计交付；Figma 仅保留“敏感密钥不得进入客户端或设计文件”的备注。
+The app/client id, secret, provider URL and redirect URL required for future development do not belong to this round of design delivery; Figma only retains the note that "sensitive keys must not enter the client or design files".
 
-### Decision: 两个主页面用覆盖层表达认证分支
+### Decision: The two main pages use overlays to express the authentication branches.
 
-Figma 主 Frame 为 390 × 844：
+Figma main Frame is 390 × 844:
 
-1. `Auth / Sign in`：用户名密码登录为主要路径，注册、忘记密码为文字入口；微信与 Google 为次级 provider 按钮。
-2. `Profile / First setup`：在可滚动内容中包含头像、显示名称、性别、国籍/城市、兴趣、CEFR 和出生年月，底部主操作保持清晰。
+1. `Auth / Sign in`: Login with user name and password is the main path, registration and forgotten password are text entries; WeChat and Google are secondary provider buttons.
+2. `Profile / First setup`: Include avatar, display name, gender, nationality/city, interests, CEFR and year of birth in scrollable content, with the main action at the bottom kept clear.
 
-注册表单、邮箱待验证、找回密码、微信二维码、Google 账户选择及错误提示作为登录页的变体或 modal/bottom sheet，不增加主页面数量。微信二维码明确提示需要另一台设备，并提供过期刷新和返回其他方式。
+Registration form, email to be verified, password retrieval, WeChat QR code, Google account selection and error prompts are used as variations of the login page or modal/bottom sheet, without increasing the number of main pages. The WeChat QR code clearly prompts that another device is required, and provides other ways to refresh after expiration and return.
 
-### Decision: 先建立最小视觉基础，不扩展完整设计系统
+### Decision: Establish the minimum visual foundation first without expanding the complete design system
 
-复用代码中已有的中性 Token，并补充本原型所需的品牌色、状态色、字号、间距和圆角。视觉参考 HelloTalk 的轻快感，但使用项目自己的紫色主操作、暖白背景和简洁几何装饰；中文字体使用 Noto Sans SC，英文使用 Noto Sans，确保 Figma 可用且跨平台可替换。
+Reuse the existing neutral token in the code and supplement the brand color, status color, font size, spacing and rounded corners required by this prototype. Visually references the lightness of HelloTalk, but uses the project's own purple main operation, warm white background and simple geometric decoration; uses Noto Sans SC for Chinese fonts and Noto Sans for English, ensuring that Figma is usable and cross-platform replaceable.
 
-首轮组件仅包含：主/次按钮、provider 按钮、文本输入、选择字段、头像上传、兴趣 chip、步骤提示、modal/bottom sheet 和表单反馈。触控目标不小于 44 × 44，正文和关键操作满足可读对比度。
+The first round of components only includes: primary/secondary buttons, provider buttons, text input, selection fields, avatar upload, interest chip, step prompts, modal/bottom sheet and form feedback. The touch target is not smaller than 44 × 44, and the text and key operations meet the readable contrast ratio.
 
-### Decision: 只以 Figma 证据验收
+### Decision: Accept only with Figma evidence
 
-- 结构：两个主 Frame、必要覆盖层、可复用组件和变量均有稳定名称。
-- 视觉：逐个截图检查 390 × 844 尺寸、文字裁切、间距、对比度、对齐和主次层级。
-- 交互：点击路径可以演示登录、注册、待验证邮箱、找回密码、微信二维码、Google 选择和进入首次资料页。
-- 表单：首次资料页可滚动展示全部必填字段，底部主操作清楚且不会与内容重叠。
+- Structure: Two main Frames, necessary overlays, reusable components and variables all have stable names.
+- Visual: Screen-by-screenshot checking of 390 × 844 dimensions, text cropping, spacing, contrast, alignment, and hierarchy.
+- Interaction: Click on the path to demonstrate login, registration, email to be verified, password retrieval, WeChat QR code, Google selection and entering the first information page.
+- Form: The first information page can scroll to display all required fields, and the main operation at the bottom is clear and does not overlap with the content.
 
 ## Risks / Trade-offs
 
-- [Risk] 手机上的微信二维码需要另一台设备，可能造成困惑。→ 原型显式说明使用条件、提供返回入口并单独测试任务完成率；是否追加原生微信授权另建 change。
-- [Risk] 注册和找回密码状态较多，两个主页面容易被误认为只有两个设计状态。→ 将覆盖层和状态 Frame 分组放置，并用原型连线展示关系。
-- [Risk] 用户名与显示名称容易混淆。→ 注册页说明用户名用于登录，资料页使用“显示名称”并解释公开范围。
-- [Risk] 参考风格过度接近 HelloTalk。→ 只复用抽象视觉原则，使用自己的色彩、文案、构图、图标和组件比例。
-- [Risk] 资料字段较多造成首屏拥挤。→ 使用可滚动单页、清晰分组和渐进提示，在视觉验收中检查小屏可达性。
+- [Risk] WeChat QR code on mobile phone requires another device, which may cause confusion. → The prototype explicitly states the usage conditions, provides a return entry, and separately tests the task completion rate; whether to add native WeChat authorization and create a new change.
+- [Risk] There are many registration and password retrieval states, and the two main pages are easily mistaken as having only two design states. → Place the overlay and status Frame in groups, and use prototype connections to show the relationship.
+- [Risk] Username and display name are easily confused. → The registration page explains that the username is used to log in, and the profile page uses "display name" and explains the public scope.
+- [Risk] Reference style is too close to HelloTalk. → Reuse only abstract visual principles, using your own colors, copy, composition, icons and component proportions.
+- [Risk] Too many data fields cause the first screen to be crowded. → Check small screen accessibility in visual acceptance using scrollable single pages, clear groupings and progressive prompts.

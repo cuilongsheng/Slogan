@@ -1,29 +1,33 @@
 ## Purpose
 
-让实际参与房间的用户查看会后关键词生成结果，并自主维护本人私有词汇。
+Allow users who actually participated in the room to view the keyword generation results after the meeting and independently maintain their own private vocabulary.
 
 ## ADDED Requirements
 
-### Requirement: 手机端只为有资格的历史房间提供会后汇总入口
+### Requirement: The mobile version only provides post-meeting summary entry for qualified historical rooms.
 
-手机端 MUST 仅在本人实际参与且房间已结束的历史记录显示汇总入口。页面 MUST 明确显示 `DISABLED`、`PENDING`、`READY`、`UNAVAILABLE` 状态，仅 `READY` 展示服务端条目；MUST 不呈现录音、完整转写或成员归属。
+The mobile version MUST only display the summary entry in the history records where the person actually participated and the room has ended. The page MUST clearly display the `DISABLED`, `PENDING`, `READY`, and `UNAVAILABLE` statuses, and only `READY` displays server entries; MUST not display recordings, complete transcriptions, or member attributions.
 
-#### Scenario: 仅预约记录
-- **WHEN** 用户查看仅预约、未入房的历史记录
-- **THEN** 不显示会后关键词入口
+#### Scenario: Appointment records only
 
-#### Scenario: 生成尚未完成
-- **WHEN** 有资格用户查看 `PENDING` 汇总
-- **THEN** 页面解释仍在生成并允许主动刷新，不显示候选条目
+- **WHEN** The user views the history of reservations only and no-shows.
+- **THEN** Do not display the post-meeting keyword entry
 
-### Requirement: 个人词汇由用户显式导入和管理
+#### Scenario: Generation not completed yet
 
-手机端 MUST 只在用户明确点击 `READY` 汇总中的单条条目后导入，并保持失败重试的幂等标识。本人词汇列表 MUST 提供分页、类型和收藏筛选；编辑、收藏与删除 MUST 带当前版本。冲突时 MUST 保留未保存草稿，不声称命令成功。
+- **WHEN** Qualified users view `PENDING` summary
+- **THEN** Page explanation is still being generated and active refresh is allowed, candidate entries are not displayed
 
-#### Scenario: 导入结果不确定后重试
-- **WHEN** 用户导入单条关键词遇到网络失败并重试
-- **THEN** 两次请求使用同一 `clientRequestId`，不自动导入其他条目
+### Requirement: Personal vocabulary is explicitly imported and managed by the user
 
-#### Scenario: 旧版本编辑
-- **WHEN** 用户编辑词汇时服务端返回版本冲突
-- **THEN** 页面保留输入并提示手动加载最新列表，旧版本不自动覆盖服务端
+The mobile version MUST only import after the user explicitly clicks a single entry in the `READY` summary, and keep the idempotent flag for failed retries. My vocabulary list MUST provide paging, type and collection filtering; editing, collection and deletion MUST include the current version. In case of conflict MUST leave unsaved draft and do not claim command success.
+
+#### Scenario: Retry after import result is uncertain
+
+- **WHEN** The user encountered a network failure when importing a single keyword and tried again.
+- **THEN** The same `clientRequestId` is used in two requests, and other entries are not automatically imported.
+
+#### Scenario: Old version editor
+
+- **WHEN** The server returns a version conflict when the user edits vocabulary.
+- **THEN** The page retains input and prompts to manually load the latest list. Old versions do not automatically overwrite the server.

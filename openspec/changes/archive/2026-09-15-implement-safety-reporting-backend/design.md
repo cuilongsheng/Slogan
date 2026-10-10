@@ -1,114 +1,114 @@
 ## Context
 
-动机与范围见 `proposal.md`，行为见本 change 的 `specs/basic-safety-reporting/spec.md`。
+See `proposal.md` for motivation and scope, and `specs/basic-safety-reporting/spec.md` of this change for behavior.
 
-2026-09-12 检查到的当前代码事实：
+Current code facts checked on 2026-09-12:
 
-- `rooms` 已有 controller、application service、domain policy 和 Prisma repository；`withLockedRoom` 使用 Room 行锁，`RoomMembership` 具有 `(roomId,userId)` 唯一约束。目前尚无 lifecycle 状态及 RoomEvent model。
-- `moderation` 和 `audit` 仍是空目录骨架；现有 OpenAPI 没有举报接口。
-- `AccessTokenGuard` 通过 `SessionService` 校验 token、持久会话及 ACTIVE 账号。全局 ValidationPipe 拒绝额外字段；ApiExceptionFilter 统一公开错误码。
-- HTTP E2E 使用内存 repository，PostgreSQL 集成测试单独验证事务；不能用前者证明真实数据库原子性。
-- `StructuredLogger` 会把对象序列化成字符串，不能假定 Pino 路径脱敏能清除已经串进 message 的举报正文。
-- 最终核对时前置规划已拆分：`implement-livekit-voice-session-backend` 提供 RoomEvent 与实时基础，`implement-host-controls-backend` 提供保留历史 membership 的 LEFT/REMOVED/INVITED 和管理审计。二者均待实施；下述集成点是实施目标，不是现有 API。
+- `rooms` already has controller, application service, domain policy and Prisma repository; `withLockedRoom` uses Room row lock, and `RoomMembership` has `(roomId,userId)` unique constraint. There is currently no lifecycle state and RoomEvent model.
+- `moderation` and `audit` are still empty directory skeletons; the existing OpenAPI has no reporting interface.
+- `AccessTokenGuard` verifies token, persistent session and ACTIVE account through `SessionService`. Global ValidationPipe rejects extra fields; ApiExceptionFilter uniformly exposes error codes.
+- HTTP E2E uses an in-memory repository, and PostgreSQL integration tests verify transactions independently; the former cannot be used to prove real database atomicity.
+- `StructuredLogger` will serialize the object into a string. It cannot be assumed that Pino path desensitization can clear the report text that has been strung into message.
+- The front-end planning has been split during final verification: `implement-livekit-voice-session-backend` provides RoomEvent and real-time basis, `implement-host-controls-backend` provides LEFT/REMOVED/INVITED and management auditing that retains historical membership. Both are pending implementation; the integration points described below are implementation targets, not existing APIs.
 
 ## Goals / Non-Goals
 
-**Goals:** 保证举报资格可追溯、重试不重复、记录与审计原子保存；沿用模块化单体、PostgreSQL 和唯一 OpenAPI contract。
+**Goals:** ensures traceability of reporting qualifications, non-repetition of retries, and atomic storage of records and audits; it continues to use modular monoliths, PostgreSQL and the only OpenAPI contract.
 
-**Non-Goals:** 不建立泛化审核工作流或全局事务框架；不把外部 provider 放进举报事务；其余产品边界见 proposal。
+**Non-Goals:** does not establish a generalized review workflow or global transaction framework; does not include external providers in reporting transactions; see the proposal for other product boundaries.
 
 ## Decisions
 
-### 1. 以历史加入事实确定资格
+### 1. Determine qualifications by adding historical facts
 
-举报人与目标都必须在指定 room 中存在实际加入事实。允许 ACTIVE、LEFT、REMOVED 和曾加入后重新获邀的成员；不能只判断是否存在 INVITED 行。保留的加入时间/事件用于区分“曾加入后被邀请”和“仅被邀请但从未加入”。当前前置设计的 membership 从实际加入产生；domain policy 测试仍覆盖纯邀请没有实际加入证据的输入，不为未来邀请流程新增模型。
+Both the reporter and the target must have actual joining facts in the specified room. Allows ACTIVE, LEFT, REMOVED, and members who have joined and been re-invited; cannot just judge whether there is an INVITED row. The reserved joining time/event is used to distinguish between "joined and then invited" and "only invited but never joined". The membership of the current pre-design is generated from actual joining; the domain policy test still covers the input of pure invitation without actual joining evidence, and no new model will be added for the future invitation process.
 
-双方曾在同一 room 即满足关系约束，不增加“必须同时在线或时间重叠”的要求。房间 OPEN/ENDING/ENDED、麦位、presence 和房主角色不参与举报资格。请求不复用 `RoomsService.detail()`：该方法会拒绝已结束房间。有效身份沿用全局 guard；不引入举报专用登录或改变被限制账号的认证边界。
+The relationship constraints are satisfied if both parties have been in the same room, and there is no additional requirement of "must be online at the same time or time overlap". Room OPEN/ENDING/ENDED, wheat position, presence and room host roles are not eligible for reporting. The request is not to be reused. `RoomsService.detail()`: This method will reject the ended room. Valid identities follow the global guard; no reporting-specific login is introduced or the authentication boundary of restricted accounts is changed.
 
-备选按当前在线成员判断会阻断历史举报；信任客户端 userId/room link 则允许伪造关系。均不采用。
+The alternative of judging by current online members will block historical reports; trusting the client userId/room link will allow forged relationships. None are used.
 
-### 2. 接口与输入边界
+### 2. Interface and input boundary
 
-新增 `POST /v1/rooms/{roomId}/reports`，沿用 Bearer 认证。请求字段为：
+Added `POST /v1/rooms/{roomId}/reports`, using Bearer certification. The request fields are:
 
-| 字段 | 约束 |
-| --- | --- |
-| `roomId`（路径） | UUID |
-| `targetUserId` | UUID，由服务端解析为该房间真实成员 |
-| `clientRequestId` | 必填 UUID；同一举报人的一次提交及其重试共用 |
-| `category` | `HARASSMENT_ABUSE`（骚扰辱骂）、`HATE_DISCRIMINATION`（歧视仇恨）、`SEXUAL_CONTENT`（色情低俗）、`SPAM_ADVERTISING`（垃圾广告）、`OTHER`（其他） |
-| `description` | 只接受字符串；trim 后 1–2000 Unicode 码点，不做 HTML 执行或富文本处理 |
+| Field             | Constraints                                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `roomId` (path)   | UUID                                                                                                                                                                                              |
+| `targetUserId`    | UUID, resolved by the server to the real member of the room                                                                                                                                       |
+| `clientRequestId` | Required UUID; shared by one submission and its retries from the same reporter                                                                                                                    |
+| `category`        | `HARASSMENT_ABUSE` (harassment and abuse), `HATE_DISCRIMINATION` (discrimination and hatred), `SEXUAL_CONTENT` (pornographic and vulgar), `SPAM_ADVERTISING` (spam advertising), `OTHER` (others) |
+| `description`     | Only accepts strings; 1–2000 Unicode code points after trimming, no HTML execution or rich text processing                                                                                        |
 
-路径/UUID 统一规范化；说明只 trim，不合并中间空白。DTO 与 domain policy 使用一致码点计数，测试 emoji 边界。未知字段（包括 reporterUserId、submittedAt）返回 `VALIDATION_FAILED`，校验响应禁止包含输入值。
+The path/UUID is unified and standardized; the description is only trim, and the white space in the middle is not merged. DTO and domain policy use consistent code point counting to test emoji boundaries. Unknown fields (including reporterUserId, submittedAt) return `VALIDATION_FAILED`, and the verification response is prohibited from containing input values.
 
-新建和幂等重试均返回 HTTP 201，业务 body 仅 `{ id, submittedAt }`，submittedAt 为首次提交的服务端 UTC 时间。不返回正文、举报人/目标个人资料、审核状态或其他举报记录。
+Both new creation and idempotent retry return HTTP 201, the business body is only `{ id, submittedAt }`, and submittedAt is the server UTC time of the first submission. Does not return text, reporter/target profile, review status or other report records.
 
-| 场景 | HTTP / code |
-| --- | --- |
-| 无效身份或会话 | 401 / `ACCESS_TOKEN_INVALID`（沿用现有） |
-| 格式、类别、说明、额外字段非法 | 400 / `VALIDATION_FAILED` |
-| 合法成员举报自己 | 400 / `REPORT_TARGET_INVALID` |
-| 房间不存在、举报人未加入、目标未加入或跨房间 | 404 / `REPORT_CONTEXT_NOT_FOUND` |
-| 同一标识对应不同有效内容 | 409 / `REPORT_REQUEST_CONFLICT` |
-| 未恢复的持久化失败 | 500 / `INTERNAL_ERROR`，不暴露底层信息 |
+| Scene                                                                                                  | HTTP / code                                                    |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Invalid identity or session                                                                            | 401 / `ACCESS_TOKEN_INVALID` (use the existing one)            |
+| Illegal format, category, description, and extra fields                                                | 400 / `VALIDATION_FAILED`                                      |
+| Legal members report themselves                                                                        | 400 / `REPORT_TARGET_INVALID`                                  |
+| The room does not exist, the reporter has not joined, the target has not joined or it is across rooms. | 404 / `REPORT_CONTEXT_NOT_FOUND`                               |
+| The same identifier corresponds to different valid content                                             | 409 / `REPORT_REQUEST_CONFLICT`                                |
+| Unrecovered persistence failure                                                                        | 500 / `INTERNAL_ERROR`, does not expose underlying information |
 
-先认证和校验 DTO，再验证房间/举报人关系，避免向非成员披露目标信息。对于已登记的请求标识，认证成功后只读取该举报人的既有记录并比较内容：相同则返回凭据，不同则冲突；不查询或返回其他举报人的记录。
+First authenticate and verify the DTO, then verify the room/informant relationship to avoid disclosing target information to non-members. For the registered request ID, after successful authentication, only the existing records of the informant will be read and the contents will be compared: if they are the same, the credentials will be returned, if they are different, they will conflict; the records of other informants will not be queried or returned.
 
-沿用 NestJS Swagger DTO/decorators code-first 生成 `openapi/openapi.yaml`，不手写第二份 contract；生成客户端不在本次范围。
+Use NestJS Swagger DTO/decorators code-first to generate `openapi/openapi.yaml` without handwriting the second contract; generating the client is outside the scope of this article.
 
-### 3. 持久模型与重试
+### 3. Persistence model and retry
 
-新增 `Report` model，独立 `prisma/models/report.prisma`：UUID id、roomId、reporterUserId、targetUserId、clientRequestId、category、description、submittedAt。类别使用显式映射的领域值与 Prisma enum，文本上限与数据库约束一致。
+Added `Report` model, independent `prisma/models/report.prisma`: UUID id, roomId, reporterUserId, targetUserId, clientRequestId, category, description, submittedAt. Category uses explicitly mapped domain values ​​to Prisma enum, text cap consistent with database constraints.
 
-- 唯一约束 `(reporterUserId,clientRequestId)`；不按“房间+目标+类别”去重，因为新发生的事件可以是新的举报。
-- 使用 `(roomId,reporterUserId)` 和 `(roomId,targetUserId)` 引用 membership 已有复合唯一键，确保同房间关系；关系采用 RESTRICT，禁止级联删除已保存举报。迁移若需要补充关系约束，保持现有数据有效。
-- 建立 `(roomId,submittedAt,id)` 索引，便于审计关联；不因此增加查询接口。
-- 扩展 RoomEvent 的举报类型及可空 `reportId` 唯一关联，历史事件该字段为空；举报事件必须关联 Report。审计只写 actor、target、room、category、result、occurredAt 和 reportId，不写正文。
+- The only constraint is `(reporterUserId,clientRequestId)`; do not remove duplicates by "room + target + category" because new events can be new reports.
+- Use `(roomId,reporterUserId)` and `(roomId,targetUserId)` to reference membership. There is already a composite unique key to ensure the same room relationship; the relationship uses RESTRICT, and cascading deletion of saved reports is prohibited. If migration requires supplementing relationship constraints, keep existing data valid.
+- Establish `(roomId,submittedAt,id)` index to facilitate audit correlation; no query interface will be added for this purpose.
+- Extended RoomEvent reporting type and nullable `reportId` unique association, this field is empty for historical events; reporting events must be associated with Report. In auditing, only actor, target, room, category, result, occurredAt and reportId are written, but the text is not written.
 
-同一 clientRequestId 比较 room、目标、类别和规范化正文。并发依靠数据库唯一约束；唯一冲突后结束失败事务，在新事务中按当前举报人重读并比较，返回原结果或稳定冲突。不得在已失败的 PostgreSQL 事务中继续查询。不同 room 的同一标识并发也必须通过该路径，不能仅依赖 room 行锁。
+Compare room, target, category and normalized body for the same clientRequestId. Concurrency relies on the unique constraint of the database; end the failed transaction after a unique conflict, reread and compare according to the current reporter in the new transaction, and return the original result or stabilize the conflict. The query must not continue within a failed PostgreSQL transaction. Concurrency of the same identity in different rooms must also pass through this path and cannot only rely on room row locks.
 
-备选内存/Redis 去重不能跨重启保证数据库一致性；永久按目标去重会吞掉新的事件。两者均不采用。
+Alternative memory/Redis deduplication cannot ensure database consistency across restarts; permanent target deduplication will swallow new events. Neither is used.
 
-### 4. 模块职责和同事务审计
+### 4. Module responsibilities and same transaction audit
 
-`moderation` 拥有 Report、提交用例、输入策略与 repository port。薄 controller 只传入当前身份和 DTO，application 只使用无框架 domain 类型。
+`moderation` has Report, submission case, input strategy and repository port. The thin controller only passes in the current identity and DTO, and the application only uses the frameless domain type.
 
-采用现有 `withLockedRoom` 的局部回调模式，新增举报专用的 repository 操作：在一个 PostgreSQL transaction 中获得 rooms 提供的举报上下文，调用 domain policy，保存 Report，再追加 RoomEvent。提交结果只能在事务成功之后返回。审计失败必须回滚 Report；不采用提交后再异步追加成功审计。
+Adopt the existing partial callback mode of `withLockedRoom`, and add a new reporting-specific repository operation: obtain the reporting context provided by rooms in a PostgreSQL transaction, call the domain policy, save the Report, and then append the RoomEvent. The commit result can only be returned after the transaction is successful. If the audit fails, the Report must be rolled back; the successful audit is not added asynchronously after submission.
 
-跨模块协作只通过公开入口：rooms 提供包含历史加入事实的最小上下文；audit 提供追加举报事件的能力。为复用同一个 transaction，两个模块可暴露专用 infrastructure 集成入口供 moderation adapter 调用；Prisma TransactionClient 只在这些 infrastructure 文件间传递，不进入 application/domain/controller 或全局 common。这里的例外仅服务当前原子事务需求，不创建泛化 UnitOfWork。不得深层导入 rooms/audit 的 repository 或复制其 lifecycle 规则。
+Cross-module collaboration only uses public entrances: rooms provides a minimal context containing historical joining facts; audit provides the ability to additionally report events. In order to reuse the same transaction, two modules can expose dedicated infrastructure integration entrances for moderation adapter calls; Prisma TransactionClient is only passed between these infrastructure files and does not enter application/domain/controller or global common. The exception here only serves the current atomic transaction needs and does not create a generalized UnitOfWork. May not deep import the rooms/audit repository or copy its lifecycle rules.
 
-前置 RoomEvent 如果暂归 rooms adapter 写入，本次把可共享的最小事件写入部分交给 audit 并通过公开入口复用，保留既有调用行为和事务。依赖方向为 moderation → rooms/audit，rooms → audit，audit 不依赖 moderation/rooms application；不使用 forwardRef。具体导出名与上游实现对齐，禁止为本次规划修改未完成上游文件。
+If the RoomEvent in front is temporarily written by the rooms adapter, this time the minimum shareable event writing part will be handed over to the audit and reused through the public entrance, retaining the existing calling behavior and transactions. The dependency direction is moderation → rooms/audit, rooms → audit, audit does not depend on moderation/rooms application; forwardRef is not used. The specific export name is aligned with the upstream implementation, and it is prohibited to modify unfinished upstream files for this plan.
 
-事务只做数据库工作，无 LiveKit、Redis、webhook 或通知 side effect。数据库按统一 room 锁顺序读取上下文；唯一约束和外键是最后防线。leave/remove/end 并发只改变现状，不抹掉历史举报资格。
+Transaction only does database work, no LiveKit, Redis, webhooks or notification side effects. The database reads context in uniform room lock order; unique constraints and foreign keys are the last line of defense. leave/remove/end concurrency only changes the status quo and does not erase historical reporting qualifications.
 
-### 5. 隐私与权限失败
+### 5. Privacy and permissions failed
 
-正文只存在 Report；审计保存标识，不复制正文。不注册查询/修改/广播接口，也不触发房主通知或任何处罚。必要技术日志采用固定事件名、requestId、reportId 和稳定结果码白名单，禁止把整个 DTO、异常对象或正文 JSON.stringify 后写日志。补 `description` 路径脱敏作为辅助防线，同时测试实际 logger 输出及错误响应，不能只测试配置数组。
+The main text only exists in Report; the audit save mark does not copy the main text. Does not register the query/modify/broadcast interface, and does not trigger room host notifications or any penalties. The necessary technical logs use fixed event names, requestId, reportId and stable result code whitelists. It is prohibited to write logs after JSON.stringify the entire DTO, exception object or text. Supplement `description` path desensitization as an auxiliary line of defense, and test the actual logger output and error response at the same time. You cannot only test the configuration array.
 
-本 change 不规定最终保留时长或自动清理；添加 FK 的目的是防止意外级联丢失，不代表已确定永久保留策略。后续删除/注销流程需独立方案处理。
+This change does not specify the final retention period or automatic cleanup; the purpose of adding FK is to prevent accidental cascade loss, and does not mean that the permanent retention strategy has been determined. The subsequent deletion/account deletion process requires an independent solution.
 
 ## Risks / Trade-offs
 
-- [Risk] 上游实时与房主管理 change 尚未落地 → 按 LiveKit → 房主管理 → 安全举报执行；proposal 可先评审，apply 首项核验实际 schema、公开接口、RoomEvent 与前置后端证据，缺失时停止依赖实现，不伪造临时 membership 模型。
-- [Risk] 历史举报不要求同时在线，用户陈述未被平台验证 → 只标记提交成功，不认定事实、不自动处罚；后续审核另立 change。
-- [Risk] 同一事务跨模块写入可能导致边界渗透 → 只通过明确的 infrastructure 公共集成入口共享 transaction，保留 domain 纯净，并执行 dependency check 与既有房间审计回归。
-- [Risk] 新增唯一关联或 RESTRICT 影响历史数据/删除路径 → additive migration 在干净库和前置版本 fixture 上验证；拒绝破坏性删除，不改旧 migration。
-- [Risk] 当前未定义举报频率限制 → 本次只保证单次请求幂等和字段上限，不声称已完成反滥用能力；限流参数列为后续产品决策。
-- [Risk] 假 repository 无法证明并发、事务、外键 → PostgreSQL 集成测试与真实数据库 HTTP smoke 提供证据。
+- [Risk] The upstream real-time and room host management change has not yet been implemented → press LiveKit → room host management → security report execution; the proposal can be reviewed first, and apply first verifies the actual schema, public interface, RoomEvent and front-end and back-end evidence. If missing, stop relying on the implementation and do not forge the temporary membership model.
+- [Risk] Historical reports are not required to be online at the same time, and the user's statement has not been verified by the platform → only marks the submission as successful, does not identify the facts, and does not automatically impose penalties; a separate change will be established for subsequent review.
+- [Risk] Cross-module writes of the same transaction may lead to boundary penetration → Only share transactions through clear infrastructure public integration entrances, keep domain pure, and perform dependency checks and existing room audit regressions.
+- [Risk] New unique association or RESTRICT affects historical data/deletion path → additive migration is verified on clean library and pre-version fixture; destructive deletion is rejected and old migration is not changed.
+- [Risk] There is currently no reporting frequency limit defined → This time only a single request idempotent and field upper limit are guaranteed, and it does not claim to have completed anti-abuse capabilities; the rate limiting parameter is listed as a subsequent product decision.
+- [Risk] Fake repository cannot prove concurrency, transactions, foreign keys → PostgreSQL integration test with real database HTTP smoke provides evidence.
 
 ## Migration Plan
 
-1. apply 前确认 LiveKit 的 RoomEvent 基础和房主管理的历史 membership lifecycle 已实现、两阶段迁移均可用，记录各自实际 revision 与测试证据；不要求它们先生产部署或归档，不把未完成的 provider 验证记作已通过。
-2. 在固定 Node 24.21.0 下新增 Report、事件关联/类别与索引的 additive migration；历史 RoomEvent 的 reportId 保持空，原 room/membership 数据不变。
-3. 对空数据库和带前置房间、历史 membership、审计事件的升级 fixture 应用 migration；验证外键、唯一约束、历史数据，以及失败时回滚。
-4. 实施 endpoint、模块 wiring、错误映射和 code-first contract 后执行受影响范围验证。实际生产发布由后续 deployment 工作负责。
-5. 应用回退到部署前版本时停止提供新举报 endpoint，保留新表、enum/可空列及已写审计，不做删表/删数据 down migration；旧版本在加法 schema 上的 room 基础流程需验证兼容。通过 forward fix 修复问题后恢复提交。
+1. Before applying, confirm that LiveKit's RoomEvent foundation and the historical membership lifecycle of room host management have been implemented, that both phases of migration are available, and record their respective actual revisions and test evidence; they are not required to be deployed or archived in production first, and unfinished provider verification is not recorded as passed.
+2. Added additive migration of Report, event correlation/category and index under fixed Node 24.21.0; the reportId of historical RoomEvent remains empty, and the original room/membership data remains unchanged.
+3. Apply migration to empty database and upgrade fixture with pre-room, historical membership, audit events; verify foreign keys, unique constraints, historical data, and rollback on failure.
+4. Perform affected scope validation after implementing endpoint, module wiring, error mapping, and code-first contract. The actual production release is the responsibility of subsequent deployment work.
+5. When the application rolls back to the pre-deployment version, it stops providing new reporting endpoints, retains new tables, enum/nullable columns, and written audits, and does not delete tables/delete data down migration; the old version's room basic process on the addition schema needs to be verified for compatibility. Restore submission after fixing the problem through forward fix.
 
 ## Verification and Acceptance
 
-- 单元：五类映射、码点长度、trim、身份字段拒绝、当前/历史资格、self/cross-room、请求内容比较、纯策略不依赖 NestJS/Prisma。
-- PostgreSQL：正常写入、双边失败注入回滚、并发同标识、跨房间标识冲突、不同举报人隔离、FK/删除保护、leave/remove/end 并发与重启后重试。
-- HTTP：有效身份与失效会话、历史成员和结束房间、非法 DTO、权限绕过、最小响应、稳定错误、没有新增查询或通知路径；至少一个基于真实 PostgreSQL 的登录→加入→离开/结束→举报→重试闭环。
-- 回归：前置房主管理和事件审计、现有 auth/rooms HTTP、日志正文/凭证不泄露、OpenAPI drift、模块边界及格式。
-- 全部实现完成后运行一次 `pnpm verify:api`、`pnpm format:check`、`pnpm deps:check`；失败后先做最小范围修复再重跑必要最终检查。
-- `docs/acceptance/implement-safety-reporting-backend.md` 记录逐场景 PASS/FAIL/BLOCKED、命令、版本、实际数量与真实数据库 smoke。UI、真实设备与生产发布由后续对应 change 验证，本次不得把后端测试等同于整套产品已验收。
+- Unit: five-category mapping, codepoint length, trim, identity field rejection, current/historical qualifications, self/cross-room, request content comparison, pure strategy without relying on NestJS/Prisma.
+- PostgreSQL: normal writes, bilateral failure injection rollback, concurrency with same identity, cross-room identity conflict, isolation of different informants, FK/delete protection, leave/remove/end concurrency and retry after restart.
+- HTTP: valid identities and invalid sessions, historical members and ended rooms, illegal DTOs, permission bypasses, minimal responses, stable errors, no new query or notification paths; at least one real PostgreSQL-based login → join → leave/end → report → retry closed loop.
+- Regression: front-end room host management and event auditing, existing auth/rooms HTTP, log text/credentials not leaked, OpenAPI drift, module boundaries and formats.
+- Run `pnpm verify:api`, `pnpm format:check`, and `pnpm deps:check` once after all implementations are completed; after failure, first make minimum scope repairs and then rerun for necessary final checks.
+- `docs/acceptance/implement-safety-reporting-backend.md` records scene-by-scene PASS/FAIL/BLOCKED, command, version, actual quantity and real database smoke. The UI, real equipment and production release will be verified by subsequent corresponding changes. This time, the back-end testing shall not be equated with the acceptance of the entire set of products.

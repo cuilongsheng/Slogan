@@ -1,75 +1,75 @@
-## 1. Schema、配置与迁移
+## 1. Schema, configuration and migration
 
-- [x] 1.1 为 `POST_ROOM_KEYWORDS` 同意目的、汇总/条目/任务状态和单词本条目类型增加 Prisma 枚举，并通过 Prisma validate/generate 验证 schema 可生成
-- [x] 1.2 为 Room 增加默认 false 的 `postRoomKeywordsEnabled`，增加 RoomKeywordSummary、RoomKeywordSummaryItem、RoomKeywordSummaryJob、VocabularyItem 和 VocabularyCommand 模型及唯一约束/索引，并通过结构集成测试验证关系与 keyset 索引
-- [x] 1.3 编写只向前迁移和房间开关不可变触发器，用含历史 Room 的迁移测试验证旧行全部为 false、创建后直接 SQL 更新也被拒绝
-- [x] 1.4 增加关键词 feature flag、notice/extractor version、候选上限、TTL、job lease/截止时间配置，并验证关闭时旧 API/worker 可以启动、启用但依赖缺失时启动或 readiness 安全失败且不暴露配置值
-- [x] 1.5 定义汇总、候选、单词本、job 和目的级处理的 domain entity/port，运行依赖边界检查验证 domain 不导入 Prisma、Redis、LiveKit、NestJS 或 transport DTO
-- [x] 1.6 在验收文档写入部署与回滚顺序，验证包含先关闭新建、收敛 job、停止 consumer、保留新增表/用户内容和清理临时键
+- [x] 1.1 Add Prisma enumerations for `POST_ROOM_KEYWORDS` consent purpose, summary/entry/task status and wordbook entry types, and verify that the schema can be generated through Prisma validate/generate
+- [x] 1.2 Add the default false `postRoomKeywordsEnabled` to Room, add RoomKeywordSummary, RoomKeywordSummaryItem, RoomKeywordSummaryJob, VocabularyItem and VocabularyCommand models and unique constraints/indexes, and verify the relationship and keyset index through structural integration testing
+- [x] 1.3 Write forward-only migration and room switch immutable triggers, use the migration test with historical Room to verify that all old rows are false, and direct SQL updates after creation are also rejected
+- [x] 1.4 Added keywords feature flag, notice/extractor version, candidate upper limit, TTL, job lease/deadline configuration, and verified that the old API/worker can be started when shut down, started when enabled but with missing dependencies, or readiness fails safely without exposing configuration values
+- [x] 1.5 Define domain entities/ports for summary, candidate, vocabulary, job and destination level processing, run dependency boundary checks to verify domain does not import Prisma, Redis, LiveKit, NestJS or transport DTO
+- [x] 1.6 Write the deployment and rollback sequence in the acceptance document. The verification includes first closing the new creation, converging the job, stopping the consumer, retaining the newly added table/user content and cleaning up the temporary keys.
 
-## 2. 房间开关与目的级同意
+## 2. Room switch agrees with destination level
 
-- [x] 2.1 扩展即时和预约创建 DTO、领域实体与 Prisma 映射，验证未提交会后关键词字段时持久化 false、明确启用时持久化 true
-- [x] 2.2 在即时列表、详情、分享解析、预约详情和 presenter 返回 `postRoomKeywordsEnabled`，验证关闭和启用房间的响应且不改变既有分页/可见性
-- [x] 2.3 复用共享 worker readiness 并增加关键词 feature gate，验证依赖不健康时拒绝创建 enabled 房间但仍允许创建 disabled 房间
-- [x] 2.4 增加 `POST_ROOM_KEYWORDS` 同意状态与接受/撤回命令，验证三个目的互不授权、notice version 更新失效、相同 UUID 重试幂等且变更载荷冲突
-- [x] 2.5 将加入、reserve/confirm 和 realtime token 续期改为计算房间所需目的集合，验证只开安全、只开关键词、两者都开和全部关闭的同意矩阵
-- [x] 2.6 实现关键词同意撤回的 issuance 失效、membership 收敛和可靠 `REVOKE_IDENTITY` 命令，验证后续处理停止且不产生举报、案件、restriction 或账号状态变化
+- [x] 2.1 Expand instant and appointment creation DTO, domain entity and Prisma mapping, persist false when verifying that the post-meeting keyword field is not submitted, persist true when explicitly enabled
+- [x] 2.2 Return `postRoomKeywordsEnabled` in instant list, details, share parsing, appointment details and presenter, verify the response of closing and enabling the room without changing the existing paging/visibility
+- [x] 2.3 Reuse the shared worker readiness and add the keyword feature gate. When verifying that the dependency is unhealthy, the creation of enabled rooms is refused but the creation of disabled rooms is still allowed.
+- [x] 2.4 Added `POST_ROOM_KEYWORDS` consent status and accept/withdraw command to verify that the three purposes do not authorize each other, the notice version update is invalid, the same UUID retries idempotent and the change payload conflicts
+- [x] 2.5 Change join, reserve/confirm and realtime token renewal to calculate the required purpose set of the room, verify the consent matrix of only security, only keywords, both on and all off
+- [x] 2.6 Implement issuance invalidation, membership convergence and reliable `REVOKE_IDENTITY` command for keyword consent withdrawal, verify that subsequent processing stops and no reports, cases, restrictions or account status changes are generated
 
-## 3. 中立房间语音处理编排
+## 3. Neutral room voice processing arrangement
 
-- [x] 3.1 建立 room-speech-processing application 边界并迁移媒体发现、STT session、purpose context 和清理职责，验证现有 API 与独立 worker 仍可分别启动
-- [x] 3.2 将活跃房间发现改为选择启用任一房间语音目的的 OPEN 房间，验证安全-only、关键词-only、双开房间各只建立一个媒体 session
-- [x] 3.3 实现每个短窗口只调用一次 STT 并同步扇出到已启用 consumer，验证双开房间不会产生第二个隐藏参与者或第二次 provider 调用
-- [x] 3.4 在 STT 前后校验全部 required purpose 的 consent generation，验证任一目的撤回或版本变化都会丢弃窗口、取消 session 且不提交 consumer 结果
-- [x] 3.5 隔离 safety 与 post-room consumer 失败，验证风险规则失败不阻止合格关键词候选、候选提取失败不阻止既有风险事件与房主提醒
-- [x] 3.6 覆盖成员离开、撤回、房间结束、lease 丢失、provider 失败和 shutdown 清理顺序，验证音频 buffer、完整转写和 provider session 在每条路径均不可读取
-- [x] 3.7 运行现有 speech-safety unit/integration/e2e/runtime 回归，验证风险去重、当前房主提醒、降级与证据包行为保持不变
+- [x] 3.1 Establish room-speech-processing application boundaries and migrate media discovery, STT session, purpose context and cleanup responsibilities, verify that existing APIs and independent workers can still be started separately
+- [x] 3.2 Change the active room discovery to OPEN room that enables the voice purpose of any room, and verify that only one media session is created for security-only, keyword-only, and dual-open rooms.
+- [x] 3.3 Implement each short window to only call STT once and synchronously fan out to the enabled consumer. Verify that the double-open room will not generate a second hidden participant or a second provider call.
+- [x] 3.4 Verify the consent generation of all required purposes before and after STT. If any purpose withdrawal or version change is verified, the window will be discarded, the session will be canceled, and the consumer result will not be submitted.
+- [x] 3.5 Failure to isolate safety and post-room consumer, failure to verify risk rules does not block qualified keyword candidates, failure to extract candidates does not block existing risk events and room host reminders
+- [x] 3.6 covers member departure, withdrawal, room end, lease loss, provider failure and shutdown cleanup sequence, verify that audio buffer, full transcription and provider session are not readable in each path
+- [x] 3.7 Run the existing speech-safety unit/integration/e2e/runtime regression to verify that risk deduplication, current room host reminders, downgrades and evidence package behavior remain unchanged
 
-## 4. 匿名候选提取与临时聚合
+## 4. Anonymous candidate extraction and temporary aggregation
 
-- [x] 4.1 实现版本化的英语关键词和短表达提取 policy，验证大小写/Unicode/标点规范化、停用词、token/字符上限和固定 fixture 的稳定结果
-- [x] 4.2 实现联系方式、超长原句和不可安全脱离上下文内容的双重过滤，验证候选、日志、异常和测试快照不包含被拒绝原文
-- [x] 4.3 实现不接收成员标识的候选 consumer，验证其输入/输出类型和持久调用只包含 roomId、类型、规范化文本、计数和 extractor version
-- [x] 4.4 实现 Redis 候选聚合的 fencing、计数和稳定 namespace，验证旧 token 不能追加、读取最终快照或删除新持有者数据
-- [x] 4.5 实现每窗口/每类型/每房间上限与覆盖结束重试窗口的 TTL，验证超限只丢弃低优先候选、过期内容自动消失且不影响真人语音
-- [x] 4.6 在 Redis 或候选提取不可用时停止新的关键词处理并记录不含内容的目的级降级，验证 safety consumer 和 LiveKit 会话仍继续
+- [x] 4.1 Implement versioned English keyword and short expression extraction policy, verify stable results of case/Unicode/punctuation normalization, stop words, token/character upper limit and fixed fixtures
+- [x] 4.2 Implement double filtering of contact information, over-long original sentences and content that cannot be safely separated from the context, and verify that candidates, logs, exceptions and test snapshots do not contain rejected original texts
+- [x] 4.3 Implement candidate consumers that do not receive member IDs, verify that their input/output types and persistence calls contain only roomId, type, normalized text, count, and extractor version
+- [x] 4.4 Implement fencing, counting and stable namespace of Redis candidate aggregation, verify that old tokens cannot be appended, read the final snapshot or delete new holder data
+- [x] 4.5 implements TTL per window/per type/per room upper limit and coverage of the end retry window. Only low-priority candidates will be discarded if the verification exceeds the limit. Expired content will automatically disappear without affecting the real voice.
+- [x] 4.6 Stop new keyword processing and log destination-level downgrade without content when Redis or candidate extraction is unavailable, verify safety consumer and LiveKit sessions still continue
 
-## 5. 结束后汇总与可靠任务
+## 5. Summary and reliable tasks after the end
 
-- [x] 5.1 在 enabled 房间创建时原子建立 `COLLECTING` 汇总，并在进入 ENDING/ENDED 的房间事务中推进 `PENDING` 与 upsert job，验证重复结束事件只产生一份汇总和一个任务
-- [x] 5.2 实现支持 `FOR UPDATE SKIP LOCKED`、leaseId、lockedUntil 和截止时间的 job claim/recovery，验证并发 runner 只有一个有效持有者且 stale lease 不能完成任务
-- [x] 5.3 实现候选快照的二次过滤、稳定评分/排序、去重与有界截取，并在一个 PostgreSQL 事务内写 items、更新 READY 和完成 job
-- [x] 5.4 实现候选不足、候选过期、持续依赖失败和超过重试截止时的 UNAVAILABLE 收敛，验证没有空洞内容且房间结束无需等待
-- [x] 5.5 实现 READY/UNAVAILABLE 终态幂等，验证重复 job、进程重启和迟到结束事件不能增加条目、改变 READY 内容或回退状态
-- [x] 5.6 在终态提交后 compare-and-delete 临时工作集，并增加失败重试与维护清理，验证清理失败不改写持久结果且最终不残留可恢复候选
+- [x] 5.1 Atomicly create the `COLLECTING` summary when the enabled room is created, and advance `PENDING` with the upsert job in the room transaction entering ENDING/ENDED, verify that the repeated end event only generates one summary and one task
+- [x] 5.2 implements job claim/recovery that supports `FOR UPDATE SKIP LOCKED`, leaseId, lockedUntil and deadline, verifies that the concurrent runner has only one valid holder and the stale lease cannot complete the task
+- [x] 5.3 Implement secondary filtering, stable scoring/sorting, deduplication and bounded interception of candidate snapshots, and write items, update READY and complete the job within a PostgreSQL transaction
+- [x] 5.4 implements UNAVAILABLE convergence when there are insufficient candidates, expired candidates, persistent dependency failures and retry deadlines are exceeded, verifying that there are no empty contents and there is no need to wait for the end of the room
+- [x] 5.5 implements the READY/UNAVAILABLE final state idempotent, and verifies that repeated jobs, process restarts and late end events cannot add entries, change READY content or rollback status
+- [x] 5.6 compare-and-delete the temporary working set after the final state is submitted, and add failure retries and maintenance cleanup to verify that cleanup failures do not overwrite the persistent results and that no recoverable candidates remain in the end.
 
-## 6. 会后汇总查询
+## 6. Summary query after the meeting
 
-- [x] 6.1 实现 `GET /v1/rooms/{roomId}/keyword-summary` 和统一 `DISABLED/PENDING/READY/UNAVAILABLE` envelope，验证只有 READY 返回稳定排序的关键词/短表达
-- [x] 6.2 通过 rooms 公开 application port 校验实际 membership 与房间结束状态，验证 LEFT/REMOVED 历史成员可读、仅预约/仅受邀/无关系用户被拒绝且不泄露资源状态
-- [x] 6.3 验证汇总响应只含主题、状态、生成时间和允许条目，不含 userId、membership、participant identity、时间线、完整原句或内部失败详情
+- [x] 6.1 Implement `GET /v1/rooms/{roomId}/keyword-summary` and unify `DISABLED/PENDING/READY/UNAVAILABLE` envelope, verify that only READY returns stable sorted keywords/short expressions
+- [x] 6.2 Expose the application port through rooms to verify the actual membership and room end status, verify that LEFT/REMOVED historical members are readable, reservation-only/invitation-only/unrelated users are rejected and resource status is not disclosed
+- [x] 6.3 Verification summary response only contains subject, status, generation time, and allowed entries, but does not contain userId, membership, participant identity, timeline, complete original sentence, or internal failure details
 
-## 7. 个人单词本
+## 7. Personal vocabulary book
 
-- [x] 7.1 实现从可读 READY summary item 创建 VocabularyItem 的服务端授权与字段复制，验证不能使用未结束、不可读或不存在的来源
-- [x] 7.2 实现 VocabularyCommand payload hash 和 `(userId, sourceSummaryItemId)` 约束，验证同 UUID/载荷返回原结果、改变载荷冲突且同一来源不会重复创建
-- [x] 7.3 实现 `GET /v1/me/vocabulary-items` 的 `(updatedAt,id)` keyset 分页以及 favorite/kind 筛选绑定，验证跨筛选游标被拒绝、本人列表稳定且空列表语义正确
-- [x] 7.4 实现带 expectedVersion 的本人条目编辑和字段 policy，验证文本/可空备注/收藏状态规范化、并发旧版本最多一个成功且不修改共享汇总
-- [x] 7.5 实现带 expectedVersion 的物理删除，验证条目立即从读取/列表消失、旧编辑或收藏命令不能复活、共享汇总和其他用户副本不变
-- [x] 7.6 增加跨用户越权和自动扩散测试，验证猜测 item id 不能读写、汇总 READY 不自动写入任何用户的单词本或私人笔记
+- [x] 7.1 Implement server-side authorization and field copying to create VocabularyItem from readable READY summary item. Verification cannot use unfinished, unreadable or non-existent sources.
+- [x] 7.2 Implement VocabularyCommand payload hash and `(userId, sourceSummaryItemId)` constraints, verify that the same UUID/payload returns the original result, changes the payload conflict, and the same source will not be created repeatedly
+- [x] 7.3 Implement `(updatedAt,id)` keyset paging and favorite/kind filter binding of `GET /v1/me/vocabulary-items`, verify that the cross-filter cursor is rejected, the personal list is stable and the empty list semantics are correct
+- [x] 7.4 implements personal entry editing and field policy with expectedVersion, normalizes text/nullable notes/favorite status verification, allows at most one concurrent old version to succeed, and does not modify the shared summary
+- [x] 7.5 implements physical deletion with expectedVersion, verifies that entries immediately disappear from reads/lists, old edit or favorite commands cannot be revived, shared rollups and other user copies are unchanged
+- [x] 7.6 Add cross-user override and automatic diffusion tests to verify the guessed item id cannot be read and written, summarized READY does not automatically write to any user's vocabulary book or private notes
 
-## 8. API、隐私与维护
+## 8. API, privacy and maintenance
 
-- [x] 8.1 增加会后关键词同意、汇总和单词本 DTO/controller/presenter，重新生成 `openapi/openapi.yaml` 并验证请求默认值、状态枚举、错误码、游标和版本字段与运行时一致
-- [x] 8.2 扩展日志/trace/异常脱敏和禁止内容字段规则，验证 audio、transcript、candidate text、final item text、personal note 和 provider response 不进入诊断输出
-- [x] 8.3 增加终态 job、过期命令和孤立临时键的维护操作，验证维护任务不删除 READY 汇总、个人单词本、案件、审计或同意事实
-- [x] 8.4 更新模块公开入口和依赖规则，验证 rooms、speech-safety、post-room-learning 和 worker 之间只通过公开 application/domain port 交互且无循环依赖
+- [x] 8.1 Add post-meeting keyword agreement, summary and wordbook DTO/controller/presenter, regenerate `openapi/openapi.yaml` and verify that the request default value, status enumeration, error code, cursor and version fields are consistent with the runtime
+- [x] 8.2 Extended log/trace/exception desensitization and prohibited content field rules, verify that audio, transcript, candidate text, final item text, personal note and provider response do not enter diagnostic output
+- [x] 8.3 Add maintenance operations for final jobs, expired commands and orphaned temporary keys, and verify that maintenance tasks do not delete READY summaries, personal wordbooks, cases, audits or consent facts
+- [x] 8.4 updates the module public entry and dependency rules to verify that rooms, speech-safety, post-room-learning and workers only interact through the public application/domain port and have no circular dependencies.
 
-## 9. 验证与验收
+## 9. Verification and acceptance
 
-- [x] 9.1 完成开关、目的同意、单次 STT 扇出、候选隐私、汇总状态机、权限、幂等、并发和单词本 CRUD 的 unit/integration/e2e 测试，并验证所有目标测试通过
-- [x] 9.2 在真实 PostgreSQL 与 Redis 上运行独立 worker runtime 测试，验证双目的单次转写、fencing、重启恢复、consumer 隔离、shutdown 和内容清理
-- [x] 9.3 运行 format、Prisma validate/generate、OpenAPI drift、依赖边界、build、完整 unit/integration/e2e/runtime、`git diff --check` 和 OpenSpec strict validation，并记录命令、数量与结果
-- [x] 9.4 编写 `docs/acceptance/implement-post-room-keywords-vocabulary-backend.md`，验证分别记录本地实现、隐私检查、迁移/回滚、真实环境证明和所有 BLOCKED 项
-- [ ] 9.5 使用真实 LiveKit Cloud 与合格流式 STT provider 完成双人房间 smoke，验证关键词-only 与双开房间只进行一次 STT、结束后匿名汇总、参与者权限、撤回停止、provider/Redis 失败降级和无完整转写；缺少凭据时记录 BLOCKED、保持本任务未完成并且不归档 change
+- [x] 9.1 Complete unit/integration/e2e tests for switch, purpose consent, single STT fanout, candidate privacy, summary state machine, permissions, idempotent, concurrency and wordbook CRUD, and verify that all target tests pass
+- [x] 9.2 Run independent worker runtime tests on real PostgreSQL and Redis to verify dual-purpose single-pass transcription, fencing, restart recovery, consumer isolation, shutdown and content cleanup
+- [x] 9.3 Run format, Prisma validate/generate, OpenAPI drift, dependency boundary, build, complete unit/integration/e2e/runtime, `git diff --check` and OpenSpec strict validation, and record the commands, quantities and results
+- [x] 9.4 Write `docs/acceptance/implement-post-room-keywords-vocabulary-backend.md`, verify that local implementation, privacy check, migration/rollback, real environment proof and all BLOCKED items are recorded separately
+- [ ] 9.5 Use real LiveKit Cloud and qualified streaming STT provider to complete double room smoke, verify keyword-only and double room only perform one STT, anonymous summary after the end, participant permissions, withdrawal stop, provider/Redis failure downgrade and no complete transcription; record BLOCKED when credentials are missing, keep this task incomplete and do not archive change

@@ -1,62 +1,62 @@
 ## Purpose
 
-规定已通过资格、密码和规则检查的移动端用户如何实际进入语音房、参加默认静音的真人音频交流，并在刷新、断线、退出及房间结束时得到与服务端事实一致的反馈。
+Specifies how mobile users who have passed the qualification, password and rule checks can actually enter the voice room, participate in real-person audio exchanges that are muted by default, and receive feedback consistent with the server facts when refreshing, disconnecting, exiting, and ending the room.
 
 ## ADDED Requirements
 
-### Requirement: 显式加入和席位恢复
+### Requirement: Explicit join and seat restoration
 
-客户端 MUST 仅在用户主动选择进入房间后提交已确认的规则及本房间密码，MUST 在服务端加入成功后获取房间限定的实时凭证，MUST 只向当前房间建立实时连接。加入失败 MUST 显示可理解的原因及返回或重试路径，且不得把密码、实时凭证放入 URL、普通持久化存储或日志。
+The client MUST only submit the confirmed rules and room password after the user actively chooses to enter the room. The client MUST obtain the room-limited real-time credentials after the server joins successfully. The client MUST only establish a real-time connection to the current room. Join failures MUST show an understandable reason and return or retry path, and passwords and live credentials MUST not be put into URLs, normal persistence storage, or logs.
 
-#### Scenario: 完成入房
+#### Scenario: Completed moving in
 
-- **WHEN** 合格用户完成设备检查并主动选择进入可用房间
-- **THEN** 客户端使用该房间的规则确认和可选密码建立 membership，取得实时凭证，连接目标房间并显示当前会话
+- **WHEN** Qualified user completes equipment check and actively chooses to enter available rooms
+- **THEN** The client uses the room's rule confirmation and optional password to establish membership, obtain real-time credentials, connect to the target room and display the current session
 
-#### Scenario: 加入被拒绝
+#### Scenario: Join refused
 
-- **WHEN** 密码错误、容量已满、房间结束、账号受限或规则确认失效
-- **THEN** 客户端不连接实时房间，说明服务端拒绝原因，并允许用户回到相应步骤或房间列表
+- **WHEN** Wrong password, capacity is full, room ended, account restricted or rule confirmation invalid
+- **THEN** The client does not connect to the real-time room, indicating the reason for the server's rejection and allowing the user to return to the corresponding step or room list
 
-#### Scenario: 页面刷新
+#### Scenario: Page refresh
 
-- **WHEN** 浏览器刷新或原生页面重建时用户已有该房间的有效 membership
-- **THEN** 客户端从服务端重读 membership 并重新申请短期凭证恢复连接，不要求重新输入房间密码
+- **WHEN** The user already has a valid membership in the room when the browser is refreshed or the native page is rebuilt.
+- **THEN** The client rereads the membership from the server and re-applies for a short-term credential to restore the connection without requiring re-entering the room password.
 
-### Requirement: 默认静音和成员事实
+### Requirement: Default mute and member facts
 
-客户端 MUST 在连接建立时保持本机麦克风关闭，仅在用户主动切换后发布音频。成员身份、顺序、昵称、英语等级和房主角色 MUST 来自服务端成员事实；在线和说话状态 MUST 以实时连接状态为依据，不得展示虚构成员。
+The client MUST keep the local microphone off when the connection is established and only publish audio after the user actively switches. Membership, order, nickname, English level, and room host role MUST come from server-side member facts; online and speaking status MUST be based on live connection status, and fictitious members MUST not be shown.
 
-#### Scenario: 两名成员交流
+#### Scenario: Two members communicating
 
-- **WHEN** 两名成员已连接同一语音房，分别主动打开麦克风
-- **THEN** 双方可以听到对方音频，并看到各自麦克风和说话状态
+- **WHEN** Two members are connected to the same voice room and each actively turns on the microphone.
+- **THEN** Both parties can hear each other's audio and see their respective microphones and speaking status.
 
-#### Scenario: 首次连接
+#### Scenario: First connection
 
-- **WHEN** 用户刚完成实时连接但没有触发麦克风操作
-- **THEN** 本机不发布麦克风音频，界面显示静音
+- **WHEN** The user just completed the live connection but did not trigger the microphone operation
+- **THEN** The local device does not publish microphone audio, and the UI displays a muted state.
 
-### Requirement: 中断、退出和结束收敛
+### Requirement: Interrupt, exit and end convergence
 
-客户端 MUST 显示连接中、重连中、可用、失败和房间结束状态。用户主动退出 MUST 请求服务端离开并断开本地音频；房间结束或资格失效 MUST 停止本地连接和音频并禁止旧凭证静默重入。对已提交但 provider 清理仍待完成的退出结果，界面 MUST 以服务端提交的业务状态为准。
+The client MUST display the connecting, reconnecting, available, failed, and room end statuses. The user actively exits MUST requests the server to leave and disconnect local audio; the room ends or the qualification is invalidated MUST stops local connections and audio and prohibits silent reentry with old credentials. For exit results that have been submitted but provider cleanup is still to be completed, the interface MUST be based on the business status submitted by the server.
 
-#### Scenario: 网络暂断
+#### Scenario: Network interruption
 
-- **WHEN** 实时连接暂时中断而服务端 membership 仍有效
-- **THEN** 客户端显示重连状态和退出入口，恢复后同步成员与房间状态
+- **WHEN** The real-time connection is temporarily interrupted but the server membership is still valid
+- **THEN** The client displays the reconnection status and exit entrance, and synchronizes member and room status after recovery.
 
-#### Scenario: 主动退出
+#### Scenario: Exit actively
 
-- **WHEN** 成员确认退出当前房间
-- **THEN** 客户端请求离开、停止本地音频并返回发现页；房主接任或结束由服务端结果决定
+- **WHEN** Member confirms to exit the current room
+- **THEN** The client requests to leave, stop local audio and return to the discovery page; the room host takes over or ends based on the server result.
 
-#### Scenario: 房间结束
+#### Scenario: Room ends
 
-- **WHEN** 房间被房主结束或到期，或旧凭证被撤销
-- **THEN** 客户端停止实时连接并显示已结束页面，旧凭证不能再恢复该房间
+- **WHEN** The room was terminated or expired by the room host, or the old voucher was revoked
+- **THEN** The client stops real-time connection and displays the ended page. The old credentials cannot be restored to the room.
 
-#### Scenario: 凭证取得后连接失败
+#### Scenario: Connection failed after obtaining the certificate
 
-- **WHEN** membership 已创建但实时连接或 provider 暂不可用
-- **THEN** 客户端保留明确的重试及退出入口，不把失败连接误报为已经进入并发声
+- **WHEN** membership has been created but the real-time connection or provider is not available yet
+- **THEN** The client retains clear retry and exit entrances, and does not mistakenly report failed connections as having entered and make sounds.

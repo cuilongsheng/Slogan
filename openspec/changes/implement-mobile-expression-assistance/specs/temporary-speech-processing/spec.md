@@ -1,30 +1,35 @@
 ## MODIFIED Requirements
 
-### Requirement: 语音处理同意按目的和版本保存
+### Requirement: Voice processing consent is saved by purpose and version
 
-系统 MUST 允许已认证用户查看、接受和撤回特定处理目的的语音处理同意，并保存用户、目的、说明版本、provider 类别、服务端时间和当前状态。AI 短语音与房间安全语音处理 MUST 使用不同目的；一个目的的同意不得授权另一个目的。说明版本变化后，旧同意 MUST 不能授权新版本处理；撤回只阻止未来处理，不删除仍需保留的最小同意审计事实。系统 MUST 在查询每个用途的同意状态时同时返回当前有效说明版本，使客户端可展示和提交与服务端一致的说明版本。状态响应不得返回其他用户的同意事实或 provider 凭据。
+The system MUST allow authenticated users to view, accept, and withdraw voice processing consent for specific processing purposes and save the user, purpose, description version, provider category, server time, and current status. AI short voice and room safe voice processing MUST be used for different purposes; consent for one purpose does not authorize the other. Note that after a version change, the old consent MUST not authorize processing of the new version; withdrawal only prevents future processing and does not delete the minimum consent audit facts that still need to be retained. The system MUST return the currently valid description version when querying the consent status of each purpose, so that the client can display and submit a description version consistent with the server. The status response must not return the other user's consent facts or provider credentials.
 
-#### Scenario: 接受当前说明
-- **WHEN** 用户明确接受当前 AI 短语音处理说明
-- **THEN** 系统保存可查询的当前有效同意及版本事实
+#### Scenario: Accept current instructions
 
-#### Scenario: 接受当前房间安全语音说明
-- **WHEN** 用户明确接受当前房间安全语音处理说明
-- **THEN** 系统只为该目的保存可查询的当前有效同意，不同时授予 AI 短语音目的
+- **WHEN** The user clearly accepts the current AI short voice processing instructions
+- **THEN** The system saves the currently valid consent and version facts that can be queried
 
-#### Scenario: 撤回未来同意
-- **WHEN** 用户撤回 AI 短语音处理同意
-- **THEN** 后续短语音请求被拒绝，既有最小同意和撤回事实保持可审计
+#### Scenario: Accept the current room safety voice instructions
 
-#### Scenario: 在启用房间内撤回安全语音同意
-- **WHEN** 用户在启用敏感语音识别的房间内撤回房间安全语音处理同意
-- **THEN** 后续音频处理立即停止且该房间实时访问被收敛，既有最小同意和撤回事实保持可审计
+- **WHEN** The user clearly accepts the current room security voice processing instructions
+- **THEN** The system only saves the current valid consent that can be queried for this purpose, and does not grant the AI short voice purpose at the same time.
 
-#### Scenario: 说明版本更新
-- **WHEN** 服务端要求的处理说明版本高于用户最后接受版本
-- **THEN** 系统要求用户重新明确同意后才允许对应目的的新语音处理
+#### Scenario: Withdrawing future consent
 
-#### Scenario: 首次使用语音表达辅助
+- **WHEN** User withdraws consent for AI short voice processing
+- **THEN** Subsequent short voice request denied, both minimum consent and withdrawal facts remain auditable
 
-- **WHEN** 用户尚未接受当前语音表达辅助说明并读取自己的同意状态
-- **THEN** 响应包含 `REQUIRED` 状态及当前说明版本，客户端可明确展示用途后提交该版本
+#### Scenario: Withdrawing secure voice consent in an enabled room
+
+- **WHEN** User withdraws room secure voice processing consent in a room with sensitive voice recognition enabled
+- **THEN** Subsequent audio processing stops immediately and live access to the room is converged, both minimum consent and withdrawal facts remain auditable
+
+#### Scenario: Description version update
+
+- **WHEN** The processing description version requested by the server is higher than the version last accepted by the user
+- **THEN** The system requires the user to explicitly agree again before allowing new voice processing for the corresponding purpose.
+
+#### Scenario: First time using voice expression assistance
+
+- **WHEN** The user has not accepted the current voice expression assistance instructions and read his or her consent status.
+- **THEN** The response contains the `REQUIRED` status and the current description version. The client can submit this version after clearly displaying the purpose.

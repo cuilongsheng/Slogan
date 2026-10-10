@@ -1,9 +1,9 @@
-# 推广
+# Promotion
 
-- 分享到 Discord、Reddit、X 等等
+- Share to Discord, Reddit, X, and more
 
-- 我在做 4 到 6 人的实时语音房,用 NestJS 和 LiveKit,早期做轻量级的审核,不录音,该怎么设计比较好? 先把 RTC、安全证据、合规、冷启动,这四个问题拆开去问一圈儿,拿到反馈,我们再回来调整 PRD
+- I am building a real-time voice room for 4 to 6 people. I use NestJS and LiveKit to do lightweight audits in the early stage without recording. What is the best design? First, separate these four questions of RTC, security evidence, compliance, and cold start, and ask around, get feedback, and then we will come back to adjust the PRD.
 
-- LiveKit 社区问 RTC 架构,Reddit r/startups
+- LiveKit community asks about RTC architecture, Reddit r/startups
 
-- 问信任与安全和冷启动;Indie Hackers 问产品机制
+- Ask about trust and security and cold start; Indie Hackers ask about product mechanism

@@ -1,20 +1,20 @@
 ## ADDED Requirements
 
-### Requirement: 运营敏感读取和治理控制面必须审计
+### Requirement: Operationally sensitive read and governance control planes must be audited
 
-系统 MUST 为房间运营明细、内部活跃排序、完整异常、保留策略、dry-run、preservation hold、清理运行和恢复演练的敏感读取，以及异常确认/解决、策略启用、hold 修改、实际清理和演练启动记录后台审计。事件 MUST 使用字段白名单保存操作者、当时角色、动作、目标类型、查询或运行范围摘要、原因、结果、服务端时间和请求标识，不得复制指标明细、候选标识列表、被删除内容、备份位置或凭据。
+The system MUST log background audits for sensitive reads of room operations details, internal active sorting, complete exceptions, retention policies, dry-runs, preservation holds, clean runs, and recovery drills, as well as exception acknowledgment/resolution, policy enablement, hold modifications, actual cleans, and drill starts. Events MUST use field whitelists to save the operator, current role, action, target type, query or run scope summary, cause, result, server time and request ID. Metric details, candidate ID lists, deleted content, backup locations or credentials MUST not be copied.
 
-#### Scenario: 管理员执行清理
+#### Scenario: Administrator performs cleanup
 
-- **WHEN** 平台管理员确认并启动一个实际清理运行
-- **THEN** 系统保存策略版本、dry-run 标识、范围摘要和结果审计，且控制面命令与接受审计全部提交或全部失败
+- **WHEN** Platform administrator confirms and initiates an actual cleanup run
+- **THEN** The system saves the policy version, dry-run flag, scope summary and result audit, and the control plane commands and audit acceptance are all submitted or all fail
 
-#### Scenario: 审计员读取恢复演练结果
+#### Scenario: Auditor reads recovery drill results
 
-- **WHEN** 审计员读取一次恢复演练的最小结果
-- **THEN** 系统记录读取范围与成功结果，不复制备份标识原值或任何恢复数据
+- **WHEN** Auditor reads minimum results of a recovery drill
+- **THEN** The system records the read range and successful results, and does not copy the original value of the backup identifier or any recovery data.
 
-#### Scenario: 未授权治理请求
+#### Scenario: Unauthorized governance request
 
-- **WHEN** 已认证后台用户因当前角色不足而请求敏感治理操作
-- **THEN** 系统不改变治理状态，并记录不含候选或内容数据的稳定拒绝结果
+- **WHEN** The authenticated backend user requested a sensitive governance operation due to insufficient current role.
+- **THEN** The system does not change governance status and records stable rejection results without candidate or content data

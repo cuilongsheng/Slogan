@@ -1,41 +1,51 @@
 ## ADDED Requirements
 
-### Requirement: 后台安全案件权限保持角色分离
-系统 MUST 允许当前 `PLATFORM_ADMIN` 查看全部安全案件和允许的证据，允许当前 `SAFETY_OFFICER` 查看自己的工作队列、领取未分配案件并执行明确的案件、限制和申诉动作。平台管理员角色 MUST 不隐含安全员处置权限，安全员角色也 MUST 不隐含角色管理、全量后台审计或运营指标权限；每次请求必须使用当前持久角色和账号状态判断。
+### Requirement: Backend security case permissions keep roles separated
 
-#### Scenario: 同时持有管理员和安全员角色
-- **WHEN** 当前用户同时持有平台管理员和安全员角色
-- **THEN** 系统允许其按管理员权限查看全部案件，并按安全员权限处理分配给本人或领取的案件
+The system MUST allow the current `PLATFORM_ADMIN` to view all security cases and allowed evidence, and allow the current `SAFETY_OFFICER` to view their own work queue, claim unassigned cases, and perform explicit case, restriction, and appeal actions. The platform administrator role MUST not imply safety officer disposal permissions, and the safety officer role MUST not imply role management, full backend auditing or operational indicator permissions; each request MUST be judged using the current persistent role and account status.
 
-#### Scenario: 管理员没有安全员角色
-- **WHEN** 只有平台管理员角色的用户查看案件后尝试结案、处罚、解除限制或处理申诉
-- **THEN** 系统允许查看但拒绝处置动作，且案件、限制和申诉状态保持不变
+#### Scenario: Holds both the administrator and safety officer roles
 
-#### Scenario: 处理请求前安全员角色已撤销
-- **WHEN** 用户的旧 access token 仍有效但其安全员角色已从 PostgreSQL 撤销
-- **THEN** 下一次案件或处罚请求立即失去安全员权限，不得依赖旧 token 或缓存继续执行
+- **WHEN** The current user holds both the platform administrator and safety officer roles.
+- **THEN** The system allows him to view all cases with administrator permissions and handle cases assigned to him or received according to safety officer permissions.
 
-#### Scenario: 安全员账号已禁用
-- **WHEN** 持有安全员角色的用户账号不再可用
-- **THEN** 系统拒绝其后台访问，并使其未结案件进入可恢复的重新分配流程
+#### Scenario: Administrator does not have safety officer role
+
+- **WHEN** Only users with the platform administrator role view the case and try to close the case, impose penalties, lift restrictions or handle appeals
+- **THEN** The system allows viewing but denies disposition action, and case, restriction, and appeal status remain unchanged
+
+#### Scenario: The safety officer role has been revoked before processing the request.
+
+- **WHEN** The user's old access token is still valid but his safety officer role has been revoked from PostgreSQL
+- **THEN** The next case or penalty request will immediately lose the safety officer authority and must not rely on old tokens or cache to continue execution.
+
+#### Scenario: safety officer account has been disabled
+
+- **WHEN** User accounts holding the safety officer role are no longer available
+- **THEN** The system denies its backend access and puts its open cases into the recoverable reassignment process
 
 ## MODIFIED Requirements
 
-### Requirement: 系统始终保留有效平台管理员
-系统 MUST 阻止角色管理或安全处置使平台失去最后一个有效 `PLATFORM_ADMIN`。用户可以先向另一个有效账号授予平台管理员角色，再撤销原账号的角色或永久禁用原账号，以完成可审计的管理权转移。
+### Requirement: The system always retains a valid platform administrator
 
-#### Scenario: 撤销最后一个管理员
-- **WHEN** 管理员尝试撤销当前唯一有效平台管理员的管理员角色
-- **THEN** 系统返回稳定冲突，保留原角色并记录拒绝结果
+The system MUST prevent role management or security disposal from causing the platform to lose the last valid `PLATFORM_ADMIN`. Users can first grant the platform administrator role to another valid account, and then revoke the role of the original account or permanently disable the original account to complete the auditable transfer of management rights.
 
-#### Scenario: 永久禁用最后一个管理员
-- **WHEN** 安全员尝试永久禁用当前唯一有效平台管理员账号
-- **THEN** 系统返回稳定冲突，保留账号可用状态并记录拒绝结果
+#### Scenario: Remove the last administrator
 
-#### Scenario: 转移管理员权限
-- **WHEN** 已存在另一个有效平台管理员后撤销或永久禁用原管理员
-- **THEN** 系统允许操作，同时保证事务完成后仍至少存在一个有效平台管理员
+- **WHEN** The administrator attempted to revoke the administrator role of the only currently valid platform administrator.
+- **THEN** The system returns a stable conflict, retains the original role and records the rejection result
 
-#### Scenario: 并发撤销多个管理员
-- **WHEN** 并发请求试图通过角色撤销或永久禁用移除全部有效平台管理员
-- **THEN** 系统最多执行不会使有效管理员数量降为零的操作，其余请求稳定失败
+#### Scenario: Permanently disable last administrator
+
+- **WHEN** safety officer attempts to permanently disable the only currently valid platform administrator account
+- **THEN** The system returns a stable conflict, keeps the account available and records the rejection result.
+
+#### Scenario: Transfer administrator rights
+
+- **WHEN** Another valid platform administrator already exists and the original administrator is revoked or permanently disabled.
+- **THEN** The system allows the operation and ensures that there is still at least one valid platform administrator after the transaction is completed.
+
+#### Scenario: Concurrently revoke multiple administrators
+
+- **WHEN** Concurrent requests attempt to remove all active platform administrators via role revoke or permanent disablement
+- **THEN** The system can perform at most operations that will not reduce the number of effective administrators to zero, and the remaining requests fail stably.

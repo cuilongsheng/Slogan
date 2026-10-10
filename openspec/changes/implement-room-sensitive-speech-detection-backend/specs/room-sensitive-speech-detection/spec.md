@@ -1,114 +1,143 @@
 ## Purpose
 
-定义明确启用的真人语音房如何在成员同意后临时识别敏感表达、仅向当前房主发送最小风险提醒，并在不录音、不保存完整转写和不自动处罚的边界内留下可审计的风险与降级事实。
+Define how an explicitly enabled live voice room can temporarily identify sensitive expressions with member consent, send only minimal risk reminders to the current room host, and leave auditable risk and downgrade facts within the boundaries of no recording, no saving of full transcripts, and no automatic penalties.
 
 ## ADDED Requirements
 
-### Requirement: 房间敏感语音识别必须由房主在创建时明确启用
-系统 MUST 只对创建时明确启用敏感语音识别的房间执行临时处理，并在房间列表、详情和分享入口允许返回的最小信息中展示是否启用。该选择在房间创建后 MUST 不可变；未提交该字段的现有客户端请求 MUST 按关闭处理。
+### Requirement: Room-sensitive speech recognition must be explicitly enabled by the room host at creation time
 
-#### Scenario: 创建启用识别的房间
-- **WHEN** 合格房主创建房间并明确启用敏感语音识别
-- **THEN** 系统保存启用状态，并在加入前可见的房间信息中明确展示需要语音处理同意
+The system MUST only perform temporary processing on rooms that explicitly enable sensitive speech recognition when they are created, and display whether it is enabled or not in the minimum information allowed to be returned in the room list, details, and sharing portal. This selection MUST be immutable after room creation; existing client requests that do not submit this field MUST be processed as closed.
 
-#### Scenario: 现有客户端未提交开关
-- **WHEN** 合格房主使用未提交敏感语音识别字段的现有请求创建房间
-- **THEN** 系统创建关闭该能力的房间且不处理其成员音频
+#### Scenario: Create a recognition-enabled room
 
-#### Scenario: 房间创建后尝试切换
-- **WHEN** 房主或其他调用者尝试在房间创建后开启或关闭敏感语音识别
-- **THEN** 系统拒绝修改，避免成员在未重新选择的情况下改变处理目的
+- **WHEN** Qualified room host creates a room and explicitly enables sensitive speech recognition
+- **THEN** The system saves the enabled status and clearly displays the need for voice processing consent in the room information visible before joining.
 
-### Requirement: 启用房间只允许具有当前目的同意的成员加入
-系统 MUST 在签发或续期启用房间的实时访问凭证前，校验成员已接受当前版本的房间安全语音处理说明。拒绝、缺少、过期或已撤回的同意 MUST 阻止加入或续期，但不得形成举报、案件、限制或账号处罚。
+#### Scenario: The existing client has not submitted the switch
 
-#### Scenario: 已同意成员加入
-- **WHEN** 合格成员已接受当前版本的房间安全语音处理说明并加入启用房间
-- **THEN** 系统继续执行既有密码、容量、屏蔽和安全限制校验，并在全部条件通过后允许加入
+- **WHEN** Qualified room host created a room using an existing request that did not submit sensitive speech recognition fields
+- **THEN** The system creates a room with this capability turned off and does not process its members' audio
 
-#### Scenario: 未同意成员加入
-- **WHEN** 成员没有当前有效的房间安全语音处理同意
-- **THEN** 系统返回稳定的需要同意结果，不创建 membership 或实时访问凭证
+#### Scenario: Try to switch after room creation
 
-#### Scenario: 房间内成员撤回同意
-- **WHEN** 启用房间内的成员撤回房间安全语音处理同意
-- **THEN** 系统停止该成员的后续音频处理、撤销其后续实时访问并将其断开该房间，且不把该结果记为安全处罚
+- **WHEN** The room host or other caller attempted to turn sensitive speech recognition on or off after the room was created.
+- **THEN** The system rejects the modification to prevent members from changing the processing purpose without re-selecting.
 
-#### Scenario: 关闭识别的房间
-- **WHEN** 成员加入未启用敏感语音识别的房间
-- **THEN** 系统不要求该处理目的的同意，也不启动房间音频处理
+### Requirement: Enable the room to only allow members with consent for the current purpose to join.
 
-### Requirement: 房间音频和完整转写只允许临时流式处理
-系统 MUST 只处理启用房间内当前已同意成员的实时麦克风音频，并只在内存中的短窗口保留音频和完整转写。系统 MUST 不把原始音频、完整转写、分段原文或可还原内容写入 PostgreSQL、Redis、对象存储、队列载荷、审计事件或应用日志，也不得提供读取、回放、搜索或恢复能力。
+The system MUST verify that the member has accepted the current version of the room's secure voice processing instructions before issuing or renewing live access credentials for an enabled room. Denied, missing, expired or withdrawn consent MUST prevent joining or renewal but may not result in reports, cases, restrictions or account penalties.
 
-#### Scenario: 流式窗口处理完成
-- **WHEN** 一个临时音频窗口完成识别和风险判断
-- **THEN** 系统释放该窗口的音频和完整转写，只保留允许的最小调用、风险或降级事实
+#### Scenario: Members have been agreed to join
 
-#### Scenario: worker 或 provider 中途失败
-- **WHEN** 房间音频正在处理时进程、网络、协调组件或 provider 失败
-- **THEN** 临时内容不可恢复，真人语音保持可用，并按允许的最小信息记录降级
+- **WHEN** Eligible members have accepted the current version of the room's secure voice processing instructions and joined the enabled room
+- **THEN** The system continues to perform existing password, capacity, shielding and security restriction verification, and allows joining after all conditions are passed.
 
-#### Scenario: 未同意成员的音轨出现
-- **WHEN** 媒体处理端观察到没有当前有效同意的参与者音轨
-- **THEN** 系统不把该音轨发送给 STT provider，并触发成员访问收敛而不保存其内容
+#### Scenario: Member not allowed to join
 
-### Requirement: 风险判断使用版本化规则并限制重复提醒
-系统 MUST 使用可识别版本的受控风险规则，把临时转写归类为允许的风险类别和严重度档位，并对同一房间、成员、类别和时间窗口内的重复结果去重和限频。规则结果 MUST 只表示需要房主或安全员关注的信号，不得宣称已确认违规。
+- **WHEN** Member does not have a currently valid Room Security Voice Processing Consent
+- **THEN** The system returns a stable consent required result and does not create membership or real-time access credentials.
 
-#### Scenario: 临时内容命中受控规则
-- **WHEN** 启用房间的临时转写满足当前风险规则
-- **THEN** 系统生成包含规则版本、风险类别、严重度档位、成员、房间和服务端时间的最小风险信号，不保存命中原文
+#### Scenario: Member in the room withdraws consent
 
-#### Scenario: 短时间重复命中
-- **WHEN** 同一成员在去重窗口内重复命中同一风险类别
-- **THEN** 系统合并或抑制重复提醒，并保留不含内容的计数或最后发生时间
+- **WHEN** Enable members in the room to withdraw consent for room secure voice processing
+- **THEN** The system stops the member's subsequent audio processing, revokes his subsequent real-time access, and disconnects him from the room, without recording the result as a security penalty.
 
-#### Scenario: 规则未命中
-- **WHEN** 临时转写不满足当前风险规则
-- **THEN** 系统释放临时内容且不保存“安全”结论或逐句识别记录
+#### Scenario: Turn off identified rooms
 
-### Requirement: 风险提醒只发送给发送时的当前房主
-系统 MUST 只向风险发生房间在投递时的当前房主发送最小提醒。提醒 MUST 只包含定位和处置所需的房间、成员、风险类别、严重度档位、发生时间和建议人工核实信息，不得包含原始音频、完整转写、命中原文或其他成员资料。
+- **WHEN** Member joins a room without sensitive speech recognition enabled
+- **THEN** The system does not require consent for this processing purpose and does not initiate room audio processing
 
-#### Scenario: 风险信号成功提醒房主
-- **WHEN** 最小风险信号生成且当前房主在线
-- **THEN** 系统只向当前房主投递提醒，普通成员和原房主不能收到该提醒
+### Requirement: Room audio and full transcription only allow temporary streaming
 
-#### Scenario: 提醒投递期间房主接任
-- **WHEN** 风险提醒尚未完成投递且房主已经合法接任
-- **THEN** 系统按最新房主事实投递或使旧投递失效，不向前任房主泄露提醒
+The system MUST only handle live microphone audio from currently consenting members in the enabled room, and only retain the audio and full transcription for a short window in memory. The system MUST not write raw audio, full transcripts, segmented text, or retrievable content to PostgreSQL, Redis, object stores, queue loads, audit events, or application logs, and MUST not provide read, playback, search, or recovery capabilities.
 
-#### Scenario: 当前房主暂时离线
-- **WHEN** 风险信号生成时当前房主无法接收实时提醒
-- **THEN** 系统保留不含内容的有限期待投递事实并重试，不向其他成员广播
+#### Scenario: Streaming window processing completed
 
-### Requirement: 自动风险信号不得直接执行安全处置
-系统 MUST 禁止单个或聚合风险信号自动移除成员、静音、结束房间、创建或推进案件、创建限制、禁用账号或改变举报结论。房主只能通过既有房主管理和举报入口人工操作，安全员只能通过既有案件流程人工决定处罚。
+- **WHEN** A temporary audio window completes identification and risk judgment
+- **THEN** The system releases the audio and full transcript for this window, retaining only the minimum allowed call, risk, or degradation facts
 
-#### Scenario: 高严重度风险信号生成
-- **WHEN** 系统生成最高严重度档位的风险信号
-- **THEN** 系统仍只发送最小提醒和保存允许事实，不自动改变成员、房间、案件或账号状态
+#### Scenario: worker or provider failed midway
 
-#### Scenario: 房主根据提醒采取操作
-- **WHEN** 房主查看提醒后主动使用移除成员或举报能力
-- **THEN** 系统按既有权限、幂等和审计规则处理该独立人工命令
+- **WHEN** Process, network, coordinator, or provider failed while room audio was being processed
+- **THEN** Temporary content is not recoverable, live voice remains available, and is downgraded to the minimum allowed message record
 
-### Requirement: 安全能力降级必须可查询且不影响真人语音
-系统 MUST 在媒体订阅、流式 STT、规则执行、去重协调或房主提醒持续不可用时记录不含内容的安全能力降级事件，并允许当前安全员、平台管理员和审计员按房间、时间、组件和状态分页查询。降级 MUST 不停止 LiveKit 真人语音，不改变房间状态、membership、房主或麦位。
+#### Scenario: Unauthorized member's audio track appears
 
-#### Scenario: STT provider 不可用
-- **WHEN** 启用房间的流式 STT 超时、额度耗尽或持续不可用
-- **THEN** 系统停止或退避新的处理窗口、记录降级范围和时间，并保持真人语音可用
+- **WHEN** The media handler observed that there is no currently valid agreed participant audio track
+- **THEN** The system does not send this audio track to the STT provider and triggers member access convergence without saving its content
 
-#### Scenario: 降级恢复
-- **WHEN** 受影响组件重新通过健康检查并恢复处理
-- **THEN** 系统记录恢复时间和最终状态，不补录故障期间音频也不声称该时段已被检查
+### Requirement: Use versioning rules for risk judgment and limit repeated reminders
 
-#### Scenario: 安全员查询降级
-- **WHEN** 当前安全员使用有效过滤和游标查询安全能力降级事件
-- **THEN** 系统返回稳定排序的最小事件和下一页游标，不返回语音内容、转写或 provider 凭据
+The system MUST use identifiable versions of controlled risk rules to classify temporary transcripts into allowed risk categories and severity levels, and to deduplicate and limit duplicate results within the same room, member, category, and time window. Rule results MUST only indicate signals that require attention from the room host or safety officer, and MUST not declare a confirmed violation.
 
-#### Scenario: 无后台角色查询降级
-- **WHEN** 普通用户直接请求安全能力降级事件
-- **THEN** 系统拒绝访问且不泄露房间或基础设施状态
+#### Scenario: Temporary content hits controlled rules
+
+- **WHEN** Enable temporary transcription of rooms to meet current risk rules
+- **THEN** The system generates a minimum risk signal including rule version, risk category, severity level, member, room and server time, and does not save the original hit text.
+
+#### Scenario: Repeated hits in a short period of time
+
+- **WHEN** The same member hits the same risk category repeatedly within the deduplication window
+- **THEN** The system merges or suppresses duplicate reminders and retains count or last occurrence time without content
+
+#### Scenario: Rule miss
+
+- **WHEN** Temporary transcription does not meet current risk rules
+- **THEN** The system releases temporary content and does not save "safe" conclusions or sentence-by-sentence recognition records
+
+### Requirement: Risk reminders are only sent to the current room host at the time of sending.
+
+The system MUST only send a minimum reminder to the current room host of the room where the risk occurs at the time of delivery. Reminder MUST only include the room, member, risk category, severity level, occurrence time and recommended manual verification information required for locating and handling, and MUST not include the original audio, complete transcription, hit original text or other member data.
+
+#### Scenario: Risk signal successfully alerted room host
+
+- **WHEN** Minimal risk signal generated and current room host is online
+- **THEN** The system only delivers reminders to the current room host. Ordinary members and the original room host cannot receive the reminder.
+
+#### Scenario: Reminder that room host takes over during delivery
+
+- **WHEN** The risk reminder has not yet been delivered and the room host has taken over legally.
+- **THEN** The system delivers according to the latest room host fact or invalidates the old delivery, and does not leak reminders to the previous room host.
+
+#### Scenario: The current room host is temporarily offline
+
+- **WHEN** The current room host cannot receive real-time reminders when the risk signal is generated.
+- **THEN** The system retains the limited expected delivery fact without content and tries again without broadcasting it to other members.
+
+### Requirement: Automatic risk signals must not directly perform safety treatment
+
+The system MUST prohibit individual or aggregate risk signals from automatically removing members, muting, ending rooms, creating or advancing cases, creating restrictions, disabling accounts, or changing the conclusion of a report. The room host can only be manually operated through the existing room host management and reporting portal, and the safety officer can only manually decide the punishment through the existing case process.
+
+#### Scenario: High severity risk signal generation
+
+- **WHEN** The system generates risk signals with the highest severity level
+- **THEN** The system still only sends minimal reminders and saves allowed facts, and does not automatically change member, room, case or account status
+
+#### Scenario: Room host takes action based on reminder
+
+- **WHEN** Room host proactively uses the ability to remove members or report after viewing the reminder
+- **THEN** The system processes this independent manual command according to existing permissions, idempotent and audit rules
+
+### Requirement: The security capability downgrade must be queryable and does not affect the real person’s voice.
+
+The system MUST log security capability degradation events without content when media subscriptions, streaming STT, rule execution, deduplication coordination, or room host reminders are continuously unavailable, and allow the current safety officer, platform administrator, and auditor to query by room, time, component, and status paging. Downgrade MUST not stop the LiveKit human voice, and do not change the room status, membership, room host or microphone position.
+
+#### Scenario: STT provider is not available
+
+- **WHEN** Streaming STT for enabled room times out, runs out of credits, or remains unavailable
+- **THEN** The system stops or backs off new processing windows, records degradation scope and time, and keeps human voice available
+
+#### Scenario: Downgrade recovery
+
+- **WHEN** The affected component repasses the health check and resumes processing
+- **THEN** The system records the recovery time and final status, does not re-record the audio during the fault, and does not claim that the period has been checked.
+
+#### Scenario: safety officer query downgrade
+
+- **WHEN** The current safety officer uses valid filters and cursors to query safety capability degradation events
+- **THEN** The system returns a stable sorted minimal event and next page cursor, without returning speech content, transcription, or provider credentials
+
+#### Scenario: No administrative role query downgrade
+
+- **WHEN** Ordinary users directly request security capability downgrade events
+- **THEN** The system denies access without disclosing room or infrastructure status

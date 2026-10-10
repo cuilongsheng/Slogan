@@ -1,23 +1,23 @@
-# implement-mobile-app-foundation 验收记录
+# implement-mobile-app-foundation acceptance record
 
-## 范围与输入
+## Range and input
 
 - 2026-09-24，Node.js 24.21.0、pnpm 12.3.4。
-- 从当前工作区的 `openapi/openapi.yaml` 生成 `packages/api-client/src/generated/schema.d.ts`。该 YAML 在本 change 开始前已包含其他未提交的后端改动；本 change 未修改它。
-- 本 change 只交付移动端 API 消费基础。`apps/mobile/app/index.tsx` 仍为工程启动页，没有登录、房间或语音业务流程。
+- Generate `packages/api-client/src/generated/schema.d.ts` from `openapi/openapi.yaml` in the current workspace. This YAML already contained other uncommitted backend changes before this change; this change does not modify it.
+- This change only delivers the mobile API consumption basis. `apps/mobile/app/index.tsx` is still the project startup page, without login, room or voice business processes.
 
-## 验证
+## Verification
 
-| 项目        | 本次命令与结果                                                                                                                                                    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 安装与 peer | `pnpm install --frozen-lockfile` PASS；`pnpm peers check --filter @slogan/api-client` PASS。生成器所需 TypeScript 5.9 只在客户端包内，移动端仍使用 TypeScript 6。 |
-| 合同生成    | `pnpm --filter @slogan/api-client generate` PASS；`generate:check` PASS。类型用例检查 `/v1/me`、带 `roomId` 的房间详情以及不存在路径的拒绝。                      |
-| 类型与测试  | 客户端包及移动端 `typecheck` PASS；客户端测试 2/2、移动端测试 3/3 PASS。                                                                                          |
-| 代码与边界  | 受影响文件 Prettier、ESLint、`pnpm deps:check`、`git diff --check` PASS。                                                                                         |
-| 构建与规划  | `pnpm --filter @slogan/mobile build` iOS export PASS；`openspec validate implement-mobile-app-foundation --strict` PASS。                                         |
+| Project                   | This command and result                                                                                                                                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Installation and peer     | `pnpm install --frozen-lockfile` PASS；`pnpm peers check --filter @slogan/api-client` PASS。 The generator requires TypeScript 5.9 only in the client package, the mobile version still uses TypeScript 6. |
+| Contract generation       | `pnpm --filter @slogan/api-client generate` PASS；`generate:check` PASS。 Type use case checks for `/v1/me`, room details with `roomId` and rejection of non-existent path.                                |
+| Types and Tests           | Client package and mobile terminal `typecheck` PASS; client test 2/2, mobile terminal test 3/3 PASS.                                                                                                       |
+| Code and Boundaries       | Affected files Prettier, ESLint, `pnpm deps:check`, `git diff --check` PASS.                                                                                                                               |
+| Construction and Planning | `pnpm --filter @slogan/mobile build` iOS export PASS；`openspec validate implement-mobile-app-foundation --strict` PASS。                                                                                  |
 
-第一次受影响范围 ESLint 检查发现 Node 测试中的裸 `Response` 未列入 ESLint 全局；改为 `globalThis.Response` 后重新验证通过。没有把这次失败当作产品行为问题。
+The first affected range ESLint check found that the bare `Response` in the Node test was not listed in the ESLint global; after changing it to `globalThis.Response`, the verification passed again. This failure was not treated as a product behavior issue.
 
-## 尚未覆盖的产品证据
+## Product evidence not yet covered
 
-本 change 没有产品页面可做 Figma 视觉对比，也没有实际 API 请求、OAuth、会话恢复、LiveKit、麦克风或真机流程。它们应在相应 frontend changes 中提供运行时和设备证据；这里的 PASS 只证明生成合同和工程接入基础。
+This change has no product page for Figma visual comparison, and no actual API request, OAuth, session resumption, LiveKit, microphone, or physical device processes. They should provide runtime and device evidence in the corresponding frontend changes; the PASS here only proves the build contract and engineering access base.

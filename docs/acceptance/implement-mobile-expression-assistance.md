@@ -1,22 +1,22 @@
-# 手机端私人表达辅助验收记录（2026-09-28）
+# Mobile private expression auxiliary acceptance record (2026-09-28)
 
-## 目标与实现
+## Goals and Realization
 
-- Figma Desktop Bridge 已确认 `115:1627`（开始）、`115:1673`（聆听）、`115:1720`（英文结果），均为 390×844 的 V2 语音房弹层。语音入口使用这三种布局；文字、首次同意、当次确认和错误态沿用同一视觉语言，并非独立高保真帧。
-- 当前语音房成员可从顶部辅助入口进入短语音，从底部输入区进入文字。文字请求不要求语音同意。音频先获取服务端当前说明版本并要求主动接受；每段录音上传前再次确认。
-- 私有录音最长 30 秒；开始前先关闭 LiveKit 房间麦克风。音频只作为 multipart 私有请求提交，生成结果仅在本地弹层显示，不自动播放或广播。文字和音频均保留请求 UUID 供相同内容失败重试。
-- 同意状态新返回 `currentNoticeVersion`，由服务端提供当前版本。OpenAPI 和生成客户端已同步。
-- 已接受的语音处理同意可在同一弹层撤回；文字结果的“再说一句”返回文字输入，语音结果返回录音入口。
+- Figma Desktop Bridge has confirmed `115:1627` (start), `115:1673` (listening), and `115:1720` (English results), all of which are 390×844 V2 voice room elastic layers. The voice portal uses these three layouts; text, first consent, current confirmation and error status follow the same visual language and are not independent high-fidelity frames.
+- Current voice room members can enter short voices from the top auxiliary entrance and enter text from the bottom input area. Text requests do not require voice consent. The audio first obtains the current description version of the server and requires active acceptance; confirm again before uploading each recording.
+- Private recording up to 30 seconds; turn off LiveKit room microphone before starting. The audio is only submitted as a multipart private request, and the generated results are only displayed in the local pop-up layer and are not automatically played or broadcast. Both text and audio retain the request UUID for retry if the same content fails.
+- The consent status is newly returned to `currentNoticeVersion`, and the current version is provided by the server. OpenAPI and build client are synchronized.
+- The accepted voice processing consent can be withdrawn in the same pop-up layer; the text result of "Say one more sentence" returns to text input, and the voice result returns to the recording entrance.
 
-## 已执行验证
+## Verification performed
 
-- API 全套 E2E：16 组、85 个测试通过；首次同意状态断言当前说明版本。
-- 手机端全套 Jest：27 组、80 个测试通过；覆盖同意版本、文字和 multipart 请求、同一输入重试、录音前房间麦克风隔离。
-- 手机端 lint、typecheck、iOS JavaScript export 通过；OpenAPI 及客户端生成检查通过。
-- 本地真实账号创建即时房间，进入 LiveKit；音频入口显示首次用途同意，文字入口未要求音频同意。文字请求命中本地 API，因当前 `ASSISTANCE_ENABLED=false` 返回服务不可用，页面提示且房间未退出。测试房间随后正常结束。
+- API full set of E2E: 16 groups, 85 tests passed; first consent status assertion current specification version.
+- Full set of Jest for mobile phones: 27 groups, 80 passed tests; covering agreed versions, text and multipart requests, retrying with the same input, and room microphone isolation before recording.
+- Mobile phone lint, typecheck, and iOS JavaScript export passed; OpenAPI and client generation checks passed.
+- Create an instant room with a local real account and enter LiveKit; the audio entry shows the first use consent, but the text entry does not require audio consent. The text request hits the local API. Because the current `ASSISTANCE_ENABLED=false` return service is unavailable, the page prompts and the room has not exited. The test room then ended normally.
 
-## 尚需验收
+## Still needs acceptance
 
-- 本机 `ASSISTANCE_ENABLED=false`、`ASSISTANCE_AUDIO_ENABLED=false`，未发生真实 AI/STT 调用；成功结果、额度耗尽和音频处理失败的运行时状态仅有自动化与代码证据。开启时需配置符合现有数据政策的真实 provider，不能以模拟结果代替。
-- 未在 iOS/Android 开发构建或双设备下验证录音权限、30 秒自动停止、multipart 原生上传、与 LiveKit 音频会话的并存、前后台中断和资源释放。`expo export` 仅证明 JavaScript bundle 可构建。
-- 三张 V2 稿中的开始、聆听和结果状态尚缺 390×844 浏览器逐帧截图；当前真实账号尚未同意语音处理，未替用户接受隐私说明。不能宣称 1:1 或完成原生设备验收。
+- On this machine `ASSISTANCE_ENABLED=false`, `ASSISTANCE_AUDIO_ENABLED=false`, no real AI/STT call occurred; the runtime status of successful results, quota exhaustion and audio processing failure only has automation and code evidence. When opening, a real provider that complies with the existing data policy needs to be configured, and simulation results cannot be used instead.
+- Recording permissions, 30-second auto-stop, multipart native upload, coexistence with LiveKit audio sessions, front and back interrupts, and resource release not verified under iOS/Android development build or dual device. `expo export` only proves that the JavaScript bundle can be built.
+- The start, listen and result states in the three V2 drafts are still missing 390×844 browser frame-by-frame screenshots; the current real account has not agreed to voice processing and has not accepted the privacy statement on behalf of the user. Cannot claim 1:1 or complete native device acceptance.

@@ -1,26 +1,26 @@
 ## Context
 
-`safety-restriction-appeals` 主规范和两个现有本人 API 已定义字段、30 分钟窗口、一次申诉与幂等规则。手机端 Expo Router、AuthProvider、OpenAPI 生成客户端与 V2 `RoomPage`/tokens 可复用。用户确认缺少独立 Figma 帧时沿用已确认 V2 视觉语言。
+`safety-restriction-appeals` master specification and two existing personal APIs have defined fields, 30 minute window, one appeal and idempotent rules. Mobile Expo Router, AuthProvider, OpenAPI generated client and V2 `RoomPage`/tokens can be reused. Confirmed V2 visual language is inherited when user confirms missing independent Figma frames.
 
 ## Goals / Non-Goals
 
-**Goals:** 可到达的本人页面、真实列表与申诉、稳定错误/重试状态。
+**Goals:** Reachable personal page, real list and appeal, stable error/retry status.
 
-**Non-Goals:** 不扩展申诉次数或窗口，不显示后台证据，不添加永久禁用申诉，也不修改后台处置规则。
+**Non-Goals:** does not expand the number of appeals or windows, does not display background evidence, does not add permanent disabling appeals, and does not modify background processing rules.
 
 ## Decisions
 
-1. 个人入口由房间列表底部“我的”导航进入；个人页先容纳限制入口，后续会后记录和好友功能可各自接入。限制页使用 `Gate allow="ELIGIBLE"`，临时受限账号仍保持登录并可访问。
-2. API feature 只消费 `packages/api-client` 类型并使用现有 `authorized` 会话调用。第一页刷新重置游标；下一页失败保留已加载记录。
-3. 提交标识在表单首次输入时生成；相同理由的网络失败重试沿用标识，修改理由后换新标识。客户端时钟只控制入口提示，服务端是窗口最终裁决者。错误时刷新列表；既有申诉和截止结果以服务端为准。
-4. 视觉使用 V2 暖白背景、紫色主按钮、圆角信息卡和 390×844 页面节奏；没有独立原稿，因此视觉验收以组件一致性和运行时截图为准，不能声称单页 1:1。
+1. The personal entrance is entered through the "My" navigation at the bottom of the room list; the personal page first accommodates restricted entrances, and subsequent post-meeting recording and friend functions can be accessed separately. The restricted page uses `Gate allow="ELIGIBLE"`, and the temporarily restricted account remains logged in and accessible.
+2. The API feature only consumes the `packages/api-client` type and is called using an existing `authorized` session. Refreshing the first page resets the cursor; failing to retain the loaded records on the next page.
+3. The submission ID is generated when the form is entered for the first time; if the network fails for the same reason and is retried, the ID will be used. Change the ID after modifying the reason. The client clock only controls the entry prompt, and the server is the final arbiter of the window. Refresh the list when an error occurs; the existing appeal and deadline results are subject to the server.
+4. Visually uses V2 warm white background, purple main button, rounded corner information card and 390×844 page rhythm; there is no independent original manuscript, so visual acceptance is based on component consistency and runtime screenshots, and a single page cannot be claimed to be 1:1.
 
 ## Risks / Trade-offs
 
-- [设备时间与服务端不一致] → 提交资格仅做提示，服务端拒绝后刷新列表。
-- [失败后用户修改理由] → 新请求标识避免幂等内容冲突；原内容重试保留标识。
-- [安全信息过度展示] → 只展示本人接口的最小字段，不加入内部处理标识或证据。
+- [The device time is inconsistent with the server time] → Submit qualifications only as a prompt, the server will refresh the list after rejection.
+- [Reason for user modification after failure] → The new request identifier avoids idempotent content conflict; the original content is retried to retain the identifier.
+- [Excessive display of security information] → Only display the minimum fields of the personal interface, without adding internal processing identifiers or evidence.
 
 ## Migration Plan
 
-无数据迁移或新 API。可独立回滚前端路由与入口。验收包括静态检查、API 客户端行为测试、390×844 Web 运行时和真实已认证 API 空态/有数据态；原生设备验证另记，不由 Web 代替。
+No data migration or new API. Front-end routing and entry can be rolled back independently. Acceptance includes static inspection, API client behavior test, 390×844 Web runtime and real authenticated API empty state/data state; native device verification is recorded separately and is not replaced by Web.

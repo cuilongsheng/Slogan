@@ -1,12 +1,15 @@
 ## MODIFIED Requirements
 
-### Requirement: 麦位顺序
-系统 MUST 按成员本次成功进入房间的顺序展示当前麦位；成员离开后其余成员按原顺序前移，普通成员离开后重新进入时 MUST 排在当时所有在线成员之后。
+### Requirement: Wheat position sequence
 
-#### Scenario: 第二麦离开
-- **WHEN** 当前第二麦离开且后续仍有在线成员
-- **THEN** 后续成员依照原顺序前移并更新默认接任顺序
+The system MUST display the current wheat position in the order in which members successfully enter the room this time; after a member leaves, the remaining members move forward in the original order. When ordinary members re-enter after leaving, they MUST be ranked behind all online members at that time.
 
-#### Scenario: 普通成员离开后重新进入
-- **WHEN** 普通成员主动离开后再次成功进入仍开放的同一房间
-- **THEN** 系统将该成员排到当前麦位末尾且不恢复离开前的麦位
+#### Scenario: Second Mai leaves
+
+- **WHEN** Currently, the second Mai has left and there will still be online members in the future.
+- **THEN** Subsequent members are moved forward according to the original order and the default succession order is updated.
+
+#### Scenario: Ordinary members re-enter after leaving
+
+- **WHEN** Ordinary members successfully enter the same room that is still open after leaving on their own initiative.
+- **THEN** The system will queue the member to the end of the current wheat position and will not restore the wheat position before leaving.

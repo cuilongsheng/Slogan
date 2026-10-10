@@ -1,26 +1,26 @@
 ## Why
 
-免费试用的两个 Pages 网站与 Render API 跨站；现有 SameSite=Lax 刷新 Cookie 无法可靠用于跨站刷新。用户已授权本轮直接实现同源代理、构建配置和验证，不创建线上资源。
+Two Pages sites in the free trial are cross-site with the Render API; the existing SameSite=Lax refresh cookie is not reliably used for cross-site refresh. The user has authorized this round to directly implement the same-origin proxy, build configuration and verification without creating online resources.
 
 ## What Changes
 
-- 两个网站通过各自 `/v1`、`/v1/*` 转发到部署配置固定且白名单允许的 HTTPS origin，保留 API 和浏览器会话语义；白名单保留单层 Render 域名，并包含后续已批准的 `slogan-api-pi.vercel.app`。
-- 共用 advanced-mode Worker；最终构建包含 `_worker.js`、`_routes.json`，静态页面继续走 Pages Assets。
-- 上游配置错误、网络错误和不安全重定向返回脱敏 JSON；禁止缓存、自动重放和访客控制上游。
-- 更新免费试用运行说明为 Upstash Redis，保留冷启动、任务恢复及公网验收边界。
+- The two websites are forwarded to the HTTPS origin with fixed deployment configuration and allowed by the whitelist through their respective `/v1` and `/v1/*`, retaining API and browser session semantics; the whitelist retains the single-layer Render domain name and includes the subsequently approved `slogan-api-pi.vercel.app`.
+- Shared advanced-mode Worker; the final build includes `_worker.js`, `_routes.json`, and static pages continue to use Pages Assets.
+- Upstream configuration errors, network errors, and insecure redirects return masked JSON; caching, autoreplay, and guest control upstream are disabled.
+- Updated the free trial running instructions to Upstash Redis, retaining cold start, task recovery and public network acceptance boundaries.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `browser-api-delivery`: 两个网页入口的同源 API 交付与失败安全。
+- `browser-api-delivery`: Same-origin API delivery and failure safety for two web portals.
 
 ### Modified Capabilities
 
-无。业务认证、RBAC、API DTO 和权限规则保持现有契约。
+None. Business authentication, RBAC, API DTO, and permission rules maintain existing contracts.
 
 ## Impact
 
-Level 2；影响架构设计、构建实施、自动化及本地浏览器验证、部署运行说明。无视觉变更，不访问 Figma。`openapi/openapi.yaml` 仍为唯一契约，没有 API schema 变更或数据库迁移。
+Level 2; affects architecture design, construction implementation, automation and local browser verification, deployment and operation instructions. No visual changes, no access to Figma. `openapi/openapi.yaml` remains the only contract, with no API schema changes or database migrations.
 
-确认范围为本地实现及验证。非目标：资源创建、平台部署、远程迁移、账号初始化、付费升级、任务调度适配、真实 OAuth/LiveKit 验收。五账号实现位于独立工作树，本轮不修改或复制。实际平台 origin、可信代理链和免费资源负载是发布前待核对项，不能虚构为已确认。
+The confirmation scope is local implementation and verification. Non-target: resource creation, platform deployment, remote migration, account initialization, paid upgrade, task scheduling adaptation, real OAuth/LiveKit acceptance. The five-account implementation is located in an independent working tree and will not be modified or copied in this round. The actual platform origin, trusted proxy chain and free resource load are items to be checked before release and cannot be fictionalized as confirmed.

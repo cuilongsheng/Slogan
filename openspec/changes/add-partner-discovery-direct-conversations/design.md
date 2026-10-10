@@ -1,51 +1,51 @@
 ## Context
 
-当前 `user-availability`、`room-invitations`、`friend-relationships` 和 `user-blocking` 已定义部分社交边界；多人语音房拥有独立的房间和席位规则。现有移动端还没有找伙伴、私信和单聊通话路由。动机见 [proposal.md](./proposal.md)，行为边界见本变更的四份 delta spec。
+Currently `user-availability`, `room-invitations`, `friend-relationships` and `user-blocking` have defined some social boundaries; the multi-person voice room has independent room and seat rules. The current mobile terminal does not yet have routing for finding partners, private messages and single chat calls. For motivation, see [proposal.md](./proposal.md), and for behavioral boundaries, see the four delta specs of this change.
 
 ## Goals / Non-Goals
 
-**Goals:** 用现有账号、安全与可用性判定接入伙伴发现；让消息和单聊通话有各自清晰的持久/临时状态；保留房间业务边界；提供可回滚的数据和发布路径。
+**Goals:** Use existing accounts, security and availability to determine access partner discovery; allow messages and private calls to have clear persistent/temporary states; retain room business boundaries; provide rollback data and release paths.
 
-**Non-Goals:** 不让 Figma 决定权限或消息业务规则；不把 1 对 1 通话建成虚假的多人房间；不承诺离线推送、消息端到端加密或多媒体消息。
+**Non-Goals:** Don’t let Figma determine permissions or messaging business rules; don’t turn 1-to-1 calls into fake multi-person rooms; don’t commit to offline push, end-to-end encryption of messages, or multimedia messaging.
 
 ## Decisions
 
-### 1. 导航与设计先后
+### 1. Navigation and design sequence
 
-“发现”继续承载房间列表，第二入口改“找伙伴”，第三入口“消息”有最近会话与好友入口。先在 `01 Prototype` 完成找伙伴、消息列表、文字会话、语音请求/通话和删除/屏蔽反馈的低保真流程审查；确认后再以现有 `00 Foundations` 的 tokens/components 在 `02 UI` 做关键高保真页，再扩展状态。复用现有房间卡的视觉语言，但伙伴和会话采用适合人物/消息的列表，不复制房间卡。备选是直接修改现有高保真导航；它会把尚未批准的行为固化在视觉稿里，因此不采用。
+"Discover" continues to host the room list, the second entrance is changed to "Find a Partner", and the third entrance "Message" has the entry for recent conversations and friends. First complete the low-fidelity process review of finding partners, message lists, text conversations, voice requests/calls, and deletion/blocking feedback in `01 Prototype`; after confirmation, use the existing tokens/components of `00 Foundations` to create key high-fidelity pages in `02 UI`, and then expand the status. Reuses the visual language of existing room cards, but uses lists of companions and conversations that fit the person/message, and does not duplicate the room cards. The alternative is to directly modify the existing high-fidelity navigation; this will solidify the unapproved behavior in the mockup, so it is not used.
 
-### 2. 伙伴查询与动作服务端复核
+### 2. Partner query and action server review
 
-伙伴列表复用 `user-availability` 的资格、隐私与分页语义，允许短时缓存但不把缓存视为邀请/发送/呼叫授权。邀请继续进入既有 `room-invitations` 服务，按当前房主、目标和房间容量重新验证。文字与语音从同一伙伴资料入口进入各自领域服务。备选是客户端依据列表决定动作权限；状态会过期，不能防止越权。
+The partner list reuses the qualification, privacy and paging semantics of `user-availability`, allowing short-term caching but not treating the cache as invitation/send/call authorization. Invite to continue to enter the existing `room-invitations` service and re-verify based on the current room host, target and room capacity. Text and voice enter their respective domain services from the same partner information entrance. The alternative is for the client to determine action permissions based on the list; the status will expire and cannot prevent unauthorized access.
 
-### 3. 私信采用 PostgreSQL 持久会话模型
+### 3. Private messages use the PostgreSQL persistent session model
 
-新增唯一无序参与者对的 Conversation、递增排序的 Message、每位参与者的会话可见边界及已读位置。发送在单个持久化事务中重查资格、屏蔽、幂等键并写消息及会话摘要；客户端通过游标分页取历史，实时事件只作新消息提示，断线后以服务端历史补齐。删除仅推进操作者的可见边界/隐藏状态，保留另一方可见历史；新消息可让会话重新显现。权限服务保证任何查询均以当前用户为参与者过滤。备选是仅用 Redis/设备本地记录；无法保证跨登录历史和单方删除语义。
+Added Conversation of unique unordered participant pairs, ascending sorted Message, session visible boundary and read position of each participant. Send the recheck qualification, shielding, idempotent key and write the message and session summary in a single persistent transaction; the client paging through the cursor to retrieve the history, real-time events only prompt new messages, and the server history is used to complete the disconnection. Remove visible boundaries/hidden status of only the advancing operator, retaining visibility history for the other party; new messages allow the conversation to reappear. The permission service ensures that any query is filtered with the current user as the participant. The alternative is to just use Redis/device local logging; cross-login history and unilateral deletion semantics are not guaranteed.
 
-### 4. 语音呼叫独立于多人 Room 聚合
+### 4. Voice calls are independent of multi-person Room aggregation
 
-DirectCall 拥有请求、接受、拒绝、超时、接通、结束状态及双方身份；请求和终态用可审计持久记录，短期铃声/连接协调可用 Redis。调用现有实时媒体适配器为**双方专属**媒体会话签发短效凭证，只有接受事务成功且再次校验资格后才能签发；第三人无资格。活跃音频占用与多人房间互斥，结束、屏蔽或超时会撤销后续接入并清理媒体资源。备选是复用普通房间容量和邀请状态；那会引入主持人、席位、公开发现等错误语义。
+DirectCall has request, acceptance, rejection, timeout, connection, end status and identity of both parties; request and final status are auditable and persistent records, and short-term ringtone/connection coordination can be used with Redis. Call the existing real-time media adapter to issue a short-term certificate for the **Exclusive for both parties** media session. It can only be issued after the transaction is accepted successfully and the qualification is verified again; the third party is not qualified. Active audio occupation and multi-player rooms are mutually exclusive. Ending, blocking or timeout will revoke subsequent access and clear media resources. The alternative is to reuse normal room capacity and invitation status; that would introduce incorrect semantics for hosts, seats, public discovery, etc.
 
-### 5. 安全与接口契约
+### 5. Security and interface contract
 
-沿用当前 API-first 路径：先改唯一的 `openapi/openapi.yaml`，再对照它实现 NestJS/controller 与客户端类型，不维护第二份手写契约。所有写请求使用已有身份上下文、稳定幂等标识和统一的不可用错误；陌生人首条/连续消息配置限速与举报入口。举报消息复用既有安全案件边界，不在普通消息响应中暴露举报资料。屏蔽写入后，发送和接受路径都复核屏蔽，等待中的语音请求不可再被接受。备选是先由 Figma 或前端 mock 定义接口；无法保证安全规则和契约一致。
+Follow the current API-first path: first change the unique `openapi/openapi.yaml`, then implement NestJS/controller and client type against it, without maintaining the second handwritten contract. All write requests use the existing identity context, stable idempotent identification and unified unavailable error; stranger's first/continuous message configuration rate limit and reporting entrance. The report message reuses the existing security case boundaries and does not expose the report information in the ordinary message response. After the mask is written, both the sending and receiving paths are reviewed and blocked, and the waiting voice requests can no longer be accepted. The alternative is to first define the interface with Figma or front-end mock; there is no guarantee that the security rules and contracts are consistent.
 
-### 6. 会话历史与隐私
+### 6. Session History and Privacy
 
-删除属于个人可见性变更，不能替对方撤回消息。消息本体保留以满足对方历史与授权安全处理；保存期和法定删除请求沿用平台数据治理机制，不能用“从列表删除”代替正式数据删除。不得默认录音、转写或把音频内容塞进文字历史；通话列表最多保留状态、时间和参与者可见的最小事件。
+Deletion is a personal visibility change, and the message cannot be withdrawn for the other party. The message body is retained to satisfy the other party's history and authorized security processing; the retention period and legal deletion request follow the platform data governance mechanism, and "delete from the list" cannot be used to replace formal data deletion. Do not default to recording, transcribing, or stuffing audio content into text history; call lists retain status, time, and minimal events visible to participants at most.
 
 ## Risks / Trade-offs
 
-- [陌生消息骚扰增加] → 服务端限速、屏蔽与消息级举报；在真实设备上验证被拒与受限状态。
-- [屏蔽与发送/接听并发竞态] → 写入和接受时重查，配合事务/状态版本及媒体资格短效失效机制；用并发测试覆盖。
-- [删除后旧历史意外重现] → 每人独立可见边界，游标查询和未读计算均纳入边界；跨设备验收。
-- [媒体凭证在结束后短时仍存活] → 短效凭证、服务端终态校验和主动断开；发布前用真实媒体环境验证。
-- [新增持久表与索引影响迁移] → 向前兼容迁移、分阶段启用和回滚开关；不在回滚时丢弃已写用户消息。
-- [Figma 样式先于行为定稿] → 低保真流程先过审，现有高保真仅在需求确认后改动。
+- [Increase in harassment from unfamiliar messages] → Server-side speed limit, blocking and message-level reporting; verify rejection and restricted status on real devices.
+- [Shield and send/receive concurrency race conditions] → Recheck when writing and receiving, cooperate with transaction/status version and media qualification short-term invalidation mechanism; covered with concurrency testing.
+- [Old history unexpectedly reappears after deletion] → Each person can see the boundary independently, and cursor queries and unread calculations are included in the boundary; cross-device acceptance.
+- [Media credentials survive for a short time after the end] → Short-lived credentials, server-side terminal status verification and active disconnection; verify with the real media environment before publishing.
+- [New persistent tables and indexes affect migration] → Forward compatible migration, phased enablement and rollback switches; written user messages will not be discarded during rollback.
+- [Figma style is finalized before behavior] → The low-fidelity process is reviewed first, and the existing high-fidelity process is only changed after the requirements are confirmed.
 
 ## Migration Plan
 
-1. 先确认本提案与低保真流程，更新唯一 OpenAPI 契约并完成数据库向前兼容迁移；旧客户端继续使用原房间入口能力。
-2. 部署后端伙伴、私信、单聊通话与安全规则，默认关闭新入口；以契约、权限、并发和迁移测试验证。
-3. 按已确认的 Figma 低保真、高保真实现移动路由；以屏蔽、跨登录历史、单方删除、语音需接受、房主邀请等真实运行和设备证据验收，再逐步启用。
-4. 出现发布问题时关闭新入口和新写路径，回退客户端/服务版本；保留新表及已有消息，待修复后重启，不执行破坏性降级。数据库结构另行使用经过演练的前向修复迁移。
+1. First confirm this proposal and the low-fidelity process, update the unique OpenAPI contract and complete the database forward compatibility migration; old clients continue to use the original room entrance capabilities.
+2. Deploy backend partners, private messages, single chat calls and security rules, close new entrances by default; test and verify with contracts, permissions, concurrency and migration.
+3. Mobile routing is implemented according to the confirmed Figma low-fidelity and high-fidelity; real operation and equipment evidence acceptance such as shielding, cross-login history, unilateral deletion, voice need to be accepted, room host invitation, etc. are then gradually enabled.
+4. When a publishing problem occurs, close the new entrance and new write path, roll back the client/service version; retain the new table and existing messages, and restart after repair, without performing destructive downgrades. The database structure is otherwise migrated using a drilled forward repair.

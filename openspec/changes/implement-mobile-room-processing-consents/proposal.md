@@ -1,24 +1,24 @@
 ## Why
 
-房间 API 支持敏感语音识别和会后关键词两个独立目的，但手机端建房无法明确选择，房间展示不完整，加入启用房间时也没有对应的独立同意入口。用户因此无法使用已经实现的服务端能力。
+The room API supports two independent purposes: sensitive speech recognition and post-meeting keywords. However, it is not possible to explicitly select the room when building a room on the mobile phone. The room display is incomplete, and there is no corresponding independent consent entrance when joining the activated room. The user is therefore unable to use the implemented server capabilities.
 
 ## What Changes
 
-- 建房分别选择两个语音处理目的，默认均关闭；房间列表和详情在加入前显示服务端选择。
-- 入房准备读取本人同意状态，并分别由用户主动接受当前说明版本；缺少同意不能继续加入。
-- 个人页提供目的独立的同意状态与撤回入口；撤回只影响未来处理。
-- 真实 provider 未启用或不就绪时显示服务端不可用状态，不伪造汇总或安全检测。
+- When building a house, select two voice processing purposes respectively, both of which are turned off by default; the room list and details are displayed on the server side before joining.
+- Read my consent status before entering the room, and the user actively accepts the current version of instructions respectively; without consent, you cannot continue to join.
+- The personal page provides purpose-independent consent status and withdrawal entrance; withdrawal only affects future processing.
+- When the real provider is not enabled or not ready, the server-side unavailable status is displayed, and no summary or security detection is faked.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mobile-room-processing-consents`: 手机端房间语音处理选择与用途独立同意。
+- `mobile-room-processing-consents`: Independent agreement on the selection and use of room voice processing on the mobile phone.
 
 ### Modified Capabilities
 
-无。沿用现行房间语音处理和会后关键词规范及 OpenAPI。
+None. Follow the current room speech processing and post-meeting keyword specifications and OpenAPI.
 
 ## Impact
 
-`apps/mobile` 建房、发现、入房准备、个人页、API feature、文案和验收。后端权限与持久化结构不变。
+`apps/mobile` House construction, discovery, preparation for moving in, personal page, API feature, copywriting and acceptance. The backend permissions and persistence structure remain unchanged.

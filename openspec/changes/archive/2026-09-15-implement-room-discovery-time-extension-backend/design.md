@@ -1,63 +1,63 @@
 ## Context
 
-参见 [proposal.md](./proposal.md) 的 Why。当前 `Room` 已保存 `kind`、主题、CEFR、密码摘要、状态、`endsAt` 和单调 `stateVersion`，即时房间与预约房间分别通过 `/v1/rooms` 和 `/v1/appointments` 查询。两套列表目前只有游标与页大小，所有房间也没有可见性、分享标识或延长事实。
+See Why of [proposal.md](./proposal.md). Currently `Room` has saved `kind`, topic, CEFR, password summary, status, `endsAt` and monotonous `stateVersion`. Instant rooms and reserved rooms are queried through `/v1/rooms` and `/v1/appointments` respectively. Both sets of lists are currently only cursor and page sized, and all rooms have no visibility, sharing flags or extension facts.
 
-房间结束已经采用 PostgreSQL 状态、BullMQ 延迟任务和恢复扫描：请求路径按持久 `endsAt` 判断，旧或延迟任务进入结束服务后再次检查房间时间。LiveKit 控制面已有 provider port 和 PostgreSQL `RealtimeCommand`，但只支持移除身份、删除房间和房主超时，没有房间元数据更新。
+Room end has adopted PostgreSQL state, BullMQ deferred task and recovery scan: request path is judged by persistent `endsAt`, old or deferred task enters the end service and checks the room time again. The LiveKit control plane already has provider port and PostgreSQL `RealtimeCommand`, but it only supports removing identities, deleting rooms and room host timeouts, and does not update room metadata.
 
-预约房间业务代码和 change 已存在，但其主 spec 尚待独立 sync/archive；本 change 使用已存在的 `RoomKind=APPOINTMENT`、预约开放和结束实现，不重新定义预约、爽约或提醒规则。API 继续采用 NestJS code-first 生成并校验唯一的 `openapi/openapi.yaml`。
+The room reservation business code and change already exist, but its main spec has yet to be independently sync/archived; this change uses the existing `RoomKind=APPOINTMENT`, reservation open and end implementation, and does not redefine reservation, no-show or reminder rules. The API continues to use NestJS code-first to generate and verify the unique `openapi/openapi.yaml`.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- 用同一份 Room 持久事实支持即时与预约房间的可见性、分享和延长。
-- 在不破坏现有无筛选调用和旧游标的前提下增加 CEFR/主题筛选。
-- 让链接房间从公开发现中隔离，同时只把高熵分享标识当作定位入口。
-- 使延长在数据库内线性化，并让到期调度和 LiveKit 元数据最终收敛到最新版本。
-- 复用现有 Rooms、Voice、LiveKit、BullMQ 和恢复扫描边界，不新增微服务或第二套 API contract。
+- Support visibility, sharing, and extension of instant and reserved rooms using the same Room persistent fact.
+- Add CEFR/topic filtering without breaking existing unfiltered calls and legacy cursors.
+- Isolate linked rooms from public discovery while using only high-entropy share identifiers as location portals.
+- Make extensions linearize within the database and allow expiration schedules and LiveKit metadata to eventually converge to the latest version.
+- Reuse existing Rooms, Voice, LiveKit, BullMQ and restore scanning boundaries without adding new microservices or a second set of API contracts.
 
 **Non-Goals:**
 
-- 不把分享标识设计成授权凭证，也不增加链接撤销、一次性链接或访问名单。
-- 不增加全文搜索引擎、模糊相关性排序或主题标签体系。
-- 不实现客户端深链路、系统分享面板、倒计时 UI 或成员确认流程。
-- 不修改预约创建时间、首次房主到场、空房结束、提醒或处罚规则。
+- The sharing ID is not designed as an authorization certificate, nor does it add link revocation, one-time link or access list.
+- Does not add a full-text search engine, fuzzy relevance ranking or topic tag system.
+- Does not implement client deep link, system sharing panel, countdown UI or member confirmation process.
+- Do not modify the reservation creation time, first room host arrival, end of vacancy, reminder or penalty rules.
 
 ## Decisions
 
-### 1. 可见性和分享标识属于 Room
+### 1. Visibility and sharing identifiers belong to Room
 
-在 `Room` 增加 `visibility`、`shareCode` 和 `extensionCount`：
+Add `visibility`, `shareCode` and `extensionCount` to `Room`:
 
-- `visibility` 使用 `RoomVisibility.PUBLIC | LINK_ONLY`，数据库默认 `PUBLIC`；
-- `shareCode` 使用独立随机 UUID，并建立唯一约束；它与内部 `Room.id` 不相同；
-- `extensionCount` 默认为 0，并以数据库约束限制在 0–3。
+- `visibility` uses `RoomVisibility.PUBLIC | LINK_ONLY`, and the database defaults to `PUBLIC`;
+- `shareCode` uses an independent random UUID and establishes a unique constraint; it is not the same as the internal `Room.id`;
+- `extensionCount` defaults to 0 and is limited to 0–3 by database constraints.
 
-两类房间共用同一模型，因此创建、列表、详情和分享解析只需要扩展现有 Rooms 模块。密码继续保存在 `passwordDigest`，不与可见性组合成更多枚举。
+Both types of rooms share the same model, so creating, listing, detailing, and sharing parsing only requires extending the existing Rooms module. The password continues to be stored at `passwordDigest` and is not combined with visibility into further enumerations.
 
-选择独立 `shareCode` 而不是直接暴露 `Room.id`，可以避免把内部资源标识当作公开入口并提供足够枚举阻力。V1 不支持撤销，所以一个房间只有一个稳定标识；未来若需要撤销或多链接，再引入独立 ShareLink 聚合，不提前建表。
+Choosing independent `shareCode` instead of directly exposing `Room.id` can avoid treating the internal resource identifier as a public entry and provide sufficient enumeration resistance. V1 does not support revocation, so there is only one stable identifier for a room; if revocation or multiple links are needed in the future, independent ShareLink aggregation will be introduced without creating a table in advance.
 
-### 2. 分享 URL 由受控公共基址和 shareCode 组成
+### 2. The share URL consists of a controlled public base address and shareCode
 
-配置层新增经 Zod 校验的 `ROOM_SHARE_BASE_URL`，服务端按固定路径和编码后的 `shareCode` 生成 `shareUrl`。创建与有权访问的详情响应返回分享 URL；公开列表只需要返回可见性和现有摘要，避免扩大响应。
+The configuration layer adds `ROOM_SHARE_BASE_URL` verified by Zod, and the server generates `shareUrl` according to the fixed path and encoded `shareCode`. Create a detail response with access that returns the share URL; public lists only need to return visibility and existing snippets to avoid inflating the response.
 
-新增无需 bearer token 的 `GET /v1/room-links/{shareCode}`。该查询只接受 UUID 形状的 code，并按数据库当前时间投影尚处于 `SCHEDULED` 或 `OPEN` 且未过 `endsAt` 的房间。响应使用专用字段白名单，不复用包含 membership、reservation 或内部状态的 DTO。未知、取消、ENDING、ENDED 或已过期房间返回稳定的不存在/不可用错误。
+Added `GET /v1/room-links/{shareCode}` without bearer token. This query only accepts UUID-shaped codes and projects rooms that are still at `SCHEDULED` or `OPEN` and have not passed `endsAt` according to the current time of the database. Responses use a whitelist of private fields and do not reuse DTOs containing membership, reservation, or internal state. Unknown, canceled, ENDING, ENDED, or expired rooms return stable non-existent/unavailable errors.
 
-公开解析只解决定位和展示。客户端登录后继续使用现有预约、join 和实时凭证 endpoint；这些入口仍按内部 `roomId` 执行所有资格校验。选择该边界，而不是签发 share ticket，是为了避免产生第二套会话或授权状态。
+Public analysis only solves positioning and display. Client login continues to use existing reservation, join, and real-time credential endpoints; these portals still perform all eligibility checks according to the internal `roomId`. This boundary was chosen instead of issuing a share ticket to avoid creating a second set of session or authorization states.
 
-### 3. 两套公开列表复用同一规范化筛选值
+### 3. Two sets of public lists reuse the same standardized filter value
 
-即时和预约列表 DTO 增加可选 `cefrLevel` 与 `topic`：
+Instant and scheduled list DTO add optional `cefrLevel` and `topic`:
 
-- CEFR 只接受现有 A1–C2 单值并精确匹配；
-- topic 去除首尾空白，限制为 1–120 字符，使用 PostgreSQL 大小写不敏感包含查询；
-- 查询始终固定 `visibility=PUBLIC`，并保留各自现有 kind、状态、时间和排序范围。
+- CEFR only accepts existing A1–C2 single values and matches them exactly;
+- topic removes leading and trailing whitespace, is limited to 1–120 characters, and uses PostgreSQL case-insensitive include queries;
+- The query always fixes `visibility=PUBLIC`, retaining their existing kind, status, time and sort range.
 
-新游标编码 `version`、排序键、room kind 和规范化筛选快照。解码后必须与当前 query 完全一致；旧游标只允许用于未提交筛选的原列表，以保持现有客户端翻页兼容。V1 数据量不引入全文搜索或 trigram 依赖；保留 kind/visibility/status/排序字段的组合索引，并通过受限 topic 长度控制查询。出现实际性能证据后再单独设计搜索索引。
+New cursor encoding `version`, sort key, room kind and normalized filter snapshot. After decoding, it must be completely consistent with the current query; the old cursor is only allowed to be used for the original list that has not been submitted for filtering to maintain paging compatibility with existing clients. V1 data volume does not introduce full-text search or trigram dependency; retains the combined index of kind/visibility/status/sort fields, and controls queries through limited topic length. Design search indexes separately after actual performance evidence emerges.
 
-### 4. 一个统一的延长 endpoint 处理两类已开放房间
+### 4. A unified extension endpoint handles two types of open rooms
 
-新增 `POST /v1/rooms/{roomId}/extensions`：
+Added `POST /v1/rooms/{roomId}/extensions`:
 
 ```json
 {
@@ -66,37 +66,37 @@
 }
 ```
 
-响应至少包含 `roomId`、`previousEndsAt`、`endsAt`、`extensionCount`、`remainingExtensions`、`stateVersion` 和 `providerStatus`。该 endpoint 先使用数据库 `clock_timestamp()` 和行锁收敛预约时间状态，再验证：
+The response contains at least `roomId`, `previousEndsAt`, `endsAt`, `extensionCount`, `remainingExtensions`, `stateVersion`, and `providerStatus`. This endpoint first uses database `clock_timestamp()` and row lock convergence reservation time status, and then verifies:
 
-- 调用者是当前 `hostUserId`，账号和安全资格仍满足现有房间操作边界；
-- 房间已处于 `OPEN` 且 `now < endsAt`；
-- 分钟数是 1–60 的整数，`extensionCount < 3`。
+- The caller is the current `hostUserId`, and the account and security qualifications still meet the existing room operation boundaries;
+- The room is already at `OPEN` and `now < endsAt`;
+- The minutes are an integer from 1–60, `extensionCount < 3`.
 
-新时间始终从锁内读取的当前 `endsAt` 累加，不从请求到达时间计算。这样连续或并发延长不会缩短房间，也不会丢失更新。统一 endpoint 避免为预约房间复制一套命令；`SCHEDULED` 预约必须等待现有开放流程完成。
+The new time is always accumulated from the current `endsAt` read from the lock and is not calculated from the request arrival time. This way continuous or concurrent extensions will not shorten the room or lose updates. Unified endpoint avoids duplicating a set of commands for room reservations; `SCHEDULED` reservations must wait for the existing open process to be completed.
 
-### 5. RoomTimeExtension 保存幂等结果和不可变事实
+### 5. RoomTimeExtension saves idempotent results and immutable facts
 
-新增 `RoomTimeExtension`，保存 `roomId`、`actorUserId`、`clientRequestId`、`additionalMinutes`、`previousEndsAt`、`endsAt`、`resultingCount`、`resultingStateVersion` 和服务端时间，并对 `(actorUserId, clientRequestId)` 建唯一约束。
+Add `RoomTimeExtension`, save `roomId`, `actorUserId`, `clientRequestId`, `additionalMinutes`, `previousEndsAt`, `endsAt`, `resultingCount`, `resultingStateVersion` and server time, and create a unique constraint on `(actorUserId, clientRequestId)`.
 
-延长事务按以下顺序执行：
+Extended transactions are executed in the following order:
 
-1. 锁定 Room，并读取数据库时间；
-2. 查找同一 actor/requestId；相同 room 和分钟数直接返回原事实，不同内容返回幂等冲突；
-3. 校验当前房主、状态、时间和次数；
-4. 更新 `endsAt`、增加 `extensionCount` 与 `stateVersion`；
-5. 插入 RoomTimeExtension、最小 `room_time_extended` RoomEvent 和 `SYNC_ROOM_TIME` durable command。
+1. Lock the Room and read the database time;
+2. Find the same actor/requestId; the same room and minutes directly return the original fact, different content returns idempotent conflict;
+3. Verify the current room host, status, time and times;
+4. Update `endsAt`, add `extensionCount` and `stateVersion`;
+5. Insert RoomTimeExtension, minimum `room_time_extended` RoomEvent and `SYNC_ROOM_TIME` durable command.
 
-步骤 4–5 在同一 Prisma transaction 中提交。选用独立事实表而不是只依赖 RoomEvent，是因为需要完整重放原结果和由数据库唯一约束封闭并发幂等；RoomEvent 继续服务审计、举报证据和时间线投影。
+Steps 4–5 are committed in the same Prisma transaction. Choosing to use an independent fact table instead of relying only on RoomEvent is due to the need to completely replay the original results and to enclose concurrent idempotent by unique constraints of the database; RoomEvent continues to serve auditing, reporting evidence, and timeline projection.
 
-### 6. 新到期任务是协调提示，旧任务必须重新读取数据库
+### 6. The new due task is a coordination prompt, and the old task must re-read the database.
 
-事务提交后，应用尽力把 `expiry` job 安排到新 `endsAt`，job id 保留运行时间版本。Redis 不可用不会改变 API 已提交结果；现有恢复扫描从 `Room.endsAt` 重建任务。
+After the transaction is committed, the application tries its best to schedule the `expiry` job to the new `endsAt`, and the job id retains the runtime version. Redis unavailability does not change API submitted results; existing recovery scans rebuild tasks from `Room.endsAt`.
 
-原结束时间对应的旧 job 可以保留。它调用现有结束服务时必须在房间锁内比较数据库时间：若 `now < endsAt`，不进入 ENDING、不撤销身份、不删除 LiveKit 房间，并确保最新到期任务可被调度或恢复。删除旧 job 只能作为优化，不能成为正确性条件。
+The old job corresponding to the original end time can be retained. It must compare the database time in the room lock when it calls the existing end service: if `now < endsAt`, do not enter ENDING, do not revoke the identity, do not delete the LiveKit room, and ensure that the latest due tasks can be scheduled or resumed. Deleting old jobs can only be used as an optimization and cannot be a correctness condition.
 
-### 7. LiveKit room metadata 承载成员时间同步
+### 7. LiveKit room metadata carries member time synchronization
 
-Realtime provider port 增加确保房间时携带元数据和更新房间元数据的能力。元数据只包含版本化白名单：
+Realtime provider port adds the ability to carry metadata and update room metadata when securing a room. Metadata only contains versioned whitelist:
 
 ```json
 {
@@ -107,31 +107,31 @@ Realtime provider port 增加确保房间时携带元数据和更新房间元数
 }
 ```
 
-普通客户端已经不能更新自身或房间元数据，因此只有后端 LiveKit Server API 可以发布该值。LiveKit 的 room metadata 更新事件用于通知在线成员；后续加入者从远端房间元数据取得最新快照。
+Normal clients can no longer update themselves or room metadata, so only the backend LiveKit Server API can publish this value. LiveKit's room metadata update event is used to notify online members; subsequent participants obtain the latest snapshot from the remote room metadata.
 
-`SYNC_ROOM_TIME` 复用现有 RealtimeCommand 租约、重试和恢复扫描。worker 领取命令后重新读取 Room 最新值并发送，而不是信任命令创建时的 payload；调用完成后再次比较 `stateVersion`，若期间出现新版本则保留或创建最新同步命令。客户端只接受不低于本地已观察版本的 metadata，避免迟到事件回退倒计时。
+`SYNC_ROOM_TIME` reuses existing RealtimeCommand leases, retries, and recovery scans. After receiving the command, the worker re-reads the latest value of Room and sends it instead of trusting the payload when the command was created. After the call is completed, compare `stateVersion` again. If a new version appears during the period, keep or create the latest synchronization command. The client only accepts metadata that is no lower than the local observed version to avoid late event rollback countdown.
 
-如果远端房间尚不存在，同步命令可以完成，因为下一次 `ensureRoom` 必须携带数据库最新 metadata。如果 provider 调用失败，命令保持可恢复状态，API 复用 `COMPLETED | PENDING | UNAVAILABLE` 语义返回控制面状态。业务成功不依赖 LiveKit 当次可用。
+If the remote room does not yet exist, the synchronization command can be completed because the next `ensureRoom` must carry the latest metadata of the database. If the provider call fails, the command remains in a recoverable state, and the API reuses `COMPLETED | PENDING | UNAVAILABLE` semantics to return to the control plane state. Business success does not depend on LiveKit being available at the time.
 
-### 8. OpenAPI 继续由 NestJS code-first 单向生成
+### 8. OpenAPI continues to be generated by NestJS code-first one-way
 
-DTO、controller decorator 和稳定错误映射是实现输入，生成结果覆盖唯一 `openapi/openapi.yaml` 并通过现有 drift 校验。不得另建手写 contract。新增 public share resolver 必须显式移除 bearer requirement；创建、列表、详情和延长 endpoint 继续保留现有认证边界。
+DTO, controller decorator, and stable error map are implementation inputs, producing results that cover unique `openapi/openapi.yaml` and pass existing drift checks. No other handwritten contract is allowed. New public share resolvers must explicitly remove the bearer requirement; create, list, detail, and extend endpoints continue to retain existing authentication boundaries.
 
 ## Risks / Trade-offs
 
-- [公开 share resolver 可能被探测] → 使用独立高熵 UUID、严格格式校验和最小字段白名单；本 change 不承诺通用限流，后续治理 change 可在有统一限流设施后补充。
-- [大小写不敏感包含查询在数据增长后变慢] → 限制 topic 长度并使用现有关系库查询；先记录查询指标，有真实瓶颈后再引入 trigram 或搜索服务。
-- [数据库已延长但 LiveKit 暂时显示旧时间] → API 返回 providerStatus，durable command 重试，恢复扫描和首次 ensureRoom 都读取最新数据库版本；客户端以 stateVersion 拒绝倒退。
-- [旧 expiry job 在原时间运行] → 到期动作锁内重新读取 PostgreSQL `endsAt`，任何 Redis job 都不能单独决定结束。
-- [新增 RealtimeCommand enum 与旧 worker 滚动部署不兼容] → 先部署能识别 `SYNC_ROOM_TIME` 的 worker/API，再开放延长流量；回滚前停止产生新命令并处理或保留待同步记录，禁止旧 worker 把未知命令当成功完成。
-- [分享 URL 基址配置错误会生成不可用链接] → bootstrap 进行绝对 HTTPS URL 校验，测试环境允许明确的本地 HTTP 基址，部署 smoke 校验生成 URL 和解析路由一致。
+- [Public share resolver may be detected] → Use independent high-entropy UUID, strict format verification and minimum field whitelist; this change does not promise universal rate limiting, and subsequent governance changes can be supplemented after unified rate limiting facilities are available.
+- [Case-insensitive inclusion queries slow down after data growth] → Limit the topic length and use the existing relational database for query; record query indicators first, and then introduce trigram or search services when there are real bottlenecks.
+- [Database extended but LiveKit temporarily shows old time] → API returns providerStatus, durable command retries, recovery scans and first ensureRoom all read the latest database version; client rejects rollback with stateVersion.
+- [Old expiry job runs at original time] → Reread PostgreSQL `endsAt` within the expired action lock. No Redis job can decide to end independently.
+- [The new RealtimeCommand enum is incompatible with the old worker rolling deployment] → Deploy workers/APIs that can recognize `SYNC_ROOM_TIME` first, and then open extended traffic; stop generating new commands and processing or retaining records to be synchronized before rolling back, and prohibit old workers from treating unknown commands as successfully completed.
+- [Incorrect shared URL base address configuration will generate unavailable links] → Bootstrap performs absolute HTTPS URL verification. The test environment allows clear local HTTP base addresses. Deploy smoke to verify that the generated URL is consistent with the parsed route.
 
 ## Migration Plan
 
-1. 增加 RoomVisibility enum、Room 的 `visibility`、`shareCode`、`extensionCount`，以及 RoomTimeExtension 表、索引、约束和 `SYNC_ROOM_TIME` command 类型。
-2. 在迁移内把全部既有房间回填为 `PUBLIC`、为每条记录生成唯一 shareCode、把延长次数设为 0；保留数据库默认值，使迁移后短暂运行的旧创建代码仍能插入房间。
-3. 用隔离临时数据库验证全新建库和历史迁移链，确认 shareCode 唯一、既有房间仍能公开查询、旧 Room/appointment 数据不丢失。
-4. 部署支持新 command 的 realtime worker 和 API，生成 OpenAPI；确认所有运行实例能识别新 command 后开放延长请求。
-5. 运行本地 provider、Redis 停止/恢复与旧 expiry job smoke；具备 LiveKit Cloud 配置时再执行真实 metadata 更新和成员事件 smoke，并把未执行项记录为环境阻塞而非 PASS。
+1. Added RoomVisibility enum, Room's `visibility`, `shareCode`, `extensionCount`, and RoomTimeExtension table, index, constraint and `SYNC_ROOM_TIME` command types.
+2. Backfill all existing rooms to `PUBLIC` within the migration, generate a unique shareCode for each record, and set the number of extensions to 0; retain the database default value so that the old creation code that runs briefly after migration can still be inserted into the room.
+3. Use the isolated temporary database to verify the newly created database and historical migration chain, confirm that the shareCode is unique, existing rooms can still be publicly queried, and old Room/appointment data is not lost.
+4. Deploy realtime workers and APIs that support the new command, and generate OpenAPI; confirm that all running instances can recognize the new command and then open the extension request.
+5. Run local provider, Redis stop/resume and old expiry job smoke; perform real metadata updates and member event smoke when LiveKit Cloud configuration is available, and record unexecuted items as environment blocking instead of PASS.
 
-应用回滚时关闭新增 endpoint 和 public resolver，停止产生新同步 command，并回滚到兼容旧响应的应用版本；数据库字段和事实表保留，不执行破坏性降级。修复版继续读取已保存 `endsAt` 和 extension facts，避免回滚造成时间或幂等事实丢失。
+When the application is rolled back, the newly added endpoint and public resolver are closed, the generation of new synchronization commands is stopped, and the application version is rolled back to an application version compatible with the old response; the database fields and fact tables are retained, and no destructive downgrade is performed. The repaired version continues to read the saved `endsAt` and extension facts to avoid the loss of time or idempotent facts caused by rollback.

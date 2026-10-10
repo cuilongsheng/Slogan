@@ -1,24 +1,24 @@
 ## Why
 
-好友、屏蔽、临时空闲与本人房间邀请已有后端和 OpenAPI，但手机端目前只在房主管理操作中使用部分候选列表，普通用户无法管理关系或处理收到的邀请。
+Friends, blocking, temporary availability and personal room invitations already have backends and OpenAPI, but the mobile version currently only uses part of the candidate list in room host management operations, and ordinary users cannot manage relationships or process received invitations.
 
 ## What Changes
 
-- 个人页提供好友、可邀请用户、好友请求、屏蔽和收到的房间邀请入口。
-- 使用本人授权和服务端分页，社交命令保留可安全重试的 UUID。
-- 收到的邀请进入现有房间详情/准备流程，拒绝操作不绕过房间资格。
-- 用户允许没有独立高保真帧的页面沿用 V2 样式。
+- The personal page provides access to friends, inviteable users, friend requests, blocks, and received room invitations.
+- Using personal authorization and server-side paging, social commands retain UUIDs that can be safely retried.
+- The invitation received enters the existing room details/preparation process. Rejecting the operation does not bypass the room qualification.
+- User allows pages without independent high-fidelity frames to inherit V2 styles.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mobile-social`: 手机端关系与房间邀请处理。
+- `mobile-social`: Mobile phone relationship and room invitation processing.
 
 ### Modified Capabilities
 
-- `friend-relationships`：本人待处理好友请求列表增加对方当前公开昵称（可为空），使接收方能识别请求；不扩展关系或可见范围。
+- `friend-relationships`: Add the other party’s current public nickname (can be empty) to my pending friend request list so that the recipient can identify the request; the relationship or visibility range is not expanded.
 
 ## Impact
 
-`apps/mobile` 个人入口、社交路由/feature、文案、测试和验收记录；`apps/api` 好友请求最小展示字段、OpenAPI 与生成客户端。不改变后端关系权限。
+`apps/mobile` personal portal, social routing/feature, copywriting, testing and acceptance records; `apps/api` minimum display field for friend request, OpenAPI and generated client. Do not change backend relationship permissions.

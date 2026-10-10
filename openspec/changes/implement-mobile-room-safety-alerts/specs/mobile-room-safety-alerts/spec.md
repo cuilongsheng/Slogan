@@ -1,42 +1,42 @@
 ## Purpose
 
-定义手机语音房只向当前房主呈现最小安全提醒，并在实时事件丢失或身份变化时以服务端事实恢复。
+Define the mobile phone voice room to only present minimal security reminders to the current room host, and recover with server-side facts when real-time events are lost or identities change.
 
 ## ADDED Requirements
 
-### Requirement: 仅当前房主可查看最小风险提醒
+### Requirement: Only the current room host can view the minimum risk reminder
 
-客户端 MUST 只在敏感语音识别已启用且服务端确认当前房主身份后查询和展示保留期内的风险提醒。提醒 MUST 只包含受控类别、严重度、关联成员、发生时间、次数和建议人工核实信息，不得展示语音、完整转写或命中原文，也不得自动触发处置。
+The client MUST only query and display risk reminders within the retention period after sensitive speech recognition is enabled and the server confirms the identity of the current room host. Reminder MUST only include controlled category, severity, associated members, occurrence time, number of times and recommended manual verification information. Voice, complete transcription or original text hits MUST not be displayed, and disposal MUST not be automatically triggered.
 
-#### Scenario: 房主查看提醒
+#### Scenario: Room host View reminder
 
-- **WHEN** 当前房主进入启用房间并打开提醒
-- **THEN** 客户端从当前房主专属 API 显示最小提醒，允许按游标继续读取，并明确标注需要人工核实
+- **WHEN** The current room host enters the enabled room and opens the reminder
+- **THEN** The client displays the minimum reminder from the current room host exclusive API, allows pressing the cursor to continue reading, and clearly marks the need for manual verification
 
-#### Scenario: 普通成员进入或房间未启用
+#### Scenario: Ordinary members have entered or the room is not enabled
 
-- **WHEN** 非房主进入房间或房间没有启用识别
-- **THEN** 客户端不查询也不展示房主风险提醒
+- **WHEN** Non-room host enters the room or room recognition is not enabled
+- **THEN** The client does not query or display the room host risk reminder
 
-### Requirement: 实时事件与重连按服务端事实补齐
+### Requirement: Real-time event and reconnection server-side fact completion
 
-客户端 MUST 只接受当前房间已知版本的 LiveKit 安全提醒信号，并通过当前房主 API 读取权威列表。入房、重连和角色接任后 MUST 补齐仍在保留期的提醒；未知版本或其他房间信号 MUST 被忽略。
+The client MUST only accept LiveKit security alerts for known versions of the current room and read the authoritative list through the current room host API. Reminders that are still in the retention period MUST be filled in after room entry, reconnection, and role takeover; unknown versions or other room signals MUST be ignored.
 
-#### Scenario: 在线收到定向信号
+#### Scenario: Directional signal received online
 
-- **WHEN** 当前房主收到合法的安全提醒 data packet
-- **THEN** 客户端重新查询服务端提醒并按 id 去重展示
+- **WHEN** The current room host received a legal security reminder data packet
+- **THEN** The client re-queries the server reminder and removes duplicate displays by id
 
-#### Scenario: 重连后漏失 data packet
+#### Scenario: Data packet lost after reconnection
 
-- **WHEN** 当前房主断线并恢复连接
-- **THEN** 客户端重新确认房主资格，并通过查询补齐提醒
+- **WHEN** The current room host is disconnected and the connection is restored.
+- **THEN** The client re-confirms the room host qualification and completes the reminder through query
 
-### Requirement: 房主权限失效时清除提醒
+### Requirement: Clear reminder when room host permission expires
 
-客户端 MUST 在服务端角色变更、离房、房间结束或提醒查询被拒绝后清除本地提醒及游标；过期请求不得重新填充旧提醒。
+The client MUST clear local reminders and cursors after the server role changes, leaves the room, ends the room, or the reminder query is rejected; expired requests MUST not repopulate old reminders.
 
-#### Scenario: 房主接任
+#### Scenario: Room host takes over
 
-- **WHEN** 前任房主失去房主角色且新房主接任
-- **THEN** 前任房主的提醒状态立即清空，新房主在确认角色后可查询保留提醒
+- **WHEN** The previous room host loses the room host role and the new room host takes over
+- **THEN** The reminder status of the previous room host will be cleared immediately. The new room host can query the retention reminder after confirming the role.

@@ -1,38 +1,38 @@
-## 1. 依赖交接与数据库扩展
+## 1. Dependency handover and database expansion
 
-- [x] 1.1 核验 LiveKit change 已实现的公开授权/presence API、provider 撤销、身份历史、审计/outbox、queue 和结束路径，记录实际代码与验收证据链接；前置未交付时停止依赖任务，Cloud BLOCKED 不得改记 PASS
-- [x] 1.2 为 membership 增加 ACTIVE/LEFT/REMOVED/INVITED、离开/移除字段，为 Room 增加 hostDisconnectedAt/deadline/独立 hostReconnectVersion；通过 Prisma validate 和 schema 约束测试验证复用前置模型且未重复建表
-- [x] 1.3 创建后续 additive migration 并 backfill ACTIVE，保留旧 membership、joinOrder、identity 历史及 pending command；通过空库升级链和含 LiveKit 运行数据 fixture 的真实 PostgreSQL 测试验证外键/索引、数据保留与回滚隔离边界
-- [x] 1.4 扩展 rooms repository 的 ACTIVE 容量/列表/详情投影、历史最大 joinOrder 和新 identity/version 分配；通过真实数据库测试验证末位重进、离开释放名额、最后一席竞争与事务回滚
+- [x] 1.1 Verify the implemented public authorization/presence API, provider revocation, identity history, audit/outbox, queue and end path of LiveKit change, record the actual code and acceptance evidence link; stop dependent tasks when the front-end is not delivered, Cloud BLOCKED must not be changed to PASS
+- [x] 1.2 Add ACTIVE/LEFT/REMOVED/INVITED, leave/remove fields to membership, and add hostDisconnectedAt/deadline/independent hostReconnectVersion to Room; verify that the pre-model is reused and tables are not re-created through Prisma validate and schema constraint testing
+- [x] 1.3 Create subsequent additive migration and backfill ACTIVE, retaining old membership, joinOrder, identity history and pending commands; verify foreign key/index, data retention and rollback isolation boundaries through empty library upgrade chain and real PostgreSQL test with LiveKit running data fixture
+- [x] 1.4 Expand the ACTIVE capacity/list/detail projection of rooms repository, historical maximum joinOrder and new identity/version allocation; verify last re-entry, leave release quota, last seat contention and transaction rollback through real database testing
 
-## 2. 成员离开、移除与重新邀请
+## 2. Member departure, removal and re-invitation
 
-- [x] 2.1 实现普通成员主动 leave 与 LEFT rejoin，复用资格/规则/密码/房间/容量校验，追加旧 identity revoke；通过单元/集成测试验证重复 leave、异常断线不离开、离开后顺序前移、重进末位和新身份
-- [x] 2.2 实现房主 remove/reinvite，锁内验证当前 actor、同房间目标、lifecycle/目标 generation，邀请与 join 均校验资格/容量；通过权限绕过、移除自己、跨房间、邀请不占位、被移除者自行重入和旧请求误伤新会话测试验证规则
-- [x] 2.3 将管理 mutation、actor/target/reason/time/result 审计和 outbox 原子保存，复用 provider 首试/重试并区分 pending/unavailable；通过重复请求、事务回滚、拒绝动作审计与 provider failure/recovery 测试验证无重复成功事件、旧 identity 重试不撤销新会话
+- [x] 2.1 Implement active leave and LEFT rejoin of ordinary members, reuse qualifications/rules/passwords/room/capacity verification, and append old identity revoke; verify repeated leave through unit/integration testing, abnormal disconnection without leaving, order forward after leaving, re-entering the last position and new identity
+- [x] 2.2 Implement room host remove/reinvite, verify the current actor, same-room target, lifecycle/target generation within the lock, and verify qualifications/capacity for invitations and joins; test verification rules through permission bypass, self-removal, cross-room, invitations not occupying space, the removed person re-entering by themselves, and old requests accidentally injuring new sessions
+- [x] 2.3 will manage mutation, actor/target/reason/time/result audit and outbox atomic save, reuse provider first try/retry and distinguish pending/unavailable; verify through repeated requests, transaction rollback, reject action audit and provider failure/recovery test that there are no repeated successful events, and old identity retry does not revoke new sessions.
 
-## 3. 主动移交与结束
+## 3. Active handover and termination
 
-- [x] 3.1 实现房主 leave 的指定接任、默认在线最小 joinOrder 接任及无候选结束；通过单元/行锁集成测试验证非法/离线接任者拒绝、原房主退出和角色更新原子性，指定无效时不擅自采用默认者
-- [x] 3.2 实现当前房主 end 并复用前置公共结束事务/撤销/删除，清除旧 host reconnect 窗口；通过 host end、无候选、expiry 与并发 leave/remove 测试验证唯一房主、结束优先、重复调用幂等和所有 join/token 被拒绝
+- [x] 3.1 Implement designated takeover of room host leave, default online minimum joinOrder takeover and no-candidate termination; verify illegal/offline successor rejection, original room host exit and role update atomicity through unit/row lock integration testing, and do not use the default one without authorization when the specification is invalid
+- [x] 3.2 Implement the current room host end and reuse the pre-public end transaction/undo/delete, clear the old host reconnect window; verify the unique room host, end priority, repeated calls to idempotent and all join/tokens are rejected through host end, no candidate, expiry and concurrent leave/remove tests
 
-## 4. 房主重连窗口与可恢复调度
+## 4. room host reconnection window and resumable scheduling
 
-- [x] 4.1 在前置规范化 presence 事务中接入房主断线/恢复，原子保存 60 秒 deadline、hostReconnectVersion、审计与调度命令；通过冻结时钟、重复/倒序/session 切换及中途崩溃测试验证 59 秒恢复保留权限、旧事件不新建窗口或夺回房主
-- [x] 4.2 扩展 join 与 realtime credential 授权，窗口内 ACTIVE 可继续/恢复，新用户、LEFT、INVITED 拒绝并返回 ROOM_HOST_RECONNECTING/retryAt；通过定向服务测试验证未占容量、ACTIVE 重复 join 幂等，以及超时未结算不能绕过检查
-- [x] 4.3 在原 BullMQ queue 增加 host-timeout handler，锁内复核 expected host/identity/reconnect version/deadline 后按在线 joinOrder 移交或结束；通过真实 Redis/PostgreSQL 测试验证过期 job no-op、重复任务、deadline 竞争与 endsAt 优先
-- [x] 4.4 扩展启动/周期 reconciliation 补排数据库窗口任务，将 provider 对账产生的断线/恢复交给同一规则；通过 Redis job 丢失、全部 webhook 丢失、worker 重启及窗口内成员动作测试验证恢复后执行、不提前移交且普通 stateVersion 变化不丢失有效 timer
+- [x] 4.1 Access room host disconnection/recovery in the front-end normalized presence transaction, atomically save deadline, hostReconnectVersion, auditing and scheduling commands for 60 seconds; verify through frozen clock, repeated/reverse order/session switching and mid-crash test 59-second recovery retains permissions, does not create new windows for old events, or recaptures room host
+- [x] 4.2 Extended join and realtime credential authorization, ACTIVE within the window can continue/restore, new users, LEFT, and INVITED are rejected and return ROOM_HOST_RECONNECTING/retryAt; the unoccupied capacity is verified through the directed service test, ACTIVE repeated join idempotent, and timeout unsettled cannot bypass the check
+- [x] 4.3 Add host-timeout handler to the original BullMQ queue, review expected host/identity/reconnect version/deadline in the lock and press online joinOrder to transfer or end; verify expired job no-op, repeated tasks, deadline competition and endsAt priority through real Redis/PostgreSQL test
+- [x] 4.4 Extended startup/cycle reconciliation to reschedule database window tasks, and hand over the disconnection/recovery caused by provider reconciliation to the same rule; it will be executed after Redis job loss, all webhook loss, worker restart and member action test verification recovery in the window, no early transfer, and normal stateVersion changes will not lose the effective timer
 
-## 5. HTTP API 与唯一 contract
+## 5. HTTP API and unique contract
 
-- [x] 5.1 实现 leave endpoint/DTO，普通成员不接受 successorMembershipId，房主支持指定或默认接任；通过 HTTP E2E 验证 401、无效接任者、原子退出与无候选结束的响应
-- [x] 5.2 实现 removals/invitations endpoint/DTO 与目标版本防重放，复用管理 application；通过 HTTP E2E 验证普通成员/旧房主 403、跨房间目标、重复请求与重新邀请后全部资格复查
-- [x] 5.3 实现 host end endpoint 并补齐管理错误映射与 ENDING/pending 结果；通过 HTTP E2E 验证结束不可恢复、provider 失败不伪报完成以及重复 end 返回既有结果或稳定冲突
-- [x] 5.4 扩展 memberships、members 与 realtime-credentials 的 lifecycle/窗口/角色投影；通过 HTTP E2E 验证 REMOVED 发证拒绝、LEFT/INVITED 末位重进、容量一致、窗口内恢复与最小隐私字段
-- [x] 5.5 用 NestJS Swagger DTO/decorator 生成 `openapi/openapi.yaml`；通过 parser 和 `pnpm --filter @slogan/api openapi:check` 验证四个新增 endpoint、既有三处扩展、目标 generation、稳定错误与 provider pending 响应无 drift
+- [x] 5.1 implements leave endpoint/DTO, ordinary members do not accept successorMembershipId, room host supports specified or default takeover; through HTTP E2E verification 401, invalid successor, atomic exit and no candidate end response
+- [x] 5.2 Implement removals/invitations endpoint/DTO and target version anti-replay, reuse management application; verify ordinary members/old room host 403, cross-room targets, repeated requests and all qualifications after re-invitation through HTTP E2E verification
+- [x] 5.3 implements host end endpoint and completes management error mapping and ENDING/pending results; the end is unrecoverable through HTTP E2E verification, provider failure does not falsely report completion, and repeated end returns existing results or stable conflicts.
+- [x] 5.4 extends the lifecycle/window/role projection of memberships, members and realtime-credentials; via HTTP E2E verification REMOVED certificate rejection, LEFT/INVITED last re-entry, capacity consistency, in-window recovery and minimum privacy fields
+- [x] 5.5 Use NestJS Swagger DTO/decorator to generate `openapi/openapi.yaml`; use parser and `pnpm --filter @slogan/api openapi:check` to verify four new endpoints, three existing extensions, target generation, stable errors and provider pending responses without drift
 
-## 6. 业务 Smoke 与最终验收
+## 6. Business Smoke and Final Acceptance
 
-- [ ] 6.1 在隔离 LiveKit Cloud 环境执行“移除 → 旧 token 拒绝 → 重邀 → 新 identity 加入”、指定/默认接任、60 秒恢复/超时和 host end 断开业务 smoke；保存脱敏结果，无凭证时记 BLOCKED 并保留本项未完成，不以前置 adapter smoke 代替业务证据
-- [x] 6.2 在 `docs/acceptance/implement-host-controls-backend.md` 按 design 矩阵关联 current host-controls、voice-session、basic-safety-reporting 与本 delta；记录依赖、迁移/回滚演练、运行时/Cloud 结果与未执行项，UI 选择器/双设备音频/设备权限/产品接受/部署不记作已完成
-- [x] 6.3 全部实现完成后运行一次 `pnpm verify:api`、`pnpm format:check` 和 `pnpm deps:check`，记录准确测试数量、Node、命令和 PASS/FAIL/BLOCKED，验证未复制 LiveKit 基础或破坏原有 API；失败时先定向修复再重跑最终验证，保持未归档等待适用验收
+- [ ] 6.1 In the isolated LiveKit Cloud environment, execute "Remove → Reject the old token → Re-invite → Join the new identity", specify/default takeover, 60-second recovery/timeout and host end disconnect business smoke; save the desensitization result, record BLOCKED when there is no certificate, and keep this item unfinished, do not prefix adapter smoke to replace business evidence
+- [x] 6.2 Relate current host-controls, voice-session, basic-safety-reporting to this delta by design matrix in `docs/acceptance/implement-host-controls-backend.md`; record dependencies, migration/rollback walkthroughs, runtime/Cloud results and unexecuted items, UI selector/dual device audio/device permissions/product acceptance/deployment are not counted as completed
+- [x] 6.3 After all implementations are completed, run `pnpm verify:api`, `pnpm format:check` and `pnpm deps:check` once, record the exact number of tests, Node, commands and PASS/FAIL/BLOCKED, and verify that the LiveKit foundation has not been copied or the original API has been destroyed; if it fails, first perform directed repairs and then rerun the final verification, and keep it unarchived waiting for applicable acceptance.

@@ -2,103 +2,129 @@
 
 ## Purpose
 
-定义账号安全限制的固定等级、跨入口执行、到期恢复和永久禁用边界，使处罚持续时间由持久事实决定，并且不会因后台任务失败而被错误延长。
+Define fixed levels of account security restrictions, cross-entry execution, expiration recovery, and permanent ban boundaries so that the penalty duration is determined by persistent facts and will not be incorrectly extended due to background task failure.
 
 ## Requirements
 
-### Requirement: 临时限制等级决定固定持续时间
-系统 MUST 只允许安全员在结案时创建 `GENERAL`、`SERIOUS` 或 `HIGH_RISK` 临时限制，并分别将结束时间设置为服务端开始时间后的 3、12 或 24 小时。每个案件最多产生一个终态处置；每条限制 MUST 保留案件、目标用户、等级、理由、决定人、开始时间和结束时间。
+### Requirement: Temporary restriction level determines fixed duration
 
-#### Scenario: 创建一般限制
-- **WHEN** 当前案件处理人以一般等级和有效理由解决正在处理的案件
-- **THEN** 系统创建从服务端开始时间起持续 3 小时的限制，并将案件置为 `RESOLVED`
+The system MUST only allow the safety officer to create a `GENERAL`, `SERIOUS`, or `HIGH_RISK` temporary restraint when closing a case, and set the end time to 3, 12, or 24 hours after the server start time, respectively. Each case can generate at most one final disposition; each restriction MUST retain the case, target user, level, reason, decision maker, start time, and end time.
 
-#### Scenario: 创建严重或高风险限制
-- **WHEN** 当前案件处理人以严重或高风险等级解决正在处理的案件
-- **THEN** 系统分别创建持续 12 小时或 24 小时的限制，且客户端不能指定或修改持续时间
+#### Scenario: Create general restrictions
 
-#### Scenario: 尝试对终态案件再次处罚
-- **WHEN** 调用者尝试用新的请求标识对已经终结的案件创建另一项处置
-- **THEN** 系统返回稳定冲突且不创建第二项案件处置
+- **WHEN** The current case handler resolves the ongoing case with a general level and valid reasons
+- **THEN** The system creates a limit lasting 3 hours from the server start time and sets the case to `RESOLVED`
 
-### Requirement: 活跃临时限制在所有现有房间入口生效
-系统 MUST 在用户创建即时或预约房间、加入房间、获取或刷新实时语音凭证以及预约房间时检查当前有效临时限制。只要用户存在至少一条 `startsAt <= now < endsAt` 且未提前解除的限制，系统 MUST 拒绝这些操作并返回最小化的限制摘要，包括当前有效限制中最晚的结束时间；登录、读取本人限制和提交申诉 MUST 保持可用。
+#### Scenario: Create critical or high risk restriction
 
-#### Scenario: 受限用户创建或预约房间
-- **WHEN** 具有活跃临时限制的用户请求创建即时房间、创建预约房间或预约一个房间
-- **THEN** 系统拒绝请求且不创建房间或预约记录，并返回可供客户端展示的限制结束时间
+- **WHEN** The current case handler is solving an ongoing case with a serious or high risk level
+- **THEN** The system creates limits lasting 12 hours or 24 hours respectively, and the client cannot specify or modify the duration.
 
-#### Scenario: 受限用户加入或获取实时凭证
-- **WHEN** 具有活跃临时限制的用户请求加入房间或获取、刷新目标房间的实时语音凭证
-- **THEN** 系统拒绝请求且不建立新的成员资格或签发新凭证
+#### Scenario: Try to punish the final case again
 
-#### Scenario: 受限用户使用账号必要能力
-- **WHEN** 具有活跃临时限制的用户登录、刷新普通会话、读取本人限制或提交符合窗口的申诉
-- **THEN** 系统不因临时限制本身拒绝该请求
+- **WHEN** The caller attempted to create another disposition for a closed case using a new request ID.
+- **THEN** The system returns a stable conflict and does not create a second case disposition
 
-### Requirement: 多条限制独立保留且共同决定访问
-系统 MUST 独立保留来自不同案件的临时限制，不得通过覆盖旧记录缩短或丢失任何处置事实。只要至少一条限制仍有效，账号就保持受限；提前解除或到期一条限制不得解除其他仍有效限制。
+### Requirement: Temporary active restrictions are in effect on all existing room entrances
 
-#### Scenario: 第二个案件产生重叠限制
-- **WHEN** 用户已有活跃临时限制且另一个案件产生新的临时限制
-- **THEN** 系统保留两条各自的开始、结束和案件来源，并以仍有效限制中的最晚结束时间作为当前受限截止时间
+The system MUST check for currently valid temporary restrictions when a user creates an instant or reserved room, joins a room, obtains or refreshes a live voice credential, and reserves a room. As long as the user has at least one `startsAt <= now < endsAt` restriction that has not been lifted in advance, the system MUST reject these operations and return a minimized restriction summary, including the latest end time of the currently valid restrictions; login, read personal restrictions, and submission of appeals MUST remain available.
 
-#### Scenario: 一条重叠限制提前解除
-- **WHEN** 安全员提前解除其中一条限制但另一条仍有效
-- **THEN** 用户继续被限制，当前限制响应反映剩余有效处置
+#### Scenario: Restricted users create or reserve rooms
 
-### Requirement: 到期判断不依赖恢复任务准时执行
-系统 MUST 以持久 `endsAt` 和服务端当前时间判断临时限制是否有效。当 `now >= endsAt` 时，请求路径 MUST 立即把该限制视为已到期；可重试的恢复流程 MUST 最终记录到期收敛结果，但队列、缓存或任务延迟不得延长限制。
+- **WHEN** A user with active temporary restrictions requested to create an instant room, create a reserved room, or reserve a room
+- **THEN** The system rejects the request and does not create a room or reservation record, and returns the limit end time that can be displayed by the client.
 
-#### Scenario: 恢复任务尚未运行但限制已到期
-- **WHEN** 当前时间已经达到限制结束时间而恢复任务仍延迟
-- **THEN** 用户可以再次执行受限制的房间操作，系统不得继续按该限制拒绝
+#### Scenario: Restricted users to join or obtain real-time credentials
 
-#### Scenario: 重复处理到期任务
-- **WHEN** 同一限制的到期任务或数据库恢复扫描被重复执行
-- **THEN** 系统得到同一到期状态，不创建重复处置记录或重复成功审计
+- **WHEN** A user with active temporary restrictions requests to join a room or obtain or refresh the real-time voice credentials of the target room
+- **THEN** The system rejects the request and does not create a new membership or issue a new credential.
 
-#### Scenario: Redis 或队列不可用
-- **WHEN** 协调设施在限制到期时不可用
-- **THEN** 请求路径仍根据 PostgreSQL 的结束时间作出正确决定，并可在设施恢复后收敛持久状态
+#### Scenario: Necessary abilities for restricted users to use accounts
 
-### Requirement: 安全员可以提前解除临时限制
-系统 MUST 只允许当前安全员以有效理由提前解除尚未结束的临时限制。解除 MUST 保存决定人、服务端时间和理由并立即影响后续访问；已到期或已解除的限制不得被重复改变。
+- **WHEN** Users with active temporary restrictions log in, refresh normal sessions, read personal restrictions, or submit appeals that meet the window
+- **THEN** The system does not deny the request due to the temporary restriction itself
 
-#### Scenario: 安全员提前解除
-- **WHEN** 当前安全员以有效理由解除一条仍有效的临时限制
-- **THEN** 系统保存解除事实，且用户的后续访问只受其他仍有效限制约束
+### Requirement: Multiple restrictions are retained independently and access is jointly determined
 
-#### Scenario: 只有管理员角色时解除限制
-- **WHEN** 只持有平台管理员角色的用户直接请求解除临时限制
-- **THEN** 系统拒绝操作且限制保持有效
+The system MUST retain temporary restraints from different cases independently and MUST not shorten or lose any disposition facts by overwriting old records. As long as at least one restriction is still valid, the account will remain restricted; early lifting or expiration of one restriction will not lift other restrictions that are still valid.
 
-#### Scenario: 并发解除同一限制
-- **WHEN** 多个安全员并发请求解除同一限制
-- **THEN** 系统只提交一个解除结果，其余请求获得稳定的既有状态或冲突结果
+#### Scenario: Second case produces overlapping restrictions
 
-### Requirement: 严重风险案件可以永久禁用账号
-系统 MUST 只允许当前案件处理人在 `SERIOUS` 或 `HIGH_RISK` 案件中明确确认事实并提交有效理由后永久禁用目标账号。该决定 MUST 原子保存永久安全处置、将用户账号置为 `DISABLED`、终结案件并记录成功审计；本能力不得提供永久禁用的申诉或恢复接口。
+- **WHEN** User already has active temporary restrictions and another case creates a new temporary restriction
+- **THEN** The system retains two respective start, end and case sources, and uses the latest end time among the still valid restrictions as the current restricted deadline
 
-#### Scenario: 高风险案件永久禁用
-- **WHEN** 当前处理人对正在处理的高风险案件明确确认事实并选择永久禁用
-- **THEN** 系统保存永久处置并禁用账号，后续普通会话和新实时语音凭证请求按禁用账号规则被拒绝
+#### Scenario: An overlapping restriction is lifted early
 
-#### Scenario: 一般案件尝试永久禁用
-- **WHEN** 安全员尝试从一般等级案件永久禁用用户
-- **THEN** 系统返回稳定校验错误，案件和用户账号状态均不改变
+- **WHEN** safety officer lifted one of the restrictions early but the other one is still in effect
+- **THEN** The user continues to be restricted, and the current restriction response reflects the remaining effective dispositions.
 
-#### Scenario: 未确认事实时永久禁用
-- **WHEN** 安全员提交永久禁用决定但没有明确确认案件事实
-- **THEN** 系统拒绝决定且不创建永久处置
+### Requirement: Expiration judgment does not rely on on-time execution of recovery tasks
 
-### Requirement: 所有限制变更使用稳定幂等命令
-系统 MUST 要求创建处置和提前解除命令携带调用者生成的 UUID 请求标识。相同操作者以相同标识重试相同规范化内容 MUST 返回原结果；相同标识对应不同内容 MUST 返回稳定冲突，且并发请求不得产生重复处置或解除事实。
+The system MUST use the persistent `endsAt` and the current time of the server to determine whether the temporary restriction is valid. When `now >= endsAt`, the request path MUST immediately treat the limit as expired; the retryable recovery process MUST eventually record the expiration convergence result, but queue, cache, or task delays MUST not extend the limit.
 
-#### Scenario: 重试临时限制决定
-- **WHEN** 安全员用相同请求标识和相同规范化内容重试成功的临时限制决定
-- **THEN** 系统返回原限制及原案件终态，不重新计算开始或结束时间
+#### Scenario: The recovery task has not been run but the limit has expired
 
-#### Scenario: 重用解除请求标识修改理由
-- **WHEN** 安全员用既有解除请求标识提交不同理由或目标限制
-- **THEN** 系统返回稳定冲突且保留原解除结果
+- **WHEN** The current time has reached the limit end time and the recovery task is still delayed.
+- **THEN** The user can perform restricted room operations again, and the system must not continue to deny them based on this restriction.
+
+#### Scenario: Duplicate processing of due tasks
+
+- **WHEN** Expired tasks or database recovery scans with the same limit are executed repeatedly
+- **THEN** The system obtains the same expiry status and does not create duplicate disposal records or duplicate successful audits.
+
+#### Scenario: Redis or queue unavailable
+
+- **WHEN** The coordination facility is unavailable when the limit expires
+- **THEN** Request paths still make correct decisions based on PostgreSQL end time and can converge to persistent state after facility recovery
+
+### Requirement: Safety officer can lift temporary restrictions in advance
+
+The system MUST only allow the current safety officer to early lift temporary restrictions that have not yet ended with valid reasons. Lifting MUST save the decision maker, server time and reason and immediately affect subsequent access; expired or lifted restrictions MUST not be changed repeatedly.
+
+#### Scenario: safety officer released early
+
+- **WHEN** The current safety officer has lifted a temporary restriction that is still in effect with valid reasons.
+- **THEN** The system saves the fact of cancellation, and the user's subsequent access is only subject to other restrictions that are still in effect.
+
+#### Scenario: Unrestricted when only administrator role
+
+- **WHEN** Users who only hold the platform administrator role directly request to lift temporary restrictions
+- **THEN** The system denied the operation and the restriction remains in effect
+
+#### Scenario: Concurrently lift the same restriction
+
+- **WHEN** Multiple safety officers concurrently request to lift the same restriction
+- **THEN** The system only submits one release result, and the remaining requests obtain stable existing status or conflict results.
+
+### Requirement: Serious risk cases can permanently ban the account
+
+The system MUST only allow the current case handler to permanently disable the target account after clearly confirming the facts and submitting valid reasons in the `SERIOUS` or `HIGH_RISK` case. This decision MUST be atomically saved for permanent security, set the user account to `DISABLED`, close the case, and record a successful audit; this capability MUST not provide a permanently disabled appeal or recovery interface.
+
+#### Scenario: High-risk cases permanently banned
+
+- **WHEN** The current handler clearly confirmed the facts of the high-risk case being handled and chose to permanently ban it.
+- **THEN** The system saves the permanent disposition and disables the account. Subsequent ordinary conversations and new real-time voice voucher requests are rejected according to the disabled account rules.
+
+#### Scenario: General case attempts to permanently disable
+
+- **WHEN** safety officer attempted to permanently ban user from general level case
+- **THEN** The system returns a stable verification error, and neither the case nor the user account status changes.
+
+#### Scenario: Permanently disabled without confirming the fact
+
+- **WHEN** safety officer submitted permanent ban decision without clearly confirming the facts of the case
+- **THEN** The system rejects the decision and does not create a permanent disposition
+
+### Requirement: All limit changes use stable idempotent command
+
+The system MUST require that the creation of disposition and early dismissal commands carry a caller-generated UUID request identifier. The same operator retries the same normalized content with the same ID and MUST return the original result; the same ID corresponding to different content MUST return a stable conflict, and concurrent requests MUST not produce repeated processing or release facts.
+
+#### Scenario: Retry temporary restriction decision
+
+- **WHEN** safety officer retries successful temporary restriction decision with same request ID and same canonical content
+- **THEN** The system returns to the original limit and original case final state without recalculating the start or end time.
+
+#### Scenario: Reason for modifying the reuse release request identifier
+
+- **WHEN** safety officer submits different reasons or target restrictions with existing release request ID
+- **THEN** The system returns to stable conflict and retains the original resolution result.

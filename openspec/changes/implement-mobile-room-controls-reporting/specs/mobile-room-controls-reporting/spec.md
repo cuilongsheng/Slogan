@@ -1,34 +1,34 @@
 ## ADDED Requirements
 
-### Requirement: 当前成员操作
+### Requirement: Current member operation
 
-移动语音房 MUST 显示当前服务端成员与房主身份。房主 MUST 能确认移除其他成员，并可在退出时选择在线接任者；任何成员 MUST 能选择其他成员提交举报。所有命令 MUST 使用当前认证身份和 OpenAPI 合同，显示失败并重取状态。
+The mobile voice room MUST displays the current server members and room host identities. Room host MUST be able to confirm the removal of other members and select an online successor when exiting; any member MUST be able to select other members to submit reports. All commands MUST use the current authentication identity and OpenAPI contract, showing failure and retrieval status.
 
-#### Scenario: 房主移除成员
+#### Scenario: Room host remove member
 
-- **WHEN** 房主确认移除一名当前成员
-- **THEN** 客户端提交该成员标识及观察到的凭证版本，成功后刷新成员列表
+- **WHEN** Room host confirms removal of a current member
+- **THEN** The client submits the member ID and the observed credential version, and refreshes the member list after success.
 
-#### Scenario: 房主重新邀请已移除成员
+#### Scenario: Room host re-invites removed members
 
-- **WHEN** 当前房主打开已移除成员列表并选择重新邀请
-- **THEN** 服务端仅向当前房主提供本房间已移除成员及其当前版本，客户端提交该版本并重取列表；旧房主和普通成员不得读取该列表
+- **WHEN** The current room host opens the removed members list and chooses to re-invite
+- **THEN** The server only provides the removed members of this room and their current versions to the current room host. The client submits the version and retrieves the list; the old room host and ordinary members are not allowed to read the list.
 
-#### Scenario: 房主选择接任人退出
+#### Scenario: Room host Select successor to exit
 
-- **WHEN** 房主从当前在线成员选择接任人并确认退出
-- **THEN** 客户端将接任成员标识随退出命令提交，不自行改写房主身份
+- **WHEN** Room host Select successor from current online members and confirm exit
+- **THEN** The client will submit the successor member ID with the exit command and will not rewrite the room host identity by itself.
 
-#### Scenario: 成员举报
+#### Scenario: Member report
 
-- **WHEN** 成员选择同房间其他成员、有效类别及 1–2000 字说明并提交
-- **THEN** 客户端只显示服务端返回的受理标识，失败时保留表单，同次安全重试复用请求标识
+- **WHEN** A member selects another member in the same room, a valid category, and a description of 1–2000 characters, then submits the report.
+- **THEN** The client only displays the acceptance ID returned by the server, retains the form in case of failure, and reuses the request ID for the same safe retry.
 
-### Requirement: 普通房间邀请
+### Requirement: Ordinary room invitation
 
-房主 MUST 能从服务端可邀请候选中选择用户发送普通邀请；邀请失败时保留候选和错误，不声称目标已经加入或占座。
+Room host MUST be able to select users from the inviteable candidates on the server to send ordinary invitations; retain the candidates and errors when the invitation fails, and do not claim that the target has joined or occupied a seat.
 
-#### Scenario: 邀请候选用户
+#### Scenario: Invite candidate users
 
-- **WHEN** 房主选择一个可邀请用户并提交
-- **THEN** 客户端使用新请求标识发送邀请并显示真实服务端结果
+- **WHEN** Room host Select one to invite users and submit
+- **THEN** The client uses the new request ID to send the invitation and display the real server result

@@ -1,21 +1,25 @@
 ## MODIFIED Requirements
 
-### Requirement: 好友请求具有受控状态转换
+### Requirement: Friend request has controlled state transition
 
-系统 MUST 只允许接收方接受或拒绝待处理请求，只允许发送方撤回待处理请求。请求进入接受、拒绝或撤回终态后 MUST 不能被另一动作改写；相反方向的并发待处理请求 MUST 收敛为一个可处理关系上下文。本人待处理请求列表 MUST 返回对方当前公开昵称（可为空），仅用于识别请求，不增加额外关系或活动信息。
+The system MUST only allow the recipient to accept or reject pending requests, and only the sender to withdraw pending requests. A request MUST not be overridden by another action after it enters the accept, reject, or withdraw final state; concurrent pending requests in the opposite direction MUST converge into a processable relational context. My pending request list MUST return the other party's current public nickname (can be empty), which is only used to identify the request and does not add additional relationship or activity information.
 
-#### Scenario: 本人识别待处理请求
-- **WHEN** 用户查看发给本人或本人发出的待处理好友请求
-- **THEN** 列表返回对方当前公开昵称；昵称不可用时为空，不暴露私有资料
+#### Scenario: Identification pending request
 
-#### Scenario: 接收方拒绝请求
-- **WHEN** 接收方拒绝待处理好友请求
-- **THEN** 请求进入拒绝终态且不建立好友关系
+- **WHEN** User views pending friend requests sent to or from me
+- **THEN** The list returns the current public nickname of the other party; it is empty when the nickname is unavailable and does not expose private information.
 
-#### Scenario: 发送方撤回请求
-- **WHEN** 发送方撤回仍待处理的请求
-- **THEN** 请求进入撤回终态且接收方不能再接受该请求
+#### Scenario: Recipient rejected request
 
-#### Scenario: 双方并发互相发送
-- **WHEN** 两名用户同时向对方发送好友请求
-- **THEN** 系统保留一个唯一待处理关系上下文，不产生两组可分别接受的请求
+- **WHEN** Recipient rejected pending friend request
+- **THEN** The request enters the rejection final state and does not establish a friend relationship.
+
+#### Scenario: Sender withdraws request
+
+- **WHEN** Sender withdraws pending request
+- **THEN** The request enters the withdrawn final state and the recipient can no longer accept the request.
+
+#### Scenario: Both parties send each other concurrently
+
+- **WHEN** Two users send friend requests to each other at the same time
+- **THEN** The system retains a unique pending relationship context and does not generate two sets of separately acceptable requests.

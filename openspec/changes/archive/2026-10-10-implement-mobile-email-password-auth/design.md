@@ -1,18 +1,18 @@
 ## Context
 
-Figma 文件 `56nIowZmvBhb0QJvOlDQdU` 的 V2 frame：登录 `118:2970`、注册 `118:3001`、验证邮箱 `118:3063`、找回密码 `118:3186`，均为 390×844。后端邮箱流程已在 `implement-email-password-auth-backend` 中本地实现，真实 SMTP 投递验收尚待配置。OpenAPI 是唯一合同。
+V2 frame of Figma file `56nIowZmvBhb0QJvOlDQdU`: login `118:2970`, registration `118:3001`, verification email `118:3063`, retrieval password `118:3186`, all are 390×844. The back-end mailbox process has been implemented locally in `implement-email-password-auth-backend`, and the real SMTP delivery acceptance has yet to be configured. OpenAPI is the only contract.
 
 ## Decisions
 
-1. 登录页恢复 V2 的用户名、密码、主登录按钮、注册与忘记密码入口，底部 Google 按钮继续调用现有 OAuth 流程。微信入口保持不可用说明，直到扫码 API 存在。
-2. 原生用户名密码登录消费 `/v1/auth/password/exchange` 的 token pair 并存入 SecureStore。浏览器新增 `/v1/auth/web/password/exchange`，验证允许的 Origin，服务器设置与 Google 共用的 HttpOnly refresh Cookie，仅返回短期 access token。刷新和退出复用现有 Cookie 端点。密码和刷新 token 不进入浏览器存储、URL 或日志。
-3. 注册返回的管理凭据仅在页面内存中用于重发；页面刷新后提示重新提交注册信息。邮箱确认和重置链接的 token 放在 URL fragment 中，页面读取后立即清理地址栏，再由用户操作触发 POST。未验证账号不能建立会话。
-4. 错误文案按合同 code 分类。登录凭据错误统一显示，注册唯一性错误指向具体输入，找回请求始终展示统一受理结果。429/503 允许安全重试，不伪造成功。
-5. 页面沿用 AuthPage、semantic tokens、Expo Router 与现有中英文资源。表单不持久化密码；回到登录页时清除表单敏感状态。
+1. The login page restores the username, password, main login button, registration and forgotten password portals of V2, and the Google button at the bottom continues to call the existing OAuth process. The WeChat entrance remains unavailable until the QR code scanning API exists.
+2. Log in with the native username and password to consume the token pair of `/v1/auth/password/exchange` and store it in SecureStore. The browser adds `/v1/auth/web/password/exchange`, verifies the allowed Origin, the server sets the HttpOnly refresh Cookie shared with Google, and only returns a short-term access token. Refresh and exit reuse existing cookie endpoint. Passwords and refresh tokens do not enter browser storage, URLs, or logs.
+3. The management credentials returned by registration are only used for retransmission in the page memory; after the page is refreshed, you are prompted to resubmit the registration information. The token of the email confirmation and reset link is placed in the URL fragment. The address bar is cleared immediately after the page is read, and then POST is triggered by user operation. Unverified account cannot establish session.
+4. Error copy is classified according to contract code. Login credential errors are displayed uniformly, registration uniqueness errors point to specific inputs, and retrieval requests always display unified acceptance results. 429/503 Allow safe retry without forging success.
+5. The page inherits AuthPage, semantic tokens, Expo Router and existing Chinese and English resources. The form does not persist the password; clear the form's sensitive status when returning to the login page.
 
 ## Risks and rollback
 
-- 浏览器密码入口若缺少 Origin 限制会带来跨站 Cookie 风险：复用 Google Cookie 端点的 Origin 白名单和 SameSite/Lax/Secure 策略，并测试拒绝非法来源。回滚时撤去新增入口；现有 Google Cookie 会话不变。
-- 邮件链接可能经历史、日志或 referrer 泄露：只读取 fragment、立即移除，POST body 不记录明文；若后端链接模板不符合约定，前端显示手动输入 token 的安全替代入口并记录阻塞。
-- 邮件服务未配置时无法证明注册/找回邮件真实送达：界面展示服务不可用，验收保留 BLOCKED；不能以本地捕获或假数据声称真实投递。
-- 当前数据库无需迁移。发布顺序为后端 Cookie 入口及 OpenAPI、生成客户端、前端；回滚前端不影响原生密码接口或现有 Google 用户。
+- The lack of Origin restrictions in browser password entry will bring cross-site cookie risks: reuse the Origin whitelist and SameSite/Lax/Secure policy of the Google cookie endpoint, and test rejecting illegal sources. Remove new entry when rolling back; existing Google Cookie session remains unchanged.
+- The email link may be leaked through history, logs or referrer: only the fragment is read and removed immediately, and the POST body does not record plain text; if the back-end link template does not comply with the agreement, the front-end displays a safe alternative entry for manually entering the token and records the obstruction.
+- When the mail service is not configured, it is impossible to prove that the registered/retrieval mail is actually delivered: the interface display service is unavailable, and the acceptance is reserved for BLOCKED; local capture or fake data cannot be used to claim real delivery.
+- The current database does not need to be migrated. The release sequence is back-end Cookie entrance and OpenAPI, generated client, front-end; rolling back the front-end will not affect the native password interface or existing Google users.

@@ -1,16 +1,20 @@
 ## MODIFIED Requirements
 
-### Requirement: 当前版本不处理房间音频
-系统 MUST 在 `0.0.1` 房间以及未明确启用敏感语音识别的后续房间中不处理房间音频。明确启用且所有加入成员满足当前处理同意的房间可以临时处理短音频窗口以识别风险表达，但任何版本都 MUST 不产生可回放录音、完整转写、公开回放或成员可搜索的语音内容。
+### Requirement: Current version does not handle room audio
 
-#### Scenario: 进行实时语音交流
-- **WHEN** 成员在 `0.0.1` 房间内交流
-- **THEN** 系统只传输实时语音且不产生可回放的房间录音、完整转写或敏感词识别
+The system MUST not process room audio in the `0.0.1` room and subsequent rooms where sensitive speech recognition is not explicitly enabled. Rooms that are explicitly enabled and all joining members meet current processing consents may temporarily process short audio windows to identify risky expressions, but any version MUST not produce playable recordings, full transcripts, public replays, or member-searchable speech content.
 
-#### Scenario: 在未启用识别的后续房间交流
-- **WHEN** 成员在未启用敏感语音识别的房间内交流
-- **THEN** 系统不把房间音频发送给 STT provider，也不产生风险提醒
+#### Scenario: Live voice communication
 
-#### Scenario: 在明确启用的房间交流
-- **WHEN** 已同意成员在明确启用敏感语音识别的房间内交流
-- **THEN** 系统可以按房间安全语音规范临时处理短窗口，但不提供录音、完整转写、公开回放或内容搜索
+- **WHEN** Members communicate in the `0.0.1` room
+- **THEN** The system only transmits real-time speech and does not generate playable room recordings, complete transcriptions, or sensitive word recognition
+
+#### Scenario: Communicating in subsequent rooms without recognition enabled
+
+- **WHEN** Members are communicating in a room where sensitive speech recognition is not enabled
+- **THEN** The system does not send the room audio to the STT provider and does not generate a risk alert.
+
+#### Scenario: Communicate in explicitly enabled rooms
+
+- **WHEN** Members have consented to communicate in rooms where sensitive speech recognition is explicitly enabled
+- **THEN** The system can temporarily handle short windows according to room safety voice specifications, but does not provide recording, full transcription, public playback or content search

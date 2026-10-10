@@ -1,40 +1,40 @@
-# 一个 PR 的前后端与 Android 交付
+# One PR for frontend, backend, and Android delivery
 
-用户授权日期：2026-10-08。当前配置复用 `cuilongsheng/Slogan` 与现有供应商项目。
+User authorization date: 2026-10-08. The configuration reuses `cuilongsheng/Slogan` and existing provider projects.
 
-| 配置                          | 目标和触发                                                                                                                      |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Vercel `slogan-api`           | 根目录 `apps/api`，Git 分支推送触发预览，main 触发生产；独立 `api/realtime.ts` Queues 消费者与公开 API 一起发布                 |
-| Pages `slogan-preview-admin`  | `pnpm build:pages:admin`，产物 `apps/admin/dist`；main 为生产                                                                   |
-| Pages `slogan-preview-mobile` | `pnpm build:pages:mobile`，产物 `apps/mobile/dist-pages`；main 为生产                                                           |
-| GitHub Actions                | `.github/workflows/android-delivery.yml`；同仓库 PR、codex 分支、main 推送与手动运行                                            |
-| Android                       | Node 24.21.0 / pnpm 12.3.4 / Java 21，SDK/build-tools 36，NDK 27.1.12297006；Expo Android-only prebuild + arm64 assembleRelease |
-| 版本                          | `versionName=0.0.<run_number>`，`versionCode=1000+run_number`，公开提交与 API 元数据内置                                        |
-| 签名                          | 沿用已有受控安装证书，指纹固定；不符即拒绝发布，不是商店生产私钥                                                                |
-| 发布                          | main 的三个供应商部署成功，实际 API 响应头与两个 Pages release.json 都是该提交；复核 main 未移动后，草稿上传完整再发布 latest   |
-| 产物存储                      | GitHub Releases，每个完整提交一个 `android-<sha>` 标签；APK、`android-release.json`、`SHA256SUMS`                               |
-| 固定地址                      | `https://slogan-preview-mobile.pages.dev/downloads/android.apk`；元数据 `.json`；版本说明 `/downloads/android`                  |
+| Configuration                 | Target and trigger                                                                                                                                                                                         |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel `slogan-api`           | Root `apps/api`; branch pushes create previews and main creates production deployments. The standalone `api/realtime.ts` Queues consumer is deployed with the public API.                                  |
+| Pages `slogan-preview-admin`  | `pnpm build:pages:admin`, output `apps/admin/dist`; main is production.                                                                                                                                    |
+| Pages `slogan-preview-mobile` | `pnpm build:pages:mobile`, output `apps/mobile/dist-pages`; main is production.                                                                                                                            |
+| GitHub Actions                | `.github/workflows/android-delivery.yml`; same-repository PRs, codex branches, main pushes, and manual dispatch.                                                                                           |
+| Android                       | Node 24.21.0 / pnpm 12.3.4 / Java 21, SDK/build-tools 36, NDK 27.1.12297006; Android-only Expo prebuild and arm64 assembleRelease.                                                                         |
+| Version                       | `versionName=0.0.<run_number>`, `versionCode=1000+run_number`; embedded public commit/API metadata.                                                                                                        |
+| Signing                       | Reuse the controlled installation certificate with a fixed fingerprint. A mismatch blocks publication. This is not a store production key.                                                                 |
+| Release gate                  | All three main deployments must succeed. The actual API response header and both Pages release.json files must match the commit. Confirm main has not moved, upload a complete draft, then publish latest. |
+| Artifact storage              | GitHub Releases; one `android-<sha>` tag per full commit, containing the APK, `android-release.json`, and `SHA256SUMS`.                                                                                    |
+| Stable address                | `https://slogan-preview-mobile.pages.dev/downloads/android.apk`; `.json` metadata and `/downloads/android` version details.                                                                                |
 
-## 使用流程
+## Usage
 
-后端已接入 Vercel Git 自动部署。配置入口为 `slogan-api → Settings → Git / Build and Deployment`：仓库 `cuilongsheng/Slogan`，Root Directory `apps/api`，Framework Preset `NestJS`，Production Branch `main`。API 构建脚本为 `prisma generate && nest build`。环境变量按用途配置到 Production 与 Preview；修改变量后需要重新部署才能生效。推送非 main 分支产生 Preview，PR 合并到 main 后产生 Production，不需要手动点击 Deploy。依据：[Vercel Git 部署](https://vercel.com/docs/git)。
+The backend uses Vercel Git integration for automatic deployment. Configure `slogan-api → Settings → Git / Build and Deployment` with repository `cuilongsheng/Slogan`, Root Directory `apps/api`, Framework Preset `NestJS`, and Production Branch `main`. The API build script is `prisma generate && nest build`. Assign environment variables to Production and Preview according to their purpose; changes require redeployment. Pushing a non-main branch creates Preview, while merging its PR into main creates Production without a manual Deploy action. Reference: [Vercel Git deployments](https://vercel.com/docs/git).
 
-这不包含数据库自动迁移：`prisma generate` 生成客户端，不执行迁移。当前生产部署没有自动运行 `prisma migrate deploy`；包含 schema 变更的发布需要先完成兼容迁移与备份，再发布依赖新 schema 的 API。Android 发布门槛核对部署提交，不能代替数据库迁移。
+This does not include automatic database migrations. `prisma generate` generates the client; it does not migrate the database. Production deployment does not automatically run `prisma migrate deploy`. Schema-changing releases require a backup and compatible migration before deploying APIs that depend on the new schema. The Android release gate checks deployment commits and cannot replace migration.
 
-提交 PR 后自动执行预览部署和 APK 构建。PR 包位于 Actions artifact，使用既有生产 API；在 main 生产发布完成前，不把它描述成完整可用的新合同包。合并后构建与线上提交一致的 APK，自动发布到固定下载入口。用户安装该包执行真机验证。
+Opening a PR starts preview deployments and APK builds. The PR package is available as an Actions artifact and uses the existing production API. It must not be described as a fully usable new-contract package before the main production release is complete. After merge, an APK matching the production commit is built and published at the stable download address. The user installs it for device verification.
 
-Cloudflare Pages 每个文件最多 25 MiB，而当前 APK 约 85 MB，所以站点保存固定重定向入口，APK 保存到 GitHub Releases；不把 APK 提交到 Git，也不申请 R2 token。下载重定向只处理 GET/HEAD，目标固定，不转发会话 cookie 或 bearer token。
+Cloudflare Pages limits individual files to 25 MiB, while the current APK is approximately 85 MB. The site therefore serves a stable redirect, and GitHub Releases stores the APK. APKs are not committed to Git, and no R2 token is requested. Download redirects handle only GET/HEAD, use a fixed target, and never forward session cookies or bearer tokens.
 
-## 权限与失败处理
+## Permissions and failure handling
 
-构建 job 仅 contents:read。发布 job 只在 main 运行，使用 GitHub 的当次 GITHUB_TOKEN 获取 contents:write/checks:read/statuses:read；不使用长期个人 token，不在 PR 中传递数据库、供应商或签名秘密，不使用 pull_request_target。Actions 固定官方 release commit，Gradle 使用 basic 缓存。
+The build job has only contents:read. The publish job runs only on main and uses GitHub's current GITHUB_TOKEN with contents:write/checks:read/statuses:read. It does not use long-lived personal tokens, expose database/provider/signing secrets to PRs, or use pull_request_target. Actions are pinned to official release commits; Gradle uses basic caching.
 
-部署失败/取消/超时、生产提交不符、签名不符、旧构建完成时 main 已移动均停止 latest 更新。草稿上传失败可重跑；已发布的同提交 Release 不覆写。现有供应商 Git 集成保持各自部署，因此它们不是一个原子发布事务；迁移必须保持新旧 API 兼容，下载发布门槛负责阻止错配 APK。
+Deployment failure, cancellation, timeout, production-commit mismatch, signing mismatch, or main advancing before an older build finishes all prevent latest from updating. Failed draft uploads can be rerun; an already published Release for the same commit is not overwritten. Provider Git integrations deploy independently, so this is not an atomic release transaction. Migrations must remain compatible with old and new APIs; the download gate prevents publication of a mismatched APK.
 
-数据库：本轮四个迁移已备份并成功完成，不重复初始化。未来 schema 变更仍需在明确的目标执行备份和兼容迁移，不能因为任意 PR 打开就执行生产迁移；本 workflow 不保存生产 DATABASE_URL。
+The four migrations in this delivery were backed up and completed successfully; no repeated initialization is required. Future schema changes still require backup and compatible migration against an explicit target. Opening an arbitrary PR must not run production migrations, and this workflow does not store the production DATABASE_URL.
 
-## 验证边界
+## Verification boundaries
 
-本地验证不能代替真实 Actions 运行、公开下载、云端队列或设备音频。首次上线必须记录 PR/main SHA、Actions run、三项部署、Release URL 和下载文件哈希。真机测试由用户执行，Google 仍关闭，iOS 与商店发行不在本轮范围。
+Local verification does not replace actual Actions runs, public downloads, cloud queue execution, or device audio. The first online release must record the PR/main SHA, Actions run, all three deployments, Release URL, and download hash. Device testing is performed by the user. Google remains disabled; iOS and store releases are outside this delivery's scope.
 
-依据：[Cloudflare 文件限制](https://developers.cloudflare.com/pages/platform/limits/)、[GitHub 自动触发](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)、[Expo 本地构建](https://docs.expo.dev/build-reference/local-builds/)。
+References: [Cloudflare file limits](https://developers.cloudflare.com/pages/platform/limits/), [GitHub workflow triggers](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow), [Expo local builds](https://docs.expo.dev/build-reference/local-builds/).

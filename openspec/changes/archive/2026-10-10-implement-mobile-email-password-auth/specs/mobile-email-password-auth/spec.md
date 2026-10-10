@@ -1,48 +1,48 @@
 ## ADDED Requirements
 
-### Requirement: 用户名密码登录
+### Requirement: Login with username and password
 
-移动端 MUST 按已确认登录设计提供用户名密码登录，并保持 Google 登录可用。已验证账号成功登录后 MUST 根据服务端资料状态导航；网页刷新 MUST 恢复会话且刷新凭据 MUST 留在 HttpOnly Cookie 中。
+The mobile version MUST provide username and password login according to the confirmed login design, and keep Google login available. After successfully logging in with a verified account, MUST navigate according to the server data status; refresh the web page MUST restore the session and refresh the credentials MUST remain in the HttpOnly Cookie.
 
-#### Scenario: 已验证账号登录
+#### Scenario: Login with verified account
 
-- **WHEN** 用户提交正确的用户名和密码
-- **THEN** 系统建立会话并根据资料状态进入资料页、年龄限制页或房间列表
+- **WHEN** The user submitted the correct username and password
+- **THEN** The system establishes a session and enters the data page, age restriction page or room list according to the data status.
 
-#### Scenario: 错误凭据
+#### Scenario: Bad credentials
 
-- **WHEN** 用户提交错误的用户名或密码
-- **THEN** 系统展示统一错误且不建立会话
+- **WHEN** User submitted incorrect username or password
+- **THEN** The system displays a unified error and does not establish a session
 
-#### Scenario: 浏览器刷新
+#### Scenario: Browser refresh
 
-- **WHEN** 网页密码登录后刷新
-- **THEN** 系统通过 HttpOnly Cookie 恢复同一会话，不将刷新凭据写入浏览器普通存储
+- **WHEN** Refresh after logging in with the web page password
+- **THEN** The system restores the same session through HttpOnly Cookie and does not write the refresh credentials to the browser's normal storage.
 
-### Requirement: 注册和邮箱验证
+### Requirement: Registration and email verification
 
-移动端 MUST 提供用户名、邮箱、密码注册，显示邮件待验证状态，支持冷却期后重发和使用单次验证 token 确认；确认后返回登录，不直接建立业务会话。
+The mobile terminal MUST provide username, email, and password registration, display the email pending verification status, support resending after the cooling period and use a single verification token for confirmation; return to login after confirmation, and do not directly establish a business session.
 
-#### Scenario: 注册并验证
+#### Scenario: Register and verify
 
-- **WHEN** 用户提交有效且未占用信息并使用邮件链接确认
-- **THEN** 系统提示验证完成并允许使用用户名密码登录
+- **WHEN** The user submits valid and unoccupied information and confirms it using the email link
+- **THEN** The system prompts that the verification is completed and allows login using username and password.
 
-#### Scenario: 未验证登录
+#### Scenario: Unverified login
 
-- **WHEN** 用户在邮箱未验证时尝试登录
-- **THEN** 系统不建立会话并引导其完成验证
+- **WHEN** User attempts to log in when their email address is not verified
+- **THEN** The system does not establish a session and guides it to complete the verification
 
-### Requirement: 找回与重置密码
+### Requirement: Retrieve and reset password
 
-移动端 MUST 提供通过注册邮箱请求重置、使用单次 token 设置新密码的流程；受理结果 MUST 不暴露邮箱是否存在。
+The mobile terminal MUST provide the process of requesting reset through the registered email address and setting a new password using a single token; the acceptance result MUST not reveal whether the email address exists.
 
-#### Scenario: 申请找回
+#### Scenario: Apply for retrieval
 
-- **WHEN** 用户提交格式有效的邮箱
-- **THEN** 系统展示相同的受理结果，不论邮箱是否存在
+- **WHEN** The user submits an email in a valid format
+- **THEN** The system displays the same acceptance result regardless of whether the email address exists or not.
 
-#### Scenario: 重置成功
+#### Scenario: Reset successful
 
-- **WHEN** 用户通过有效邮件链接提交符合策略的新密码
-- **THEN** 系统提示密码更新并允许返回登录
+- **WHEN** The user submits a new password that complies with the policy through a valid email link
+- **THEN** The system prompts for password update and allows return to login.

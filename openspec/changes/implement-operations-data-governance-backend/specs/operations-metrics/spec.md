@@ -1,90 +1,90 @@
 ## Purpose
 
-定义 V1 运营指标的服务端事实、统一口径、匿名聚合和最小权限查询，使平台可以判断真实交流闭环而不把日志、客户端声明或敏感业务明细当作分析真相。
+Define server-side facts, unified caliber, anonymous aggregation and least privilege query of V1 operational indicators, so that the platform can judge the real communication closed loop without treating logs, client statements or sensitive business details as the truth for analysis.
 
 ## ADDED Requirements
 
-### Requirement: 指标只使用持久服务端事实和版本化口径
+### Requirement: Indicators only use persistent server facts and versioned calibers
 
-系统 MUST 从已提交的账号、资料、房间、成员连接、预约、分享归因、AI 使用、关键词保存和安全处理事实计算指标，并为每个指标返回口径版本、时间窗口、UTC 边界、生成时间和数据截止时间。系统 MUST 不从应用日志、presence 瞬时值、客户端自报时长或原始语音内容生成业务指标。
+The system MUST calculate indicators from submitted accounts, materials, rooms, member connections, reservations, sharing attributions, AI usage, keyword saving, and secure processing facts, and return the caliber version, time window, UTC boundary, generation time, and data cutoff time for each indicator. The system MUST not generate business indicators from application logs, presence instantaneous values, client self-report duration, or raw voice content.
 
-#### Scenario: 查询已关闭时间窗口
+#### Scenario: Query the closed time window
 
-- **WHEN** 有权限的调用者查询一个已关闭的日或周窗口
-- **THEN** 系统返回确定的指标值、分母、口径版本和数据截止时间，相同事实重复计算得到相同结果
+- **WHEN** A privileged caller queries a closed day or week window
+- **THEN** The system returns the determined indicator value, denominator, caliber version and data cut-off time. Repeated calculations of the same facts will yield the same results.
 
-#### Scenario: 当前在线人数
+#### Scenario: Number of people currently online
 
-- **WHEN** 调用者查询当前在线人数
-- **THEN** 系统明确标记该值为实时快照及采样时间，不将其混入可重放的历史累计指标
+- **WHEN** The caller queries the current number of people online
+- **THEN** The system clearly marks this value as a real-time snapshot and sampling time, and does not mix it into the replayable historical cumulative indicator.
 
-#### Scenario: 缺少必要服务端事实
+#### Scenario: Missing required server facts
 
-- **WHEN** 某指标缺少计算所需事实或数据窗口尚未完成
-- **THEN** 系统返回 `UNAVAILABLE` 或 `PARTIAL` 及稳定原因，不把零当作缺失数据
+- **WHEN** An indicator is missing facts required for calculation or the data window has not been completed.
+- **THEN** The system returns `UNAVAILABLE` or `PARTIAL` and stability reasons, and does not treat zero as missing data.
 
-### Requirement: V1 指标覆盖激活、交流、留存、分发和安全闭环
+### Requirement: V1 indicators cover activation, communication, retention, distribution and security closed loop
 
-系统 MUST 提供资料完成、首次创建或加入房间、首次成功连接语音、至少五分钟有效交流、平均有效房间时长、AI 辅助后继续交流、会后保存表达、七日再次创建或加入、分享链接打开到加入、预约后实际进入、举报处理时长、重复被移除或举报用户、房主处理完成率及误判/滥用举报结果等 V1 指标。每个比率 MUST 返回明确分子和分母，且不会把取消、测试、未完成或重复事件计入不适用的口径。
+The system MUST provide V1 indicators such as data completion, first creation or joining of a room, first successful voice connection, at least five minutes of effective communication, average effective room duration, continued communication after AI assistance, saving expressions after the meeting, creating or joining again within seven days, sharing link opening to joining, actual entry after reservation, report processing time, repeated removal or reporting of users, room host processing completion rate, and misjudgment/abuse reporting results. Each ratio MUST return clear numerators and denominators, and do not count canceled, test, incomplete, or duplicate events into inapplicable calibers.
 
-#### Scenario: 计算有效交流
+#### Scenario: Computing Effective Communication
 
-- **WHEN** 一个成员在已开始房间内有至少五分钟已确认连接区间
-- **THEN** 系统按口径把该用户计入有效交流，且重连重叠区间不会重复累计
+- **WHEN** A member has a confirmed connection period in the started room for at least five minutes
+- **THEN** The system counts this user as valid communication according to the caliber, and the overlapping interval of reconnection will not be accumulated repeatedly.
 
-#### Scenario: 计算分享转化
+#### Scenario: Calculate sharing conversion
 
-- **WHEN** 一个匿名分享链接打开事实随后关联到同一分享归因下的成功加入
-- **THEN** 系统计入一次转化，不保存外部渠道账号或任意第三方追踪资料
+- **WHEN** An anonymous share link opens the fact that is subsequently linked to a successful join under the same share attribution
+- **THEN** The system counts one conversion and does not save external channel accounts or any third-party tracking data.
 
-#### Scenario: 计算安全处理时长
+#### Scenario: Calculate security processing time
 
-- **WHEN** 一个安全案件从建立推进到终态
-- **THEN** 系统使用服务端时间计算处理时长，并将仍未终结案件从完成时长分母中排除
+- **WHEN** A security case progresses from establishment to final state
+- **THEN** The system uses server time to calculate the processing time and excludes unfinished cases from the denominator of the completion time.
 
-### Requirement: 聚合分组遵循最小样本和隐私边界
+### Requirement: Aggregation grouping respects minimum sample and privacy boundaries
 
-系统 MUST 只允许使用明确白名单的时间、房间类型、CEFR、用户主动填写地区及结果类别进行分组。面向运营分析员的任一分组在独立用户或房间样本少于配置阈值时 MUST 被抑制；阈值 MUST 不低于十。响应不得包含用户标识、房间成员、自由文本、精确生日、城市小样本、举报正文、案件证据、私人笔记或词汇内容。
+The system MUST only allow grouping using explicitly whitelisted time, room type, CEFR, user-initiated region and result category. Any grouping for operations analysts MUST be suppressed when unique user or room samples are less than the configured threshold; the threshold MUST not be lower than ten. Responses may not contain user IDs, room members, free text, exact birthdays, a small sample of cities, report text, case evidence, private notes, or vocabulary content.
 
-#### Scenario: 小样本分组
+#### Scenario: Small sample grouping
 
-- **WHEN** 运营分析员查询的地区与 CEFR 分组低于最小样本阈值
-- **THEN** 系统返回抑制标记而不返回可反推个人的计数或比例
+- **WHEN** The region and CEFR grouping queried by the operations analyst are below the minimum sample threshold
+- **THEN** The system returns a suppression flag without returning a count or proportion of individuals that can be inferred
 
-#### Scenario: 非白名单维度
+#### Scenario: Non-whitelist dimension
 
-- **WHEN** 调用者提交用户标识、房间标识、城市或自由文本作为聚合维度
-- **THEN** 系统返回稳定校验错误且不执行查询
+- **WHEN** The caller submitted user ID, room ID, city or free text as an aggregate dimension
+- **THEN** The system returns a stable verification error and does not execute the query
 
-### Requirement: 指标查询按后台角色隔离并审计
+### Requirement: Indicator query is isolated and audited by administrative role
 
-系统 MUST 允许 `OPERATIONS_ANALYST` 和 `PLATFORM_ADMIN` 读取匿名聚合与趋势；只有 `PLATFORM_ADMIN` 可以读取受限房间运营明细和内部活跃用户排序。活跃排序 MUST 只使用公开口径中的非内容行为事实，不得在用户端公开，也不得作为处罚、推荐资格或奖励的自动依据。每次受限明细读取 MUST 在返回数据前写入最小审计。
+The system MUST allow `OPERATIONS_ANALYST` and `PLATFORM_ADMIN` to read anonymous aggregates and trends; only `PLATFORM_ADMIN` can read restricted room operation details and internal active user rankings. Active ranking MUST only use non-content behavioral facts in public terms, which may not be made public on the user end, nor used as an automatic basis for penalties, recommendation qualifications, or rewards. Each restricted detail read MUST write a minimum audit before returning data.
 
-#### Scenario: 运营分析员读取趋势
+#### Scenario: Operations analyst reads trends
 
-- **WHEN** 当前运营分析员请求有效时间范围内的指标趋势
-- **THEN** 系统返回达到最小样本阈值的匿名聚合，不返回明细标识
+- **WHEN** The indicator trend within the valid time range of the current operation analyst request
+- **THEN** The system returns anonymous aggregations that reach the minimum sample threshold and does not return detailed identifiers.
 
-#### Scenario: 运营分析员绕过明细限制
+#### Scenario: Operations Analyst bypasses detail restrictions
 
-- **WHEN** 仅有运营分析员角色的用户直接请求房间运营明细或活跃用户排序
-- **THEN** 系统拒绝请求且不返回任何目标是否存在的线索
+- **WHEN** Only users with the role of operations analyst can directly request room operation details or active user sorting
+- **THEN** The system rejects the request and does not return any clue whether the target exists.
 
-#### Scenario: 管理员读取受限明细
+#### Scenario: Administrator can read restricted details
 
-- **WHEN** 平台管理员以有效过滤和稳定游标读取房间运营明细或活跃排序
-- **THEN** 系统返回最小投影并原子记录查看范围、角色、结果和请求标识
+- **WHEN** Platform administrator reads room operation details or active sorting with effective filtering and stable cursor
+- **THEN** The system returns the minimum projection and atomically records the view scope, role, result and request ID
 
-### Requirement: 指标流水线可重放且公开新鲜度
+### Requirement: The indicator pipeline is replayable and the freshness is public
 
-系统 MUST 以幂等窗口和唯一口径版本生成指标快照，支持安全重算尚未冻结或被明确标记需修复的窗口。查询 MUST 返回最新成功快照的新鲜度；超出配置延迟时 MUST 标记过期并产生异常事实，不得静默返回陈旧数据。
+The system MUST generate indicator snapshots with idempotent windows and unique caliber versions to support safe recalculation of windows that have not been frozen or explicitly marked for repair. The query MUST return the freshness of the latest successful snapshot; when the configured delay is exceeded, the MUST mark expires and generates an exception fact, and stale data MUST not be returned silently.
 
-#### Scenario: 同一窗口重复生成
+#### Scenario: The same window is generated repeatedly
 
-- **WHEN** runner 对相同窗口和口径版本重复执行
-- **THEN** 系统最多保留一个生效快照且查询结果不重复累计
+- **WHEN** runner is executed repeatedly for the same window and caliber version
+- **THEN** The system retains at most one effective snapshot and the query results are not accumulated repeatedly.
 
-#### Scenario: 指标快照过期
+#### Scenario: Indicator snapshot expired
 
-- **WHEN** 最新应有窗口在配置时间内未成功生成
-- **THEN** 查询明确返回过期状态并产生或更新同一指标流水线异常
+- **WHEN** The latest due window was not successfully generated within the configured time
+- **THEN** Query explicitly returns expired status and generates or updates the same metric pipeline exception

@@ -1,85 +1,107 @@
 ## MODIFIED Requirements
 
-### Requirement: 语音处理同意按目的和版本保存
-系统 MUST 允许已认证用户查看、接受和撤回特定处理目的的语音处理同意，并保存用户、目的、说明版本、provider 类别、服务端时间和当前状态。AI 短语音、房间安全语音处理与会后关键词处理 MUST 使用三个不同目的；一个目的的同意不得授权另一个目的。说明版本变化后，旧同意 MUST 不能授权新版本处理；撤回只阻止未来处理，不删除仍需保留的最小同意审计事实。
+### Requirement: Voice processing consent is saved by purpose and version
 
-#### Scenario: 接受当前说明
-- **WHEN** 用户明确接受当前 AI 短语音处理说明
-- **THEN** 系统保存可查询的当前有效同意及版本事实
+The system MUST allow authenticated users to view, accept, and withdraw voice processing consent for specific processing purposes and save the user, purpose, description version, provider category, server time, and current status. AI short voice, room safe voice processing and post-meeting keyword processing MUST be used for three different purposes; consent for one purpose shall not authorize another purpose. Note that after a version change, the old consent MUST not authorize processing of the new version; withdrawal only prevents future processing and does not delete the minimum consent audit facts that still need to be retained.
 
-#### Scenario: 接受当前房间安全语音说明
-- **WHEN** 用户明确接受当前房间安全语音处理说明
-- **THEN** 系统只为该目的保存可查询的当前有效同意，不同时授予 AI 短语音或会后关键词目的
+#### Scenario: Accept current instructions
 
-#### Scenario: 接受当前会后关键词说明
-- **WHEN** 用户明确接受当前会后关键词语音处理说明
-- **THEN** 系统只为该目的保存可查询的当前有效同意，不同时授予 AI 短语音或房间安全目的
+- **WHEN** The user clearly accepts the current AI short voice processing instructions
+- **THEN** The system saves the currently valid consent and version facts that can be queried
 
-#### Scenario: 撤回未来同意
-- **WHEN** 用户撤回 AI 短语音处理同意
-- **THEN** 后续短语音请求被拒绝，既有最小同意和撤回事实保持可审计
+#### Scenario: Accept the current room safety voice instructions
 
-#### Scenario: 在启用房间内撤回安全语音同意
-- **WHEN** 用户在启用敏感语音识别的房间内撤回房间安全语音处理同意
-- **THEN** 后续音频处理立即停止且该房间实时访问被收敛，既有最小同意和撤回事实保持可审计
+- **WHEN** The user clearly accepts the current room security voice processing instructions
+- **THEN** The system only saves the current valid consent that can be queried for this purpose, and does not grant AI short voice or post-meeting keyword purposes at the same time.
 
-#### Scenario: 在启用房间内撤回会后关键词同意
-- **WHEN** 用户在启用会后关键词的房间内撤回对应语音处理同意
-- **THEN** 后续音频处理立即停止且该房间实时访问被收敛，既有匿名最终汇总和最小同意事实不被追溯改写
+#### Scenario: Accept the current post-meeting keyword description
 
-#### Scenario: 说明版本更新
-- **WHEN** 服务端要求的处理说明版本高于用户最后接受版本
-- **THEN** 系统要求用户重新明确同意后才允许对应目的的新语音处理
+- **WHEN** The user clearly accepts the current post-meeting keyword voice processing instructions
+- **THEN** The system only saves the currently valid and queryable consent for this purpose, and does not grant AI short voice or room security purposes at the same time.
 
-### Requirement: 原始音频和完整转写不得持久化
-系统 MUST 只在单次短语音请求或房间流式短窗口内临时持有原始音频和完整转写，且不得将其写入 PostgreSQL、Redis、对象存储、队列载荷、审计事件或应用日志。会后关键词临时工作集 MUST 只包含无成员归属、无语序且有界的候选聚合。处理完成、失败、超时或进程终止后，系统 MUST 不提供音频或完整转写的读取、回放、搜索或恢复能力。
+#### Scenario: Withdrawing future consent
 
-#### Scenario: STT 与表达生成成功
-- **WHEN** 短语音完成临时转写并生成表达
-- **THEN** 系统释放音频和完整转写，只保存允许的输入摘要、大小、时长、状态和用量事实
+- **WHEN** User withdraws consent for AI short voice processing
+- **THEN** Subsequent short voice request denied, both minimum consent and withdrawal facts remain auditable
 
-#### Scenario: 房间流式窗口完成判断
-- **WHEN** 启用安全识别的房间短音频窗口完成临时转写和风险判断
-- **THEN** 系统释放音频和完整转写，只在命中或降级时保存不含原文的最小允许事实
+#### Scenario: Withdrawing secure voice consent in an enabled room
 
-#### Scenario: 房间流式窗口产生会后候选
-- **WHEN** 启用会后关键词的房间短音频窗口完成临时转写和候选提取
-- **THEN** 系统释放音频和完整转写，只临时保留无成员归属、无语序且有数量上限的候选聚合
+- **WHEN** User withdraws room secure voice processing consent in a room with sensitive voice recognition enabled
+- **THEN** Subsequent audio processing stops immediately and live access to the room is converged, both minimum consent and withdrawal facts remain auditable
 
-#### Scenario: 处理中服务失败
-- **WHEN** 进程在音频接收、STT、风险判断、候选提取或表达生成期间失败
-- **THEN** 请求或流式能力可以从最小状态事实收敛为失败、降级或不确定，但音频和完整转写不可恢复
+#### Scenario: Withdrawing post-meeting keyword consent in an enabled room
 
-### Requirement: STT 调用使用最小权限和可替换边界
-系统 MUST 只向当前配置的 STT provider 发送当前短语音请求或房间流式窗口所需的音频、可选源语言和受控识别参数，不发送真实姓名、联系方式、其他成员资料、房间密码或 LiveKit 凭证。房间流式调用 MUST 使用不可反推个人身份的短期关联标识。更换 provider MUST 不改变公开短语音请求、房间加入条件、安全提醒、会后汇总或失败合同。
+- **WHEN** The user withdraws the corresponding voice processing consent in a room where post-meeting keywords are enabled
+- **THEN** Subsequent audio processing stops immediately and real-time access to the room is converged, and existing anonymous final summary and minimum consent facts are not retroactively overwritten.
 
-#### Scenario: 发送短语音进行识别
-- **WHEN** 合格音频进入临时 STT
-- **THEN** provider 请求只包含识别所需数据和不可反推个人身份的关联标识
+#### Scenario: Description version update
 
-#### Scenario: 发送房间流式窗口进行识别
-- **WHEN** 已同意成员在启用任一房间语音处理目的的房间内产生可处理窗口
-- **THEN** provider 只收到该窗口、受控参数和短期关联标识，不收到成员资料或房间凭据
+- **WHEN** The processing description version requested by the server is higher than the version last accepted by the user
+- **THEN** The system requires the user to explicitly agree again before allowing new voice processing for the corresponding purpose.
 
-#### Scenario: 切换已配置 provider
-- **WHEN** 运维切换到满足相同能力和数据政策的 provider
-- **THEN** 客户端继续使用相同公开合同和稳定错误语义
+### Requirement: Original audio and full transcription must not be persisted
 
-### Requirement: STT 故障不得影响真人语音
-系统 MUST 对 STT 超时、额度耗尽、provider 不可用、删除确认失败和临时协调故障进行分类记录并安全降级。故障 MUST 不停止或录制 LiveKit 房间音频，不改变房间状态、membership、房主或麦位，也不得自动处罚任何用户。房间级处理故障 MUST 明确记录受影响目的、范围和恢复状态，且不得在恢复后补录故障期间音频。
+The system MUST temporarily hold the original audio and full transcript only for the short window of a single short voice request or room streaming, and MUST not write it to PostgreSQL, Redis, object storage, queue payloads, audit events, or application logs. The temporary working set of keywords after the meeting MUST only contain candidate aggregations with no membership, no word order, and bounded. The system MUST not provide read, playback, search, or recovery capabilities for audio or complete transcripts after processing completes, fails, times out, or terminates.
 
-#### Scenario: STT provider 不可用
-- **WHEN** 用户主动短语音请求遇到 STT provider 故障
-- **THEN** 系统返回可改用文字输入的结果，既有真人语音继续工作
+#### Scenario: STT and expression generated successfully
 
-#### Scenario: 房间流式 STT 不可用
-- **WHEN** 启用房间的流式 STT 遇到超时、额度耗尽或 provider 不可用
-- **THEN** 系统按受影响目的记录不含内容的降级，停止或退避新的处理窗口，并保持真人语音可用
+- **WHEN** Short speech completes temporary transcription and generates expressions
+- **THEN** The system releases audio and complete transcription, saving only allowed input summary, size, duration, status and usage facts
 
-#### Scenario: 会后汇总生成不可用
-- **WHEN** 临时识别或候选聚合故障导致无法安全生成会后汇总
-- **THEN** 系统返回稳定的汇总不可用状态，不阻塞房间结束也不补处理已丢弃的音频
+#### Scenario: Room streaming window completes judgment
 
-#### Scenario: 临时协调不可用
-- **WHEN** 系统无法可靠执行语音请求的频率、并发或房间流式协调保护
-- **THEN** 系统停止新的临时语音处理并保持房间流程可用
+- **WHEN** Enable security identification of room short audio window to complete temporary transcription and risk judgment
+- **THEN** System releases audio and full transcription, saving only minimal allowed facts without original text on hit or downgrade
+
+#### Scenario: Room streaming window generates post-meeting candidates
+
+- **WHEN** Enable post-meeting keyword room short audio window to complete temporary transcription and candidate extraction
+- **THEN** The system releases audio and complete transcription, and only temporarily retains candidate aggregations with no member ownership, no word order and an upper limit on the number of members.
+
+#### Scenario: Service failure during processing
+
+- **WHEN** Process failed during audio reception, STT, risk assessment, candidate extraction, or expression generation
+- **THEN** Request or streaming capability can converge from minimal state to failed, degraded, or indeterminate, but audio and full transcripts are not recoverable
+
+### Requirement: STT call uses least privilege and replaceable boundaries
+
+The system MUST send only the audio, optional source language, and controlled identification parameters required for the current short voice request or room streaming window to the currently configured STT provider, not real names, contact information, other member data, room passwords, or LiveKit credentials. Room streaming calls MUST use short-term association identifiers that cannot be reversed to identify individuals. Changing the provider MUST not change the public short voice request, room joining conditions, security reminders, post-meeting summary or failed contracts.
+
+#### Scenario: Send short voice for recognition
+
+- **WHEN** Qualified audio entered temporary STT
+- **THEN** The provider request contains only the data required to identify and associated identifiers that cannot be inferred to be personally identifiable.
+
+#### Scenario: Send room streaming window for identification
+
+- **WHEN** Members have agreed to create processable windows in rooms where any room voice processing purpose is enabled
+- **THEN** The provider only receives the window, controlled parameters and short-term association identification, but does not receive member information or room credentials.
+
+#### Scenario: Switch configured provider
+
+- **WHEN** Operation and maintenance switch to a provider that meets the same capabilities and data policies
+- **THEN** Client continues to use the same public contract and stable error semantics
+
+### Requirement: STT failure must not affect the real voice
+
+The system MUST classify and record STT timeouts, quota exhaustion, provider unavailability, deletion confirmation failures, and temporary coordination failures and safely downgrade them. Fault MUST not stop or record LiveKit room audio, change room status, membership, room host, or microphone position, nor automatically penalize any user. Room-level processing failures MUST clearly record the affected purpose, scope, and recovery status, and audio during the failure MUST not be over-recorded after recovery.
+
+#### Scenario: STT provider is not available
+
+- **WHEN** The user's active short voice request encountered an STT provider failure.
+- **THEN** The system returns results that can be changed to text input, and the existing human voice continues to work.
+
+#### Scenario: Room streaming STT not available
+
+- **WHEN** Room-enabled streaming STT encountered timeout, quota exhausted, or provider unavailable
+- **THEN** The system logs downgrades without content for affected purposes, stops or backs off new processing windows, and keeps human voices available
+
+#### Scenario: Post-meeting summary generation is not available
+
+- **WHEN** Temporary identification or candidate aggregation failure prevents safe generation of post-meeting summaries
+- **THEN** The system returns to a stable summary unavailable state, does not block the end of the room and does not make up for the discarded audio.
+
+#### Scenario: Temporary coordination is not available
+
+- **WHEN** The system cannot reliably perform frequency, concurrency, or room streaming coordination protection for voice requests
+- **THEN** System stops new temporary voice processing and keeps room processes available

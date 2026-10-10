@@ -7,7 +7,7 @@
 <p align="center">Practice English through real conversations. Find a room, speak together, and build your vocabulary.</p>
 
 <p align="center">
-  <a href="README.md">中文</a> · <strong>English</strong><br />
+  <a href="README.md">Project home</a> · <strong>English</strong><br />
   <a href="https://slogan-preview-mobile.pages.dev">Try on the web</a> ·
   <a href="https://slogan-preview-mobile.pages.dev/downloads/android">Download Android</a> ·
   <a href="https://slogan-preview-admin.pages.dev">Admin console</a>

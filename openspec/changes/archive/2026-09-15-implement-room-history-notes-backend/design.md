@@ -1,69 +1,69 @@
 ## Context
 
-动机与范围见 [proposal.md](./proposal.md)，可观察行为见 [spec.md](./specs/room-history-notes/spec.md)。当前即时房间创建即产生 host membership，实际加入为每个 `(roomId,userId)` 保留一条 membership；预约房间另有 RoomReservation，并在真正加入时转为 CONSUMED。两者已经能区分“实际参与”和“仅预约”。Room、membership 与 reservation 都是 PostgreSQL 持久事实，不需要额外复制历史快照。
+See [proposal.md](./proposal.md) for motivation and scope, and [spec.md](./specs/room-history-notes/spec.md) for observable behavior. The current instant room creation generates host membership, and the actual joining reserves one membership for each `(roomId,userId)`; the reserved room also has RoomReservation, and it is converted to CONSUMED when actually joining. The two can already distinguish between "actual participation" and "appointment only". Room, membership and reservation are all PostgreSQL persistent facts and do not require additional replication of historical snapshots.
 
-现有举报资格同样以历史 membership 为依据，证明 LEFT、REMOVED 等生命周期不会抹去实际参与事实。新能力必须保持这一含义，同时避免历史查询暴露其他成员、预约人、密码摘要、provider identity 或举报内容。
+The existing reporting qualifications are also based on historical membership, proving that life cycles such as LEFT and REMOVED will not erase the actual participation facts. New capabilities must maintain this meaning while avoiding historical queries that reveal other members, bookers, password digests, provider identities, or reported content.
 
 ## Goals / Non-Goals
 
-**Goals:** 通过稳定游标查询本人房间经历；用独立持久记录保存一人一房一份私人笔记；在数据库事务内保证并发编辑不会覆盖较新内容。
+**Goals:** Query personal room history through stable cursors; use independent persistent records to save personal notes for each person and room; ensure that concurrent editing within database transactions will not overwrite newer content.
 
-**Non-Goals:** 不创建通用活动流、全文搜索、历史快照仓库或内容协作系统；不从音频、转写、举报或 RoomEvent 自动生成笔记。
+**Non-Goals:** does not create a universal activity stream, full-text search, historical snapshot repository, or content collaboration system; does not automatically generate notes from audio, transcripts, reports, or RoomEvents.
 
 ## Decisions
 
-### 1. 历史是现有关系的投影
+### 1. History is the projection of existing relationships
 
-历史查询以 RoomMembership 和 RoomReservation 的并集为候选，以 `userId` 在服务端限定所有行。若同一用户既预约又实际参与，同一 room 只返回一项，relationship=PARTICIPATED；否则为 RESERVED_ONLY，并返回本人 reservation status。实际参与的排序时间使用 membership.joinedAt，仅预约使用 reservation.bookedAt，再以 roomId 作为稳定次序，游标编码这两个值。
+History query with union of RoomMembership and RoomReservation as candidate, qualifying all rows on the server side with `userId`. If the same user both makes a reservation and actually participates, only one item is returned for the same room, relationship=PARTICIPATED; otherwise, it is RESERVED_ONLY, and the reservation status of the user is returned. The actual participating sorting time uses membership.joinedAt, and only reservations use reservation.bookedAt. Then roomId is used as the stable order, and the cursor encodes these two values.
 
-返回 roomId、kind、topic、CEFR、计划/实际开始和结束时间、当前 room status、本人 relationship、membership lifecycle/role 或 reservation status，以及本人笔记是否存在。不会返回密码摘要、provider 标识、其他成员/预约人、举报或笔记内容。笔记正文仅由单房详情入口读取，避免历史列表扩大敏感内容和响应体。
+Returns roomId, kind, topic, CEFR, planned/actual start and end time, current room status, personal relationship, membership lifecycle/role or reservation status, and whether the personal note exists. Password digests, provider IDs, other members/subscribers, reports or note content will not be returned. The text of the note is only read by the single room details entrance to avoid the expansion of sensitive content and response bodies in the history list.
 
-备选方案是写入 RoomHistory 快照，但这会复制可从持久关系推导的数据，并引入 room 状态同步问题；目前没有删除 Room 或修改历史标题的已批准行为，因此不采用。
+The alternative is to write a RoomHistory snapshot, but this copies data that can be deduced from the persistent relationship and introduces room state synchronization issues; there is currently no approved behavior for deleting a Room or modifying the history title, so it is not adopted.
 
-### 2. 独立 RoomNote 保留版本栅栏
+### 2. Standalone RoomNote reserved version fence
 
-新增 RoomNote：id、roomId、userId、nullable content、version、createdAt、updatedAt，并以 `(roomId,userId)` 唯一。roomId 和 userId 均使用 RESTRICT 外键，使笔记不会因清理 membership 而失去所有者或房间上下文。数据库约束保证 version>0，content 为 null 或长度不超过 2000 个字符；应用层对 Unicode code point 计数并拒绝控制字符，仅空白输入规范化为清空。
+Added RoomNote: id, roomId, userId, nullable content, version, createdAt, updatedAt, and are unique with `(roomId,userId)`. Both roomId and userId use RESTRICT foreign keys so that notes do not lose owner or room context by clearing membership. Database constraints ensure that version>0, content is null or the length does not exceed 2000 characters; the application layer counts Unicode code points and rejects control characters, and only blank input is normalized to be cleared.
 
-不存在记录时 GET 返回 `{content:null, version:0, updatedAt:null}`。PUT 接受 `{content, expectedVersion}`：首次 expectedVersion=0；后续必须匹配当前版本，同一事务内递增。清空不删除行，而是 content=null 并递增版本，确保清空前的迟到请求无法复活旧文本。相同 expectedVersion 的完成请求可以按保存后的内容识别安全重试；不同内容或版本返回稳定冲突。
+GET returns `{content:null, version:0, updatedAt:null}` when no record exists. PUT accepted `{content, expectedVersion}`: expectedVersion=0 for the first time; subsequent versions must match the current version and increment within the same transaction. Flushing does not delete the line, but instead sets content=null and increments the version, ensuring that late requests before flushing cannot resurrect old text. Completion requests with the same expectedVersion can be safely retried according to the saved content; different content or versions return stable conflicts.
 
-备选直接覆盖或物理删除空笔记会丢失并发栅栏，无法阻止旧客户端写回，因此不采用。笔记不关联 membershipId，因为实际参与资格由唯一 `(roomId,userId)` membership 查询即可证明，且 membership 生命周期变化不应改变私人笔记所有权。
+The alternative of directly overwriting or physically deleting empty notes will lose the concurrency fence and cannot prevent old clients from writing back, so it is not used. The note is not associated with a membershipId because actual participation eligibility is proven by a unique `(roomId,userId)` membership query, and membership lifecycle changes should not change private note ownership.
 
-### 3. 写入资格与状态边界
+### 3. Write qualification and status boundaries
 
-历史读取和笔记入口都从认证 userId 派生主体，不接受目标 userId。笔记 GET/PUT 要求存在实际 membership；仅 RoomReservation 不满足资格。房间必须为 ENDING 或 ENDED 才允许读写，使“会后笔记”不会演变成房间内文字聊天。LEFT、REMOVED 或角色变化不撤销已发生的参与事实，也不允许访问他人的笔记。
+Both history reading and note entry derive the principal from the authentication userId and do not accept the target userId. Note GET/PUT requires actual membership to exist; RoomReservation alone does not qualify. The room must be ENDING or ENDED to allow reading and writing, so that "post-meeting notes" will not evolve into text chat in the room. LEFT, REMOVED, or role changes do not undo the fact that participation has occurred, nor do they allow access to other people's notes.
 
-对不存在 room、缺少 membership 和他人资源统一使用 HISTORY_CONTEXT_NOT_FOUND，降低资源枚举信息。房间仍在 SCHEDULED/OPEN 返回 ROOM_NOT_ENDED；非法文本返回 VALIDATION_FAILED；版本不匹配返回 NOTE_VERSION_CONFLICT。所有授权与版本判断和 upsert 共用数据库事务。
+Use HISTORY_CONTEXT_NOT_FOUND uniformly for non-existent rooms, missing memberships and other people's resources to reduce resource enumeration information. The room is still SCHEDULED/OPEN returns ROOM_NOT_ENDED; illegal text returns VALIDATION_FAILED; version mismatch returns NOTE_VERSION_CONFLICT. All authorization and version judgments and upsert share database transactions.
 
-### 4. HTTP 与唯一 contract
+### 4. HTTP and unique contract
 
-新增三个 Bearer 入口：
+Added three new Bearer entries:
 
-| Endpoint | 行为 |
-| --- | --- |
-| GET /v1/me/room-history | `cursor/limit` 分页返回本人去重后的实际参与与仅预约历史 |
-| GET /v1/rooms/{roomId}/note | 返回本人会后笔记；从未保存时返回空内容和 version=0 |
-| PUT /v1/rooms/{roomId}/note | 保存或清空本人笔记，要求 content 和 expectedVersion |
+| Endpoint                    | Behavior                                                                                                  |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| GET /v1/me/room-history     | `cursor/limit` returns the actual participation and reservation-only history after de-duplication by page |
+| GET /v1/rooms/{roomId}/note | Returns my post-meeting notes; returns empty content and version=0 if never saved                         |
+| PUT /v1/rooms/{roomId}/note | Save or clear my notes, content and expectedVersion required                                              |
 
-使用 NestJS code-first DTO/decorator 生成唯一 `openapi/openapi.yaml`。不手写第二份 contract，不新增前端专属类型；后续客户端从 contract 生成。
+Use NestJS code-first DTO/decorator to generate unique `openapi/openapi.yaml`. No handwriting of the second contract, no new front-end exclusive type; subsequent clients are generated from the contract.
 
 ## Risks / Trade-offs
 
-- [Risk] membership 与 reservation 并集造成重复、跳页或漏页 → 在数据库侧按 room 去重并定义 relationship 优先级，以 `(occurredAt,roomId)` 做确定性倒序游标；用跨页并发插入测试固定边界。
-- [Risk] 查询泄露其他用户信息 → repository 所有候选先绑定当前 userId，DTO 使用显式白名单，HTTP 测试验证无密码、身份、其他成员和他人笔记字段。
-- [Risk] 两个设备覆盖笔记或清空后旧文本复活 → 行锁/条件更新结合 expectedVersion，保留 nullable tombstone 行，并验证并发写入和迟到重放。
-- [Risk] 当前没有已批准的历史展示期限 → 本 change 不新增保留或自动删除策略，验收明确这是当前数据库可用记录的查询能力，不承诺永久保存。
-- [Trade-off] 仅在 ENDING/ENDED 后允许读取笔记 → 边界简单且符合“会后”定位，房间进行中不能把接口当文字聊天使用。
+- [Risk] The union of membership and reservation causes duplication, page skipping or missing pages → Press room on the database side to deduplicate and define the relationship priority, use `(occurredAt,roomId)` as a deterministic reverse order cursor; use cross-page concurrent insertion to test the fixed boundary.
+- [Risk] Query leaks other user information → repository All candidates are first bound to the current userId, DTO uses an explicit whitelist, and HTTP test verification has no password, identity, other members, and other people's note fields.
+- [Risk] Old text resurrected after two devices overwrite note or clear → Row lock/conditional update combined with expectedVersion, preserve nullable tombstone rows, and verify concurrent writes and late replay.
+- [Risk] There is currently no approved historical display period → This change does not add a new retention or automatic deletion policy. The acceptance clearly states that this is the query capability of the records available in the current database, and does not promise permanent storage.
+- [Trade-off] Allow reading notes only after ENDING/ENDED → The boundaries are simple and consistent with the "after-meeting" positioning. The interface cannot be used as a text chat while the room is in progress.
 
 ## Migration Plan
 
-1. 添加单独 RoomNote model 与 additive migration；不改写前七段迁移，不回填历史笔记。
-2. 在空库完整升级，并对含即时/预约 Room、各类 membership、reservation、identity、report 和 event 的 fixture 升级，确认历史关系、举报外键及旧 API 不变。
-3. 同批部署 schema、history/note repository、service 和三个 endpoint；旧实例忽略新表不会破坏房间运行，但新 endpoint 仅路由到新实例。
-4. 回退时先移除新入口，保留 RoomNote 数据和新增表；不执行破坏性 down migration，优先 forward fix。
+1. Add a separate RoomNote model and additive migration; do not rewrite the first seven migrations, and do not backfill historical notes.
+2. Completely upgrade the empty library, and upgrade fixtures including instant/reservation rooms, various memberships, reservations, identities, reports, and events, confirming that historical relationships, reporting foreign keys, and old APIs remain unchanged.
+3. Deploying schema, history/note repository, service and three endpoints in the same batch; the old instance ignoring the new table will not disrupt the room operation, but the new endpoint is only routed to the new instance.
+4. When rolling back, remove the new entry first and retain the RoomNote data and new tables; do not perform destructive down migration and give priority to forward fix.
 
 ## Verification and Acceptance
 
-- 单元测试覆盖文本规范化、Unicode 长度、状态与资格规则、游标解析及稳定错误。
-- PostgreSQL 集成测试覆盖 membership/reservation 去重、不同生命周期、分页稳定性、并发写入、幂等重试、清空墓碑和事务回滚。
-- HTTP E2E 覆盖三个入口、本人隔离、仅预约拒绝写笔记、字段最小化和唯一 OpenAPI contract。
-- 完成实现后只运行一次完整 `pnpm verify:api`，再运行格式和依赖边界检查；本 change 无外部 provider、设备或 Cloud 验证要求，前端和产品验收单独保留。
+- Unit tests cover text normalization, Unicode length, status and eligibility rules, cursor parsing, and stable errors.
+- PostgreSQL integration tests cover membership/reservation deduplication, different lifecycles, paging stability, concurrent writes, idempotent retries, clearing tombstones, and transaction rollback.
+- HTTP E2E covers three entrances, personal isolation, reservation-only refusal to write notes, field minimization and unique OpenAPI contract.
+- Only run the complete `pnpm verify:api` once after the implementation is completed, and then run the format and dependency boundary checks; this change has no external provider, device or Cloud verification requirements, and the front-end and product acceptance are kept separately.

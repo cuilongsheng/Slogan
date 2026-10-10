@@ -1,68 +1,85 @@
 ## Purpose
 
-定义成年人之间持久的一对一文字会话，以及“消息”入口的最近会话、好友入口、本人历史和安全边界，让用户从空闲伙伴发现自然进入可持续的私人交流。
+Defines long-lasting one-on-one text conversations between adults, as well as recent conversations, friend entries, personal history and safety boundaries of the "message" portal, allowing users to naturally enter sustainable private communication from idle partner discovery.
 
 ## ADDED Requirements
 
-### Requirement: 合格用户可直接发起文字单聊
-系统 MUST 允许合格用户从可见的空闲伙伴或已有好友入口向另一名合格用户发送文字消息，不要求收件人预先接受或先建立好友关系；发送时 MUST 重新校验双方账号、年龄、资料、安全限制及任一方向屏蔽，不得向自己发送。
+### Requirement: Qualified users can directly initiate text chats
 
-#### Scenario: 向空闲陌生人发送首条消息
-- **WHEN** 用户选择可见的合格空闲陌生人并发送有效文字
-- **THEN** 系统建立唯一的双方会话、保存消息，并让双方在本人“消息”入口看到会话
+The system MUST allow qualified users to send text messages to another qualified user from the visible idle partner or existing friend portal, without requiring the recipient to accept or establish a friend relationship in advance; when sending, MUST re-verify the accounts, ages, information, security restrictions and blocking of both parties in either direction, and may not send to themselves.
 
-#### Scenario: 已有会话对象不再空闲
-- **WHEN** 双方已有会话且收件人不再出现在空闲伙伴列表，但仍满足发送资格
-- **THEN** 发送方仍可从自己的会话历史继续文字交流
+#### Scenario: Send first message to an idle stranger
 
-#### Scenario: 发送时资格失效
-- **WHEN** 目标被任一方屏蔽、账号受限或其他发送资格失效
-- **THEN** 系统拒绝新消息，不泄露目标的具体隐私状态
+- **WHEN** User selects visible eligible free strangers and sends valid text
+- **THEN** The system establishes a unique two-party conversation, saves the message, and allows both parties to see the conversation in their own "message" entrance.
 
-### Requirement: 文字历史跨次登录保留且仅参与者可见
-系统 MUST 持久保存有效文字消息并按稳定顺序分页返回，仅会话双方能查看自己的可见历史。发送操作 MUST 可通过调用者请求标识安全重试，重复请求不得产生重复消息；空白或超过产品长度上限的消息 MUST 被拒绝。
+#### Scenario: The existing session object is no longer free
 
-#### Scenario: 重新登录读取历史
-- **WHEN** 会话参与者在另一设备或下次登录后打开会话
-- **THEN** 系统按顺序返回其仍可见的历史消息，且其他用户不能读取
+- **WHEN** The two parties already have a conversation and the recipient no longer appears in the idle partner list, but still meets the sending qualifications
+- **THEN** The sender can still continue the text exchange from his own conversation history
 
-#### Scenario: 发送重试
-- **WHEN** 调用者用相同请求标识重试同一规范化消息
-- **THEN** 系统返回原消息；复用标识改变会话或内容时返回冲突
+#### Scenario: Qualification expired when sending
 
-#### Scenario: 无效正文
-- **WHEN** 用户发送空白或超出已公布长度上限的文字
-- **THEN** 系统返回校验错误且不保存消息
+- **WHEN** The target is blocked by any party, the account is restricted, or other sending qualifications are invalid.
+- **THEN** The system rejects new messages and does not reveal the target’s specific privacy status.
 
-### Requirement: 消息入口区分最近会话和好友
-系统 MUST 在“消息”入口展示本人最近会话及其未读状态，并提供本人好友入口。未聊过的好友不得伪装成已有会话；曾聊过但不是好友的用户可以出现在本人最近会话中。列表与详情不得泄露他人的好友关系或会话。
+### Requirement: Text history is retained across logins and is only visible to participants
 
-#### Scenario: 好友尚无消息
-- **WHEN** 用户打开“消息”且一名好友从未与其建立文字会话
-- **THEN** 该好友可从好友入口找到，但不出现为含虚构预览的最近会话
+The system MUST persist valid text messages and return them in paging in a stable order. Only the two parties in the conversation can view their own visible history. The send operation MUST be safely retried by the caller request identifier, and repeated requests MUST not produce duplicate messages; messages that are blank or exceed the product length limit MUST be rejected.
 
-#### Scenario: 与陌生人已有会话
-- **WHEN** 用户曾与非好友交换有效文字消息
-- **THEN** 该会话出现在本人最近会话中，无需先建立好友关系
+#### Scenario: Log in again to read history
 
-### Requirement: 删除会话只影响操作者的可见历史
-系统 MUST 允许参与者从自己的消息列表和历史中删除会话可见内容，不得替另一方删除或撤回对方历史。删除后有新消息时会话可重新出现，但已被该用户删除的旧内容不得自动恢复到其可见历史。
+- **WHEN** A session participant opens the session on another device or after the next login
+- **THEN** The system returns historical messages in order that are still visible and cannot be read by other users.
 
-#### Scenario: 单方删除
-- **WHEN** 一方删除自己的会话历史
-- **THEN** 其列表和详情不再显示旧消息，另一方的可见历史保持不变
+#### Scenario: Send retry
 
-#### Scenario: 删除后收到新消息
-- **WHEN** 已删除历史的用户后来收到合格的新消息
-- **THEN** 会话重新出现在其列表中，仅展示删除边界之后可见的消息
+- **WHEN** The caller retried the same canonical message with the same request ID.
+- **THEN** The system returns the original message; a conflict is returned when the reuse identifier changes the session or content.
 
-### Requirement: 陌生人文字交流具备受控安全入口
-系统 MUST 对陌生人首条消息及连续发送施加服务端防滥用限制，并允许收件人在会话中屏蔽对方或举报具体消息。举报内容仅进入授权安全处理流程，不自动向被举报人透露举报者或执行处罚。
+#### Scenario: Invalid text
 
-#### Scenario: 高频陌生消息
-- **WHEN** 发送方超过公布的陌生消息限制
-- **THEN** 系统拒绝超限发送，返回可理解的重试反馈，且不保存被拒消息
+- **WHEN** User sends text that is blank or exceeds the published length limit
+- **THEN** The system returns a verification error and does not save the message
 
-#### Scenario: 收件人举报消息
-- **WHEN** 会话参与者选择自己可见的一条消息并提交有效举报
-- **THEN** 系统保存可追踪的安全案件，普通会话接口不暴露举报身份或正文
+### Requirement: Message entry distinguishes recent conversations and friends
+
+The system MUST display my recent conversations and their unread status in the "Message" portal, and provide an portal for my friends. Friends who have not chatted with you cannot pretend to have existing conversations; users who have chatted with you but are not friends can appear in my recent conversations. Lists and details must not reveal other people's friendships or conversations.
+
+#### Scenario: No news from friend yet
+
+- **WHEN** User opens Messages and a friend has never established a text conversation with them
+- **THEN** This friend can be found in the friends portal, but does not appear as a recent conversation with fake previews
+
+#### Scenario: Already have a conversation with a stranger
+
+- **WHEN** User has exchanged valid text messages with non-friends
+- **THEN** This conversation appears in my recent conversations without first establishing a friend relationship.
+
+### Requirement: Deleting a session only affects the operator's visible history
+
+The system MUST allow participants to delete visible content from the session from their own message lists and histories, and may not delete or revoke the other party's history on behalf of the other party. Conversations can reappear when there are new messages after deletion, but old content that has been deleted by this user must not be automatically restored to its visible history.
+
+#### Scenario: Unilateral deletion
+
+- **WHEN** One party deletes its own conversation history
+- **THEN** Its list and details no longer show old messages, the other party's visible history remains unchanged
+
+#### Scenario: New message received after deletion
+
+- **WHEN** Users whose history was deleted later received eligible new messages
+- **THEN** The conversation reappears in its list, showing only the messages visible after removing the boundary
+
+### Requirement: Text communication with strangers has a controlled and safe entrance
+
+The system MUST impose server-side anti-abuse restrictions on strangers' first messages and consecutive messages, and allow recipients to block each other in the conversation or report specific messages. The reported content only enters the authorized security processing process and does not automatically reveal the reporter to the person being reported or impose penalties.
+
+#### Scenario: High frequency strange messages
+
+- **WHEN** The sender exceeded the published limit for unknown messages.
+- **THEN** The system rejects over-limit sending, returns understandable retry feedback, and does not save the rejected message.
+
+#### Scenario: Recipient reports message
+
+- **WHEN** Conversation participants select a message visible to themselves and submit a valid report
+- **THEN** The system saves traceable security cases, and the ordinary conversation interface does not expose the reporting identity or text.

@@ -1,97 +1,122 @@
 ## Purpose
 
-定义邮箱验证的用户名密码认证能力，使用户能够注册、登录、恢复密码或为既有账号增加登录方式，同时保持现有资料、会话撤销和账号注销边界，避免身份抢占、跨账号绑定及邮件凭据泄露。
+Defines the username and password authentication capabilities of email verification, allowing users to register, log in, recover passwords, or add login methods to existing accounts, while maintaining existing data, session revocation, and account account deletion boundaries to avoid identity preemption, cross-account binding, and email credential leakage.
 
 ## ADDED Requirements
 
-### Requirement: 注册输入与唯一身份
-系统 MUST 接受 3–20 位 ASCII 字母、数字或下划线用户名、长度不超过 254 字符的有效 ASCII 邮箱和 8–128 个 Unicode 码点密码；用户名大小写不敏感，邮箱去除首尾空白后大小写不敏感，不移除加号标签或点号。密码 MUST 原样处理，不裁剪或静默截断。用户名与资料显示名称 MUST 相互独立；命中版本化常见密码拒绝表时 MUST 返回稳定的弱密码错误。
+### Requirement: Registration input and unique identity
 
-#### Scenario: 新注册与已占用身份
-- **WHEN** 用户提交符合输入规则的注册申请
-- **THEN** 系统建立短期待验证申请；已验证或注销账号占用的用户名/邮箱返回对应稳定占用错误，重复未验证申请不得修改原申请密码或永久占用身份
+The system MUST accept usernames of 3–20 ASCII letters, numbers, or underscores, a valid ASCII mailbox of no more than 254 characters in length, and a password of 8–128 Unicode code points; usernames are case-insensitive, mailboxes are case-insensitive with leading and trailing whitespace removed, and plus labels or periods are not removed. Passwords MUST be processed as is, without clipping or silent truncation. Username and profile display name MUST be independent of each other; hitting a versioned common password rejection table MUST return a stable weak password error.
 
-#### Scenario: 同一身份并发验证
-- **WHEN** 多个申请竞争同一规范化用户名或邮箱
-- **THEN** 最多一个验证成功并建立身份，其余返回稳定冲突，不覆盖既有密码或重复创建账号
+#### Scenario: New registration and occupied identity
 
-### Requirement: 邮箱验证与受控重发
-系统 MUST 提供有期限、目的限定、单次使用的邮箱验证凭据，未验证申请不得获得平台 access/refresh token。重发 MUST 有冷却且不延长原申请的最长存活时间；新凭据生效后旧凭据失效。单纯打开邮件链接 MUST 不消费凭据。
+- **WHEN** The user submits a registration application that meets the input rules
+- **THEN** The system creates a short-term application pending verification; the username/email address occupied by the verified or canceled account returns corresponding stable occupation error. Repeated unverified applications must not modify the original application password or permanently occupy the identity.
 
-#### Scenario: 完成验证
-- **WHEN** 用户明确提交有效的注册验证凭据
-- **THEN** 系统一次性创建已验证邮箱凭据与平台账号，返回验证成功且要求密码登录；后续首次资料和成年限制仍生效
+#### Scenario: Concurrent verification of the same identity
 
-#### Scenario: 过期、重复或错误目的
-- **WHEN** 提交过期、已消费、被重发替代或用于其他目的的凭据
-- **THEN** 系统拒绝状态变化并返回统一的无效/过期结果
+- **WHEN** Multiple applications competing for the same canonical username or email address
+- **THEN** At most one verification is successful and the identity is established, the others return stable conflicts, and do not overwrite existing passwords or repeatedly create accounts.
 
-#### Scenario: 重发与抢占防护
-- **WHEN** 调用方请求重新发送验证邮件
-- **THEN** 系统只在持有该申请的不透明管理凭据且满足冷却/配额时重发，不允许仅凭公开邮箱或用户名更换申请密码、撤销他人申请或延长占用期限
+### Requirement: Email verification and controlled resending
 
-### Requirement: 用户名密码登录
-系统 MUST 仅为正确密码、已验证邮箱且 ACTIVE 的账号建立既有平台会话，并返回既有 onboarding 状态。不存在用户名与错误密码 MUST 使用同一错误；仅在密码正确时允许返回邮箱待验证提示。
+The system MUST provide time-limited, purpose-limited, single-use email verification credentials. Unverified applications are not allowed to obtain platform access/refresh tokens. Resending MUST have a cooldown and does not extend the maximum survival time of the original application; the old credentials become invalid after the new credentials take effect. Simply opening the email link MUST not consume credentials.
 
-#### Scenario: 成功登录与权限边界
-- **WHEN** 已验证 ACTIVE 账号提交正确用户名密码
-- **THEN** 系统发放现有会话类型，资料未完成、未成年、房间限制及后台角色检查继续按原规则执行
+#### Scenario: Verification completed
 
-#### Scenario: 禁用、注销和无效密码
-- **WHEN** 账号非 ACTIVE 或凭据不正确
-- **THEN** 系统拒绝会话，不泄露密码散列、邮箱或账号内部状态
+- **WHEN** User explicitly submitted valid registration verification credentials
+- **THEN** The system creates verified email credentials and platform accounts at one time, returns verification success and requires password login; subsequent first-time information and adult restrictions are still in effect
 
-### Requirement: 邮箱密码恢复与并发会话撤销
-系统 MUST 对注册和未注册邮箱返回相同的找回受理状态；有效重置凭据仅可设置一次新密码，成功后撤销账号全部平台会话及其他未完成重置凭据，不自动登录。重置 MUST 不恢复禁用或注销账号。
+#### Scenario: Expired, duplicate or wrong purpose
 
-#### Scenario: 密码重置成功
-- **WHEN** ACTIVE 已验证账号提交有效重置凭据和合规新密码
-- **THEN** 新密码生效，旧密码及全部旧 access/refresh token 不再可用，用户重新登录
+- **WHEN** Submit credentials that are expired, consumed, replaced by reissue, or used for other purposes
+- **THEN** The system rejects the status change and returns a uniform invalid/expired result
 
-#### Scenario: 并发旧密码登录与刷新
-- **WHEN** 密码重置与旧密码登录、会话刷新并发
-- **THEN** 重置完成后不得留下基于旧凭据新建或刷新的有效会话
+#### Scenario: Resend and preemption protection
 
-#### Scenario: 重放与账号枚举
-- **WHEN** 请求不存在邮箱的找回，或重放已使用的重置凭据
-- **THEN** 找回受理不透露存在性，重置重放不再次修改密码或发放会话
+- **WHEN** The caller requested to resend the verification email
+- **THEN** The system will only resend the application if it holds the opaque management credentials and meets the cooling/quota. It is not allowed to change the application password, cancel other people's applications or extend the occupancy period based only on the public email or user name.
 
-### Requirement: 为既有账号绑定邮箱密码
-系统 MUST 要求有效登录会话、当前已有登录方式的重新认证及目标邮箱验证，才为当前账号绑定唯一用户名密码。重新认证证明 MUST 绑定用户、会话、用途及命令，不能与注销证明互换；邮件确认还 MUST 校验原绑定会话仍有效。系统 MUST 不基于 OAuth 邮箱自动合并账号。
+### Requirement: Login with username and password
 
-#### Scenario: 绑定成功
-- **WHEN** 已登录账号完成当前登录方式重新认证与目标邮箱验证
-- **THEN** 邮箱密码关联到同一个 userId，保留原登录方式、资料及业务数据，登录方式列表新增脱敏 EMAIL_PASSWORD
+The system MUST only establish existing platform sessions for accounts with correct passwords, verified email addresses, and ACTIVE, and return existing onboarding status. There is no user name and incorrect password. MUST use the same error; only when the password is correct, a return to the email address for verification prompt is allowed.
 
-#### Scenario: 身份冲突或会话失效
-- **WHEN** 目标身份已归属其他账号、当前账号已有邮箱凭据，或发起绑定的会话已撤销
-- **THEN** 拒绝覆盖/合并和绑定，不改变任一账号身份
+#### Scenario: Successful login and permission boundaries
 
-### Requirement: 邮箱账号注销兼容
-系统 MUST 允许已登录邮箱密码账号以当前密码生成短期注销证明，并继续使用既有明确确认与注销命令；注销后保留用户名/邮箱占用，失效密码及所有未完成验证、绑定、重置凭据，且不得影响现有安全审计保留规则。
+- **WHEN** Verified ACTIVE account submitted correct username and password
+- **THEN** The system issues existing session types. Incomplete data, underage, room restrictions and administrative role checks continue to be executed according to the original rules.
 
-#### Scenario: 注销后重入
-- **WHEN** 邮箱账号注销后尝试登录、重置、重新注册或消费注销前凭据
-- **THEN** 系统不能恢复账号或创建相同身份的新账号，旧会话仍无效
+#### Scenario: Disabled, deleted and invalid passwords
 
-### Requirement: 邮件可靠性和凭据隐私
-系统 MUST 持久保存已受理邮件的投递状态，提供有上限的重试与重启恢复，邮件发送失败不得错误标记邮箱已验证。凭据、密码、完整邮箱和邮件正文 MUST 不出现在日志、错误、审计或普通查询。过期或完成邮件的可还原凭据载荷 MUST 在 24 小时内清除。
+- **WHEN** The account is not ACTIVE or the credentials are incorrect
+- **THEN** The system rejected the session without revealing password hashes, email addresses, or internal account status.
 
-#### Scenario: 投递失败与不确定结果
-- **WHEN** 邮件超时、暂时失败或发送进程重启
-- **THEN** 受理事实保持可恢复，重复邮件不会赋予额外验证次数，达到重试上限后停止并允许受控重发
+### Requirement: Email password recovery and concurrent session revocation
 
-#### Scenario: 链接安全与日志
-- **WHEN** 邮件生成验证或重置链接
-- **THEN** 仅使用服务端配置的可信 HTTPS 目标，不接受请求注入的回跳地址，不通过 URL query/access log 或错误暴露凭据
+The system MUST return the same retrieval acceptance status for registered and unregistered email addresses; a valid reset credential can only set a new password once. After success, all platform sessions of the account and other uncompleted credential resets will be cancelled, and automatic login will not be performed. Reset MUST not restore disabled or deleted accounts.
 
-### Requirement: 开关、配额与外部验收
-系统 MUST 默认关闭邮箱认证；启用时验证邮件、加密及可信链接配置。注册、登录、重发、找回和重新认证 MUST 执行跨实例的来源与目标配额；协调不可用时拒绝这些请求，不退化为无限制发送或密码尝试。
+#### Scenario: Password reset successful
 
-#### Scenario: 配额和依赖失败
-- **WHEN** 达到来源/目标/全局邮件配额或协调服务不可用
-- **THEN** 返回稳定限流/不可用错误且不新增无界投递，不影响既有 OAuth 与房间接口
+- **WHEN** ACTIVE Verified account submits valid reset credentials and compliant new password
+- **THEN** The new password takes effect, the old password and all old access/refresh tokens are no longer available, and the user needs to log in again
 
-#### Scenario: 真实邮件验收缺失
-- **WHEN** 未获得真实发信服务、域名和可验证收件环境
-- **THEN** 本地测试与真实邮件证据分别记录，真实发送/重置 smoke 保持 BLOCKED，不将本地邮箱捕获测试标为外部验收通过
+#### Scenario: Concurrent login and refresh of old password
+
+- **WHEN** Password reset concurrently with old password login and session refresh
+- **THEN** A new or refreshed valid session based on the old credentials must not be left after the reset is complete
+
+#### Scenario: Replay and account enumeration
+
+- **WHEN** Requesting retrieval of a non-existent mailbox, or replaying used reset credentials
+- **THEN** Retrieval acceptance does not disclose the existence, reset and replay does not change the password or issue the session again
+
+### Requirement: Bind email password to existing account
+
+The system MUST require a valid login session, re-authentication of the current login method, and verification of the target email address before binding a unique username and password to the current account. Reauthentication proofs MUST be bound to the user, session, purpose, and command and cannot be exchanged for account-deletion proofs. Email confirmation MUST also verify that the original linking session remains valid. The system MUST not automatically merge accounts based on OAuth mailboxes.
+
+#### Scenario: Binding successful
+
+- **WHEN** The logged-in account has completed re-authentication of the current login method and verification of the target email address.
+- **THEN** The email password is associated with the same userId, the original login method, information and business data are retained, and the desensitized EMAIL_PASSWORD is added to the login method list.
+
+#### Scenario: Identity conflict or session invalidation
+
+- **WHEN** The target identity has been assigned to another account, the current account already has email credentials, or the session that initiated the binding has been revoked.
+- **THEN** Reject overwriting/merging and binding, and do not change the identity of any account
+
+### Requirement: Compatible with email account account deletion
+
+The system MUST allow a signed-in email/password account to generate a short-lived account-deletion proof using the current password and continue through the existing explicit confirmation and deletion command. After deletion, the username/email remains reserved, the password and all pending verification, linking, and reset credentials become invalid, and existing security-audit retention rules remain unchanged.
+
+#### Scenario: delete the account and then re-enter
+
+- **WHEN** After deleting the account the email account, try to log in, reset, re-register or consume the credentials before deleting the account.
+- **THEN** The system cannot restore the account or create a new account with the same identity. The old session is still invalid.
+
+### Requirement: Email reliability and credential privacy
+
+The system MUST persistently save the delivery status of accepted emails, provide an upper limit for retry and restart recovery, and MUST not incorrectly mark the mailbox as verified if the email fails to be sent. Credentials, password, full email address, and message body MUST not appear in logs, errors, audits, or general queries. Restorable credential payloads for expired or completed messages MUST be purged within 24 hours.
+
+#### Scenario: Delivery failure and uncertain result
+
+- **WHEN** The email timed out, failed temporarily, or the sending process restarted
+- **THEN** The acceptance fact remains recoverable. Repeated emails will not be given additional verification times. When the retry limit is reached, it will stop and allow controlled resending.
+
+#### Scenario: Link security and logs
+
+- **WHEN** Email generation verification or reset link
+- **THEN** Only use server-side configured trusted HTTPS targets, do not accept request-injected bounce addresses, do not expose credentials via URL query/access logs or errors
+
+### Requirement: Switches, Quotas and External Acceptance
+
+The system MUST turn off email authentication by default; verify email, encryption, and trusted link configurations when enabled. Registration, login, resend, retrieval, and reauthentication MUST enforce source and destination quotas across instances; reject these requests when coordination is unavailable and not fall back to unlimited sends or password attempts.
+
+#### Scenario: Quota and dependency failure
+
+- **WHEN** Source/destination/global mail quota reached or coordination service unavailable
+- **THEN** Returns stable current limit/unavailable error and does not add unbounded delivery, and does not affect the existing OAuth and room interfaces
+
+#### Scenario: Real email acceptance is missing
+
+- **WHEN** Failure to obtain real sending service, domain name and verifiable receiving environment
+- **THEN** The local test and the real email evidence are recorded separately, the real send/reset smoke remains BLOCKED, and the local mailbox capture test is not marked as external acceptance passed.

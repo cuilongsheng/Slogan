@@ -1,55 +1,55 @@
 ## Why
 
-当前后端已经具备临时房间语音处理和私人会后笔记，但房间结束后仍没有不含成员归属的自动关键词汇总，也没有让用户把有价值的词汇沉淀为个人学习资料的闭环。V1 需要在不保存录音、完整转写或其他成员私人表达的前提下，补齐“会后汇总 → 选择加入 → 个人维护”的后端能力。
+The current front-end already has temporary room voice processing and private post-meeting notes, but there is still no automatic keyword summary without member attribution after the room is over, and there is no closed loop that allows users to precipitate valuable vocabulary into personal learning materials. V1 needs to complete the back-end capabilities of "Post-meeting summary → Opt-in → Personal maintenance" without saving recordings, complete transcriptions, or other members' private expressions.
 
 ## What Changes
 
-- 为即时房间和预约房间增加创建时明确选择且之后不可变的会后关键词开关；现有客户端未提交时保持关闭，并在列表、详情、分享解析和加入前信息中展示状态。
-- 增加独立的会后关键词语音处理同意目的和版本校验。启用房间只允许具有当前同意的成员加入或续期；撤回会停止该成员后续处理并收敛其实时访问，但不形成举报、限制或处罚。
-- 扩展独立房间语音 worker，使一次临时 STT 窗口可以按房间开关分别进入安全规则与匿名关键词候选提取；安全风险事件不能被反向还原或复用为学习内容。
-- 在会话期间只临时维护无成员归属、无语序和有数量上限的关键词/短表达候选；房间结束后生成一个持久的房间级汇总，并立即删除临时音频、完整转写和候选工作集。
-- 增加参与者会后汇总查询。响应只包含房间主题、生成状态、关键词和常用表达；仅预约、未实际入房或无关系用户不能读取。
-- 增加个人单词本：用户可以从本人可读的房间汇总中幂等加入条目，分页查看、编辑、删除和收藏；个人条目只归当前用户所有，不向房主或其他成员公开。
-- 当 STT、候选提取、Redis 临时聚合或结束后生成失败时，把汇总收敛为稳定不可用状态，不阻塞结束房间、不影响真人语音，也不补处理故障期间的音频。
-- 扩展 OpenAPI、PostgreSQL 迁移、临时数据清理、日志脱敏和本地验收证据；真实 LiveKit Cloud 与 STT provider 流程保持为必须单独执行的验收项。
+- Add a post-meeting keyword switch that is clearly selected when creating and is immutable after creation for instant rooms and reserved rooms; the existing client remains closed when it is not submitted, and the status is displayed in the list, details, sharing analysis and pre-joining information.
+- Add independent post-meeting keyword voice processing consent purpose and version verification. Enabling a room only allows members with current consent to join or renew; withdrawing will stop the member's subsequent processing and restrict his real-time access, but will not result in reporting, restrictions or penalties.
+- Expand the independent room voice worker so that a temporary STT window can press the room switch to enter security rules and anonymous keyword candidate extraction respectively; security risk events cannot be reversely restored or reused as learning content.
+- Only temporarily maintain keyword/short expression candidates with no membership, no word order, and an upper limit during the session; generate a persistent room-level summary after the room ends, and immediately delete the temporary audio, full transcription, and candidate working sets.
+- Add participant summary query after meeting. The response only contains the room theme, generation status, keywords and common expressions; users who only make reservations, have not actually checked into the room, or have no relationship cannot read it.
+- Add a personal vocabulary book: users can add entries from the room summary that can be read by themselves, view, edit, delete and collect them in pages; personal entries are only owned by the current user and are not disclosed to the room host or other members.
+- When STT, candidate extraction, Redis temporary aggregation or post-end generation fails, the aggregation will be converged to a stable and unavailable state, without blocking the end room, not affecting the real person's voice, and not reprocessing the audio during the failure.
+- Extended OpenAPI, PostgreSQL migrations, ad-hoc data cleaning, log masking, and local acceptance evidence; the real LiveKit Cloud and STT provider processes remain as acceptance items that must be performed separately.
 
 ### Confirmed Scope
 
-- 目标语言固定为英语；最终汇总包含房间主题、去重后的关键词和短表达，不包含成员、说话时间、逐句顺序或完整原句。
-- 房主在创建房间时决定是否启用会后关键词，选择创建后不可变；未启用房间不订阅此目的的音频，也不要求此目的同意。
-- 会话内候选只作为有限 TTL 的临时工作集存在，不携带 userId、membershipId、participant identity 或可恢复完整对话的顺序信息；PostgreSQL 只保存最终汇总、生成状态和个人主动保存的单词本条目。
-- 只有实际参与过且房间已经结束的用户可以读取共享汇总和从中加入单词；被移除或提前离开的实际成员仍保留会后读取资格，仅预约不算参与。
-- 单词本条目从房间汇总复制为用户私有内容；后续编辑、收藏或删除不修改共享房间汇总，也不影响其他用户。
+- The target language is fixed to English; the final summary contains room themes, keywords after deduplication, and short expressions, but does not include members, speaking time, sentence-by-sentence order, or complete original sentences.
+- The room host decides whether to enable post-meeting keywords when creating the room. The selection will be immutable after creation. Rooms that are not enabled do not subscribe to audio for this purpose and do not require consent for this purpose.
+- Intra-session candidates only exist as a temporary working set with a limited TTL and do not carry userId, membershipId, participant identity, or sequence information that can restore the complete conversation; PostgreSQL only saves the final summary, generation status, and personally saved wordbook entries.
+- Only users who have actually participated and the room has ended can read the shared summary and add words from it; actual members who have been removed or left early still retain the ability to read after the meeting, and only making an appointment does not count as participation.
+- This word entry is copied from the room summary and becomes the user's private content; subsequent editing, collection or deletion will not modify the shared room summary, nor will it affect other users.
 
 ### Non-goals
 
-- 不保存、回放、搜索或导出完整房间录音、完整转写、逐句字幕或带成员归属的表达记录。
-- 不从安全风险事件、举报、案件证据或房主提醒中生成学习内容，也不把关键词汇总用于处罚、用户画像或公开排行。
-- 不实现用户手动补充房间级汇总；冻结 PRD 中该行为仍是未决项，个人单词本只接收汇总选择和后续本人编辑。
-- 不实现自动释义、例句生成、间隔重复、测验、跨用户共享、词典搜索或单词本导出。
-- 不在本 change 中开发移动端页面、会后自动跳转或前端交互。
+- Does not save, playback, search, or export full room recordings, full transcriptions, line-by-line subtitles, or expressive recordings with member attributions.
+- Do not generate learning content from security risk incidents, reports, case evidence or room host reminders, nor summarize keywords for punishment, user portraits or public rankings.
+- Users' manual addition of room-level summaries is not implemented; this behavior is still pending in the frozen PRD, and the personal vocabulary book only accepts summary selections and subsequent personal editing.
+- Does not implement automatic definition, example sentence generation, spaced repetition, quizzes, cross-user sharing, dictionary search or wordbook export.
+- Do not develop mobile pages, automatic jumps after meetings, or front-end interactions in this change.
 
 ### Roadmap Items
 
-- 自动释义、例句、复习计划、导入导出和更完整会后复盘需要独立 OpenSpec 批准。
-- 运营指标、生成成本聚合、生产告警和跨环境保留证明由后续数据治理 change 负责。
+- Automatic paraphrasing, example sentences, review plans, import and export, and more complete post-session reviews require independent OpenSpec approval.
+- Operational metrics, generation cost aggregation, production alerts, and cross-environment retention proofs are the responsibility of subsequent data governance changes.
 
 ### Unresolved Decisions
 
-- 最终生产 STT provider、区域、跨境传输和删除证明仍依赖平台配置与隐私评审。本 change 复用现有可替换 provider 边界，并保留真实环境 smoke，不把 fake provider 或本地测试算作生产证明。
+- The final production of STT providers, regions, cross-border transfers and deletion certificates still rely on platform configuration and privacy review. This change reuses the existing replaceable provider boundaries and retains the real environment smoke. It does not count fake providers or local tests as production proof.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `post-room-keyword-summaries`: 定义房间创建时启用、独立同意、匿名临时候选、结束后生成、参与者查询、失败降级和隐私边界。
-- `personal-vocabulary`: 定义用户从本人可读汇总加入、分页查看、编辑、删除和收藏私有单词本内容的行为。
+- `post-room-keyword-summaries`: Defines enable on room creation, independent consent, anonymous temporary candidates, generation after end, participant query, failure degradation, and privacy boundaries.
+- `personal-vocabulary`: Define the user's behavior of adding, paging, editing, deleting and collecting private wordbook content from the user's readable summary.
 
 ### Modified Capabilities
 
-- `instant-room-discovery`: 房间创建、列表、详情和分享信息增加默认关闭且创建后不可变的会后关键词开关。
-- `temporary-speech-processing`: 增加独立的会后关键词处理目的，并把临时数据、provider 政策、失败隔离和撤回边界扩展到匿名会后汇总。
-- `voice-session`: 在继续禁止录音和完整转写的同时，允许明确启用且完成同意的房间为会后汇总临时处理短音频窗口。
+- `instant-room-discovery`: Room creation, list, details and sharing information have been added with post-meeting keyword switches that are turned off by default and are immutable after creation.
+- `temporary-speech-processing`: Add independent post-meeting keyword processing purpose, and extend temporary data, provider policy, failure isolation and withdrawal boundaries to anonymous post-meeting summary.
+- `voice-session`: Allow explicitly enabled and consented rooms to temporarily process short audio windows for post-meeting rollups while continuing to disable recording and full transcription.
 
 ## Impacted delivery stages
 
@@ -59,10 +59,10 @@
 
 ## Impact
 
-- `apps/api/prisma/`：房间开关、会后汇总状态/条目、个人单词本、同意目的、幂等命令和索引迁移。
-- `apps/api/src/modules/rooms/`、新建的会后汇总/单词本业务模块：创建与加入门禁、参与资格、汇总读取、个人条目命令和所有权校验。
-- `apps/api/src/workers/room-speech/` 与 `speech-safety/`：把现有单用途处理编排扩展为按目的分发的临时窗口，保持安全规则与学习内容持久事实隔离。
-- `apps/api/src/infrastructure/stt/`、`redis/`：复用流式 STT adapter，增加不含成员归属的有界临时候选聚合、fencing、TTL 和失败清理。
-- `openapi/openapi.yaml`：房间开关、会后汇总、同意状态和个人单词本合同。
-- 外部依赖：PostgreSQL、Redis、LiveKit Cloud 和满足最长七天政策的流式 STT provider。
-- 依赖边界：本 change 依赖 `implement-room-sensitive-speech-detection-backend` 已完成的本地 worker/STT 基础；其真实 Cloud/provider smoke 仍未完成，因此本 change 的同类真实验收也必须保持独立未完成，不能阻止本地开发但会阻止归档。
+- `apps/api/prisma/`: Room switches, post-meeting summary status/entries, personal wordbook, consent purposes, idempotent commands and index migration.
+- `apps/api/src/modules/rooms/`, the new post-meeting summary/wordbook business module: creating and joining access control, participation qualifications, summary reading, personal entry commands and ownership verification.
+- `apps/api/src/workers/room-speech/` and `speech-safety/`: Extend existing single-purpose processing orchestration into temporary windows distributed on purpose, maintaining persistent factual isolation of security rules and learning content.
+- `apps/api/src/infrastructure/stt/`, `redis/`: reuse the streaming STT adapter, add bounded temporary candidate aggregation without member ownership, fencing, TTL and failure cleanup.
+- `openapi/openapi.yaml`: Room switch, post-meeting summary, agreement status and personal words of this contract.
+- External dependencies: PostgreSQL, Redis, LiveKit Cloud, and streaming STT provider that meet the maximum seven-day policy.
+- Dependency boundary: This change relies on the local worker/STT foundation that `implement-room-sensitive-speech-detection-backend` has completed; its real Cloud/provider smoke has not yet been completed, so the similar real-life experimental acceptance of this change must also remain independent and unfinished, which cannot prevent local development but will prevent archiving.

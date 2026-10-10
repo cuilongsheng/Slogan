@@ -1,10 +1,10 @@
-## 1. 唯一 API 合同的前端消费边界
+## 1. Front-end consumption boundary of unique API contract
 
-- [x] 1.1 在 `packages/api-client` 固定生成器和 fetch 客户端依赖，添加生成与漂移检查命令；通过 `pnpm install --frozen-lockfile` 和生成命令验证依赖与输入路径可用。
-- [x] 1.2 从当前 `openapi/openapi.yaml` 生成只读 TypeScript 合同，提供类型化客户端公共工厂；通过生成器 `--check`、包 typecheck 和一次已知 endpoint 的类型检查验证路径、参数及响应来自合同。
+- [x] 1.1 Fixed generator and fetch client dependencies in `packages/api-client`, added build and drift check commands; verify dependencies and input paths are available through `pnpm install --frozen-lockfile` and build commands.
+- [x] 1.2 Generate a read-only TypeScript contract from the current `openapi/openapi.yaml`, providing a typed client public factory; verify that paths, parameters and responses come from the contract via type checking of the generator `--check`, package typecheck and a known endpoint.
 
-## 2. 移动端接入与证据
+## 2. Mobile access and evidence
 
-- [x] 2.1 添加 `apps/mobile/src/api` 入口并经 workspace 包引用生成客户端，不在 route 写请求或复制 DTO；通过移动端 typecheck 和依赖边界检查验证。
-- [x] 2.2 记录 API 地址配置和生成/检查方法，明确当前工程页、会话与业务 UI 的边界；通过文档中的路径/命令核对和 `git diff --check` 验证。
-- [x] 2.3 对最终改动运行受影响范围的 format、lint、typecheck、相关 tests、build、依赖边界、生成漂移和 OpenSpec strict validation；在验收记录中标注实际结果及尚未进行的运行时/设备验证。
+- [x] 2.1 Add the `apps/mobile/src/api` entry and generate the client through the workspace package reference. Do not write requests or copy DTO in the route; pass the mobile terminal typecheck and dependency boundary check verification.
+- [x] 2.2 Record the API address configuration and generation/checking method, and clarify the boundaries between the current project page, session and business UI; check the path/command in the document and verify with `git diff --check`.
+- [x] 2.3 Run affected scope format, lint, typecheck, relevant tests, build, dependency boundaries, build drift, and OpenSpec strict validation on final changes; note actual results and pending runtime/device validation in acceptance records.

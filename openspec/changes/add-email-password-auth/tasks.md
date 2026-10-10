@@ -1,8 +1,8 @@
 ## 1. Prototype / Figma
 
-- [x] 1.1 在 `Slogan` Figma 文件建立本原型所需的品牌、中性、状态、间距、圆角和字号 Token，并通过变量清单确认命名、作用域和取值完整。
-- [x] 1.2 创建主/次按钮、provider 按钮、文本输入、选择字段、头像上传、兴趣 chip、步骤提示、modal/bottom sheet 和表单反馈组件，并通过组件结构检查与逐组件截图确认没有硬编码漂移、文字裁切或不足 44 × 44 的触控目标。
-- [x] 1.3 设计 `Auth / Sign in` 及注册、待验证邮箱、找回密码、微信二维码、Google 账户选择、失败和过期变体，并用 390 × 844 截图逐项核对需求场景和中英文文案位置。
-- [x] 1.4 设计 `Profile / First setup` 的头像、显示名称、性别、国籍/城市、兴趣、CEFR 和出生年月表单及校验状态，并通过可滚动原型检查键盘遮挡、底部主操作和必填字段可达性。
-- [x] 1.5 对两个页面执行对比度、命名、Token 绑定和原型跳转检查，记录最终 Figma file/page/frame/node 到 `docs/design/figma-index.md`，并以最终截图和点击路径作为验收证据。
-- [ ] 1.6 根据用户对第一版截图和点击路径的反馈做最多三轮定向调整，每轮保留修改前后截图并确认登录页和资料页均达到可接受视觉结果。
+- [x] 1.1 Create the brand, neutrality, status, spacing, rounded corners and font size Token required for this prototype in the `Slogan` Figma file, and confirm that the naming, scope and value are complete through the variable list.
+- [x] 1.2 Create primary/secondary buttons, provider buttons, text input, selection fields, avatar upload, interest chip, step prompts, modal/bottom sheet and form feedback components, and confirm through component structure inspection and component-by-component screenshots that there are no hard-coded drifts, text cropping, or insufficient 44 × 44 touch targets.
+- [x] 1.3 Design `Auth / Sign in` and registration, email to be verified, password retrieval, WeChat QR code, Google account selection, failed and expired variants, and use 390 × 844 screenshots to check the demand scenarios and Chinese and English copywriting positions one by one.
+- [x] 1.4 Design `Profile / First setup`’s avatar, display name, gender, nationality/city, interests, CEFR and birth date forms and verification status, and check keyboard occlusion, bottom main action and required field accessibility through a scrollable prototype.
+- [x] 1.5 Perform contrast, naming, Token binding and prototype jump checks on the two pages, record the final Figma file/page/frame/node to `docs/design/figma-index.md`, and use the final screenshot and click path as evidence of acceptance.
+- [ ] 1.6 Make up to three rounds of directional adjustments based on user feedback on the first version of screenshots and click paths. Keep the screenshots before and after modifications in each round and confirm that both the login page and the profile page achieve acceptable visual results.

@@ -1,89 +1,110 @@
 ## Purpose
 
-定义当前房主延长已开放即时或预约房间的统一时间规则、持久并发边界和实时同步结果，使会话可以继续而不会被旧任务提前结束或因外部设施故障丢失新结束时间。
+Define unified time rules, persistent concurrency boundaries, and real-time synchronization results for the current room host to extend open instant or reserved rooms so that the session can continue without being ended prematurely by old tasks or losing the new end time due to external facility failure.
 
 ## ADDED Requirements
 
-### Requirement: 当前房主可以延长已开放房间
-系统 MUST 只允许当前房主延长仍处于 `OPEN` 且服务端当前时间早于 `endsAt` 的即时房间或预约房间。单次延长 MUST 为 1 至 60 个整数分钟，从 PostgreSQL 中当前持久 `endsAt` 累加；每个房间最多成功延长 3 次，不需要其他成员同意。
+### Requirement: The current room host can extend the open room
 
-#### Scenario: 延长即时房间
-- **WHEN** 当前房主为仍开放的即时房间提交有效分钟数和请求标识
-- **THEN** 系统从当前结束时间累加分钟数、将成功次数加一，并返回旧结束时间、新结束时间和剩余次数
+The system MUST only allow the current room host to extend instant rooms or reserved rooms that are still at `OPEN` and the current time on the server is earlier than `endsAt`. A single extension MUST be from 1 to 60 integer minutes, accumulated from the current persistent `endsAt` in PostgreSQL; each room can be successfully extended up to 3 times without consent from other members.
 
-#### Scenario: 延长已开放预约房间
-- **WHEN** 当前房主在预约房间到达开始时间并开放后提交有效延长请求
-- **THEN** 系统按与即时房间相同的分钟和次数规则更新该预约房间的结束时间
+#### Scenario: Extend instant room
 
-#### Scenario: 接任房主延长房间
-- **WHEN** 房主权限已按现有规则移交，当前持久房主提交有效延长请求
-- **THEN** 系统允许接任者延长并把其记录为本次动作的操作者
+- **WHEN** The current room host submitted valid minutes and request ID for the instant room that is still open
+- **THEN** The system adds minutes from the current end time, adds one to the number of successes, and returns the old end time, new end time, and remaining times
 
-### Requirement: 延长权限和边界由服务端强制执行
-系统 MUST 拒绝非当前房主、未开放预约房间、已到期、`ENDING`、`ENDED` 或 `CANCELLED` 房间的延长请求，也 MUST 拒绝小于 1、超过 60、非整数分钟或已经完成 3 次延长的请求。拒绝 MUST 不改变结束时间、延长次数或实时同步状态。
+#### Scenario: Extend the open reservation room
 
-#### Scenario: 非房主直接请求延长
-- **WHEN** 普通成员或已移交后的旧房主绕过客户端直接请求延长
-- **THEN** 系统返回稳定权限拒绝且房间时间保持不变
+- **WHEN** The current room host submits a valid extension request after the reserved room reaches the start time and is opened.
+- **THEN** The system updates the end time of the reserved room according to the same minute and frequency rules as the instant room.
 
-#### Scenario: 预约房间开始前延长
-- **WHEN** 当前房主尝试延长仍处于 `SCHEDULED` 的预约房间
-- **THEN** 系统返回稳定状态冲突且保留原计划结束时间
+#### Scenario: Take over room host and extend the room
 
-#### Scenario: 延长次数用尽
-- **WHEN** 房间已经成功延长 3 次后收到新的延长请求
-- **THEN** 系统返回稳定次数上限冲突且不创建第四条延长事实
+- **WHEN** The room host permission has been transferred according to the existing rules, and the current persistent room host submitted a valid extension request
+- **THEN** The system allows the successor to extend and record it as the operator of this action
 
-#### Scenario: 房间刚好到期
-- **WHEN** 延长事务取得的数据库当前时间已经达到或晚于原 `endsAt`
-- **THEN** 系统拒绝延长并继续按现有到期流程处理房间
+### Requirement: Extended permissions and boundaries are enforced by the server
 
-### Requirement: 延长命令保持幂等和并发一致
-系统 MUST 要求延长请求携带调用者生成的 UUID 请求标识，并以操作者、房间、规范化分钟数确定命令内容。相同操作者使用相同请求标识重试相同内容 MUST 返回原结果；复用请求标识改变房间或分钟数 MUST 返回稳定冲突。结束时间、成功次数、延长事实和房间事件 MUST 在同一数据库事务中提交。
+The system MUST reject extension requests for rooms that are not the current room host, open reservation rooms, expired, `ENDING`, `ENDED` or `CANCELLED` rooms. It also MUST reject extension requests that are less than 1, exceed 60, non-integer minutes or have been completed 3 times. Rejection MUST not change the end time, extension count, or real-time sync status.
 
-#### Scenario: 重试成功的延长命令
-- **WHEN** 当前房主使用相同请求标识和相同分钟数重试已经成功的请求
-- **THEN** 系统返回原旧结束时间、新结束时间和次数，不再次延长或生成重复事件
+#### Scenario: Non-room host directly requests extension
 
-#### Scenario: 复用请求标识改变分钟数
-- **WHEN** 同一操作者使用已有请求标识为相同或不同房间提交不同分钟数
-- **THEN** 系统返回稳定幂等冲突且保留原命令结果
+- **WHEN** Ordinary members or old room hosts that have been transferred directly request extension, bypassing the client.
+- **THEN** System returns stable permission denial and room time remains unchanged
 
-#### Scenario: 并发竞争最后一次延长
-- **WHEN** 多个不同请求并发竞争同一房间的第三次延长
-- **THEN** 系统最多提交一个第三次延长，其余请求返回次数上限冲突，且新结束时间没有丢失更新
+#### Scenario: Extend the room reservation before it starts
 
-### Requirement: PostgreSQL 新结束时间立即决定房间有效期
-系统 MUST 以事务提交后的 PostgreSQL `endsAt` 作为加入、预约、实时凭证和到期判断的唯一持久时间事实。延长成功后，系统 MUST 重新安排新结束时间的到期处理；旧到期任务、Redis 数据或缓存 MUST 不能在新 `endsAt` 前结束房间。
+- **WHEN** The current room host attempts to extend the reserved room that is still at `SCHEDULED`
+- **THEN** The system returns to a stable state in conflict and retains the original planned end time
 
-#### Scenario: 旧到期任务在原结束时间运行
-- **WHEN** 延长前安排的到期任务在原 `endsAt` 触发但数据库中的新 `endsAt` 仍在未来
-- **THEN** 系统保持房间开放、不撤销成员凭证，并保证新结束时间仍有可恢复的到期处理
+#### Scenario: Exhausted number of extensions
 
-#### Scenario: 队列在延长时不可用
-- **WHEN** 数据库延长事务成功但 Redis 或到期队列暂时不可用
-- **THEN** 新结束时间立即决定请求路径行为，恢复扫描在设施可用后按数据库事实补充调度
+- **WHEN** A new extension request was received after the room has been successfully extended 3 times.
+- **THEN** The system returns a conflict with the upper limit of stable times and does not create the fourth extension fact
 
-#### Scenario: 到达新结束时间
-- **WHEN** 服务端时间达到延长后的最终 `endsAt`
-- **THEN** 系统复用现有结束、拒绝加入和实时媒体清理流程，不因曾存在旧任务而重复结束
+#### Scenario: The room has just expired
 
-### Requirement: 延长结果可恢复地同步给在线成员
-系统 MUST 在延长事务中保存可恢复的房间时间同步动作，并通过 LiveKit 房间级元数据向当前及后续连接成员提供最新 `endsAt`、延长次数和单调房间状态版本。延长 API MUST 返回持久业务结果和 `COMPLETED`、`PENDING` 或 `UNAVAILABLE` 同步状态；外部同步失败不得回滚已经提交的新结束时间，恢复流程 MUST 最终收敛到数据库中的最新版本。
+- **WHEN** The current time of the database obtained by the extended transaction has reached or is later than the original `endsAt`
+- **THEN** The system refuses to extend and continues to process the room according to the existing expiration process.
 
-#### Scenario: LiveKit 同步成功
-- **WHEN** 房间已有 LiveKit 会话且控制面更新成功
-- **THEN** 在线成员收到带最新状态版本的新结束时间，API 返回 `COMPLETED`
+### Requirement: Extend command to keep idempotent and concurrency consistent
 
-#### Scenario: LiveKit 暂时不可用
-- **WHEN** 延长事务已提交但 LiveKit 控制面调用失败
-- **THEN** API 返回已提交的新结束时间及 `UNAVAILABLE` 或 `PENDING`，房间仍按新时间有效，并保留可重试同步动作
+The system MUST require the extension request to carry the UUID request identifier generated by the caller, and determine the command content with the operator, room, and normalized minutes. Retrying the same content by the same operator using the same request ID MUST return the original result; reusing the request ID to change the room or minutes MUST return a stable conflict. End time, number of successes, extension facts, and room events MUST be committed in the same database transaction.
 
-#### Scenario: 房间尚未创建远端会话
-- **WHEN** 已开放房间成功延长但还没有成员获取实时凭证，因而尚无 LiveKit 房间
-- **THEN** 系统保留最新时间事实，首次创建远端会话时写入最新元数据，不把远端不存在当作延长失败
+#### Scenario: Retry successful extension command
 
-#### Scenario: 重复或乱序同步
-- **WHEN** 恢复流程重复执行同步，或旧状态版本晚于新版本到达客户端
-- **THEN** 最终远端元数据收敛到数据库最新版本，客户端不得用较旧版本覆盖已观察到的新结束时间
+- **WHEN** The current room host retries a successful request using the same request ID and the same number of minutes.
+- **THEN** The system returns the old end time, new end time and times, and does not extend it again or generate duplicate events.
 
+#### Scenario: Reuse request identifier change minutes
+
+- **WHEN** The same operator submitted different minutes for the same or different rooms using an existing request ID.
+- **THEN** The system returns a stable idempotent conflict and retains the original command result.
+
+#### Scenario: Concurrency contention last extended
+
+- **WHEN** Multiple different requests concurrently competing for the third extension of the same room
+- **THEN** The system can submit at most one third extension, and other requests return the maximum number of times in conflict, and the new end time does not lose updates.
+
+### Requirement: PostgreSQL new end time determines room validity immediately
+
+The system MUST use PostgreSQL `endsAt` after transaction commit as the only persistent time fact for joins, reservations, real-time credentials, and expiration judgments. After the extension is successful, the system MUST reschedule the expiration processing of the new end time; old expiration tasks, Redis data or cache MUST not end the room before the new `endsAt`.
+
+#### Scenario: The old due task is run at the original end time
+
+- **WHEN** The expiring task scheduled before the extension is triggered at the original `endsAt` but the new `endsAt` in the database is still in the future
+- **THEN** The system keeps the room open, does not revoke member credentials, and ensures that there is still recoverable expiration processing at the new end time.
+
+#### Scenario: Queue unavailable for extension
+
+- **WHEN** Database extension transaction is successful but Redis or expiration queue is temporarily unavailable
+- **THEN** The new end time immediately determines the request path behavior, and the recovery scan is supplementally scheduled according to the database facts after the facility is available.
+
+#### Scenario: New end time reached
+
+- **WHEN** The server time reaches the extended final `endsAt`
+- **THEN** The system reuses the existing end, join refusal and real-time media cleanup processes, and does not end them repeatedly because old tasks have existed
+
+### Requirement: Extended results are resynchronized to online members
+
+The system MUST save resumable room time synchronization actions in extension transactions and provide the latest `endsAt`, extension count, and monotonic room state versions to current and subsequent connected members via LiveKit room-level metadata. Extended API MUST return durable business results and `COMPLETED`, `PENDING` or `UNAVAILABLE` synchronization status; external synchronization failure MUST not roll back the new end time that has been submitted, and the recovery process MUST eventually converge to the latest version in the database.
+
+#### Scenario: LiveKit synchronization successful
+
+- **WHEN** The room already has a LiveKit session and the control plane was updated successfully
+- **THEN** Online members receive new end time with latest status version, API returns `COMPLETED`
+
+#### Scenario: LiveKit is temporarily unavailable
+
+- **WHEN** Extended transaction committed but LiveKit control plane call failed
+- **THEN** API returns the submitted new end time and `UNAVAILABLE` or `PENDING`. The room is still valid according to the new time and remains available for retrying the synchronization action.
+
+#### Scenario: The room has not created a remote session yet
+
+- **WHEN** The open room was successfully extended but no members have obtained real-time credentials, so there is no LiveKit room yet
+- **THEN** The system retains the latest time facts, writes the latest metadata when the remote session is created for the first time, and does not regard the non-existence of the remote end as an extension failure.
+
+#### Scenario: Duplicate or out-of-order synchronization
+
+- **WHEN** The recovery process repeats the synchronization, or the old state version reaches the client later than the new version
+- **THEN** Eventually the remote metadata converges to the latest version of the database, and the client must not overwrite the observed new end time with an older version.

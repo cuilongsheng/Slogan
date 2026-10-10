@@ -1,24 +1,24 @@
 ## ADDED Requirements
 
-### Requirement: 房间分享使用稳定的服务端链接
+### Requirement: Room sharing uses a stable server link
 
-移动端 MUST 从房间详情读取服务端分享 URL，并提供可执行的分享操作。Web MUST 可复制该 URL，原生端 MUST 能调用系统分享面板；失败时仍可手动选择链接。分享动作 MUST 不包含认证凭证、房间密码或成员资料。
+The mobile terminal MUST read the server-side sharing URL from the room details and provide executable sharing operations. Web MUST be able to copy the URL, and the native side MUST be able to call the system sharing panel; if it fails, you can still manually select the link. The share action MUST not contain authentication credentials, room passwords, or member data.
 
-#### Scenario: 复制即时房间分享链接
+#### Scenario: Copy instant room sharing link
 
-- **WHEN** 用户在即时房间详情选择分享
-- **THEN** 客户端复制服务端返回的稳定分享 URL，并反馈成功或失败
+- **WHEN** User chooses to share in real-time room details
+- **THEN** The client copies the stable sharing URL returned by the server and reports success or failure.
 
-### Requirement: 房主在语音房内延长结束时间
+### Requirement: Room host extends the end time in the voice room
 
-当前房主 MUST 能选择 15、30 或 60 分钟并确认延长。客户端 MUST 对同一次提交保留请求标识直到确认结果，成功后 MUST 显示服务端结束时间及实时同步状态并重取房间详情。非房主不得看到延长入口。
+The current room host MUST be able to select 15, 30 or 60 minutes and confirm the extension. The client MUST retain the request identifier for the same submission until the result is confirmed. After success, the client MUST display the server end time and real-time synchronization status and retrieve the room details. Non-room hosts are not allowed to see the extended entrance.
 
-#### Scenario: 同一延长重试
+#### Scenario: Retry with same extension
 
-- **WHEN** 房主确认 15 分钟延长后遇到网络错误并重试
-- **THEN** 客户端使用相同 UUID 和分钟数提交，不形成第二次业务延长
+- **WHEN** Room host confirmed that it encountered a network error after the 15-minute extension and tried again.
+- **THEN** The client submits using the same UUID and minutes, which does not form a second business extension.
 
-#### Scenario: 实时同步暂不可用
+#### Scenario: Real-time synchronization is temporarily unavailable
 
-- **WHEN** 延长 API 返回已更新结束时间且 `providerStatus` 为 `PENDING` 或 `UNAVAILABLE`
-- **THEN** 客户端显示已提交的新时间和同步待恢复状态，不声明延长失败
+- **WHEN** Extend API returns updated end time and `providerStatus` is `PENDING` or `UNAVAILABLE`
+- **THEN** The client displays the submitted new time and the synchronization pending recovery status, and does not declare the extension failure.

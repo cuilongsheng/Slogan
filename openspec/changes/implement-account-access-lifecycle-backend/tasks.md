@@ -1,70 +1,70 @@
-## 1. Schema、配置与边界
+## 1. Schema, configuration and boundaries
 
-- [x] 1.1 增加 PhoneIdentity、AccountLifecycleCommand、所需动作/状态枚举和 User.deletedAt，建立手机号 hash 唯一键、每用户一个手机号、每用户每 OAuth provider 一个身份及幂等命令约束，并通过 Prisma validate/generate 与 schema 结构测试验证
-- [x] 1.2 编写只向前迁移并用含历史 OAuth 用户、session、房间和安全事实的迁移测试验证旧数据保持可登录、历史用户 deletedAt 为空且新增约束不破坏现有关系
-- [x] 1.3 增加手机号认证 feature flag、hash version/pepper、短信 provider、支持地区、TTL、尝试上限、冷却、timeout 和多维限额配置，验证关闭时旧 OAuth API 可启动、启用但 Redis/安全配置缺失时启动或 readiness 安全失败且不回显配置值
-- [x] 1.4 建立短信 provider、phone challenge store、账号身份与生命周期 transaction 的 domain/application ports，运行依赖边界检查验证 domain 不导入 NestJS、Prisma、Redis、HTTP DTO 或具体短信 SDK
-- [x] 1.5 在验收文档记录部署、分阶段启用与回滚顺序，验证包含保持开关关闭、先迁移、provider/readiness smoke、保留身份占用/DELETED/审计事实且禁止紧急恢复账号
+- [x] 1.1 Added PhoneIdentity, AccountLifecycleCommand, required action/state enumeration and User.deletedAt, established mobile phone number hash unique key, one mobile phone number per user, one identity per user per OAuth provider and idempotent command constraints, and passed Prisma validate/generate and schema structure test verification
+- [x] 1.2 Write a forward-only migration and use the migration test with historical OAuth users, sessions, rooms and security facts to verify that the old data remains logging in, the historical user deletedAt is empty and the new constraints do not destroy the existing relationship.
+- [x] 1.3 Added mobile phone number authentication feature flag, hash version/pepper, SMS provider, supported area, TTL, attempt upper limit, cooling, timeout and multi-dimensional quota configuration. The old OAuth API can be started when the verification is turned off. It can be started when enabled but the Redis/security configuration is missing or the readiness security fails and the configuration value is not echoed.
+- [x] 1.4 Establish domain/application ports for SMS provider, phone challenge store, account identity and life cycle transaction, run dependency boundary check verification domain and do not import NestJS, Prisma, Redis, HTTP DTO or specific SMS SDK
+- [x] 1.5 Record the deployment, phased activation and rollback sequence in the acceptance document. Verification includes keeping the switch off, migrating first, provider/readiness smoke, retaining identity occupation/DELETED/audit facts and prohibiting emergency account recovery.
 
-## 2. 手机号规范化、OTP 与短信适配
+## 2. Mobile phone number standardization, OTP and SMS adaptation
 
-- [x] 2.1 实现国际号码解析、E.164 规范化、支持地区 policy、版本化 HMAC 查找摘要和最小掩码，验证等价输入映射同一 hash、无效/禁用地区被拒绝且完整号码不进入持久或诊断对象
-- [x] 2.2 实现 Redis challenge 的创建、验证码 HMAC、purpose、TTL、重发时间、剩余尝试与 compare-and-delete，使用原子脚本验证错误扣减、过期、尝试耗尽、目的隔离和并发正确码最多一次成功
-- [x] 2.3 实现按手机号摘要、来源、设备和全局发送量的 Redis 限流与冷却，验证任一维度超限都不调用 provider、错误不透露命中维度且计数按 TTL 恢复
-- [x] 2.4 实现可替换 SmsProvider adapter 的最小请求、timeout 和 SUCCESS/FAILED/UNCERTAIN 错误归一化，使用 fake transport 验证请求不包含用户资料、房间信息、OAuth token 或平台密钥
-- [x] 2.5 实现公开 OTP 请求 use case 和 provider 失败清理，验证有效请求返回 challenge/过期/重发时间、无效格式不调用 provider、账号是否存在不改变响应形状且 OAuth 登录在短信故障时仍可用
-- [x] 2.6 实现短期 verification grant 的目的/user/request 绑定和重试边界，验证数据库提交失败后只有同一命令可在期限内重试、其他用户/目的/请求不能消费且成功提交后 grant 不可再次使用
-- [x] 2.7 增加 challenge、grant、限流键的维护清理和 shutdown 行为，验证过期数据不可读取、明文验证码没有残留且清理不触碰 PhoneIdentity、OAuthIdentity 或账号事实
+- [x] 2.1 implements international number resolution, E.164 normalization, supports regional policies, versioned HMAC lookup summaries and minimum masks, verifies that equivalent inputs map to the same hash, invalid/disabled regions are rejected and complete numbers do not enter persistent or diagnostic objects
+- [x] 2.2 Implement the creation of Redis challenge, verification code HMAC, purpose, TTL, resend time, remaining attempts and compare-and-delete, use atomic script to verify error deduction, expiration, attempt exhaustion, purpose isolation and concurrent correct code to succeed at most once
+- [x] 2.3 Implement Redis rate limiting and cooling based on mobile phone number summary, source, device and global sending volume. When verifying that any dimension exceeds the limit, the provider will not be called, errors will not reveal the hit dimension, and the count will be restored according to TTL
+- [x] 2.4 Implement minimum request, timeout and SUCCESS/FAILED/UNCERTAIN error normalization for replaceable SmsProvider adapter, use fake transport to verify that the request does not contain user profile, room information, OAuth token or platform key
+- [x] 2.5 implements public OTP request use case and provider failure cleanup, verifies that valid requests return challenge/expiration/resend time, invalid format does not call the provider, whether the account exists does not change the response shape, and OAuth login is still available in the event of SMS failure.
+- [x] 2.6 Implement the purpose/user/request binding and retry boundary of short-term verification grant. After the verification database submission fails, only the same command can be retried within the period, other users/purposes/requests cannot be consumed, and the grant cannot be used again after successful submission.
+- [x] 2.7 Adds maintenance, cleaning and shutdown behaviors for challenge, grant, and rate limiting keys to verify that expired data cannot be read, that there is no residue of plain text verification codes, and that cleaning does not touch PhoneIdentity, OAuthIdentity or account facts
 
-## 3. 手机号注册、登录与资料衔接
+## 3. Mobile phone number registration, login and data connection
 
-- [x] 3.1 实现 serializable 的手机号 find-or-create 事务，验证首次验证只创建一个 ACTIVE User/PhoneIdentity、重复验证返回原 userId、唯一冲突重试不会产生孤立用户
-- [x] 3.2 把手机号 exchange 接入现有 SessionService 和 ProfilesService，验证成功返回 token pair、created 与 PROFILE_REQUIRED/AGE_RESTRICTED/ELIGIBLE，手机号验证本身不绕过资料和成年校验
-- [x] 3.3 增加 `POST /v1/auth/phone/challenges` 与 `POST /v1/auth/phone/exchange` DTO/controller/error 映射，验证 challenge/code/phone 字段白名单、稳定状态码、防枚举响应和 OpenAPI runtime 一致
-- [x] 3.4 在手机号 exchange、OAuth exchange、session issue/refresh 与 access guard 中统一校验 User.status，验证 DISABLED/DELETED 身份不能获得或刷新会话、不能走未找到后建号分支且旧 access token 立即失效
-- [x] 3.5 运行既有 OAuth、refresh rotation、replay revoke、资料初始化和成年门禁回归，验证 feature flag 关闭时公开合同与原行为保持兼容
+- [x] 3.1 Implement serializable mobile phone number find-or-create transaction, verify that only one ACTIVE User/PhoneIdentity is created for the first verification, repeated verification returns the original userId, and unique conflicts and retries will not produce orphaned users
+- [x] 3.2 Connect the mobile phone number exchange to the existing SessionService and ProfilesService. Successful verification returns token pair, created and PROFILE_REQUIRED/AGE_RESTRICTED/ELIGIBLE. The mobile phone number verification itself does not bypass the data and adult verification.
+- [x] 3.3 Added `POST /v1/auth/phone/challenges` and `POST /v1/auth/phone/exchange` DTO/controller/error mapping, verified that challenge/code/phone field whitelist, stable status code, anti-enumeration response and OpenAPI runtime are consistent
+- [x] 3.4 Uniformly verify User.status in mobile phone number exchange, OAuth exchange, session issue/refresh and access guard. Verify that DISABLED/DELETED identity cannot obtain or refresh the session, cannot go to the post-creation account branch if it is not found, and the old access token becomes invalid immediately.
+- [x] 3.5 Run the existing OAuth, refresh rotation, replay revoke, data initialization and adult access control regression to verify that the public contract remains compatible with the original behavior when the feature flag is turned off
 
-## 4. 多登录方式绑定
+## 4. Binding multiple login methods
 
-- [x] 4.1 实现 `GET /v1/me/login-methods`，验证只返回已验证方式类别、时间和手机号最小掩码，不返回 phone hash、完整号码、issuer、subject、authorization code 或 token
-- [x] 4.2 实现已登录手机号绑定 challenge/confirm，验证当前用户和 LINK purpose 绑定、成功不创建新 User、同一身份本人重试幂等且其他账号占用返回非泄露冲突
-- [x] 4.3 实现 Google/微信 OAuth link 命令，验证必须使用当前有效会话和新 provider 授权码、只调用 linkIdentity、不调用 findOrCreateUser，并拒绝把其他 userId 的身份移入当前账号
-- [x] 4.4 在数据库事务和唯一约束中实现每用户每 OAuth provider/每用户手机号边界，验证并发绑定最多一个成功、无部分记录且现有 userId 的资料、历史、单词本和安全事实不变
-- [x] 4.5 增加 provider email、昵称、头像和手机号相似性不参与自动合并的测试，验证相似建议资料仍创建独立首次登录账号或返回明确绑定冲突，不复制跨账号业务数据
-- [x] 4.6 增加 ACTIVE 状态、目的、当前用户和 provider 配置门禁，验证撤销会话、禁用/注销账号、错误 provider、过期 grant 和直接绕过 UI 都不能增加登录方式
+- [x] 4.1 implements `GET /v1/me/login-methods`. The verification only returns the verified method category, time and minimum mask of the mobile phone number. It does not return the phone hash, complete number, issuer, subject, authorization code or token.
+- [x] 4.2 Implement challenge/confirm binding of logged-in mobile phone number, verify that the current user is bound to the LINK purpose, no new User will be created if successful, retry idempotent with the same identity, and other account occupations will return non-leak conflicts
+- [x] 4.3 Implement Google/WeChat OAuth link command, verification must use the current valid session and new provider authorization code, only call linkIdentity, do not call findOrCreateUser, and refuse to move other userId identities into the current account
+- [x] 4.4 Implement per-user per-OAuth provider/per-user phone number boundaries in database transactions and unique constraints, verify that concurrent binding can be successful at most, with no partial records, and the existing userId’s information, history, wordbook, and security facts remain unchanged
+- [x] 4.5 Added that the similarity of provider email, nickname, avatar and mobile phone number will not participate in the test of automatic merging. Verify that similar recommended materials will still create an independent first login account or return a clear binding conflict, and do not copy cross-account business data.
+- [x] 4.6 Add ACTIVE status, purpose, current user and provider to configure access control, verify and revoke sessions, disable/delete the account accounts, error providers, expired grants and directly bypass the UI. Login methods cannot be added.
 
-## 5. 重新认证与账号软注销
+## 5. Re-authentication and account soft cancellation
 
-- [x] 5.1 实现 PHONE/OAuth 的 ACCOUNT_DELETE step-up proof，验证 proof 短期、单用途、绑定当前 userId/identity/nonce，过期、复用、身份不属于本人和跨目的使用全部被拒绝
-- [x] 5.2 实现 AccountLifecycleCommand 的 clientRequestId、规范化 payload hash 与结果快照，验证相同 UUID/载荷返回原注销结果、改变载荷冲突且并发命令只提交一次生命周期变化
-- [x] 5.3 实现注销前 ACTIVE 用户、确认内容和有效后台角色门禁，验证普通用户可继续、任一后台角色持有者必须先撤销角色且拒绝路径不修改账号/会话/关系
-- [x] 5.4 实现账号注销核心 serializable 事务：设置 DELETED/deletedAt、撤销全部 AuthSession、失效 realtime issuance/identity、递增活动 membership credentialVersion 并写 REVOKE_IDENTITY，验证任一持久步骤失败会整体回滚
-- [x] 5.5 复用既有房主离开规则收敛注销用户的活动房间，验证有合格成员时只接任一次、无成员时可靠结束、LiveKit 命令失败可重试且旧 token/API 始终不能恢复资格
-- [x] 5.6 取消注销用户主持的未来预约房间和本人 reservation，验证重复注销/维护扫描幂等、其他房间不受影响且已结束房间历史不被改写
-- [x] 5.7 终结注销用户的待处理好友请求和房间邀请并清除 presence 可见性，验证好友/空闲/邀请/公开资料列表立即隐藏该用户且安全案件、限制和审计事实保持不变
-- [x] 5.8 增加受限中用户、存在举报/案件/申诉、拥有私人笔记/单词本和历史 membership 的注销测试，验证注销不解除处罚、不删除证据或用户内容、原手机号/OAuth 身份仍被占用且不提供恢复
-- [x] 5.9 增加 Redis、LiveKit 和 runner 故障下的注销 runtime 测试，验证数据库访问先阻断、durable command 可在重启后收敛、外部失败不回滚成 ACTIVE 且无部分可见关系
+- [x] 5.1 Implement the ACCOUNT_DELETE step-up proof of PHONE/OAuth, verify that the proof is short-term, single-purpose, bound to the current userId/identity/nonce, expired, reused, the identity does not belong to the person, and cross-purpose use are all rejected
+- [x] 5.2 Implement the clientRequestId, normalized payload hash and result snapshot of AccountLifecycleCommand, verify that the same UUID/payload returns the original account deletion result, change the payload conflict, and concurrent commands only submit one life cycle change
+- [x] 5.3 Implement access control for ACTIVE users, confirmation content and valid backend roles before account deletion, verify that ordinary users can continue, any backend role holder must first revoke the role and reject the path without modifying the account/session/relationship
+- [x] 5.4 Implement the core serializable transaction of account cancellation: set DELETED/deletedAt, revoke all AuthSession, invalidate realtime issuance/identity, increment active membership credentialVersion and write REVOKE_IDENTITY. Failure to verify any persistence step will roll back the whole
+- [x] 5.5 Reuse the existing room host. Leave the rule convergence and delete the account the user's activity room. It will only take over once when there are qualified members. It will end reliably when there are no members. LiveKit commands can be retried if they fail, and the old token/API can never regain qualifications.
+- [x] 5.6 Cancel the cancellation of future reservation rooms and personal reservations hosted by the user, verify repeated cancellation/maintenance scan idempotent, other rooms will not be affected, and the history of ended rooms will not be overwritten.
+- [x] 5.7 Terminate pending friend requests and room invitations for deleted user and clear presence visibility, verify friend/available/invited/public profile lists immediately hide the user and security cases, restrictions and audit facts remain intact
+- [x] 5.8 adds a account deletion test for users who are restricted, have reports/cases/grievances, have private notes/vocabularies and historical memberships, and verify that deleting the account does not lift penalties, does not delete evidence or user content, and the original mobile phone number/OAuth identity is still occupied and does not provide recovery
+- [x] 5.9 adds account deletion runtime tests under Redis, LiveKit and runner failures to verify that database access is blocked first, durable commands can converge after restarting, external failures are not rolled back to ACTIVE, and there are no partially visible relationships
 
-## 6. 已注销账号后台受限查询
+## 6. Restricted backend query for canceled accounts
 
-- [x] 6.1 在 backoffice policy 增加 ACCOUNT_RESTRICTED_RECORD_READ 且只授予 PLATFORM_ADMIN/SAFETY_OFFICER，验证普通用户、仅 OPERATIONS_ANALYST、仅 AUDITOR 和角色撤销后的旧 token 均被拒绝
-- [x] 6.2 实现已注销账号最小查询 repository/application API，验证只返回 userId、状态/时间、方式类别、最小资料快照和 case/restriction/appeal 引用，不返回手机号/hash、provider subject/token、验证码、私人笔记或内容数据
-- [x] 6.3 增加 `GET /v1/backoffice/accounts/{userId}/restricted-record`，验证存在、缺失和未授权目标使用稳定非泄露合同且查询不能恢复账号、解绑身份或修改安全事实
-- [x] 6.4 为成功与拒绝查询写最小 BackofficeAuditEvent，验证包含 actor、当前角色、target、requestId、time、result/reason，不复制响应私人字段且重复读取各自可追踪
+- [x] 6.1 Add ACCOUNT_RESTRICTED_RECORD_READ to the backoffice policy and grant only PLATFORM_ADMIN/SAFETY_OFFICER, verify that ordinary users, only OPERATIONS_ANALYST, only AUDITOR and old tokens after role revocation are rejected
+- [x] 6.2 implements the minimum query repository/application API for canceled accounts. The verification only returns userId, status/time, method category, minimum data snapshot and case/restriction/appeal reference. It does not return mobile phone number/hash, provider subject/token, verification code, private notes or content data.
+- [x] 6.3 Added `GET /v1/backoffice/accounts/{userId}/restricted-record` to verify the existence, absence and unauthorized targets using stable non-disclosure contracts and queries cannot restore accounts, unbind identities or modify security facts
+- [x] 6.4 Write minimal BackofficeAuditEvent for successful and rejected queries, verify that it contains actor, current role, target, requestId, time, result/reason, do not copy response private fields and repeated reads are individually traceable
 
-## 7. API、隐私、维护与结构
+## 7. API, privacy, maintenance and structure
 
-- [x] 7.1 为 OTP、身份绑定、step-up、注销和后台查询补齐稳定业务错误与异常映射，验证响应不含 stack、SQL、完整号码、验证码、grant、provider body 或其他账号存在性线索
-- [x] 7.2 扩展结构化日志/trace 脱敏和禁止内容键/值规则，验证 phone/e164/otp/code/grant/provider payload、OAuth code/token、pepper/secret 在成功、失败、timeout 和异常路径均不可见
-- [x] 7.3 更新模块公开入口与 dependency-cruiser 规则，验证 auth、account-lifecycle、profiles、rooms、social、backoffice、audit 和 voice 只通过公开 application/domain port 交互且无循环依赖
-- [x] 7.4 实现 account command 技术记录与孤立 OTP Redis 键的保留清理，验证不会删除 PhoneIdentity/OAuthIdentity、DELETED 状态、案件、处罚、申诉、审计、房间历史、汇总、私人笔记或单词本
-- [x] 7.5 重新生成 `openapi/openapi.yaml` 并运行 drift 检查，验证手机号挑战/交换、登录方式、绑定、注销和受限查询的默认值、枚举、错误、时间和敏感字段与运行时一致
+- [x] 7.1 Complete stable business error and exception mapping for OTP, identity binding, step-up, account deletion and background query. The verification response does not contain stack, SQL, complete number, verification code, grant, provider body or other account existence clues.
+- [x] 7.2 Extended structured log/trace desensitization and prohibited content key/value rules, verify that phone/e164/otp/code/grant/provider payload, OAuth code/token, pepper/secret are not visible in success, failure, timeout and exception paths
+- [x] 7.3 Update module public entrance and dependency-cruiser rules to verify that auth, account-lifecycle, profiles, rooms, social, backoffice, audit and voice only interact through the public application/domain port and have no circular dependencies
+- [x] 7.4 implements account command technical records and retention cleanup of orphaned OTP Redis keys, verifying that PhoneIdentity/OAuthIdentity, DELETED status, cases, penalties, appeals, audits, room history, summary, private notes or vocabulary will not be deleted
+- [x] 7.5 Regenerate `openapi/openapi.yaml` and run drift check to verify that the default values, enumerations, errors, time and sensitive fields of mobile phone number challenge/exchange, login method, binding, account deletion and restricted query are consistent with the runtime
 
-## 8. 验证与验收
+## 8. Verification and acceptance
 
-- [x] 8.1 完成号码规范化、OTP 原子消费、限流、provider adapter、账号唯一、绑定冲突、step-up、幂等注销和脱敏的 unit tests，并验证目标测试全部通过
-- [x] 8.2 在真实 PostgreSQL 与 Redis 上完成历史迁移、唯一约束、并发 exchange/link、注销事务回滚、outbox 重启恢复和临时键清理 integration/runtime tests，并记录数据库与 Redis 版本及结果
-- [x] 8.3 完成 OTP 注册/登录、三个登录方式共享资料、禁用/注销拒绝、注销跨房间/预约/社交收敛及后台 RBAC/审计的 HTTP E2E，验证直接请求不能绕过服务端边界
-- [x] 8.4 运行 format、Prisma validate/generate、OpenAPI drift、依赖边界、build、完整 unit/integration/e2e/runtime、`git diff --check` 和 OpenSpec strict validation，并在一次最终 affected-scope 验证中记录命令、数量与结果
-- [x] 8.5 编写 `docs/acceptance/implement-account-access-lifecycle-backend.md`，分别记录本地实现、隐私检查、迁移/回滚、provider/地区配置、真实环境证明和所有 BLOCKED 项
-- [ ] 8.6 使用真实国际手机号与合格短信 provider 完成请求、送达、错误码、冷却、限流和成本 smoke，并使用真实 Google/微信配置验证首次登录、绑定、冲突和注销后拒绝；缺少任一必要凭据/政策证据时记录 BLOCKED、保持本任务未完成且不归档 change
+- [x] 8.1 Complete the unit tests of number normalization, OTP atomic consumption, rate limiting, provider adapter, unique account, binding conflict, step-up, idempotent account deletion and desensitization, and verify that all target tests pass
+- [x] 8.2 Complete historical migration, unique constraints, concurrent exchange/link, account deletion transaction rollback, outbox restart recovery and temporary key cleanup integration/runtime tests on real PostgreSQL and Redis, and record the database and Redis versions and results
+- [x] 8.3 Complete OTP registration/login, three login methods to share data, disable/account deletion rejection, account deletion across rooms/appointments/social convergence and background RBAC/audited HTTP E2E, verify that direct requests cannot bypass the server boundary
+- [x] 8.4 Run format, Prisma validate/generate, OpenAPI drift, dependency boundaries, build, full unit/integration/e2e/runtime, `git diff --check` and OpenSpec strict validation, and log commands, quantities and results in a final affected-scope validation
+- [x] 8.5 Write `docs/acceptance/implement-account-access-lifecycle-backend.md` to record local implementation, privacy check, migration/rollback, provider/region configuration, real environment proof and all BLOCKED items respectively
+- [ ] 8.6 Use a real international mobile phone number and a qualified SMS provider to complete the request, delivery, error code, cooling, current limit and cost smoke, and use the real Google/WeChat configuration to verify the first login, binding, conflict and account deletion and reject it; if any necessary credentials/policy evidence is missing, BLOCKED will be recorded, this task will remain incomplete and will not be archived change

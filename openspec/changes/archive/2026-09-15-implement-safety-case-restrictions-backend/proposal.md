@@ -1,67 +1,67 @@
 ## Why
 
-当前后端可以提交基础举报，也已经具备安全员角色与后台审计，但举报提交后没有案件、证据、处理状态、账号限制、申诉或恢复闭环。V1 需要先把举报事实转成可追踪、可审计且不会因任务延迟而错误延长的安全处置，才能真正执行已确认的 3/12/24 小时限制和严重风险永久禁用。
+Currently, the backend can submit basic reports, and already has the role of safety officer and administrative audit. However, after the report is submitted, there is no case, evidence, processing status, account restrictions, appeal or closed loop recovery. V1 needs to first convert the reported facts into a safe treatment that is traceable, auditable and will not be mistakenly extended due to task delays, before it can truly implement the confirmed 3/12/24 hour limit and permanent ban on serious risks.
 
 ## What Changes
 
-- 每个成功受理的举报在同一数据库事务中创建一个安全案件，保留举报与案件的一对一关系、处理状态、分配状态和稳定请求幂等结果。
-- 自动把新案件分配给当前未结案件最少的安全员；并列时采用确定性的轮转规则，无可用安全员时保留为可恢复的未分配案件。
-- 新增后台案件列表、详情、领取/开始处理、证据包查看、结案和驳回 API；证据只由已有举报、房间成员与时间线、房主管理事件及相关历史信号组成，不保存完整音频或转写。
-- 平台管理员可以查看全部案件与证据；只有当前持有 `SAFETY_OFFICER` 的用户可以推进案件、施加或解除限制、处理申诉及确认永久禁用。管理员只有同时持有安全员角色时才能执行这些动作。
-- 新增一般、严重和高风险三级临时账号限制，分别持续 3、12、24 小时；限制期内用户不能通过当前已有入口创建、加入或预约房间，也不能获取实时语音凭证。
-- 以 PostgreSQL 的服务端开始时间和 `endsAt` 作为限制事实；请求路径即时识别已到期限制，恢复任务负责持久化收敛，任务延迟不得延长限制。
-- 受限用户可以查看最小限制信息，并在限制开始后 30 分钟内提交一次申诉；安全员可以维持限制或提前解除，不在本 change 承诺申诉处理时限。
-- 严重或高风险案件在安全员明确确认事实后可以永久禁用账号，并保留不可变的处置和审计事实。
-- 所有案件读取、证据读取、分配、状态推进、限制、解除、申诉处理和永久禁用操作都进入后台审计；更新唯一 OpenAPI contract，并覆盖权限绕过、重复请求、并发处理、任务延迟和过期恢复等失败路径。
+- Each successfully accepted report creates a security case in the same database transaction, retaining the report's one-to-one relationship with the case, processing status, assignment status, and stable request idempotent results.
+- Automatically assign new cases to the safety officer with the fewest open cases; adopt deterministic rotation rules when parallel, and retain them as recoverable unassigned cases when there is no available safety officer.
+- Added background case list, details, collection/start processing, evidence package viewing, case closure and rejection API; evidence only consists of existing reports, room members and timelines, room host management events and related historical signals, and does not save complete audio or transcription.
+- Platform administrators can view all cases and evidence; only users who currently hold `SAFETY_OFFICER` can advance cases, impose or lift restrictions, handle appeals, and confirm permanent bans. Administrators can only perform these actions if they also hold the role of safety officer.
+- Added three levels of temporary account restrictions: general, serious and high risk, lasting 3, 12 and 24 hours respectively; during the restriction period, users cannot create, join or reserve rooms through the current entrance, nor can they obtain real-time voice credentials.
+- Use the PostgreSQL server start time and `endsAt` as the limit fact; the request path immediately identifies the expired limit, the recovery task is responsible for persistence convergence, and task delays must not extend the limit.
+- Restricted users can view the minimum restriction information and submit an appeal within 30 minutes after the restriction starts; the safety officer can maintain the restriction or lift it in advance, and does not commit to the appeal processing time limit in this change.
+- In serious or high-risk cases, the account can be permanently disabled after the safety officer clearly confirms the facts, and the immutable disposition and audit facts will be retained.
+- All case reading, evidence reading, allocation, status advancement, restriction, release, appeal processing and permanent ban operations enter administrative audit; the only OpenAPI contract is updated, and failure paths such as permission bypass, repeated requests, concurrent processing, task delay and expiration recovery are covered.
 
 ### Confirmed Scope
 
-- 单次成功受理的举报对应一个安全案件；相关举报、既往案件与限制作为证据包中的相关信号展示，本 change 不自动合并案件。
-- 一般、严重、高风险临时限制固定为 3、12、24 小时；开始时间由服务端事务确定，到期后即视为失效。
-- 临时限制阻止当前已有的创建房间、加入房间、获取 LiveKit 凭证和预约入口；登录、查看本人限制信息和提交申诉保持可用。后续房间邀请 change 必须复用同一限制资格判断。
-- 每次临时限制只允许一次申诉，提交窗口为限制开始后 30 分钟；安全员可以维持或提前解除限制。
-- 永久禁用只允许用于严重或高风险案件，并要求安全员执行明确的事实确认动作。
-- PostgreSQL 保存案件、分配、证据引用、限制、申诉和处理事实；后台任务只负责调度与状态收敛，不能成为限制是否有效的唯一依据。
+- A single successfully accepted report corresponds to a security case; related reports, past cases, and restrictions are displayed as relevant signals in the evidence package. This change does not automatically merge cases.
+- The general, serious, and high-risk temporary restrictions are fixed at 3, 12, and 24 hours; the start time is determined by the server transaction, and it will be deemed invalid after expiration.
+- Temporary restrictions prevent currently existing access to create rooms, join rooms, obtain LiveKit credentials, and make reservations; logging in, viewing personal restriction information, and submitting appeals remain available. Subsequent room invitation changes must reuse the same restriction qualification judgment.
+- Only one appeal is allowed for each temporary restriction, and the submission window is 30 minutes after the restriction starts; the safety officer can maintain or lift the restriction in advance.
+- Permanent banning is only allowed in serious or high-risk cases and requires clear fact-confirming actions by the safety officer.
+- PostgreSQL saves cases, assignments, evidence references, restrictions, appeals, and processing facts; background tasks are only responsible for scheduling and status convergence, and cannot be the only basis for whether restrictions are valid.
 
 ### Non-goals
 
-- 不实现房间警告、房间禁用/恢复，或用户已在实时房间内被限制时的自动踢出与房主接任；这些进入独立的房间安全动作 change。
-- 不实现用户对用户屏蔽、好友隐私或好友房间邀请。
-- 不实现流式 STT、敏感词识别、完整转写、录音存储或基于单次举报/关键词的自动处罚。
-- 不实现 PC 管理端页面、移动端新页面或生产部署。
-- 不定义永久禁用后的申诉、恢复或重新注册规则，也不在本 change 决定安全数据保留、导出和删除期限。
+- Does not implement room warnings, room disabling/restoring, or automatic kicking and room host takeover when the user has been restricted in a live room; these enter independent room security actions change.
+- Does not implement user-to-user blocking, friend privacy, or friend room invitations.
+- Does not implement streaming STT, sensitive word recognition, complete transcription, recording storage, or automatic punishment based on a single report/keyword.
+- Does not implement PC management page, mobile new page or production deployment.
+- Does not define appeal, recovery or re-registration rules after permanent ban, nor does it determine the security data retention, export and deletion periods in this change.
 
 ### Future Roadmap
 
-- `implement-room-safety-actions-backend` 增加房间警告、禁用、恢复，以及活跃房间内账号处罚后的实时处置和房主接任规则。
-- 后续好友与屏蔽 change 增加用户屏蔽、隐私隔离和好友邀请。
-- 后续敏感词与 STT change 可以把最小风险事件接入证据包，但不得保存完整转写或直接自动处罚。
-- 运营和数据治理 change 决定安全数据保留期限、清理任务、聚合指标、异常告警和审计导出。
+- `implement-room-safety-actions-backend` adds room warning, disabling, recovery, real-time handling and room host takeover rules after account punishment in active rooms.
+- Subsequent friend and blocking changes add user blocking, privacy isolation and friend invitations.
+- Subsequent sensitive words and STT changes can add minimal risk events to the evidence package, but the complete transcription or direct automatic punishment cannot be saved.
+- Operations and data governance changes determine security data retention periods, cleanup tasks, aggregation indicators, exception alerts, and audit exports.
 
 ### Unresolved Decisions
 
-- 永久禁用是否允许申诉、由谁恢复以及恢复后的数据范围尚未确认，因此本 change 不提供永久禁用申诉或恢复 API。
-- 用户已在活跃语音房内时新限制如何触发踢出、房主接任和房间状态变化尚未确认，因此本 change 只保证后续请求和新凭证被拒绝。
-- 安全员处理临时限制申诉的服务时限和案件证据最低充分条件仍需安全运营规则确认；本 change 只提供可审计的人工作业能力，不以缺省规则自动处罚。
+- Whether appeals are allowed for permanent disabling, who will restore it, and the data range after restoration have not yet been confirmed, so this change does not provide permanent disabling appeals or recovery APIs.
+- How the new restrictions trigger kickouts, room host takeovers and room status changes when the user is already in an active voice room has not yet been confirmed, so this change only guarantees that subsequent requests and new credentials will be rejected.
+- The safety officer's service time limit for handling temporary restriction appeals and the minimum sufficient conditions for case evidence still need to be confirmed by safe operation rules; this change only provides auditable manual work capabilities and does not automatically impose penalties based on default rules.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `safety-case-management`：举报驱动的安全案件、自动分配、处理状态、证据包和后台案件操作。
-- `user-safety-restrictions`：3/12/24 小时临时限制、跨入口强制执行、自动恢复、提前解除及严重风险永久禁用。
-- `safety-restriction-appeals`：受限用户在 30 分钟窗口内的一次申诉，以及安全员维持或解除限制的处理闭环。
+- `safety-case-management`: Report-driven security cases, automatic assignments, processing status, evidence packages and background case operations.
+- `user-safety-restrictions`: 3/12/24 hour temporary restriction, cross-entry enforcement, automatic recovery, early release and permanent ban for serious risks.
+- `safety-restriction-appeals`: An appeal from a restricted user within a 30-minute window, and a closed loop for the safety officer to maintain or lift the restriction.
 
 ### Modified Capabilities
 
-- `basic-safety-reporting`：成功受理举报时必须原子创建且只创建一个安全案件，并返回可关联的受理结果。
-- `backoffice-access-control`：增加案件查看与安全处置权限，并保持平台管理员与安全员职责分离。
-- `backoffice-audit`：将安全案件、证据、限制、申诉和永久禁用的读取与操作纳入后台审计。
+- `basic-safety-reporting`: When a report is successfully accepted, it must be created atomically and only one security case must be created, and an associated acceptance result must be returned.
+- `backoffice-access-control`: Increase case viewing and safety processing permissions, and maintain the separation of responsibilities between platform administrators and safety officers.
+- `backoffice-audit`: Incorporate security cases, evidence, restrictions, appeals, and permanently disabled reads and operations into background auditing.
 
 ## Impact
 
 - Impacted delivery stages: Architecture、Backend / API、Test / Acceptance。
-- 主要影响 `moderation`、`backoffice`、`users`、`rooms`、预约与实时语音入口，以及 Prisma models/migrations、恢复任务和 `openapi/openapi.yaml`。
-- 新增案件、证据、限制、申诉和处置 API；现有举报提交响应保持向后兼容，只增加可选关联信息。
-- 案件创建、自动分配、限制变更、用户状态变更和成功审计需要明确的事务与并发边界；所有变更必须支持稳定幂等并保留可追溯事实。
-- 不增加新的外部 provider；本地验收依赖 PostgreSQL、Redis/BullMQ 及现有模块，LiveKit Cloud 只验证限制后不能签发新凭证，不把未完成的真实 Cloud smoke 记作本 change 的通过证据。
+- Mainly affects `moderation`, `backoffice`, `users`, `rooms`, reservations and real-time voice portals, as well as Prisma models/migrations, recovery tasks and `openapi/openapi.yaml`.
+- Added case, evidence, restriction, appeal and disposition API; existing report submission responses remain backward compatible, only optional association information is added.
+- Case creation, automatic assignment, limit changes, user status changes, and successful auditing require clear transaction and concurrency boundaries; all changes must support stable idempotent and preserve traceable facts.
+- No new external provider is added; local acceptance relies on PostgreSQL, Redis/BullMQ and existing modules. LiveKit Cloud only verifies the restrictions and cannot issue new certificates, and does not record the unfinished real Cloud smoke as passing evidence for this change.

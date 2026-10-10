@@ -1,38 +1,38 @@
-## 1. 配置与模块边界（计划 0.5 天）
+## 1. Configuration and module boundaries (planned for 0.5 days)
 
-- [x] 1.1 在环境 schema、`.env.example` 和日志脱敏配置中加入至少 32 字符的 `ROOM_PASSWORD_PEPPER` 与非空 `ROOM_RULES_VERSION`，并通过 bootstrap tests 验证缺失或非法配置会阻止启动且 secret 不会进入日志
-- [x] 1.2 完善 `apps/api/src/modules/rooms` 的 domain、application、infrastructure 和 presentation 目录及公开 module exports，并通过 `pnpm deps:check` 验证 Controller、Prisma 和跨模块依赖没有越过既定边界
-- [x] 1.3 定义房间 DTO、view model、稳定错误 code 和 authenticated principal 输入边界，并通过编译时类型检查与 DTO validation 单元测试验证非法 topic、CEFR、capacity、PIN、cursor 和 `rulesAccepted` 被一致拒绝
+- [x] 1.1 Add at least 32 characters of `ROOM_PASSWORD_PEPPER` and non-empty `ROOM_RULES_VERSION` to the environment schema, `.env.example` and log masking configuration, and verify through bootstrap tests that missing or illegal configuration will prevent startup and the secret will not enter the log
+- [x] 1.2 Improve `apps/api/src/modules/rooms`’s domain, application, infrastructure and presentation directories and public module exports, and verify through `pnpm deps:check` that Controller, Prisma and cross-module dependencies do not cross the established boundaries
+- [x] 1.3 Define room DTO, view model, stable error code and authenticated principal input boundaries, and verify illegal topic, CEFR, capacity, PIN, cursor and `rulesAccepted` through compile-time type checking and DTO validation unit testing are unanimously rejected
 
-## 2. PostgreSQL Schema 与迁移（计划 0.5 天）
+## 2. PostgreSQL Schema and Migration (planned for 0.5 days)
 
-- [x] 2.1 增加 `Room`、`RoomMembership`、房间状态和成员角色 Prisma schema，包含 UUID、host、topic、CEFR、capacity、password digest、时间、加入顺序、规则版本及 `(roomId, userId)` 唯一约束，并通过 Prisma schema validation 验证模型可生成
-- [x] 2.2 创建只增不减的 migration 与查询所需外键/索引，在从现有 identity/profile migrations 升级的干净测试数据库执行 `pnpm --filter @slogan/api db:test:migrate`，并用 integration schema inspection 验证表、约束和索引存在
-- [x] 2.3 实现 rooms repository 的 Prisma 映射与事务入口，确保 domain/application 不暴露 Prisma 类型，并通过 repository integration smoke tests 与 `pnpm deps:check` 验证映射和依赖方向
+- [x] 2.1 adds `Room`, `RoomMembership`, room status and member role Prisma schema, including UUID, host, topic, CEFR, capacity, password digest, time, joining order, rule version and `(roomId, userId)` unique constraints, and the model can be generated through Prisma schema validation verification
+- [x] 2.2 Create increment-only migrations and query the required foreign keys/indexes, execute `pnpm --filter @slogan/api db:test:migrate` on a clean test database upgraded from existing identity/profile migrations, and use integration schema inspection to verify that tables, constraints, and indexes exist
+- [x] 2.3 Implement the Prisma mapping and transaction entry of rooms repository, ensure that domain/application does not expose Prisma types, and verify the mapping and dependency direction through repository integration smoke tests and `pnpm deps:check`
 
-## 3. 房间领域规则与安全（计划 1 天）
+## 3. Room area rules and safety (planned for 1 day)
 
-- [x] 3.1 实现即时房间创建 policy：仅接受 2–6 人容量、已支持 CEFR、有效 topic，并由服务端设置 `startedAt` 和默认两小时 `endsAt`；通过冻结时钟和表驱动单元测试验证边界
-- [x] 3.2 实现 `RoomAccessPolicy`，覆盖 `ELIGIBLE` 准入、有效开放状态、规则确认、密码结果和容量结果，并通过表驱动单元测试逐一验证稳定错误 code
-- [x] 3.3 实现 room-scoped HMAC-SHA-256 密码 digest 与恒定时间校验，数据库和响应仅保留 digest/`passwordProtected`，并通过安全单元测试验证正确 PIN、错误 PIN、不同 room ID、无密码房和输出脱敏
-- [x] 3.4 实现创建房间的 application use case，在单一事务内写入 Room 与加入顺序为 1 的 HOST membership，并通过 integration tests 验证容量包含房主、默认时长、密码 digest 和失败事务无残留
+- [x] 3.1 Implement instant room creation policy: only accept capacity of 2–6 people, CEFR supported, valid topic, and set by the server `startedAt` and default two hours `endsAt`; verify boundaries through frozen clock and table-driven unit testing
+- [x] 3.2 implements `RoomAccessPolicy`, covering `ELIGIBLE` admission, effective open status, rule confirmation, password results and capacity results, and verifies stable error codes one by one through table-driven unit testing
+- [x] 3.3 Implement room-scoped HMAC-SHA-256 password digest and constant time check, database and response only retain digest/`passwordProtected`, and verify correct PIN, wrong PIN, different room ID, password-less room and output desensitization through security unit testing
+- [x] 3.4 Implement the application use case of creating a room, write Room and join HOST membership with order 1 in a single transaction, and verify through integration tests that the capacity includes room host, default duration, password digest, and no residue from failed transactions
 
-## 4. 查询与并发加入（计划 1.5 天）
+## 4. Query and concurrent join (planned for 1.5 days)
 
-- [x] 4.1 实现认证用户的开放房间游标列表，按 `startedAt desc, id desc` 返回默认 20、最大 50 条，并通过 integration tests 验证过期/结束房间过滤、稳定翻页、`memberCount` 语义和只投影房主昵称
-- [x] 4.2 实现认证用户的房间详情查询，返回房间展示字段与当前请求者 membership 状态，并通过 integration tests 验证开放房间、已加入用户、未加入用户、未知/不可见资源统一 `ROOM_NOT_FOUND` 和到期 `ROOM_ENDED`
-- [x] 4.3 实现加入 application use case，在事务中锁定 Room、重复 membership 幂等返回、统计容量、分配加入顺序并保存规则版本/时间，并通过 integration tests 验证公开房、密码房、未确认规则、资料未完成、未满 18 岁、满员和过期路径
-- [x] 4.4 增加真实 PostgreSQL 最后一席并发测试，同时提交至少两个合格用户的加入请求，并验证只有一个新增 membership、失败方收到 `ROOM_FULL`、无重复 join order 且事务失败不残留数据
-- [x] 4.5 对 serialization/deadlock 数据库冲突实现有限重试且不重试业务冲突，并通过 repository/application tests 验证重试上限、成功恢复和最终错误映射，不产生 500 或重复 membership
+- [x] 4.1 Implement the open room cursor list for authenticated users. Press `startedAt desc, id desc` to return the default 20 and the maximum 50 items, and verify expired/end room filtering, stable page turning, `memberCount` semantics and only project room host nicknames through integration tests
+- [x] 4.2 Implement room details query for authenticated users, return room display fields and current requester membership status, and verify open rooms, joined users, unjoined users, unknown/invisible resources unified `ROOM_NOT_FOUND` and expired `ROOM_ENDED` through integration tests
+- [x] 4.3 Implements joining application use case, locks Room in transaction, returns duplicate membership idempotent, counts capacity, assigns joining order and saves rule version/time, and verifies public room, password room, unconfirmed rule, data incomplete, under 18 years old, full membership and expired path through integration tests
+- [x] 4.4 Add real PostgreSQL last seat concurrency test, submit join requests of at least two qualified users at the same time, and verify that there is only one new membership, the failed party receives `ROOM_FULL`, there is no duplicate join order, and there is no residual data after transaction failure
+- [x] 4.5 Implement limited retries for serialization/deadlock database conflicts and do not retry business conflicts, and verify the retry upper limit, successful recovery and final error mapping through repository/application tests without generating 500 or duplicate memberships
 
-## 5. HTTP API 与唯一 OpenAPI Contract（计划 1 天）
+## 5. HTTP API with the only OpenAPI Contract (planned for 1 day)
 
-- [x] 5.1 实现 `POST /v1/rooms` 与 `GET /v1/rooms` 的 authenticated Controller/DTO/response mapping，并通过 HTTP E2E 验证未认证、资料未完成、未满 18 岁、公开/密码创建、分页列表和响应不泄露密码 digest
-- [x] 5.2 实现 `GET /v1/rooms/{roomId}` 与 `POST /v1/rooms/{roomId}/memberships`，并通过 HTTP E2E 验证详情、幂等加入、规则未确认、缺失/错误密码、满员、过期及稳定错误体
-- [x] 5.3 更新 NestJS code-first decorators 并确定性生成 `openapi/openapi.yaml`，通过 `pnpm --filter @slogan/api openapi:check` 和 Swagger parser validation 验证唯一 contract 无 drift 且四个端点、schema、认证和错误响应齐全
+- [x] 5.1 Implement authenticated Controller/DTO/response mapping of `POST /v1/rooms` and `GET /v1/rooms`, and verify through HTTP E2E unauthenticated, data incomplete, under 18 years old, public/password creation, paging list and response without leaking password digest
+- [x] 5.2 implements `GET /v1/rooms/{roomId}` and `POST /v1/rooms/{roomId}/memberships`, and verifies details through HTTP E2E, idempotent joining, unconfirmed rules, missing/wrong password, full, expired and stable error bodies
+- [x] 5.3 updates NestJS code-first decorators and generates `openapi/openapi.yaml` deterministically. Verifies that the unique contract is drift-free through `pnpm --filter @slogan/api openapi:check` and Swagger parser validation and that the four endpoints, schema, certification and error responses are complete.
 
-## 6. 后端验证与延期验收（计划 0.5 天）
+## 6. Backend verification and deferred acceptance (planned for 0.5 days)
 
-- [x] 6.1 运行 `pnpm verify:api`，验证 bootstrap、domain、repository、并发、HTTP E2E、lint、typecheck、build 和 OpenAPI drift 全部通过，并将命令、结果和已知边界记录到该 change 的 acceptance evidence
-- [x] 6.2 运行 workspace `pnpm format:check` 与 `pnpm deps:check`，确认 rooms 改动未破坏 monorepo 格式或依赖边界，并在 evidence 中记录 PASS、FAIL 或可复现的 BLOCKED 原因
-- [x] 6.3 对照 `openspec/specs/instant-room-discovery/spec.md`、`openspec/specs/localization-and-room-rules/spec.md` 及本 change design 核对后端 criteria；仅记录 verification 已完成，product-owner、视觉、设备与前端联调验收标记为 DEFERRED，保持 change 未归档等待统一验收
+- [x] 6.1 Run `pnpm verify:api` to verify that bootstrap, domain, repository, concurrency, HTTP E2E, lint, typecheck, build and OpenAPI drift all pass, and record the command, results and known boundaries to the change's acceptance evidence
+- [x] 6.2 Run workspace `pnpm format:check` and `pnpm deps:check` to confirm that the changes to rooms do not destroy the monorepo format or dependency boundaries, and record PASS, FAIL or reproducible BLOCKED reasons in evidence
+- [x] 6.3 Check the backend criteria against `openspec/specs/instant-room-discovery/spec.md`, `openspec/specs/localization-and-room-rules/spec.md` and this change design; only record verification has been completed, product-owner, vision, equipment and front-end integration verification acceptance mark is DEFERRED, keep the change unarchived and wait for unified acceptance

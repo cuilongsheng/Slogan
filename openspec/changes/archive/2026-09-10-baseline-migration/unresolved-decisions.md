@@ -2,50 +2,49 @@
 
 ## Status Rule
 
-这里的内容都没有成为 current requirement。带有“建议”“暂定”“需确认”的原文只能作为讨论输入；用户明确决策后，应通过独立 OpenSpec change 进入 specs。
+None of the content here has become a current requirement. The original text with "suggestion", "tentative" and "requires confirmation" can only be used as discussion input; after the user makes a clear decision, he should enter specs through an independent OpenSpec change.
 
 ## P0 — Before Public Testing
 
-| ID | Decision needed | Current known boundary | PRD source |
-| --- | --- | --- | --- |
-| U-001 | 安全员施加临时限制所需的最低证据和处理条件 | 单条投诉不自动处罚 | 17 / P0 |
-| U-002 | 临时限制起算点、自动恢复任务和安全员处理申诉的 SLA | 用户提交申诉窗口为生效后 30 分钟 | 17 / P0 |
-| U-003 | 永久禁用是否允许申诉，以及通过后恢复哪些数据和能力 | 尚未决定 | 17 / P0 |
-| U-004 | 微信和 Google 身份属于同一人时如何合并、冲突或解绑 | `issuer + subject` 不足以解决跨 provider 合并 | 8 / 账号；17 / P0 |
-| U-005 | OAuth 失败、取消授权、资料缺失时的降级流程 | 尚未决定 | 17 / P0 |
-| U-006 | 出生年月修改、时区边界、校验失败和虚假年龄的处置 | 18+ 已确认；强年龄证明未确认 | 8 / 账号；17 / P0 |
-| U-007 | STT 供应商、供应商侧留存、删除证明和跨境数据说明 | 最长 1 周只是上限方向，接入方尚未确定 | 9.3–9.4；17 / P0 |
-| U-008 | 分享链接滥用、密码错误、频繁进出和重复举报的限流阈值 | 必须限流，但参数和反馈未确定 | 17 / P0 |
-| U-009 | 注销账号的举报、处罚、申诉和审计数据保留期限 | 软删除方向已确认，具体期限未确认 | 9.3；17 / P0 |
-| U-010 | 单一管理员账号丢失、交接和安全员账号回收机制 | 尚未决定 | 17 / P0 |
-| U-011 | 房主处于 60 秒断线窗口时，成员能否继续交流及新成员能否加入 | 原文只有建议，未确认 | 17 / P0 |
-| U-012 | 普通成员离开后再次加入的麦位顺序 | 原文建议排到末尾，未确认 | 17 / P0 |
-| U-013 | 房主在房间中被限制或永久禁用时是否立即移交 | 原文建议立即移交，未确认 | 17 / P0 |
+| ID    | Decision needed                                                                                                            | Current known boundary                                                                                            | PRD source           |
+| ----- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------- |
+| U-001 | safety officer minimum evidence and processing conditions required to impose temporary restrictions                        | No automatic penalty for a single appeal                                                                       | 17 / P0              |
+| U-002 | SLA for temporary limit starting points, automatic recovery tasks, and safety officer handling appeals                     | The window for users to submit appeals is 30 minutes after it takes effect.                                    | 17 / P0              |
+| U-003 | Whether to allow appeals to be permanently disabled, and what data and capabilities will be restored after passing         | Undecided                                                                                                         | 17 / P0              |
+| U-004 | How to merge, conflict or unbind WeChat and Google identities when they belong to the same person                          | `issuer + subject` is not enough to solve cross-provider merge                                                    | 8 / account; 17 / P0 |
+| U-005 | Downgrade process when OAuth fails, cancels authorization, or missing data                                                 | Undecided                                                                                                         | 17 / P0              |
+| U-006 | Birth date modification, time zone boundary, verification failure and false age handling                                   | 18+ confirmed; strong age proof not confirmed                                                                     | 8 / account; 17 / P0 |
+| U-007 | STT supplier, supplier side retention, deletion certificate and cross-border data description                              | The maximum length of 1 week is only the upper limit direction, and the access party has not yet been determined. | 9.3–9.4；17 / P0     |
+| U-008 | Current limiting threshold for sharing link abuse, incorrect password, frequent entry and exit, and repeated reporting     | The current must be limited, but the parameters and feedback are not determined                                   | 17 / P0              |
+| U-009 | Report, penalty, appeal and audit data retention period for account cancellation                                           | The direction of soft deletion has been confirmed, but the specific period has not been confirmed.                | 9.3；17 / P0         |
+| U-010 | Single administrator account loss, handover and safety officer account recovery mechanism                                  | Undecided                                                                                                         | 17 / P0              |
+| U-011 | When the room host is in the 60-second disconnection window, can members continue to communicate and can new members join? | The original text only has suggestions and has not been confirmed.                                                | 17 / P0              |
+| U-012 | The order of wheat position when ordinary members join again after leaving.                                                | The original text suggested queuing to the end, unconfirmed                                                       | 17 / P0              |
+| U-013 | Whether the room host is handed over immediately when it is restricted or permanently disabled in the room                 | The original text recommended immediate transfer, not confirmed                                                   | 17 / P0              |
 
 ## Product and Privacy Boundaries
 
-| ID | Decision needed | Why unresolved | PRD source |
-| --- | --- | --- | --- |
-| U-014 | 个人资料中性别、国籍/城市、兴趣和出生信息分别对谁可见 | PRD 定义了采集字段，未完整定义前台可见性 | 8 / 账号；9.3 |
-| U-015 | 屏蔽后是否禁止双方进入同一房间，以及房间列表如何展示 | “尽可能降低互动”不可测试 | 8 / 安全；17 / P1 |
-| U-016 | 公开可发现、仅链接加入和密码保护之间是否为独立维度 | PRD 同时使用三种描述，组合规则未定义 | 5.1；8 / 房间 |
-| U-017 | “等待中”切换到“进行中”的精确事件 | “开始交流”缺少可判定条件 | 7 |
-| U-018 | 房间到默认结束时间后的关闭、宽限和正在重连处理 | 有结束时间但没有完整到期状态规则 | 5.1；7 |
-| U-019 | AI 的目标语言是否始终为英语，以及母语识别和上下文输入规则 | PRD 使用“目标语言”，未给出选择规则 | 1.1；8 / AI |
-| U-020 | 举报证据包中的短期风险信号具体保存哪些字段 | 需要在不保留完整转写的前提下定义最小集合 | 9.5；15.14 |
+| ID    | Decision needed                                                                                                  | Why unresolved                                                                      | PRD source        |
+| ----- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------- |
+| U-014 | Who can see the gender, nationality/city, interests and birth information in the profile?                        | PRD defines the collection field and the foreground visibility is not fully defined | 8 / account; 9.3  |
+| U-015 | Whether both parties are prohibited from entering the same room after blocking, and how to display the room list | "Reduce interaction as much as possible" is not testable                            | 8 / Safe; 17 / P1 |
+| U-016 | Are publicly discoverable, link-only joining, and password protected independent dimensions?                     | PRD uses three descriptions at the same time, the combination rules are not defined | 5.1;8/room        |
+| U-017 | The exact event of switching from "Waiting" to "In Progress"                                                     | "Start communication" lacks a decidable condition                                   | 7                 |
+| U-018 | Room closing, grace and reconnection processing after the default end time                                       | There is an end time but no complete expiration status rule                         | 5.1；7            |
+| U-019 | Whether the target language of AI is always English, and native language recognition and contextual input rules  | PRD uses "target language" and no selection rules are given                         | 1.1；8 / AI       |
+| U-020 | Which fields are specifically saved for short-term risk signals in the reporting evidence package?               | Minimum set needs to be defined without retaining complete transcription            | 9.5；15.14        |
 
 ## P1 — After Core Loop Stabilizes
 
-| ID | Decision needed | PRD source |
-| --- | --- | --- |
-| U-021 | 预约提醒渠道 | 17 / P1 |
-| U-022 | 关键词生成失败后是否允许手动补充 | 17 / P1 |
-| U-023 | 好友请求有效期、拒绝、撤回和通知策略 | 17 / P1 |
-| U-024 | 空闲状态文案、刷新频率和异常断线过期时间 | 17 / P1 |
-| U-025 | 房间历史展示周期 | 17 / P1 |
-| U-026 | 活跃时长口径、去重和防刷规则 | 17 / P1 |
-| U-027 | 后台页面、批量操作和二次确认 | 17 / P1 |
-| U-028 | 延长次数用尽、结束前离开和重入体验 | 17 / P1 |
-| U-029 | 预约名额与实际名额关系及超额处理 | 17 / P1 |
-| U-030 | 被屏蔽用户在房间列表、好友搜索和空闲列表中的互相可见性 | 17 / P1 |
-
+| ID    | Decision needed                                                                           | PRD source |
+| ----- | ----------------------------------------------------------------------------------------- | ---------- |
+| U-021 | Appointment reminder channel                                                              | 17 / P1    |
+| U-022 | Whether to allow manual addition after keyword generation fails                           | 17 / P1    |
+| U-023 | Friend request validity period, rejection, withdrawal and notification policy             | 17 / P1    |
+| U-024 | Idle status copy, refresh frequency and abnormal disconnection expiration time            | 17 / P1    |
+| U-025 | Room history display cycle                                                                | 17 / P1    |
+| U-026 | Active duration, deduplication and anti-swipe rules                                       | 17 / P1    |
+| U-027 | Backend page, batch operations and secondary confirmation                                 | 17 / P1    |
+| U-028 | The experience of running out of extension times, leaving before the end, and re-entering | 17 / P1    |
+| U-029 | The relationship between reservation quota and actual quota and overcapacity handling     | 17 / P1    |
+| U-030 | Mutual visibility of blocked users in room lists, friend searches, and free lists         | 17 / P1    |

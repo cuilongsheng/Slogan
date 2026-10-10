@@ -1,35 +1,35 @@
 ## Why
 
-当前底部“发现”已承载公开语音房列表，“房间”入口与它语义重复，且现有原型缺少空闲用户发现和会话入口。产品负责人已确认：用户可以与空闲的人进行持久文字单聊和需对方接受的 1 对 1 语音单聊；这超出现行仅支持房间邀请的社交范围，必须先明确权限、隐私和交互，再扩展高保真设计。
+Currently, "Discovery" at the bottom already carries a list of public voice rooms. The "room" entrance has semantic overlap with it, and the existing prototype lacks idle user discovery and session entrances. The product leader has confirmed that users can have persistent text chats with idle people and 1-on-1 voice chats that need to be accepted by the other party; this exceeds the current social scope that only supports room invitations. Permissions, privacy and interaction must be clarified first, and then the high-fidelity design can be expanded.
 
 ## What Changes
 
-- 保留“发现”作为公开房间列表；第二入口改为“找伙伴”，展示符合现有空闲/隐私规则的用户。当前房主可从这里邀请用户进入自己的房间，其他场景可发起单聊。
-- “消息”展示已有会话及好友入口；可从合格的空闲用户开始文字会话，文字消息和会话历史跨次登录保留。
-- 1 对 1 语音采用请求—接受流程；未接受前不得发放媒体凭证或接通语音。文字不要求对方先接受，但必须遵守屏蔽、账号和安全限制。
-- 设计陌生人消息的最低限度防骚扰、举报和屏蔽流程；房间邀请继续沿用当前房主权限与容量校验。
-- **BREAKING（产品范围）**：历史 V1 基线明确排除私信；本变更经审查通过后才把单聊纳入当前需求。不得改写冻结的 `docs/init/PRD_V1.md`。
+- Keep "Discover" as the public room list; change the second entrance to "Find Partners" to display users who meet the existing availability/privacy rules. The current room host can invite users to enter its room from here, and individual chats can be initiated in other scenarios.
+- “Messages” displays existing conversations and friend entries; text conversations can be started from qualified idle users, and text messages and conversation history are retained across logins.
+- 1-to-1 voice adopts a request-accept process; media credentials shall not be issued or voice connected before acceptance. The text does not require the other party to accept it first, but it must comply with blocking, account and security restrictions.
+- Design the minimum anti-harassment, reporting and blocking process for stranger messages; room invitations continue to use the current room host permissions and capacity verification.
+- **BREAKING (Product Range)**: The historical V1 baseline explicitly excludes private messages; only after this change is reviewed and approved will single chat be included in the current requirements. Frozen `docs/init/PRD_V1.md` must not be overwritten.
 
-### 边界
+### border
 
-- 不包含群聊、动态、礼物、视频、附件、语音录制或自动转写。
-- 不把文字私信、1 对 1 通话或好友列表伪装成现有多人房间；共享实时服务能力不等于共享房间业务规则。
+- Does not include group chats, updates, gifts, videos, attachments, voice recordings or automatic transcription.
+- Do not disguise text private messages, 1:1 calls, or friend lists as existing multiplayer rooms; shared real-time service capabilities do not equal shared room business rules.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `partner-discovery`: 底部入口、空闲伙伴列表、房主邀请与单聊入口的可见性和权限。
-- `direct-messaging`: 持久 1 对 1 文字会话、消息列表、历史、发送资格和最低安全边界。
-- `direct-voice-calls`: 1 对 1 语音请求、接受/拒绝、媒体资格、结束与异常状态。
+- `partner-discovery`: Visibility and permissions of the bottom entrance, idle partner list, room host invitation and single chat entrance.
+- `direct-messaging`: Persistent 1 to 1 text conversation, message list, history, sending eligibility and minimum security boundaries.
+- `direct-voice-calls`: 1 to 1 voice request, accept/reject, media qualification, end and exception status.
 
 ### Modified Capabilities
 
-- `user-blocking`: 双向屏蔽延伸到单聊发现、文字发送和语音请求/接通。
+- `user-blocking`: Two-way blocking extends to single chat discovery, text sending and voice request/connection.
 
 ## Impact
 
-- `01 Prototype` 与 `02 UI`：底部导航、找伙伴、消息、会话、语音请求和相应空/错/受限状态；先审低保真，再扩展高保真。
-- `apps/api/src/modules/social/`、实时语音适配层、PostgreSQL/Prisma、Redis 临时呼叫状态及 `openapi/openapi.yaml`；新增持久消息和通话生命周期，避免复制现有房间业务聚合。
-- `apps/mobile/` 的新路由、会话状态、权限反馈和通知入口；现有移动应用目前只有启动页和基础框架，不能把 Figma 链接视为已实现功能。
-- 受影响阶段：Architecture、Prototype / Figma、Backend / API、Frontend、Test / Acceptance、Deployment。持久化迁移、消息滥用保护、实时资源回收和发布回滚均需验证。
+- `01 Prototype` and `02 UI`: bottom navigation, finding partners, messages, conversations, voice requests and corresponding empty/error/restricted status; first review low-fidelity, then expand high-fidelity.
+- `apps/api/src/modules/social/`, real-time voice adaptation layer, PostgreSQL/Prisma, Redis temporary call status and `openapi/openapi.yaml`; add persistent messages and call life cycle to avoid duplicating existing room service aggregation.
+- `apps/mobile/`’s new routing, session status, permission feedback and notification portal; existing mobile applications currently only have a startup page and basic framework, and Figma links cannot be regarded as implemented functions.
+- Affected stages: Architecture, Prototype / Figma, Backend / API, Frontend, Test / Acceptance, Deployment. Persistence migration, message abuse protection, real-time resource recycling and release rollback all need to be verified.

@@ -2,57 +2,71 @@
 
 ## Purpose
 
-定义房主对成员和房间的最小管理能力，以及主动退出和网络断开时的房主权限移交规则，避免无人管理的语音房持续存在。
+Define the room host's minimum management capabilities for members and rooms, as well as the room host permission transfer rules when actively exiting and disconnecting from the network, to avoid the continued existence of unmanaged voice rooms.
 
 ## Requirements
 
-### Requirement: 房主移除成员
-系统 MUST 允许房主查看当前成员并将指定成员移出房间；被移除成员不得使用旧凭证主动重新加入同一房间。
+### Requirement: Room host remove member
 
-#### Scenario: 房主移除成员
-- **WHEN** 房主选择当前成员并确认移除
-- **THEN** 系统断开该成员、使其旧入房凭证失效并记录移除事件
+The system MUST allow the room host to view current members and move specified members out of the room; removed members MUST not actively rejoin the same room using old credentials.
 
-### Requirement: 房主重新邀请被移除成员
-系统 MUST 只在房主主动邀请且被邀请者仍满足账号、房间状态和容量条件时，允许被移除成员重新加入同一房间。
+#### Scenario: Room host remove member
 
-#### Scenario: 有效重新邀请
-- **WHEN** 房主邀请被移除成员且房间仍开放、有空位、该成员未受平台限制
-- **THEN** 系统发放新的加入资格并允许其重新进入
+- **WHEN** Room host Select the current member and confirm removal
+- **THEN** The system disconnects the member, invalidates his or her old room entry voucher, and records the removal event.
 
-#### Scenario: 邀请不能绕过限制
-- **WHEN** 被邀请成员受平台限制、房间已结束或房间已满
-- **THEN** 系统拒绝重新加入并返回对应原因
+### Requirement: Room host re-invites removed members
 
-### Requirement: 房主主动退出时移交权限
-系统 MUST 在房主主动退出前提供当前在线成员选择器；房主指定成员时移交给该成员，未指定时移交给当前加入顺序中的第二麦，没有可接任成员时关闭房间。
+The system MUST allow removed members to rejoin the same room only when the room host actively invites and the invitees still meet the account, room status and capacity conditions.
 
-#### Scenario: 指定接任成员
-- **WHEN** 房主主动退出并选择一名在线成员
-- **THEN** 系统先将房主权限移交给该成员，再完成原房主退出
+#### Scenario: Valid re-invitation
 
-#### Scenario: 未指定接任成员
-- **WHEN** 房主主动退出但未选择成员且存在其他在线成员
-- **THEN** 系统将权限移交给当前第二麦
+- **WHEN** Room host invited a removed member and the room is still open, there are vacancies, and the member is not restricted by the platform
+- **THEN** The system issues new membership qualifications and allows them to re-enter
 
-#### Scenario: 没有接任成员
-- **WHEN** 房主主动退出且房间内没有其他在线成员
-- **THEN** 系统关闭房间
+#### Scenario: Invitation cannot bypass restrictions
 
-### Requirement: 麦位顺序
-系统 MUST 按成员成功加入房间的顺序展示麦位；成员离开后其余成员按原顺序前移。
+- **WHEN** The invited members are restricted by the platform, the room has ended or the room is full
+- **THEN** The system refuses to rejoin and returns the corresponding reason
 
-#### Scenario: 第二麦离开
-- **WHEN** 当前第二麦离开且后续仍有在线成员
-- **THEN** 后续成员依照原加入顺序前移并更新默认接任顺序
+### Requirement: Room host transfers permissions when exiting actively
 
-### Requirement: 房主断线重连窗口
-系统 MUST 将房主网络断开与主动退出区别处理；断开后保留 60 秒重连窗口，窗口内重连时保留房主权限，超时后按默认接任顺序移交或关闭房间。
+The system MUST provide the current online member selector before the room host actively exits; when the room host specifies a member, it is handed over to the member; when the room host is not specified, it is handed over to the second member in the current joining sequence; when there is no successor member, the room is closed.
 
-#### Scenario: 房主在窗口内重连
-- **WHEN** 房主网络断开后在 60 秒内恢复连接
-- **THEN** 房主继续持有原房主权限且不发生移交
+#### Scenario: Designated successor member
 
-#### Scenario: 房主重连超时
-- **WHEN** 房主网络断开超过 60 秒
-- **THEN** 系统按当前麦位顺序移交房主；没有可接任成员时关闭房间
+- **WHEN** Room host actively logs out and selects an online member
+- **THEN** The system first transfers the room host permission to the member, and then completes the exit of the original room host.
+
+#### Scenario: No successor designated
+
+- **WHEN** Room host actively exited but did not select members and there are other online members
+- **THEN** The system transfers the authority to the current second microphone
+
+#### Scenario: No successor members
+
+- **WHEN** Room host actively exited and there are no other online members in the room
+- **THEN** The system closes the room
+
+### Requirement: Wheat position sequence
+
+The system MUST display the wheat positions in the order in which members successfully join the room; after a member leaves, the remaining members move forward in the original order.
+
+#### Scenario: Second Mai leaves
+
+- **WHEN** Currently, the second Mai has left and there will still be online members in the future.
+- **THEN** Subsequent members are moved forward according to the original joining order and the default succession order is updated.
+
+### Requirement: Room host disconnection and reconnection window
+
+The system MUST treat room host network disconnection and active exit differently; a 60-second reconnection window will be retained after disconnection, and room host permissions will be retained when reconnecting within the window. After timeout, the room will be transferred or closed according to the default takeover order.
+
+#### Scenario: Room host reconnects in window
+
+- **WHEN** Room host restores connection within 60 seconds after network disconnection
+- **THEN** Room host continues to hold the original room host permissions and no transfer occurs
+
+#### Scenario: Room host reconnection timeout
+
+- **WHEN** Room host network disconnected for more than 60 seconds
+- **THEN** The system hands over the room host in the order of the current wheat position; the room is closed when there is no member who can take over.

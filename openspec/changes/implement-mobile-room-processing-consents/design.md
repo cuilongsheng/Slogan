@@ -1,23 +1,23 @@
 ## Context
 
-后端创建和加入已分别要求 `ROOM_SAFETY_DETECTION`、`POST_ROOM_KEYWORDS` 的当前同意版本；接口只返回状态和版本，没有服务器下发的说明正文。手机端必须呈现由当前 OpenSpec 明确的数据处理边界及目的说明，再让用户显式点击接受。用户已允许缺少独立帧的页面沿用 V2 样式。
+Backend creation and joining have required the current agreed versions of `ROOM_SAFETY_DETECTION` and `POST_ROOM_KEYWORDS` respectively; the interface only returns the status and version, and there is no description text issued by the server. The mobile terminal must present the data processing boundaries and purpose description specified by the current OpenSpec, and then allow the user to explicitly click to accept. The user has allowed pages that lack independent frames to inherit V2 styles.
 
 ## Goals / Non-Goals
 
-**Goals:** 建房默认关闭、独立选择、加入前清楚展示并独立同意、个人页撤回未来处理、服务端状态错误准确显示。
+**Goals:** House building is closed by default, independent selection, clearly displayed and independently agreed before joining, personal page withdrawal will be processed in the future, and server status errors are accurately displayed.
 
-**Non-Goals:** 不自动接受同意、不保存录音/转写、不展示敏感识别内容、不改变房间处理服务或 provider 开关。
+**Non-Goals:** does not automatically accept consent, does not save recordings/transcriptions, does not display sensitive identification content, and does not change room processing services or provider switches.
 
 ## Decisions
 
-1. 建房表单新增两个互不影响的布尔值，默认 false；提交显式布尔值。创建失败按服务端 `*_UNAVAILABLE` 和 `*_CONSENT_REQUIRED` 提示。
-2. 列表/详情使用服务端两个布尔值，在加入前展示。加入规则页只有在启用目的的当前同意均为 `ACCEPTED` 且版本匹配时才可继续；逐目的接受由用户点击，失败保留同一 UUID 供相同命令重试。
-3. 个人隐私页可查询和撤回；撤回发当前服务端说明版本，不在本地假设已撤回。若用户仍在启用房间，后端会断开对应处理/资格，客户端不把它当作房间结束。
-4. 说明文案只描述已批准目的：短窗口暂存处理、无可回放录音/完整转写；会后匿名关键词汇总；敏感检测产生受控风险信号但不自动处罚。服务端版本号用于命令绑定，页面不声称本地文案是服务端动态公告。
+1. Two new Boolean values ​​are added to the house building form that do not affect each other. The default is false; submit an explicit Boolean value. The creation failed and the server prompts `*_UNAVAILABLE` and `*_CONSENT_REQUIRED`.
+2. List/details use two Boolean values ​​on the server side, displayed before joining. The join rule page can only continue when the current consents of the enabled destinations are all `ACCEPTED` and the versions match; destination acceptance is clicked by the user, and if it fails, the same UUID is retained for retry with the same command.
+3. The personal privacy page can be queried and withdrawn; the withdrawal will be sent to the current server-side description version, and it is assumed to have been withdrawn if it is not local. If the user is still activating the room, the backend will disconnect the corresponding processing/qualification, and the client will not treat it as the end of the room.
+4. The description copy only describes the approved purpose: short-window temporary storage processing, no playback recording/complete transcription; anonymous keyword summary after the meeting; sensitive detection generates controlled risk signals but no automatic punishment. The server version number is used for command binding, and the page does not claim that the local copy is a server-side dynamic announcement.
 
 ## Risks / Migration / Rollback
 
-- [说明版本更新] → 每次进入准备页从服务端获取当前版本，旧版本不满足继续条件；拒绝更新时保持入房门禁。
-- [撤回时房间仍活动] → 只显示服务端结果；服务端负责停止未来处理与会话资格，不在客户端误报退出或结束。
-- [provider 不就绪] → 建房显示明确不可用，已有真人语音不受影响。
-- 无数据迁移。回滚只移除新表单和入口，后端仍默认两个目的关闭；不撤回用户已经明确提交的同意审计事实。
+- [Description of version update] → Obtain the current version from the server every time you enter the preparation page. The old version does not meet the continuation conditions; the room access control is maintained when the update is refused.
+- [The room is still active when withdrawing] → Only the server results are displayed; the server is responsible for stopping future processing and session qualifications, and does not falsely report exit or end on the client side.
+- [provider not ready] → The house building display is clearly unavailable, and existing real-person voices will not be affected.
+- No data migration. The rollback only removes new forms and entrances, and the backend is still closed by default for both purposes; it does not revoke the consent audit fact that the user has explicitly submitted.

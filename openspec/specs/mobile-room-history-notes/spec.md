@@ -2,26 +2,29 @@
 
 ## Purpose
 
-使登录用户在手机端回顾自己实际参与或仅预约的房间，并在符合服务端资格的已结束房间中安全保存仅本人可见的会后笔记。
+Allow logged-in users to review the rooms they actually participated in or only reserved on the mobile phone, and securely save post-meeting notes visible only to them in the ended rooms that meet the server qualifications.
 
 ## Requirements
 
-### Requirement: 手机端本人历史列表
+### Requirement: Personal history list on mobile phone
 
-手机端 MUST 使用本人历史接口显示房间主题、类型、状态、时间和本人关系，明确区分 `PARTICIPATED` 与 `RESERVED_ONLY`。列表 MUST 提供加载、空态、失败重试、刷新和服务端游标分页；历史记录 MUST 不被呈现为重新加入或房主管理权限。
+The mobile terminal MUST use the personal history interface to display the room theme, type, status, time and personal relationship, clearly distinguishing `PARTICIPATED` and `RESERVED_ONLY`. Lists MUST provide loading, empty state, failure retries, refreshes, and server-side cursor paging; history MUST not be rendered with rejoin or room host management permissions.
 
-#### Scenario: 预约但未入房
-- **WHEN** 用户查看只预约、未实际加入的记录
-- **THEN** 页面标明“仅预约”，不显示私人笔记编辑入口
+#### Scenario: Made a reservation but did not check in
 
-### Requirement: 私人笔记保留版本边界
+- **WHEN** The user views records that only made reservations but did not actually join.
+- **THEN** The page is marked "Appointment only" and does not display the private note editing entrance.
 
-手机端 MUST 只在本人实际参与且房间已结束时提供笔记入口。读取和保存 MUST 通过本人授权请求，保存时携带当前服务端版本；纯空白内容可清空笔记。失败时 MUST 保留本地编辑内容，版本冲突时 MUST 不自动覆盖远端或丢弃本地草稿。
+### Requirement: Private notes retain version boundaries
 
-#### Scenario: 保存会后笔记
-- **WHEN** 已结束房间的历史参与者修改有效笔记并保存
-- **THEN** 页面使用服务端返回的新版本与内容显示已保存状态
+The mobile version MUST only provide note entry when the person actually participates and the room has ended. Read and save MUST request authorization through the person, and carry the current server version when saving; notes can be cleared with pure blank content. MUST keep the local edits when it fails, and MUST not automatically overwrite the remote or discard the local draft when there is a version conflict.
 
-#### Scenario: 旧版本冲突
-- **WHEN** 另一个设备先保存，当前设备携带旧版本提交
-- **THEN** 页面保留本地草稿并提示可手动加载最新远端内容，不宣称保存成功
+#### Scenario: Save post-meeting notes
+
+- **WHEN** Historical participants of the ended room modify valid notes and save them
+- **THEN** The page displays the saved status using the new version and content returned by the server.
+
+#### Scenario: Old version conflict
+
+- **WHEN** Another device saves first, and the current device carries the old version for submission.
+- **THEN** The page retains the local draft and prompts that the latest remote content can be manually loaded, and does not claim that the save was successful.

@@ -1,27 +1,27 @@
 ## Why
 
-`implement-mobile-room-discovery-join` 目前只完成发现和入房前准备；用户通过设备检查后仍无法实际加入语音房。要让两名用户完成真人英语交流，需要把现有 membership、实时凭证和 LiveKit 音频连接接成可恢复的移动端会话。
+`implement-mobile-room-discovery-join` Currently only discovery and room entry preparation have been completed; users still cannot actually join the voice room after passing the device check. For two users to communicate in real-life English, existing memberships, real-time credentials, and LiveKit audio connections need to be connected into a resumable mobile session.
 
 ## What Changes
 
-- 将设备检查后的主操作接到真实加入请求、实时凭证获取和语音连接；成功后展示 Figma `02 UI / Voice Room / Pilot V2 · review` 所定义的房间主体。
-- 初始麦克风保持静音，用户主动切换；显示当前成员、房主、说话与麦克风状态，并提供退出、重连和房间结束反馈。
-- 对加入竞争、密码错误、房间结束、权限失效、凭证失败、实时连接中断及页面刷新给出明确恢复路径；不把临时密码或实时凭证写入 URL、持久化存储、日志。
-- 本批不实现创建房间、邀请、房主移除/延长、AI 辅助、语音翻译、敏感语音识别、房间笔记或聊天；设计中的这些入口只在另行交付后启用。
+- Connect the main operation after device check to the real join request, real-time voucher acquisition and voice connection; after success, the room subject defined by Figma `02 UI / Voice Room / Pilot V2 · review` is displayed.
+- The initial microphone remains muted and the user actively switches; displays the current member, room host, speaking and microphone status, and provides feedback on exit, reconnection and room end.
+- Provide clear recovery paths for joining competition, incorrect password, room end, permission invalidation, credential failure, real-time connection interruption and page refresh; do not write temporary passwords or real-time credentials into URL, persistent storage, or logs.
+- This batch does not implement room creation, invitations, room host removal/extension, AI assistance, voice translation, sensitive voice recognition, room notes or chat; these entrances in the design will only be enabled after separate delivery.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mobile-voice-room-session`: 移动端从已确认的入房准备进入真实语音房、默认静音、呈现连接及成员状态、退出和结束恢复的客户端行为。
+- `mobile-voice-room-session`: The client behavior of the mobile terminal is to prepare to enter the real voice room from confirmed room entry, mute by default, present connection and member status, exit and end recovery.
 
 ### Modified Capabilities
 
-无。
+None.
 
 ## Impact
 
-- 移动端 `apps/mobile`：房间路由、认证 API 适配、LiveKit Web/原生客户端、界面及会话状态；需要 Expo development build，不能只用 Expo Go。
-- 合同：复用 `openapi/openapi.yaml` 的 `POST /v1/rooms/{roomId}/memberships`、`POST /v1/rooms/{roomId}/realtime-credentials`、`GET /v1/rooms/{roomId}/members`、`POST /v1/rooms/{roomId}/leave` 与现有房间详情；若成员展示字段不足，先按合同真实字段呈现，不渲染虚构头像。
-- 设计：Figma Desktop Bridge 原稿 `115:1425`、重连 `114:2511`、结束 `114:2512`；用户已确认高保真设计。
-- 验证：API/会话测试、双端构建与页面截图、两账号真实 LiveKit 音频及断线/退出设备验收分别记录；本地模拟连接不能冒充真实双人音频证明。
+- Mobile `apps/mobile`: room routing, authentication API adaptation, LiveKit Web/native client, interface and session state; requires Expo development build, cannot just use Expo Go.
+- Contract: Reuse `POST /v1/rooms/{roomId}/memberships`, `POST /v1/rooms/{roomId}/realtime-credentials`, `GET /v1/rooms/{roomId}/members`, `POST /v1/rooms/{roomId}/leave` of `openapi/openapi.yaml` and existing room details; if the member display fields are insufficient, the real fields of the contract will be displayed first, and the fictional avatar will not be rendered.
+- Design: Figma Desktop Bridge original `115:1425`, reconnect `114:2511`, end `114:2512`; user confirmed high-fidelity design.
+- Verification: API/session testing, dual-end construction and page screenshots, real LiveKit audio of two accounts and disconnection/exit device acceptance are recorded separately; local simulated connections cannot pretend to be real two-person audio proof.

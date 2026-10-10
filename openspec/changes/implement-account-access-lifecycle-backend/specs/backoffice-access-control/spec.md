@@ -1,17 +1,20 @@
 ## ADDED Requirements
 
-### Requirement: 已注销账号必要记录使用独立后台权限
-系统 MUST 为已注销账号必要记录定义独立读取权限，并只授予 `PLATFORM_ADMIN` 和 `SAFETY_OFFICER`。该权限 MUST 在每次请求时依据当前有效会话、账号状态和持久角色计算，不得由客户端声明、旧 token 或宽泛后台访问权替代。
+### Requirement: The account has been canceled and it is necessary to record the use of independent background permissions.
 
-#### Scenario: 管理员兼安全员读取
-- **WHEN** 同一用户同时持有平台管理员和安全员角色并请求受限账号记录
-- **THEN** 系统允许读取并在审计中记录本次实际授权角色集合
+The system MUST define independent read permissions for necessary records of deleted accounts and grant only `PLATFORM_ADMIN` and `SAFETY_OFFICER`. This permission MUST be computed on each request based on the current active session, account state, and persistent role, and may not be overridden by client claims, legacy tokens, or broad background access.
 
-#### Scenario: 仅审计员请求受限账号记录
-- **WHEN** 用户只持有 `AUDITOR` 角色并直接请求已注销账号必要记录
-- **THEN** 系统拒绝访问；审计员角色只能读取其既有获批审计范围，不自动获得用户安全资料权限
+#### Scenario: Administrator and safety officer Read
 
-#### Scenario: 后台账号自身不可用
-- **WHEN** 拥有管理员或安全员角色的调用者账号不再处于 `ACTIVE`
-- **THEN** 系统在角色判断前拒绝其会话，后台角色不能绕过账号生命周期状态
+- **WHEN** The same user holds both platform administrator and safety officer roles and requests restricted account records
+- **THEN** The system allows reading and recording this actual authorized role set in the audit
 
+#### Scenario: Only auditors request restricted account records
+
+- **WHEN** The user only holds the `AUDITOR` role and directly requests the necessary records of the canceled account
+- **THEN** The system denies access; the auditor role can only read its existing approved audit scope and does not automatically obtain user security information permissions
+
+#### Scenario: The background account itself is unavailable
+
+- **WHEN** The caller account with administrator or safety officer role is no longer in `ACTIVE`
+- **THEN** The system rejects the session before the role is judged. The administrative role cannot bypass the account life cycle status.

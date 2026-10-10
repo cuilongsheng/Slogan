@@ -1,23 +1,23 @@
-## 1. 直接入房
+## 1. Enter the room directly
 
-- [x] 1.1 从列表、详情加入建立直接入房意图并进入 session；用组件测试验证一次点击、双击、错房草稿和邀请标识。
-- [x] 1.2 密码提交直接加入，取消规则和设备前置路径；用密码输入测试验证四位校验与路由。
-- [x] 1.3 加入失败提供返回列表、必要授权和重试；用会话/组件测试验证未授权不自动接受、拒绝麦克风不假报开麦。
+- [x] 1.1 Create a direct room entry intention from the list and details and enter the session; use component testing to verify one click, double click, wrong room draft and invitation identifier.
+- [x] 1.2 Submit the password to join directly, cancel the rules and device front path; use the password input to test and verify the four-digit verification and routing.
+- [x] 1.3 Provide a return list, necessary authorization and retry when joining fails; use session/component testing to verify that unauthorized access will not be automatically accepted, and microphone rejection will not falsely report that the microphone is open.
 
-## 2. 验证与交付
+## 2. Verification and Delivery
 
-- [x] 2.1 执行完整 mobile lint/typecheck/tests、Pages build 和 OpenSpec strict；记录最终运行流程截图与 Figma 差异，真机由用户验证。
-- [x] 2.2 提交代码并创建 PR，验证前后端预览及 Android 构建；合并后核对生产提交与固定下载，记录未完成的云端或设备门槛。
+- [x] 2.1 Execute complete mobile lint/typecheck/tests, Pages build and OpenSpec strict; record the differences between the final running process screenshot and Figma, and the physical device is verified by the user.
+- [x] 2.2 Submit code and create PR, verify front-end and back-end previews and Android builds; check production submissions and fixed downloads after merging, and record unfinished cloud or device thresholds.
 
-## 3. 用户真机验收修正
+## 3. User physical device acceptance correction
 
-- [x] 3.1 统一详情、分享、邀请、旧规则和设备深链到直接入房；密码改为当前页弹窗，验证缺少/错误密码与邀请保留。
-- [x] 3.2 依据 Bridge 原稿 115:1425 修复房内成员、聊天与底栏布局，保留所有真实行为。
-- [ ] 3.3 执行 mobile 检查、入口回归和原稿/运行图对照，提交 PR 并交付核对提交与校验和的新 APK；真机由用户验证。
+- [x] 3.1 Unify details, sharing, invitations, old rules and equipment to deeply link to direct room entry; password is changed to a pop-up window on the current page to verify missing/wrong passwords and invitation retention.
+- [x] 3.2 Based on Bridge original manuscript 115:1425, repair the room members, chat and bottom bar layout, retaining all real behaviors.
+- [ ] 3.3 Perform mobile checks, portal regressions, and manuscript/running graph comparisons, submit PRs, and deliver new APKs that verify submissions and checksums; physical device is verified by the user.
 
-## 4. 自动设备检查（用户批准，暂停发布）
+## 4. Automatic device check (user approved, suspended for publication)
 
-- [x] 4.1 原生/Web 自动探测输入、输出与权限，始终默认静音，探测轨道释放和退房竞态测试。
-- [x] 4.2 房内问题提示、重试及系统设置入口；无固定准备页，验证真实组件状态，真机由用户验证。
+- [x] 4.1 Native/Web automatically detects input, output and permissions, always mutes by default, detects track release and checks out race testing.
+- [x] 4.2 In-room problem prompts, retry and system settings entrance; no fixed preparation page, real component status is verified, and the physical device is verified by the user.
 
-本轮实现和本地检查完成；3.3 中 PR/APK 发布按用户要求暂停，未执行原生真机检查。
+This round of implementation and local checking is completed; PR/APK release in 3.3 is suspended at user request, and native physical device checking is not performed.

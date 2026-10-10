@@ -1,64 +1,80 @@
 ## Purpose
 
-定义需要双方同意的轻量好友关系、请求处理和本人列表边界，使好友能力只服务于查看空闲状态与房间邀请，并在并发请求下保持唯一和可重试。
+Define lightweight friend relationships, request processing and personal list boundaries that require mutual consent, so that the friend ability only serves to view idle status and room invitations, and remains unique and retryable under concurrent requests.
 
 ## ADDED Requirements
 
-### Requirement: 好友关系必须经过双方同意
-系统 MUST 只在接收方明确接受有效好友请求后建立双向好友关系。调用者不得向自己发起请求；任一账号不可用、资料未完成、未达到年龄要求、存在任一方向屏蔽或双方已经是好友时，系统 MUST 拒绝新请求且不泄露额外账号状态。
+### Requirement: Friend relationship must be mutually agreed upon
 
-#### Scenario: 接收方接受请求
-- **WHEN** 合格用户接受发送给自己的待处理好友请求
-- **THEN** 系统建立唯一双向好友关系并终结该请求
+The system MUST establish a two-way friend relationship only after the recipient explicitly accepts a valid friend request. The caller is not allowed to initiate a request to himself; when any account is unavailable, the information is incomplete, the age requirement is not met, there is blocking in any direction, or both parties are already friends, the system MUST reject the new request and not disclose the status of the additional account.
 
-#### Scenario: 单方面发起请求
-- **WHEN** 用户成功向另一名合格用户发送好友请求但对方尚未接受
-- **THEN** 系统只保存待处理请求，不把双方显示为好友
+#### Scenario: Recipient accepts request
 
-#### Scenario: 无效目标或屏蔽关系
-- **WHEN** 用户向自己、不可用账号、未完成资料的账号或与其存在任一方向屏蔽的账号发起请求
-- **THEN** 系统返回一致的目标不可用结果且不创建请求
+- **WHEN** Qualified user accepts pending friend request sent to himself
+- **THEN** The system establishes a unique two-way friend relationship and terminates the request
 
-### Requirement: 好友请求具有受控状态转换
-系统 MUST 只允许接收方接受或拒绝待处理请求，只允许发送方撤回待处理请求。请求进入接受、拒绝或撤回终态后 MUST 不能被另一动作改写；相反方向的并发待处理请求 MUST 收敛为一个可处理关系上下文。
+#### Scenario: Unilateral request
 
-#### Scenario: 接收方拒绝请求
-- **WHEN** 接收方拒绝待处理好友请求
-- **THEN** 请求进入拒绝终态且不建立好友关系
+- **WHEN** The user successfully sent a friend request to another qualified user but the other person has not accepted it.
+- **THEN** The system only saves pending requests and does not display the two parties as friends.
 
-#### Scenario: 发送方撤回请求
-- **WHEN** 发送方撤回仍待处理的请求
-- **THEN** 请求进入撤回终态且接收方不能再接受该请求
+#### Scenario: Invalid target or blocking relationship
 
-#### Scenario: 双方并发互相发送
-- **WHEN** 两名用户同时向对方发送好友请求
-- **THEN** 系统保留一个唯一待处理关系上下文，不产生两组可分别接受的请求
+- **WHEN** The user initiates a request to himself, an unavailable account, an account with incomplete data, or an account that is blocked in any direction.
+- **THEN** The system returns a consistent target unavailable result and does not create a request
 
-### Requirement: 好友列表仅返回本人关系
-系统 MUST 以有限游标分页返回调用者当前有效的好友关系和对方最小资料，不返回其他用户的好友图谱、好友请求内容、位置、精确在线时间或当前房间详情。空闲状态 MUST 由 `user-availability` 能力实时计算，不持久化为好友资料事实。
+### Requirement: Friend request has controlled state transition
 
-#### Scenario: 查询本人好友列表
-- **WHEN** 已认证用户分页查询好友列表
-- **THEN** 系统只返回其有效好友及允许展示的最小资料和当前空闲布尔值
+The system MUST only allow the recipient to accept or reject pending requests, and only the sender to withdraw pending requests. A request MUST not be overridden by another action after it enters the accept, reject, or withdraw final state; concurrent pending requests in the opposite direction MUST converge into a processable relational context.
 
-#### Scenario: 直接读取他人好友列表
-- **WHEN** 用户尝试通过修改请求目标读取另一用户的好友列表
-- **THEN** 系统拒绝请求且不返回对方关系
+#### Scenario: Recipient rejected request
 
-### Requirement: 删除好友不会恢复其他关系
-系统 MUST 允许任一方删除当前好友关系。删除后双方不再出现在好友列表中，既有普通房间邀请不因此自动获得新的权限；重新成为好友 MUST 重新经过好友请求和接受。
+- **WHEN** Recipient rejected pending friend request
+- **THEN** The request enters the rejection final state and does not establish a friend relationship.
 
-#### Scenario: 任一方删除好友
-- **WHEN** 好友关系任一方删除该关系
-- **THEN** 唯一双向好友关系失效且双方列表一致收敛
+#### Scenario: Sender withdraws request
 
-### Requirement: 好友写操作可安全重试
-系统 MUST 要求发起、接受、拒绝、撤回和删除操作携带调用者生成的 UUID 请求标识。同一调用者以相同标识重试相同规范化命令 MUST 返回原结果；重用标识改变目标或动作 MUST 返回稳定冲突。
+- **WHEN** Sender withdraws pending request
+- **THEN** The request enters the withdrawn final state and the recipient can no longer accept the request.
 
-#### Scenario: 接受请求响应丢失后重试
-- **WHEN** 接收方使用相同请求标识重试已经成功的接受操作
-- **THEN** 系统返回原好友关系且不创建重复关系或重复审计
+#### Scenario: Both parties send each other concurrently
 
-#### Scenario: 重用标识改变动作
-- **WHEN** 调用者使用已成功命令的请求标识执行不同目标或不同动作
-- **THEN** 系统返回冲突且保持原状态
+- **WHEN** Two users send friend requests to each other at the same time
+- **THEN** The system retains a unique pending relationship context and does not generate two sets of separately acceptable requests.
+
+### Requirement: The friend list only returns personal relationships
+
+The system MUST use limited cursor paging to return the caller's currently valid friend relationship and the other party's minimum information. It does not return other users' friend maps, friend request content, location, precise online time, or current room details. The idle state MUST be calculated in real time by the `user-availability` capability and not persisted as a friend information fact.
+
+#### Scenario: Query my friend list
+
+- **WHEN** Authenticated users query the friend list by page
+- **THEN** The system only returns its valid friends and the minimum information allowed to be displayed and the current idle Boolean value
+
+#### Scenario: Directly read other people’s friend list
+
+- **WHEN** User attempts to read another user's friends list by modifying the request target
+- **THEN** The system rejects the request and does not return the relationship with the other party.
+
+### Requirement: Deleting friends will not restore other relationships
+
+The system MUST allow either party to delete the current friend relationship. After deletion, both parties will no longer appear in the friend list. Existing ordinary room invitations will not automatically obtain new permissions. To become friends again, you MUST go through the friend request and acceptance again.
+
+#### Scenario: Either party deletes friends
+
+- **WHEN** Either party in the friend relationship deletes the relationship
+- **THEN** The only two-way friend relationship has expired and both lists have converged.
+
+### Requirement: Friend write operation can be safely retried
+
+The system MUST require that initiate, accept, reject, withdraw, and delete operations carry the UUID request identifier generated by the caller. Retrying the same normalized command with the same identity by the same caller MUST return the original result; reusing the identity to change the target or action MUST return a stable conflict.
+
+#### Scenario: Retry after receiving request response is lost
+
+- **WHEN** The receiver retries a successful accept operation using the same request ID.
+- **THEN** The system returns the original friend relationship and does not create duplicate relationships or duplicate audits.
+
+#### Scenario: Reuse identifier change action
+
+- **WHEN** The caller performed a different goal or a different action using the request ID of a successful command.
+- **THEN** The system returns conflict and remains in the original state

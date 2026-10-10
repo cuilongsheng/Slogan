@@ -1,90 +1,90 @@
 ## Context
 
-动机见 proposal.md。已核对现有实现：auth 的 SessionService 使用持久 AuthSession 和 refresh rotation，每次验证 access token 都读取会话有效性；PrismaAuthRepository 创建/刷新会话时锁 User。account-lifecycle 在事务内标记 DELETED、撤销会话并处理房间，当前重新认证 proof 由 PhoneChallengeStore 提供；登录方式 DTO 仅包含 PHONE/GOOGLE/WECHAT。AuthRateLimitGuard 是进程内限流，不能独自保护新增密码尝试和邮件配额。
+See proposal.md for motivation. The existing implementation has been checked: auth's SessionService uses persistent AuthSession and refresh rotation, and reads the session validity every time the access token is verified; PrismaAuthRepository locks User when creating/refreshing the session. account-lifecycle marks DELETED within transaction, revokes session and handles room, current reauthentication proof is provided by PhoneChallengeStore; login method DTO only contains PHONE/GOOGLE/WECHAT. AuthRateLimitGuard is an in-process flow limiter and cannot protect new password attempts and email quotas alone.
 
-主 spec 尚无邮箱认证；`add-email-password-auth` 是未完成视觉验收的原型 change。本 change 沿用其用户名格式与 8–128 字符密码入口，但把验证完成定义为确认身份后返回密码登录，不通过邮件链接直接发业务会话。该后端能力独立归档；将来同步原型 delta 时需核对重复描述和此流程，不能直接覆盖。
+The main spec does not yet have email authentication; `add-email-password-auth` is a prototype change that has not completed visual acceptance. This change retains the username format and 8–128-character password entry, but defines completed verification as confirming identity and returning to password login. Email links do not directly issue business sessions. This backend capability is archived independently; when synchronizing prototype delta in the future, the duplicate description and this process need to be checked and cannot be directly overwritten.
 
 ## Goals / Non-Goals
 
-**Goals:** 在 auth 域内完成邮箱认证事务、邮件交付和现有会话/注销整合，新增一个独立邮件 worker 入口，保持可小批验证。
+**Goals:** completes email authentication transactions, email delivery and existing session/account deletion integration in the auth domain, and adds an independent email worker entrance to maintain small batch verification.
 
-**Non-Goals:** 不泛化通知系统，不重构现有手机号认证，不增设管理后台，不开发客户端链接页面或实际部署。
+**Non-Goals:** does not generalize the notification system, does not reconstruct the existing mobile phone number authentication, does not add a management backend, does not develop client link pages or actual deployment.
 
 ## Decisions
 
-### 1. 身份仅在验证完成后创建
+### 1. Identity is only created after verification is completed
 
-新增 EmailCredential（userId 唯一、规范化 username/email 唯一、passwordHash、credentialVersion、verifiedAt）和 EmailEnrollment（REGISTER/LINK、待验证密码散列、24 小时 expiresAt、管理凭据摘要、绑定 userId/sessionId/命令）。不改变 User.status，也不让待验证账号进入资料/房间。
+Added EmailCredential (userId unique, normalized username/email unique, passwordHash, credentialVersion, verifiedAt) and EmailEnrollment (REGISTER/LINK, password hash to be verified, 24 hours expiresAt, management credential digest, bind userId/sessionId/command). Does not change User.status, and does not allow accounts to be verified to enter information/rooms.
 
-用户名 trim 后 ASCII 小写，邮箱 trim 后小写并拒绝不支持的国际化邮箱输入；最大 254 字符，不折叠 dot/plus。密码按 Unicode 码点计长，原样编码，最大请求体受限。用户名和邮箱独立唯一。注销账号凭据保留唯一占用但销毁 passwordHash，数据库约束允许该不可登录状态。
+The username is trimmed to ASCII lowercase, the email address is trimmed to lowercase, and unsupported internationalized email input is rejected; the maximum is 254 characters, dot/plus is not folded. The password is calculated according to Unicode code points, encoded as is, and the maximum request body is limited. The username and email are independent and unique. Deleted-account credentials retain their unique identity reservation while destroying passwordHash. Database constraints allow this non-authenticatable state.
 
-不以 pending 行建立永久唯一身份锁；每个目标同时最多 3 个未过期申请并受目标配额保护，验证时依赖唯一索引决定赢家。重发仅接受 32 随机字节管理凭据；不能凭邮箱更新申请密码。申请过期 24 小时内删除密码散列和个人数据；未验证申请不会创建 User，也不会永久阻断合法注册。
+Do not establish a permanent unique identity lock with the pending row; each target has a maximum of 3 unexpired applications at the same time and is protected by the target quota, and relies on the unique index to determine the winner during verification. Only 32 random bytes of management credentials are accepted for resend; the password cannot be updated by email. Password hashes and personal data will be deleted within 24 hours of application expiration; unverified applications will not create Users and will not permanently block legitimate registrations.
 
-### 2. 密码与一次性凭据
+### 2. Passwords and one-time credentials
 
-使用 Node 异步 scrypt，经 PasswordHasher port 封装，初始 N=32768、r=8、p=1，独立随机盐与带版本的编码；通过本地耗时/内存测试限定并发，不以同步散列阻塞事件循环。相比新增原生 Argon2 依赖，现有 Node runtime 可直接部署；编码版本允许未来单独迁移。不存在用户名也执行固定 dummy hash 校验以减少明显时序差异。无正式凭据时，最多检查该用户名 3 个未过期 REGISTER 申请，仅匹配密码时返回待验证提示，不返回申请邮箱或管理凭据；正式凭据存在时不回退 pending。
+Use Node asynchronous scrypt, encapsulated by PasswordHasher port, initial N=32768, r=8, p=1, independent random salt and versioned encoding; limit concurrency through local time-consuming/memory test, do not block the event loop with synchronous hashing. Compared with the new native Argon2 dependency, the existing Node runtime can be deployed directly; the encoded version allows separate migration in the future. Fixed dummy hash checking is performed even if the username does not exist to reduce obvious timing differences. When there are no formal credentials, check up to 3 unexpired REGISTER applications for this user name. If only the password matches, a pending verification prompt will be returned, and the application email or management credentials will not be returned; when formal credentials exist, pending will not be returned.
 
-EmailChallenge 保存随机 32 字节 token 的 HMAC 摘要、purpose、subject、generation、expiresAt 和 consumedAt，不保存明文。验证默认 30 分钟，重置 15 分钟；重发最少 60 秒且令旧 generation 失效。GET 链接不修改状态；可信页面读取 fragment token 后以 POST 明确确认，禁止任意 redirect 参数。请求与错误日志需对 token、password、email、邮件正文及管理凭据脱敏。
+EmailChallenge saves the HMAC digest, purpose, subject, generation, expiresAt and consumedAt of a random 32-byte token and does not save the plaintext. Verification defaults to 30 minutes, resets to 15 minutes; resends for at least 60 seconds and invalidates the old generation. The GET link does not modify the status; the trusted page reads the fragment token and then explicitly confirms it with POST, and any redirect parameters are prohibited. Request and error logs need to be desensitized to token, password, email, email body and management credentials.
 
-### 3. 登录、重置与注销的事务顺序
+### 3. Transaction sequence of login, reset and account deletion
 
-密码计算放在事务外；提交登录时锁 User 再锁 EmailCredential，重查 ACTIVE、已验证及 credentialVersion。会话创建必须在此原子校验边界内，不能“校验密码后直接调用无版本条件的 SessionService.issue”。扩展 auth 内部 repository/session port，复用原 token 格式和签名逻辑。
+Password calculation is placed outside the transaction; lock User and then EmailCredential when submitting login, and recheck ACTIVE, verified and credentialVersion. Session creation must be within this atomic verification boundary, and you cannot directly call SessionService.issue without version conditions after verifying the password. Extend the auth internal repository/session port and reuse the original token format and signature logic.
 
-重置采用同样锁顺序，验证 challenge 仍有效及账号 ACTIVE；一次事务内消费凭据、递增版本、更新散列、撤销全部 AuthSession、失效其余重置及重新认证证明。旧密码校验若晚到因版本变化被拒绝；先完成的旧登录会话会被重置撤销；refresh 与重置共享 User 锁。提交重置后不自动签发 token，响应丢失时通过新密码登录恢复。
+Reset using the same lock sequence, verify that the challenge is still valid and the account is ACTIVE; consume credentials, increment the version, update the hash, revoke all AuthSession, invalidate the remaining resets and re-authentication certificates in one transaction. If the old password verification is late, it will be rejected due to version changes; the old login session completed first will be reset and revoked; refresh and reset share the User lock. The token is not automatically issued after the reset is submitted. When the response is lost, it can be restored by logging in with a new password.
 
-注销事务补充清除邮箱 passwordHash、失效该用户 enrollment/challenge/proof 和未发邮件载荷，保留身份占用。后台受限记录仅增加 EMAIL_PASSWORD 类型，不扩展明文邮箱查看权限。全局重置撤销平台会话，但不声称立即撤销已经下发的 LiveKit 媒体 token；当前房间移除和封禁仍走现有控制面。
+The account deletion transaction additionally clears the mailbox passwordHash, invalidates the user's enrollment/challenge/proof and unsent email payload, and retains the identity occupation. Only the EMAIL_PASSWORD type is added to the background restricted records, and the plain text mailbox viewing permission is not extended. The global reset cancels the platform session, but does not claim to immediately cancel the issued LiveKit media token; current room removal and banning still use the existing control plane.
 
-### 4. 绑定及重新认证证明
+### 4. Binding and re-certification certificate
 
-独立、目的限定的 EmailAuthProof 保存用户、sessionId、credentialVersion（适用时）、命令 ID、purpose、摘要和 5 分钟有效期。绑定 proof 通过现有 OAuth adapter/手机号 challenge 验证当前账号真正拥有的身份，不能复用登录 exchange 创建新用户，也不能使用 ACCOUNT_DELETE proof。开始绑定事务消费 LINK_EMAIL proof，把原会话绑定到 enrollment；确认时再次校验该会话有效及账号 ACTIVE，按 User → Credential → Enrollment/Challenge 锁顺序写入。
+Standalone, purpose-qualified EmailAuthProof saves user, sessionId, credentialVersion (when applicable), command ID, purpose, digest, and 5-minute expiration. Bind the proof to verify the true identity of the current account through the existing OAuth adapter/mobile phone number challenge. You cannot reuse the login exchange to create new users, nor can you use the ACCOUNT_DELETE proof. Start binding transaction consumption LINK_EMAIL proof, bind the original session to enrollment; when confirming, verify again that the session is valid and the account is ACTIVE, and write in the order of User → Credential → Enrollment/Challenge lock.
 
-密码注销 proof 通过 auth 公开接口接入现有 account-lifecycle proof 验证边界。保留旧手机号/OAuth proof 路径和 DTO 兼容；新增密码 proof 按同一命令 ID 安全重放，消费及注销失败恢复不可绕过重新认证。避免为这次新增方式整体重构所有 proof 存储。
+The password account deletion proof is connected to the existing account-lifecycle proof verification boundary through the auth public interface. Keep the old mobile phone number/OAuth proof path and DTO compatible; add a new password proof and replay it safely according to the same command ID. Recovery from consumption and account deletion failures cannot bypass re-authentication. Avoid a complete reconstruction of all proof stores for this new method.
 
-### 5. 邮件 outbox 和有限重试
+### 5. Mail outbox and limited retries
 
-auth 拥有 MailSender port、SMTP adapter 和 EmailDelivery。使用 SMTP TLS 校验（本地捕获服务例外），不要求供应商专属 SDK。application 事务同时保存 enrollment/challenge 和 outbox；随机凭据及收件地址仅存在 AES-256-GCM 加密载荷，密钥由部署配置提供，附 keyId 与 AAD，不能与数据库一起明文备份。普通身份邮箱受数据库访问边界保护，不进入查询/日志； outbox 不存完整链接和正文，只加密最小模板参数。
+auth owns MailSender port, SMTP adapter and EmailDelivery. Uses SMTP TLS verification (except local capture service), does not require vendor-specific SDK. The application transaction saves both enrollment/challenge and outbox; the random credentials and recipient address only exist in the AES-256-GCM encrypted payload. The key is provided by the deployment configuration, with keyId and AAD attached, and cannot be backed up in clear text with the database. The ordinary identity mailbox is protected by the database access boundary and does not enter the query/log; the outbox does not store the complete link and text, and only the minimum template parameters are encrypted.
 
-独立 auth-mail worker 在开关开启后领取 PostgreSQL 租约，generation fencing 提交状态，每批最多 20 条、最多 5 次指数退避；过期、已消费或被替换 challenge 停止发送。稳定 Message-ID 可辅助去重，但 SMTP 不保证 exactly-once；发送成功而提交丢失可能重发同一链接，单次消费保证状态安全。发送完成立即清空加密载荷；失败/过期最晚终态后 24 小时清除，技术元数据 7 天清理。Enrollment 成功后立即清除临时密码散列和管理凭据，过期后 24 小时内删除个人数据。重试不延长 challenge 有效期。清理仅涉及新增 auth 临时表，不能删除既有身份/审计。
+The independent auth-mail worker receives the PostgreSQL lease after the switch is turned on, and the generation fencing submission status is limited to 20 entries per batch and exponential backoff of up to 5 times; the challenge stops sending when it expires, has been consumed, or has been replaced. Stable Message-ID can assist in deduplication, but SMTP does not guarantee exactly-once; the same link may be resent if the submission is lost if the transmission is successful, and single consumption ensures state security. The encrypted payload will be cleared immediately after the sending is completed; it will be cleared 24 hours after the final state of failure/expiration, and the technical metadata will be cleared within 7 days. Temporary password hashes and administrative credentials are cleared immediately upon successful Enrollment and personal data is deleted within 24 hours after expiration. Retrying does not extend the challenge validity period. Cleaning only involves adding new auth temporary tables and cannot delete existing identities/auditing.
 
-### 6. 合同、开关和配额
+### 6. Contracts, Switches and Quotas
 
-沿用 NestJS code-first；以下为预期路由，唯一发布合同仍由 decorators 生成：
+Follow NestJS code-first; the following is the expected route, and the only publishing contract is still generated by decorators:
 
-| 路由（均在 /v1 下） | 行为 |
-| --- | --- |
-| POST /auth/email/registrations | 用户名/邮箱/密码申请，202 返回不透明管理凭据和期限，无 session |
-| POST /auth/email/verifications/resend | 管理凭据重发，202，返回冷却时间 |
-| POST /auth/email/verifications/confirm | 注册 token 消费，200，无 session |
-| POST /auth/password/exchange | 用户名密码登录，200，沿用 tokens/onboarding 响应 |
-| POST /auth/password/reset-requests | 邮箱找回，统一 202，无存在性字段 |
-| POST /auth/password/resets | token 与新密码，204 |
-| POST /me/login-methods/email/proofs/oauth/:provider | 当前账号 OAuth 重新认证，目的 LINK_EMAIL |
-| POST /me/login-methods/email/proofs/phone/challenges、confirm | 当前账号手机号重新认证，目的 LINK_EMAIL |
-| POST /me/login-methods/email/requests | 带绑定 proof、命令 ID 的申请，202 |
-| POST /me/login-methods/email/confirm | 有效原会话与绑定 token 确认，200 |
-| POST /me/account/deletion/proofs/password | 当前密码确认，返回现有注销 proof 响应形式 |
+| Routing (both under /v1)                                      | Behavior                                                                                              |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| POST /auth/email/registrations                                | Username/email/password application, 202 returns opaque management credentials and period, no session |
+| POST /auth/email/verifications/resend                         | Management credentials reissued, 202, return cooling time                                             |
+| POST /auth/email/verifications/confirm                        | Registration token consumption, 200, no session                                                       |
+| POST /auth/password/exchange                                  | Username and password login, 200, use tokens/onboarding response                                      |
+| POST /auth/password/reset-requests                            | Email retrieval, unified 202, no existence field                                                      |
+| POST /auth/password/resets                                    | token and new password, 204                                                                           |
+| POST /me/login-methods/email/proofs/oauth/:provider           | Current account OAuth re-authentication, purpose LINK_EMAIL                                           |
+| POST /me/login-methods/email/proofs/phone/challenges、confirm | Current account mobile phone number re-authentication, purpose LINK_EMAIL                             |
+| POST /me/login-methods/email/requests                         | Application with binding proof and command ID, 202                                                    |
+| POST /me/login-methods/email/confirm                          | Valid original session and binding token confirmation, 200                                            |
+| POST /me/account/deletion/proofs/password                     | Confirm current password, return existing account deletion proof response form                        |
 
-登录方式列表和受限注销记录 enum 增加 EMAIL_PASSWORD（更新客户端生成类型）；不新增公开身份查询。校验/登录失败 400/401，未验证且密码正确 403，身份占用/命令冲突 409，配额 429，配置或依赖不可用 503；找回未知/禁用/注销邮箱统一受理且无邮件。公开注册会暴露占用状态，这是原型明确行为，与登录/找回隐匿存在性的目标区分记录。
+Add EMAIL_PASSWORD to login method list and restricted account deletion record enum (update client generation type); no new public identity query is added. Verification/login failed 400/401, not verified and the password is correct 403, identity occupation/command conflict 409, quota 429, configuration or dependency unavailable 503; retrieval of unknown/disabled/account deletion mailboxes is accepted uniformly and there is no email. Public registration exposes occupancy status, which is an explicit behavior of the prototype and separate from the goal of logging in/retrieving hidden existence records.
 
-EMAIL_PASSWORD_AUTH_ENABLED 默认 false，worker 同步受控。启用要求 SMTP、from、可信链接基址、HMAC/AES 密钥及 Redis 配置完整；关闭不得停用 OAuth/手机号和原会话撤销。Redis Lua 原子检查来源、目标摘要和全局配额（初始来源 20 次/15 分钟、登录目标 10 次/15 分钟、邮件目标 5 封/小时、全局 100 封/小时，配置有硬上限），不存在目标同样计数。限流键不含明文邮箱/用户名，配置可信代理来源，依赖失败拒绝新邮件/密码尝试。SMTP 故障不阻塞已有邮箱账号密码登录。
+EMAIL_PASSWORD_AUTH_ENABLED defaults to false, and worker synchronization is controlled. Enabling requires complete SMTP, from, trusted link base address, HMAC/AES keys and Redis configuration; closing does not disable OAuth/mobile phone number and original session revocation. Redis Lua atomic check source, target summary and global quotas (initial source 20 times/15 minutes, login target 10 times/15 minutes, mail target 5 messages/hour, global 100 messages/hour, configured with hard cap), no target same count. The flow-limiting key does not contain plain text email/user name, configure a trusted proxy source, and reject new email/password attempts if the dependency fails. SMTP failure does not block login with existing email account and password.
 
 ## Risks / Trade-offs
 
-- [8 字符最低长度沿用原型，存在弱密码风险] → 加入版本化常见密码拒绝表、严格共享限流和成本受控散列；不宣称具备 MFA 强度。
-- [注册字段占用提示与隐私目标有取舍] → 仅注册允许字段级占用，登录/找回保持统一响应，配额同时约束枚举。
-- [SMTP 不确定重发] → 同一目的/版本 token 只能消费一次，投递不等于已验证，不虚构 exactly-once。
-- [加密密钥丢失导致待发邮件不可恢复] → 稳定失败码、失效旧申请并允许重发；轮换期间保留未过期载荷旧 keyId 的解密能力。
-- [同时存在原型、账号生命周期 active change] → 本次只新增 capability；实现对当前代码 additive 扩展，归档时单独复查能力重叠。
+- [The 8-character minimum length follows the prototype, and there is a risk of weak passwords] → Added versioned common password rejection table, strict sharing current limit and cost-controlled hashing; does not claim to have MFA strength.
+- [There is a trade-off between registration field occupancy prompt and privacy goal] → Only registration allows field-level occupancy, login/retrieval maintains unified response, and quotas constrain enumeration at the same time.
+- [SMTP Uncertain Retransmission] → The same purpose/version token can only be consumed once, delivery does not mean verified, and does not create exactly-once.
+- [Loss of encryption key makes outgoing emails unrecoverable] → Stabilize failure codes, invalidate old applications, and allow resending; retain the decryption ability of old keyIds of unexpired payloads during rotation.
+- [Prototype and account life cycle active change exist at the same time] → Only the capability is added this time; additive expansion of the current code is implemented, and the capability overlap is independently reviewed during archiving.
 
 ## Migration Plan
 
-1. 关闭开关，新增表、唯一约束与 User 可选关系；历史 OAuth/手机号用户无邮箱凭据，迁移不得自动读取 provider email 创建凭据。
-2. 在空库与含现有会话、手机号/OAuth、注销账号的历史 fixture 验证迁移；真实 PostgreSQL 测试唯一竞争和重置/登录/刷新/注销竞态。
-3. 使用本地 SMTP 捕获服务完成投递、重试、重启、过期清理与脱敏 runtime，再在隔离真实邮件环境验收收件及链接确认/重置闭环。
-4. 一次最终 affected-scope 运行格式、Prisma、类型/lint、依赖、OpenAPI、构建和完整 API 回归；过程仅跑对应小范围测试。
-5. 回滚关闭入口/worker并回退应用，保留身份和挑战表，不恢复旧密码或已撤销会话；邮箱独有用户在关闭期间无法密码登录，需发布说明，不能用旧快照恢复旧认证状态。
-6. 真实发信环境缺失时外部任务 BLOCKED 且不归档；本 change 不要求移动端视觉/真机证明，客户端回跳页面接入另行验收，不能声称移动端已完成。
+1. Turn off the switch, add a new table, unique constraint, and User optional relationship; historical OAuth/mobile phone number users do not have email credentials, and migration must not automatically read provider email to create credentials.
+2. Verify migration in an empty database with historical fixtures containing existing sessions, mobile phone numbers/OAuth, and account deletion accounts; real PostgreSQL test unique race and reset/login/refresh/account deletion race conditions.
+3. Use the local SMTP capture service to complete delivery, retry, restart, expiration cleanup and desensitization runtime, and then accept the receipt and link confirmation/reset closed loop in the isolated real email environment.
+4. A final affected-scope run of format, Prisma, type/lint, dependency, OpenAPI, build and full API regression; process only runs corresponding small-scale tests.
+5. Rollback closes the portal/worker and rolls back the application, retains the identity and challenge table, and does not restore the old password or revoke the session; unique users of the mailbox cannot log in with password during the shutdown period, and instructions need to be issued. Old snapshots cannot be used to restore the old authentication status.
+6. When the real sending environment is missing, the external task is BLOCKED and not archived; this change does not require visual/physical device certification on the mobile terminal. The client's bounce page access will be subject to separate acceptance. It cannot be claimed that the mobile terminal has been completed.
 
 ## Open Questions
 
-- 目标环境 SMTP 供应商、已验证发信域名和可信客户端 HTTPS 页面地址由部署配置提供；不影响上述实现合同。真实 smoke 需用受控收件邮箱和测试确认客户端完成 POST，不依赖尚未开发的移动端页面。
+- The target environment SMTP provider, authenticated sending domain name, and trusted client HTTPS page address are provided by the deployment configuration; do not affect the above implementation contract. Real smoke requires a controlled recipient mailbox and a test confirmation client to complete the POST, and does not rely on the yet-to-be-developed mobile page.

@@ -1,29 +1,29 @@
 ## Why
 
-房间安全语音后端已提供仅当前房主可读的最小提醒查询及 LiveKit 定向事件，但手机语音房尚未接入。房主在线时看不到提醒，重连后也无法补齐，真实设备验收因此无法进行。
+The room security voice backend has provided the minimum reminder query and LiveKit directed event that can only be read by the current room host, but the mobile voice room has not yet been connected. You cannot see the reminder when the room host is online, and it cannot be completed after reconnecting. Therefore, the real device acceptance cannot be carried out.
 
 ## What Changes
 
-- 启用敏感语音识别的房间内，仅当前房主显示风险提醒入口和最小提醒列表。
-- 校验版本化 LiveKit 定向事件后向服务端查询最新提醒；入房、重连和房主接任时补齐，列表支持游标翻页。
-- 房主身份失效、离房、结束或服务端拒绝访问时立即清除客户端提醒；所有提醒只提示人工核实，不自动处置。
-- 沿用已确认的手机语音房 V2 视觉语言增加提醒状态；原始语音、转写和命中原文不进入客户端状态或日志。
+- In a room with sensitive voice recognition enabled, only the current room host displays the risk reminder entrance and minimum reminder list.
+- After verifying the versioned LiveKit directed event, query the server for the latest reminder; complete it when entering a room, reconnecting, and taking over the room host, and the list supports cursor page turning.
+- The client reminder is cleared immediately when the room host identity expires, leaves the room, ends, or the server refuses access; all reminders only prompt manual verification and are not automatically processed.
+- Use the confirmed mobile phone voice room V2 visual language to add reminder status; the original voice, transcription and hit original text do not enter the client status or log.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mobile-room-safety-alerts`: 手机语音房当前房主的最小风险提醒和恢复行为。
+- `mobile-room-safety-alerts`: The minimum risk reminder and recovery behavior of the current room host in the mobile voice room.
 
 ### Modified Capabilities
 
-无。复用现行房间安全语音规范与唯一 OpenAPI 合同。
+None. Reuse the current room-safe voice specification with a unique OpenAPI contract.
 
 ## Impact
 
-- `apps/mobile/src/features/voice-room/`：HTTP 客户端、LiveKit 事件、会话状态、房主界面与测试。
-- `docs/acceptance/`：视觉、本地运行与外部设备边界。
-- 不改变后端接口、数据库、风险规则或投递权限。
+- `apps/mobile/src/features/voice-room/`: HTTP client, LiveKit events, session state, room host interface and testing.
+- `docs/acceptance/`: Vision, local operation and external device boundaries.
+- No changes to the backend interface, database, risk rules, or delivery permissions.
 
 ## Impacted delivery stages
 

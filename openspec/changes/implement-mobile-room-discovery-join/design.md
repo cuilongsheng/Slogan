@@ -1,29 +1,29 @@
 ## Context
 
-见 [proposal.md](proposal.md) 和 [specs/mobile-room-discovery-join/spec.md](specs/mobile-room-discovery-join/spec.md)。当前 `apps/mobile` 只有认证与首次资料页面，合格用户进入 `/ready` 占位。OpenAPI 已提供公开即时房间列表、详情和加入接口；`GET /v1/rooms/{roomId}/members` 要求调用者已是活跃成员，故不能用于入房前成员预览。列表合同没有总数、成员头像或房间语言字段。本 change 不改 API 合同。
+See [proposal.md](proposal.md) and [specs/mobile-room-discovery-join/spec.md](specs/mobile-room-discovery-join/spec.md). Currently, `apps/mobile` only has certification and first-time information pages. Qualified users can enter `/ready` to take up positions. OpenAPI has provided public real-time room list, details and joining interface; `GET /v1/rooms/{roomId}/members` requires the caller to be an active member, so it cannot be used for member preview before entering the room. List contract has no total, member avatar, or room language fields. This change does not change the API contract.
 
 ## Goals / Non-Goals
 
-**Goals:** 用既有 API 实现真实列表/详情和入房前准备页面；保留已确认设计的主要层级、卡片、间距与状态；让不可用能力显式可见。
+**Goals:** Use existing APIs to implement real list/details and move-in preparation pages; retain the main levels, cards, spacing, and status of the confirmed design; make unavailable capabilities explicit.
 
-**Non-Goals:** 不创建房间、membership 或 LiveKit 连接，不在本批实现语音房内页、分享链接入口或其他底部导航业务。
+**Non-Goals:** does not create a room, membership or LiveKit connection, and does not implement voice room pages, shared link portals or other bottom navigation services in this batch.
 
 ## Decisions
 
-1. 采用 `room-discovery` feature 管理列表/详情请求、分页与页面状态，Expo Router 只接收 `roomId` 并组合页面。`auth` 提供受保护的请求入口，统一处理 access token 刷新及失效。请求通过生成的 `@slogan/api-client` 类型调用 `GET /v1/rooms` 和 `GET /v1/rooms/{roomId}`；不维护第二份 DTO。
-2. 合格用户从 `/ready` 转到 `/rooms`，其他 onboarding 状态保持现有 gate。列表打开、返回和下拉刷新读取最新数据；分页游标只在同一查询条件下复用。Figma 的数量标签改为已加载数量或不显示总数，避免暗示 API 未提供的总量。
-3. 列表和详情的头像/成员预览只在服务端提供真实可见信息时展示。现有合同只有房主昵称，没有入房前成员清单；使用房主首字母作为可识别的降级，不把设计稿中的示例头像当用户数据。当前产品只定义英语语音房，但没有房间语言字段，因此不把“全部/英语/中文”设计控件伪装成有效筛选；视觉差异进入验收记录。
-4. 密码和规则确认放在 `join` feature 的内存流程状态，按 `roomId` 绑定。密码页仅校验 4 位数字格式，正确性只能由未来实际加入接口验证；刷新或切换房间会清理密码。规则勾选进入设备检查，但不提前向服务端写入接受记录。
-5. 设备检查通过单独的 platform adapter 调用 Expo 官方音频权限能力；Web 预览在用户主动操作时调用浏览器麦克风能力。权限拒绝、不可用和设置返回后重试均有明确状态。页面不调用 `POST /v1/rooms/{roomId}/memberships`，因为缺少后续语音房客户端时那会占用名额；入口按钮说明下一批接通后才能真正进入。
-6. Figma Desktop Bridge 已读取并截取 390×844 原始帧：V2 列表 `115:1197`，V1 详情 `111:1026`、密码 `111:1071`、规则 `114:2508`、设备检查 `114:2509`。使用现有语义 token 与 Figma 图标源；动态房间内容随 API 变化，不以截图文字或头像充数。
+1. Use `room-discovery` feature to manage list/detail requests, paging and page status. Expo Router only receives `roomId` and combines pages. `auth` provides a protected request entry and uniformly handles access token refresh and invalidation. Request to call `GET /v1/rooms` and `GET /v1/rooms/{roomId}` with the generated `@slogan/api-client` type; the second DTO is not maintained.
+2. Qualified users move from `/ready` to `/rooms`, and other onboarding states maintain the existing gate. List opening, return and pull-down refresh read the latest data; paging cursor is only reused under the same query condition. Figma's quantity label is changed to loaded quantity or does not display the total to avoid implying a total quantity not provided by the API.
+3. The avatar/member preview of the list and details will only be displayed when the server provides real visible information. The existing contract only has the room host nickname and no pre-movement member list; uses the room host initials as a recognizable downgrade and does not treat the sample avatar in the design draft as user data. The current product only defines English-speaking rooms, but there is no room language field, so the "All/English/Chinese" design control is not disguised as an effective filter; visual differences enter the acceptance record.
+4. The password and rule confirmation are placed in the memory process state of the `join` feature and bound by `roomId`. The password page only verifies the 4-digit format, and the correctness can only be verified by actually joining the interface in the future; refreshing or switching rooms will clear the password. The rule is checked to enter the device check, but the acceptance record is not written to the server in advance.
+5. Device check calls Expo's official audio permission capability through a separate platform adapter; Web preview calls the browser microphone capability when the user actively operates. Permission denied, unavailable, and retry after setting return all have clear status. The page does not call `POST /v1/rooms/{roomId}/memberships` because it will occupy the quota if there is a lack of follow-up voice room clients; the entrance button indicates that the next batch of people can only enter after they are connected.
+6. Figma Desktop Bridge read and captured 390×844 raw frame: V2 list `115:1197`, V1 details `111:1026`, password `111:1071`, rule `114:2508`, device check `114:2509`. Use existing semantic tokens and Figma icon sources; dynamic room content changes with the API, and is not filled with screenshots of text or avatars.
 
 ## Risks / Trade-offs
 
-- [设计中的成员头像、总数、语言筛选没有合同] → 对应内容只显示已有真实数据，并记录可见差异；若要补齐，需要另行确定隐私与筛选语义并更新 OpenAPI。
-- [设计中的密码页暗示输入后可继续入房] → 当前仅检查格式，不声称密码正确；实际错误由下一批入房 API 返回。
-- [麦克风权限依赖设备与浏览器] → 单元测试只验证状态映射；真机/模拟器权限弹窗、永久拒绝、音频路由及设置返回需设备证据。
-- [房间状态在浏览期间变化] → 每次详情进入重新读取；满员/结束/主机重连显示服务端当前状态，最终加入时仍必须由后端重新校验。
+- [There is no contract for member avatars, total number, and language filtering in the design] → The corresponding content only displays existing real data and records visible differences; to make up for it, privacy and filtering semantics need to be determined separately and OpenAPI updated.
+- [The password page in the design implies that you can continue entering the room after entering it] → Currently only checks the format and does not claim that the password is correct; the actual error is returned by the next batch of room entry API.
+- [Microphone permission depends on device and browser] → Unit test only verifies state mapping; physical device/emulator permission pop-up window, permanent rejection, audio routing and setting return require device evidence.
+- [Room status changes during browsing] → Re-read each time the details are entered; full/end/host reconnection displays the current status of the server, which must still be re-verified by the backend when finally joining.
 
 ## Migration Plan
 
-本 change 无数据库或 API 迁移。发布时先保留原 `/ready` 入口可回退，再把合格用户默认路由切换到 `/rooms`；回滚前端即可恢复占位页，后端房间状态和成员资格不会因本批发生变化。
+There is no database or API migration in this change. When publishing, keep the original `/ready` entrance for rollback, and then switch the default route for qualified users to `/rooms`; roll back the front end to restore the placeholder page, and the backend room status and membership will not change due to this batch.

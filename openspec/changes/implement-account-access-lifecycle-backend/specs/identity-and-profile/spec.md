@@ -1,31 +1,38 @@
 ## ADDED Requirements
 
-### Requirement: 已验证手机号可以建立平台身份
-系统 MUST 允许用户通过有效国际手机号 OTP 验证创建或登录平台账号，并让首次手机号用户进入与第三方登录一致的资料初始化和成年访问流程。手机号验证只证明号码控制权，不得被描述为真实身份或年龄证明。
+### Requirement: Verified mobile phone number can establish platform identity
 
-#### Scenario: 手机号首次登录后初始化资料
-- **WHEN** 用户首次通过手机号 OTP 建立平台账号
-- **THEN** 系统返回资料未完成状态，并在资料和成年校验完成前继续阻止房间业务
+The system MUST allow users to create or log in to the platform account through valid international mobile phone number OTP verification, and allow first-time mobile phone number users to enter the data initialization and adult access process consistent with third-party login. Mobile phone number verification only proves control of the number and must not be described as proof of true identity or age.
 
-#### Scenario: 手机号不能替代年龄信息
-- **WHEN** 用户已验证手机号但尚未填写合格出生年月
-- **THEN** 系统仍要求完成出生年月与成年校验，不因手机号验证自动判定成年
+#### Scenario: Initialize data after first login with mobile phone number
 
-### Requirement: 多个已验证登录方式共享一个用户资料
-系统 MUST 允许同一 userId 同时拥有手机号、Google 和微信中的多个已验证登录方式。通过任一已绑定方式登录时 MUST 返回同一资料、成年状态、房间历史、单词本和安全边界，不得为每种登录方式复制资料或用户。
+- **WHEN** The user establishes a platform account through mobile phone number OTP for the first time
+- **THEN** The system returns the data incomplete status and continues to block room services until the data and age verification are completed.
 
-#### Scenario: 通过第二登录方式登录
-- **WHEN** 用户已把第二种登录方式绑定到本人账号并使用它完成认证
-- **THEN** 系统登录原 userId 并返回原资料和 onboarding 状态
+#### Scenario: Mobile phone number cannot replace age information
 
-#### Scenario: provider 建议资料与现有账号相似
-- **WHEN** 新 OAuth 身份返回与某个现有账号相同的 email、昵称或头像建议
-- **THEN** 系统不得据此自动绑定或合并，只有明确的已登录绑定流程可以增加登录方式
+- **WHEN** The user has verified the mobile phone number but has not filled in the qualified date of birth.
+- **THEN** The system still requires the completion of birth date and adult verification, and will not automatically determine adult due to mobile phone number verification.
 
-### Requirement: 已注销账号从普通身份与资料读取中隐藏
-系统 MUST 使 `DELETED` 账号无法通过普通当前用户、公开资料、房间发现、好友、空闲或邀请读取暴露私人资料。已保留的安全和审计事实只能经明确的后台受限能力读取。
+### Requirement: Multiple verified logins share one user profile
 
-#### Scenario: 普通用户读取已注销账号资料
-- **WHEN** 普通用户通过旧关系或猜测 userId 请求已注销账号资料
-- **THEN** 系统返回稳定非泄露结果且不返回头像、显示名、城市、兴趣、手机号或登录方式
+The system MUST allow the same userId to have multiple verified login methods in mobile phone number, Google and WeChat. The same profile, adult status, room history, wordbook, and security boundaries MUST be returned when logging in via any of the bound methods. Profiles or users MUST not be duplicated for each login method.
 
+#### Scenario: Log in through the second login method
+
+- **WHEN** The user has bound the second login method to his account and used it to complete authentication.
+- **THEN** The system logs in the original userId and returns the original information and onboarding status
+
+#### Scenario: Provider suggested information is similar to existing account
+
+- **WHEN** New OAuth identity returns email, nickname, or avatar suggestions that are the same as an existing account
+- **THEN** The system is not allowed to automatically bind or merge based on this. Only a clear login binding process can add login methods.
+
+### Requirement: Canceled accounts are hidden from normal identity and data reading
+
+The system MUST make it impossible for the `DELETED` account to read exposed private data through normal current user, public profile, room discovery, friends, idle, or invitations. Preserved security and audit facts can only be read by explicit background restricted capabilities.
+
+#### Scenario: Ordinary users can read canceled account information
+
+- **WHEN** Ordinary users request canceled account information through old relationships or guessed userIds
+- **THEN** The system returns stable non-leak results and does not return avatar, display name, city, interests, mobile phone number or login method

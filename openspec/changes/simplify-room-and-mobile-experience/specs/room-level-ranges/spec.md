@@ -1,36 +1,37 @@
 ## Purpose
 
-定义即时与预约房间适合英语等级的范围选择、可读展示和既有单级配置兼容，使房主表达合适参与者的水平区间，而非被迫选择一个单级标签。
+Defines instant and reserved rooms with range selection, human-readable presentation, and compatibility with existing single-level configurations, allowing the room host to express appropriate participant level ranges instead of being forced to select a single-level label.
 
 ## ADDED Requirements
 
-### Requirement: 房间采用英语等级范围
+### Requirement: Rooms are in English level range
 
-新建即时及预约房间 MUST 支持以 CEFR 等级上下限表达适合范围，例如 B1–B2；范围 MUST 在创建页面直接可见，创建、详情、列表及后台 MUST 一致展示。下限高于上限的输入 MUST 被拒绝。
+When creating new instant and reserved rooms, MUST support expressing the suitable range with the upper and lower limits of the CEFR level, such as B1–B2; the range MUST be directly visible on the creation page, and the creation, details, list, and backend MUST be displayed consistently. Inputs with a lower limit higher than the upper limit MUST be rejected.
 
-#### Scenario: 创建范围房间
+#### Scenario: Create range room
 
-- **WHEN** 合格用户为即时或预约房间选择 B1–B2 并提交
-- **THEN** 房间保存该范围并在各端展示 B1–B2
+- **WHEN** Qualified users select B1–B2 for instant or reserved rooms and submit
+- **THEN** The room saves the range and displays B1–B2 on each end
 
-#### Scenario: 输入倒置范围
+#### Scenario: Input inversion range
 
-- **WHEN** 用户提交下限高于上限的范围
-- **THEN** 服务端拒绝创建且不产生房间
+- **WHEN** User submits a range where the lower limit is higher than the upper limit
+- **THEN** The server refused to create and did not generate a room.
 
-### Requirement: 旧房间和旧客户端继续有效
+### Requirement: Old rooms and old clients continue to be valid
 
-系统 MUST 兼容既有单级房间及旧客户端单级请求，并保持原来的资格及容量规则；范围选择 MUST 不修改用户个人英语等级。
+The system MUST be compatible with existing single-level rooms and old client single-level requests, and maintain the original qualification and capacity rules; the range selection MUST not modify the user's personal English level.
 
-#### Scenario: 旧客户端创建单级房间
+#### Scenario: Old client creates single-level rooms
 
-- **WHEN** 旧客户端提交原先合法的 B1 配置
-- **THEN** 创建请求仍有效，该房间显示为 B1 且用户资料未改变
+- **WHEN** The old client submitted the original legal B1 configuration
+- **THEN** The create request is still valid, the room is shown as B1 and the user profile has not changed
 
-### Requirement: 手机创建页采用三个固定等级范围
+### Requirement: The mobile phone creation page uses three fixed level ranges
 
-手机即时与预约创建 UI MUST 仅提供 A1～A2、B1～B2、C1～C2 三个直接可见选项，不分开选择最低/最高等级。手机新建房间 MUST 使用公开默认值并关闭两个房间音频处理，不显示相应设置项；已有房间和其他合法客户端范围合同不变。
+The mobile instant and reservation creation UI MUST only provide three directly visible options: A1～A2, B1～B2, C1～C2, and do not select the lowest/highest level separately. When creating a new room on a mobile phone, it MUST use the public default value and turn off the audio processing of the two rooms, and do not display the corresponding setting items; the existing room and other legal client scope contracts remain unchanged.
 
-#### Scenario: 一次选择范围
-- **WHEN** 用户点击 C1～C2 并创建即时或预约房间
-- **THEN** 请求上下限为 C1/C2，visibility 为 PUBLIC，两个房间音频处理标志为 false
+#### Scenario: One selection range
+
+- **WHEN** The user clicks C1～C2 and creates an instant or reserved room
+- **THEN** The upper and lower request limits are C1/C2, visibility is PUBLIC, and the two room audio processing flags are false.

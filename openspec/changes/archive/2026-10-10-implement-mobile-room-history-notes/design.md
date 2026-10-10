@@ -1,25 +1,25 @@
 ## Context
 
-现行 `room-history-notes` 规范和 OpenAPI 已给出本人分页历史，以及 `GET/PUT /v1/rooms/{roomId}/note` 的版本协议。手机端个人入口和 V2 `RoomPage` 已建立。用户允许本页面沿用 V2 样式，不存在可做 1:1 对照的独立 Figma 帧。
+The current `room-history-notes` specification and OpenAPI have given my paging history, as well as the version agreement of `GET/PUT /v1/rooms/{roomId}/note`. The mobile personal portal and V2 `RoomPage` have been established. The user allows this page to follow the V2 style, and there is no independent Figma frame for 1:1 comparison.
 
 ## Goals / Non-Goals
 
-**Goals:** 真实本人历史、关系区分、私人笔记编辑与清空、冲突保护。
+**Goals:** True personal history, relationship classification, private note editing and clearing, conflict protection.
 
-**Non-Goals:** 不提供录音、转写、AI 摘要、重新加入资格或其他成员的笔记。
+**Non-Goals:** does not provide recordings, transcriptions, AI summaries, re-entry qualifications, or notes from other members.
 
 ## Decisions
 
-1. `/me/history` 列表使用现有 `authorized` 与生成客户端，直接展示本人历史事实。仅 `PARTICIPATED` 且 `ENDED` 的记录显示私人笔记入口并在进入后请求笔记；其他记录没有笔记入口。
-2. 笔记编辑保持 `draft`、服务端 `version` 和 `savedContent` 分离。保存失败保留草稿；版本冲突展示明确提示和“加载最新”操作，只有用户点击才覆盖草稿。清空仍提交空字符串与当前版本。
-3. 视觉沿用 V2 暖白、紫色主操作、圆角信息卡及 390×844 布局；用确定性夹具截图验证布局，不声称独立帧 1:1。
+1. The `/me/history` list uses the existing `authorized` and generated clients to directly display personal historical facts. Only records of `PARTICIPATED` and `ENDED` display the private note entry and request notes after entering; other records have no note entry.
+2. Note editing keeps `draft`, server-side `version` and `savedContent` separate. Save fails and retains the draft; version conflicts display clear prompts and "load latest" operation, and only the user clicks to overwrite the draft. Clear still commits empty string and current version.
+3. Visually follows the V2 warm white, purple main operation, rounded corner information card and 390×844 layout; uses deterministic fixture screenshots to verify the layout, and does not claim independent frame 1:1.
 
 ## Risks / Trade-offs
 
-- [离线或响应丢失时保存结果不确定] → 不乐观显示成功；重新读取服务端版本前保留草稿。
-- [历史读权限与笔记写权限不同] → 仅在前端符合条件时出现入口，服务端继续最终裁决。
-- [多设备版本冲突] → 不自动重试旧版本，也不静默覆盖用户文本。
+- [The saving result is uncertain when offline or the response is lost] → Not optimistic about success; keep the draft before re-reading the server version.
+- [History read permission and note write permission are different] → The entry will only appear when the front end meets the conditions, and the server will continue with the final decision.
+- [Multi-device version conflict] → Do not automatically retry old versions, nor silently overwrite user text.
 
 ## Migration Plan
 
-无 API 或数据迁移。可独立回滚手机端路由与入口。验收需覆盖分页、预约关系、笔记版本冲突、390×844 Web 截图和 iOS JS export；真机交互与真实账号内容另记。
+No API or data migration. Can independently roll back the mobile routing and entry. The acceptance needs to cover paging, appointment relationships, note version conflicts, 390×844 Web screenshots and iOS JS export; physical device interaction and real account content are recorded separately.

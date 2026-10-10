@@ -2,46 +2,46 @@
 
 ## Purpose
 
-定义两个网页入口的同源 API 代理、固定受控上游和失败安全边界，使会话 Cookie 与网站来源保持一致。
+Define same-origin API proxies for both web portals, fixed controlled upstream, and failsafe boundaries to keep session cookies consistent with the website origin.
 
 ## Requirements
 
-### Requirement: 网页同源 API 转发
+### Requirement: Web page source API forwarding
 
-两个网页入口 SHALL 通过自身 origin 的 `/v1` 与 `/v1/*` 访问部署配置固定的 API；保留方法、路径、查询、请求体、来源、认证和状态码，不将 API 请求回退为页面 HTML。
+Two web portals SHALL access the API with fixed deployment configuration through its own origin `/v1` and `/v1/*`; retain methods, paths, queries, request bodies, sources, authentication and status codes, and do not return API requests to page HTML.
 
-#### Scenario: 两个网站登录和刷新
+#### Scenario: Login and refresh two websites
 
-- **WHEN** 管理端或移动网页通过自身入口登录、刷新及退出
-- **THEN** HttpOnly 会话 Cookie 在对应网站下设置、轮换或清除，并保留安全属性和路径
-- **AND** 响应 JSON 不增加 refresh token，原始 Origin 和 Google redirectUri 的校验不被绕过
+- **WHEN** Log in, refresh and exit through the management terminal or mobile web page.
+- **THEN** HttpOnly session cookies are set, rotated or cleared under the corresponding website, and security attributes and paths are retained.
+- **AND** The refresh token is not added in response to JSON, and the verification of the original Origin and Google redirectUri is not bypassed.
 
-#### Scenario: 静态页面路由
+#### Scenario: Static page routing
 
-- **WHEN** 访问非 API 的页面或资产
-- **THEN** 使用网站静态资产处理，不消耗 API 转发路径且不要求上游配置可用
+- **WHEN** Accessing non-API pages or assets
+- **THEN** Use website static asset processing, which does not consume the API forwarding path and does not require upstream configuration to be available
 
-### Requirement: 固定上游与失败安全
+### Requirement: Fixed upstream and failsafe
 
-代理 SHALL 仅访问运维配置且通过受控上游白名单校验的 HTTPS origin。白名单 MUST 保留单层 `*.onrender.com` 和已批准的 `slogan-api-pi.vercel.app`，不得放行其他 Vercel 项目、相似域名、含凭证、路径、查询、fragment 或非默认端口的配置。代理 MUST 禁止缓存 API 请求和响应、自动重放失败请求、将客户端转发/IP头当可信身份或将凭证发送到重定向外域；代理自身错误 SHALL 为脱敏 JSON。
+Proxy SHALL only accesses HTTPS origins configured by operations and passed controlled upstream whitelist verification. The whitelist MUST retain single-layer `*.onrender.com` and approved `slogan-api-pi.vercel.app`, and MUST not release other Vercel projects, similar domain names, configurations containing credentials, paths, queries, fragments, or non-default ports. The proxy MUST prohibit caching API requests and responses, automatically replaying failed requests, using client forwarding/IP headers as trusted identities, or sending credentials to redirected external domains; the proxy's own error SHALL is desensitized JSON.
 
-#### Scenario: 配置或传输失败
+#### Scenario: Configuration or transfer failed
 
-- **WHEN** 固定上游配置缺失/无效、网络失败或首包超时
-- **THEN** 返回对应 503/502/504、禁止缓存且不泄露上游细节、请求体或凭证
-- **AND** 请求不被自动重试
+- **WHEN** Fixed missing/invalid upstream configuration, network failure or first packet timeout
+- **THEN** Returns corresponding 503/502/504, disables caching and does not disclose upstream details, request body or credentials
+- **AND** The request is not automatically retried
 
-#### Scenario: 来源与 Cookie 边界
+#### Scenario: Source and cookie boundaries
 
-- **WHEN** 不受信网页来源尝试认证或上游返回不安全重定向/带 Domain 的 Cookie
-- **THEN** 现有来源拒绝保持有效，代理拒绝扩大 Cookie 或转发凭证的范围
+- **WHEN** Untrusted web page source attempts authentication or upstream returns unsafe redirect/Cookie with Domain
+- **THEN** Existing origin refused to remain valid, proxy refused to expand the scope of the cookie or forward credentials
 
-### Requirement: 两站可重复构建
+### Requirement: Two stations can be built repeatedly
 
-两个网站的发布构建 SHALL 从源码包含可执行代理和明确 API 路由，仅使用各自完整 HTTPS origin 作为公开 API base，禁止凭证进入公开配置。
+Release builds for both websites SHALL include executable proxies and explicit API routes from source, using only their respective full HTTPS origins as public API bases, and disallowing credentials from entering the public configuration.
 
-#### Scenario: 最终发布产物
+#### Scenario: Final release product
 
-- **WHEN** 运行任一网站 Pages 构建
-- **THEN** 输出包含页面、资产、同一代理实现与只覆盖 API 的路由配置
-- **AND** 缺失或不合法公开 base 在构建前明确失败
+- **WHEN** Run any website Pages build
+- **THEN** Output includes pages, assets, same proxy implementation and routing configuration that only overrides the API
+- **AND** Missing or illegal public base failed explicitly before building

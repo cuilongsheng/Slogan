@@ -1,42 +1,42 @@
 ## Context
 
-见 proposal.md。现有 RoomListScreen 卡片导航详情，再经过 rules/device，VoiceRoomSession 才调用 membership 和 credentials。LiveKit 入房默认关闭麦克风，因此提前录音检查不是连接必需条件。
+See proposal.md. Existing RoomListScreen card navigation details, and then through rules/device, VoiceRoomSession calls membership and credentials. LiveKit turns off the microphone by default when entering a room, so a pre-recording check is not a requirement for connection.
 
-Figma Desktop Bridge 已实时探测成功，文件 Slogan / 56nIowZmvBhb0QJvOlDQdU，02 UI，列表 115:1197，语音房 115:1425，390×844。保留原稿卡片与语音房视觉；取消中间页面是用户明确授权的流程差异，不修改原稿。已有房间卡片视觉差异不纳入本次全局 1:1 PASS 声明。
+Figma Desktop Bridge has been successfully detected in real time, file Slogan / 56nIowZmvBhb0QJvOlDQdU, 02 UI, list 115:1197, voice room 115:1425, 390×844. Keep the original card and voice room vision; canceling the intermediate page is a process difference explicitly authorized by the user, and the original will not be modified. The visual differences of existing room cards are not included in this global 1:1 PASS statement.
 
 ## Goals / Non-Goals
 
-目标：普通房卡一次点击进入、密码完成即加入、失败可恢复。非目标：预约语义、密码校验、用户资格、供应商、数据库、Google 和 iOS。
+Goal: One-click entry with ordinary room card, joining after completing the password, and recovery after failure. Non-target: reservation semantics, password validation, user qualifications, vendors, databases, Google and iOS.
 
 ## Decisions
 
-- 在现有 JoinProvider 增加直接入房意图，使用唯一生成 API；不新增服务端端点，不在列表另建连接实例。现有 rulesAccepted=true 表示入房操作兼容，不伪称阅读行为。
-- 列表同步建立草稿并导航 session；密码房在当前 session 弹出必要的密码输入；输入提交后直接加入。详情、分享、邀请和旧 rules/device/password 深链统一进入 session，不能绕回旧流程。
-- SessionState 失败界面增加返回列表入口；缺少密码返回密码输入；处理授权缺失使用现有 RoomConsentPanel，成功后重试，不自动提交授权。仍由后台决定加入是否允许。
-- 默认静音连接无需预录音；保持实际开麦的权限请求和错误处理。
-- 与待上线的后台恢复补丁保存在干净的现有交付 worktree，提交分离；一个 PR 可同时审核并触发既有流水线。
+- Add the direct entry intention to the existing JoinProvider and use the unique generation API; do not add a new server endpoint and do not create another connection instance in the list. The existing rulesAccepted=true means that the entry operation is compatible and does not pretend to be a reading behavior.
+- The list is synchronized to create a draft and navigate the session; the password room pops up the necessary password input in the current session; join directly after input and submission. Details, sharing, invitations and old rules/device/password deep links enter the session uniformly, and cannot go back to the old process.
+- Add a return list entry to the SessionState failure interface; return password input if a password is missing; use the existing RoomConsentPanel to handle missing authorization, and try again after success without automatically submitting the authorization. It is still up to the backend to decide whether to allow or not to join.
+- The default silent connection does not require pre-recording; the permission request and error handling of the actual opening of the microphone are maintained.
+- It is saved in a clean existing delivery worktree and submitted separately from the background recovery patch to be launched; a PR can be reviewed and trigger the existing pipeline at the same time.
 
 ## Risks / Trade-offs
 
-- [取消每次规则勾选改变现有规范] → 用户明确授权，更新对应 delta，房内入口保留。
-- [加入时服务器状态改变] → 不信任卡片快照，现有服务端校验和错误结果保留。
-- [双击或草稿错房] → 导航锁、房间标识和会话级在途去重；测试真实组件交互。
-- [隐私处理需要明确同意] → 只为缺少的用途显示既有授权组件，不沿用 rulesAccepted 替代用途授权。
+- [Cancel each rule check to change existing specifications] → The user explicitly authorizes, updates the corresponding delta, and the room entrance is retained.
+- [Server status changed when joining] → Card snapshot is not trusted, and existing server-side checksum error results are retained.
+- [Double-click or draft to wrong room] → Navigation lock, room identification and session-level deduplication in transit; test real component interaction.
+- [Privacy processing requires explicit consent] → Only display existing authorization components for missing uses and do not inherit rulesAccepted alternative use authorization.
 
 ## Migration Plan
 
-无 schema 或 OpenAPI 变更。PR 预览、main 生产和 APK 使用既有自动交付；合并后验证实际提交和固定下载。回滚只回退手机导航代码，不撤销业务成员状态。静态检查、完整 mobile suite、Pages 构建、浏览器组件流程分别记证据；系统权限和真机由用户验证，不能以 Web 代替 Android。
+No schema or OpenAPI changes. PR preview, main production and APK use existing automatic delivery; merged to verify actual commits and pinned downloads. Rollback only rolls back the mobile navigation code and does not revoke the business member status. Static inspection, complete mobile suite, Pages construction, and browser component processes are recorded separately as evidence; system permissions and physical device are verified by the user, and Web cannot be used instead of Android.
 
-## 2026-10-09 用户验收修正
+## 2026-10-09 User acceptance correction
 
-用户真机截图指出仍出现旧准备链路，要求密码只弹窗，并提供新版语音房原稿。所有即时房间入口统一到 session；旧详情/规则/设备/密码路径重定向到 session 并保留邀请标识。session 自身建立入房意图，不依赖易丢失的上一页内存草稿。密码房缺少有效密码时先显示弹窗，不调用 membership；错误密码在同一弹窗修正。
+The user's physical device screenshot pointed out that the old preparation link still appeared, a pop-up window asking for a password was provided, and the new version of the voice room manuscript was provided. All instant room entrances are unified to session; old details/rules/device/password paths are redirected to session and the invitation ID is retained. The session establishes the intention to enter the room by itself, without relying on the easily lost memory draft of the previous page. When the password room lacks a valid password, a pop-up window is displayed first without calling membership; incorrect passwords are corrected in the same pop-up window.
 
-原稿 115:1425 实时 Bridge 重新核对：取消 172 高旧发言者卡片，规则常显，成员条位于 y220–411，消息区占余高，母语表达为右下角独立圆按钮，输入/发送/麦克风为三个并列控件。保留真实照片/国家/角色/静音状态和房主移出确认。生产成员照片以真实用户头像为准，不写入示例人物。
+Original 115:1425 Real-time Bridge Recheck: Cancel 172 The old speaker card, the rules are always displayed, the member bar is located at y220–411, the message area occupies the remaining height, the native-language expression is an independent round button in the lower right corner, and input/send/microphone are three parallel controls. Keep real photos/country/role/mute status and room host removal confirmation. The photos of production members are based on real user avatars and do not include sample characters.
 
-## 2026-10-09 自动设备检查补充
+## 2026-10-09 Automatic equipment inspection supplement
 
-用户明确要求直入房仍检查麦克风和音频，取消的是手动准备页面而非设备验证。连接时后台自动申请系统麦克风权限、获取本地临时音频轨道并检查 live 后立即停止；轨道从不发布、录制或上传。输出检查复用已启动的 LiveKit 原生音频会话/可用输出，Web 监听实际播放许可状态；输出枚举不能证明物理扬声器可听，真机听音仍为单独验收。
+The user explicitly requested to check the microphone and audio directly after entering the room. What was canceled was the manual preparation page rather than the device verification. When connecting, the background automatically applies for system microphone permissions, obtains local temporary audio tracks, and stops immediately after checking live; the tracks are never published, recorded, or uploaded. The output check reuses the started LiveKit native audio session/available output, and the web monitoring actual playback permission status; output enumeration cannot prove that the physical speaker is audible, and physical device listening is still a separate acceptance.
 
-失败以房内紧凑提示和重试/系统设置入口恢复，允许保持静音听音或文字交流，不创建额外加入页面。检查中/拒绝/永久拒绝/设备不可用分别记录，退房和新连接通过代次与 AbortSignal 取消旧检查结果、停止临时轨道。探测进行中显式开麦等待其释放，避免与私人按住录音竞争；探测只自动执行一次，前台恢复仅重新检查失败状态。无 schema 或权限合同改变，回滚 adapter/提示即可，禁用自动检查时仍保留实际开麦的权限判断。
+Failure is restored with in-room compact prompts and retry/system settings entry, allowing silent listening or text communication without creating additional joining pages. Checking/Rejected/Permanently Rejected/Device Unavailable are recorded separately, checkout and new connection pass generation with AbortSignal to cancel old check results, stop temporary track. While the detection is in progress, explicitly turn on the microphone and wait for its release to avoid competing with private hold recording; the detection is only automatically executed once, and the foreground recovery only rechecks the failure status. No schema or permission contract changes, just roll back the adapter/prompt. When automatic checking is disabled, the actual permission judgment for opening the microphone is still retained.
 
-原生 LiveKit AudioSession 是进程级资源：adapter 串行获取/释放并记录各 room 实例的持有者，旧房退出不停止下一房仍使用的会话。连接阶段以代次防止离开后迟到的 SDK connect 恢复状态或启动自动探测；探测流调用 stop 并使用原生 MediaStream.release 释放资源。
+The native LiveKit AudioSession is a process-level resource: the adapter serially acquires/releases and records the holder of each room instance. Exiting the old room does not stop the session still used in the next room. The connection phase uses generation to prevent late SDK connect after leaving the state or starting automatic detection; the detection stream calls stop and uses native MediaStream.release to release resources.

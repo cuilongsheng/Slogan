@@ -1,29 +1,29 @@
 ## Why
 
-完成资料后的移动端目前只显示占位页，用户无法浏览真实房间或查看加入条件。已确认的房间列表及入房前页面需要接入现有房间 API，才能让下一批语音房工作建立在可运行的发现流程上。
+The mobile terminal after completing the information currently only displays the placeholder page, and the user cannot browse the real room or view the joining conditions. The confirmed room list and pre-move-in page need to be connected to the existing room API so that the next batch of voice room work can be built on a runnable discovery process.
 
 ## What Changes
 
-- 把合格用户的默认入口改为公开即时房间列表，提供真实加载、空列表、错误、刷新、分页和房间详情状态。
-- 按已确认设计实现详情、4 位密码输入、房间规则主动确认及设备检查页面；输入与确认状态只在当前流程中保留，切换房间时清除。
-- 房间列表和详情只展示现有合同返回的事实。设计中的总房间数、成员头像预览、房间语言筛选及入房前成员清单缺少对应合同，不以静态样例填充。
-- 本批不创建 membership、不请求实时语音凭证；设备检查页明确说明实际入房将在语音房流程接通后开放，避免占用房间名额却无法通话。
+- Change the default entrance for qualified users to a public real-time room list, providing real loading, empty list, error, refresh, paging and room details status.
+- According to the confirmed design implementation details, 4-digit password input, active confirmation of room rules and equipment inspection page; the input and confirmation status is only retained in the current process and cleared when switching rooms.
+- Room lists and details only show the fact that existing contracts are returned. The total number of rooms, member avatar preview, room language filtering and pre-movement member list in the design lack corresponding contracts and are not filled in with static samples.
+- This batch does not create a membership or request a real-time voice voucher; the equipment check page clearly states that the actual room entry will be opened after the voice room process is connected, so as to avoid occupying the room quota but being unable to make calls.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mobile-room-discovery-join`: 定义已登录合格用户的移动端房间发现、详情与入房前检查流程及缺失能力的可见边界。
+- `mobile-room-discovery-join`: Defines the visible boundaries of mobile room discovery, details and pre-check-in procedures and missing capabilities for logged-in qualified users.
 
 ### Modified Capabilities
 
-无。
+None.
 
 ## Impact
 
-- 移动端 Expo Router 的合格用户入口、`room-discovery` feature、认证请求入口、i18n、语义样式和必要的设备权限适配。
-- 复用现有 OpenAPI `GET /v1/rooms`、`GET /v1/rooms/{roomId}`；不修改后端合同或持久层。
-- Figma Desktop Bridge 已确认 `02 UI` 列表 V2 `115:1197`，详情 `111:1026`，密码 `111:1071`，规则 `114:2508`，设备检查 `114:2509`，均为 390×844。
+- Qualified user portal, `room-discovery` feature, authentication request portal, i18n, semantic style and necessary device permission adaptation of the mobile Expo Router.
+- Reuse existing OpenAPI `GET /v1/rooms`, `GET /v1/rooms/{roomId}`; do not modify the backend contract or persistence layer.
+- Figma Desktop Bridge Confirmed `02 UI` List V2 `115:1197`, Details `111:1026`, Password `111:1071`, Rule `114:2508`, Device Check `114:2509`, all 390×844.
 
 ## Impacted delivery stages
 

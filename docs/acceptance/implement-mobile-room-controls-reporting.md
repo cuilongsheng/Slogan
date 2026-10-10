@@ -1,14 +1,14 @@
-# 语音房成员操作与举报验收记录（2026-09-28）
+# Voice room member operation and reporting acceptance record (2026-09-28)
 
-## 实现与安全边界
+## Implementation and security boundaries
 
-- 成员、移除确认、已移除成员重邀、好友/可用用户邀请、房主离开接任和成员举报覆盖层保留现有语音会话。
-- 成员列表只向当前认证房间成员补充 `userId`，供举报 API 使用；已移除列表仅当前房主可读。移除和重邀提交所见成员版本，邀请与举报提交稳定请求标识，服务端继续复核权限与状态。
-- 举报类别、说明和目标提交到现有安全 API；成功只展示受理编号，不把举报内容广播到房间。表单在小屏和软键盘场景可滚动。
+- Member, removal confirmation, removed member re-invite, friend/available user invitation, room host departure takeover and member reporting overlays retain existing voice sessions.
+- The member list only adds `userId` to the current authenticated room members for use by the reporting API; the removed list is only readable by the current room host. Remove and re-invite to submit the member version seen, invite and report to submit the stable request identification, the server continues to review the permissions and status.
+- The report category, description and target are submitted to the existing security API; successfully only the acceptance number is displayed and the report content is not broadcast to the room. The form is scrollable in small screen and soft keyboard scenarios.
 
-## 验证和边界
+## Validation and Boundaries
 
-- 移动端 23 组、72 个测试通过，覆盖移除确认、举报失败重试标识和离线好友邀请候选。
-- API 36 组、196 个集成测试通过；已移除列表的房主权限与重邀在集成、HTTP 用例中验证。语音 HTTP 组在同步成员字段预期后 6 个测试通过。
-- 真实本机 Google 会话已创建并进入一间即时语音房，读取成员、打开邀请候选及房主离开状态，随后结束测试房间。
-- 双账号移除、重邀、举报、接任以及 390×844 各覆盖层视觉截图和原生双设备 LiveKit 验收尚未完成，当前不能宣称端到端全部通过。
+- 23 groups and 72 tests passed on the mobile terminal, covering removal confirmation, reporting failure retry flag and offline friend invitation candidates.
+- API 36 groups, 196 integration tests passed; the room host permissions and reinvites of the removed list are verified in the integration and HTTP use cases. Speech HTTP group tests pass after synchronizing member fields expected 6 times.
+- A real local Google session is created and enters an instant voice room, reads members, opens invitation candidates and leaves the room host, then ends the test room.
+- Dual account removal, reinvitation, reporting, takeover, 390×844 visual screenshots of each overlay and native dual-device LiveKit acceptance have not yet been completed, and it cannot be claimed that all end-to-end passes are currently available.

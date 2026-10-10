@@ -1,6 +1,6 @@
-# README image notes / 图片说明
+# README image notes
 
-Both project READMEs share English images. / 中英文项目首页共用英文图片。
+Both project README entry points use English text and images.
 
 ## Runtime screenshots
 

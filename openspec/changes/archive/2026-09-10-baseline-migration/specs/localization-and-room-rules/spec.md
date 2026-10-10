@@ -1,35 +1,42 @@
 ## Purpose
 
-定义当前版本的中英文界面选择和入房前安全规则确认，使不同设备语言的用户能够理解并主动确认语音房的行为边界。
+Define the current version of Chinese and English interface selection and confirmation of safety rules before entering the room, so that users with different device languages can understand and actively confirm the behavioral boundaries of the voice room.
 
 ## ADDED Requirements
 
-### Requirement: 中英文界面选择
-系统 MUST 在设备语言为中文时默认使用中文，在设备语言不是中文时默认使用英文；当前版本只提供中文和英文文案。
+### Requirement: Chinese and English interface selection
 
-#### Scenario: 中文设备语言
-- **WHEN** 用户首次打开应用且设备语言为中文
-- **THEN** 系统默认展示中文界面
+The system MUST use Chinese by default when the device language is Chinese, and English by default when the device language is not Chinese; the current version only provides Chinese and English copywriting.
 
-#### Scenario: 非中文设备语言
-- **WHEN** 用户首次打开应用且设备语言不是中文
-- **THEN** 系统默认展示英文界面
+#### Scenario: Chinese device language
 
-### Requirement: 入房前安全规则确认
-系统 MUST 在用户进入语音房前，以当前界面语言展示禁止政治、色情、赌博、毒品、违法经济活动、人身攻击、骚扰、歧视和威胁等话题或行为的规则，并要求用户主动确认。
+- **WHEN** The user opens the app for the first time and the device language is Chinese
+- **THEN** The system displays the Chinese interface by default
 
-#### Scenario: 用户确认规则
-- **WHEN** 符合加入资格的用户确认已阅读规则
-- **THEN** 系统继续执行麦克风检查和入房流程
+#### Scenario: Non-Chinese device language
 
-#### Scenario: 用户拒绝确认规则
-- **WHEN** 用户未确认或拒绝确认规则
-- **THEN** 系统不得将其加入语音房
+- **WHEN** The user opens the app for the first time and the device language is not Chinese
+- **THEN** The system displays the English interface by default
 
-### Requirement: 房间内规则入口
-系统 MUST 在用户进入语音房后保留可访问的房间规则入口。
+### Requirement: Confirm safety rules before entering the room
 
-#### Scenario: 房间内查看规则
-- **WHEN** 房间成员打开规则入口
-- **THEN** 系统以当前界面语言再次展示与入房前含义一致的规则
+The system MUST display the rules prohibiting topics or behaviors such as politics, pornography, gambling, drugs, illegal economic activities, personal attacks, harassment, discrimination, and threats in the current interface language before the user enters the voice room, and require the user to actively confirm.
 
+#### Scenario: User confirmation rules
+
+- **WHEN** Users who are eligible to join confirm that they have read the rules
+- **THEN** The system continues to perform microphone check and room entry process
+
+#### Scenario: User refuses to confirm rule
+
+- **WHEN** User did not confirm or refused to confirm the rule
+- **THEN** The system cannot add it to the voice room
+
+### Requirement: Rules entrance in the room
+
+The system MUST retain accessible room rules entries after the user enters the voice room.
+
+#### Scenario: View rules in the room
+
+- **WHEN** Room members open the rules entrance
+- **THEN** The system displays the rules again in the current interface language with the same meaning as before entering the room.

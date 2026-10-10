@@ -1,29 +1,29 @@
-# 真实服务商验收进度（2026-09-30）
+# Real service provider acceptance progress (2026-09-30)
 
-本记录只描述本机本次实际执行的外部验证。历史 change 的本地测试结果不自动升级为真实服务验收。
+This record only describes the external verification actually performed by this machine this time. The local test results of historical changes are not automatically upgraded to real service acceptance.
 
-## 2026-10-01 范围澄清
+## 2026-10-01 Scope Clarification
 
-产品所有者明确：真人房间交流不展示实时字幕；个人遇到不会表达时，主动把母语内容交给私人辅助工具，取得英文说法后由本人开口。基础 LiveKit 双人语音和**文字输入的私人表达辅助**均不依赖 STT。本记录以下 STT 阻塞仅对应现存 OpenSpec 中的短语音输入、可选房间敏感语音处理及会后关键词，不阻塞上述两项当前验收。
+The product owner has made it clear that real-time subtitles will not be displayed during real-person room communication; when an individual cannot express himself, he will take the initiative to hand over the native language content to a private auxiliary tool, and after obtaining the English explanation, he will speak. Neither basic LiveKit dual voice nor **Personal expression assistance for text input** rely on STT. The following STT blocking in this record only corresponds to short voice input, optional room-sensitive voice processing and post-meeting keywords in the existing OpenSpec, and does not block the current acceptance of the above two items.
 
-当前 `ai-expression-assistance` OpenSpec 和手机端仍保留私人短语音输入；房间敏感语音处理和会后关键词另有独立规范。是否取消这些已批准的范围，应通过后续 OpenSpec 修订，不能由本验收记录直接改变产品要求。
+Currently, `ai-expression-assistance` OpenSpec and mobile terminals still retain private short voice input; room-sensitive voice processing and post-meeting keywords have separate specifications. Whether to cancel these approved scopes shall be through subsequent OpenSpec revisions, and product requirements cannot be directly changed by this acceptance record.
 
 ## LiveKit Cloud
 
-本机 `apps/api/.env` 已配置 `wss://*.livekit.cloud` 项目及 API 凭据。使用已安装的 `livekit-server-sdk` 和 `@livekit/rtc-node` 在 Cloud 创建一个随机命名的隔离房间，按应用现有的最小 grant 签发两名临时身份的 5 分钟 token；两名身份同时连接并由 Cloud `listParticipants` 返回 2 人。随后 Cloud `removeParticipant` 移除第一人，客户端断开且旧 token 重连被拒；Cloud `deleteRoom` 使第二人断开，按名称查询房间为空。清理后全项目 `listRooms` 返回 0。脚本只输出布尔结果，未输出密钥、token、身份或房间名。
+This machine `apps/api/.env` has been configured with the `wss://*.livekit.cloud` project and API credentials. Use the installed `livekit-server-sdk` and `@livekit/rtc-node` to create a randomly named isolation room in Cloud, and issue 5-minute tokens for two temporary identities according to the existing minimum grant of the application; two identities are connected at the same time and 2 people are returned by Cloud `listParticipants`. Then Cloud `removeParticipant` removed the first person, the client was disconnected and reconnection with the old token was refused; Cloud `deleteRoom` caused the second person to be disconnected, and the room queried by name was empty. All projects `listRooms` return 0 after cleaning. The script only outputs Boolean results and does not output keys, tokens, identities or room names.
 
-此结果证明当前 Cloud 凭据、服务端管理操作、两名 RTC 身份连接与旧 token 撤销路径可用。它没有发布或收听真实麦克风音轨，没有经过 Slogan 的房间授权/API/数据库流程，也没有证明公网签名 Webhook。`implement-livekit-voice-session-backend` 的 6.1 因这些剩余条件仍未完成；相关 Cloud 验收文档中 2026-09-12 的“未配置凭据”仅是当时状态。
+This result proves that current Cloud credentials, server-side management operations, two RTC identity connections, and the old token revocation path are available. It does not post or listen to a real microphone track, does not go through Slogan's room authorization/API/database process, and does not prove a public network signed webhook. 6.1 of `implement-livekit-voice-session-backend` is still not complete due to these remaining conditions; the "no credentials configured" on 2026-09-12 in the relevant Cloud acceptance document is only the status at that time.
 
-## 合格 STT 双人语音
+## Qualified STT dual voice
 
-当前 `STT_PROVIDER_CATEGORY`、`STT_BASE_URL`、`STT_API_KEY`、`STT_MODEL`、`STT_REGION`、`STT_DATA_USE`、`STT_DELETION_MODE`、`STT_STREAMING_MODE` 均未配置，`ROOM_SPEECH_DETECTION_ENABLED` 与 `POST_ROOM_KEYWORDS_ENABLED` 均为 `false`。无法启动需要真实 STT 的隐身检测、房主告警、会后关键词、撤回同意与降级双人测试。除配置连接参数，还需确认供应商区域、仅请求处理、不训练、留存与删除政策符合现有 OpenSpec；不能只把任意兼容接口视为“合格”。两个 change 的 9.5 继续未完成。
+Currently `STT_PROVIDER_CATEGORY`, `STT_BASE_URL`, `STT_API_KEY`, `STT_MODEL`, `STT_REGION`, `STT_DATA_USE`, `STT_DELETION_MODE`, `STT_STREAMING_MODE` are not configured, `ROOM_SPEECH_DETECTION_ENABLED` and `POST_ROOM_KEYWORDS_ENABLED` are both `false`. Unable to start stealth detection, room host alarm, post-meeting keyword, consent withdrawal and downgrade two-person test that requires real STT. In addition to configuring connection parameters, you also need to confirm that the supplier zone, request processing only, no training, retention and deletion policies comply with the existing OpenSpec; you cannot just regard any compatible interface as "qualified". Two changes of 9.5 continue unfinished.
 
-## iOS 原生
+## iOS native
 
-Xcode 27.0 与 iOS 27.0 Simulator 可用。`xcodebuild` 在 iPhone 18 Pro Simulator 目标以 `CODE_SIGNING_ALLOWED=NO` 完成原生 Debug 构建（`BUILD SUCCEEDED`）；生成的 `Slogan.app` 已安装到启动中的模拟器，`simctl launch` 返回进程 ID，截图显示 Expo development client 首页。模拟器弹出“在 Slogan 中打开？”确认框时，Mac 处于锁定状态，尚不能确认 JS 页面运行。
+Xcode 27.0 and iOS 27.0 Simulator available. `xcodebuild` completes the native Debug build (`BUILD SUCCEEDED`) with `CODE_SIGNING_ALLOWED=NO` in the iPhone 18 Pro Simulator target; the generated `Slogan.app` has been installed into the starting simulator, `simctl launch` returns the process ID, and the screenshot shows the Expo development client homepage. The emulator pops up “Open in Slogan? "When the confirmation box appears, the Mac is locked and the JS page cannot be confirmed to run.
 
-本机 `security find-identity -v -p codesigning` 返回 0 个有效签名身份，`EXPO_APPLE_TEAM_ID` 未配置，`devicectl` 只列出模拟设备。Apple Team 签名真机测试和双设备音频/断网验收尚无法执行。模拟器无签名构建不能替代真机证据。
+Native `security find-identity -v -p codesigning` returns 0 valid signing identities, `EXPO_APPLE_TEAM_ID` is not configured, and `devicectl` only lists emulated devices. Apple Team signed physical device testing and dual-device audio/disconnection acceptance cannot yet be performed. Simulator unsigned builds are no substitute for physical device evidence.
 
 ## SMTP
 
-`EMAIL_PASSWORD_AUTH_ENABLED` 未启用，真实 `EMAIL_SMTP_*`、验证/重置链接和邮件 HMAC/AES 密钥环尚未配置，也没有受控真实收件箱证据。没有发出真实邮件；`implement-email-password-auth-backend` 的 5.4 继续未完成。配置和运行顺序见 [邮箱运行说明](../email-password-auth-runbook.md)。
+`EMAIL_PASSWORD_AUTH_ENABLED` is not enabled, the real `EMAIL_SMTP_*`, verify/reset link and mail HMAC/AES keyring have not been configured and there is no controlled real inbox evidence. No real email sent; 5.4 of `implement-email-password-auth-backend` continues unfinished. See [Mailbox operation instructions](../email-password-auth-runbook.md) for configuration and running sequence.

@@ -1,13 +1,13 @@
-# 手机端房间创建验收记录（2026-09-28）
+# Mobile room creation acceptance record (2026-09-28)
 
-## 实现
+## Implementation
 
-- 即时与预约创建表单对接 `/v1/rooms` 和 `/v1/appointment-rooms`，保留服务端校验与错误；成功后按房间种类导航。
-- 预约详情支持房主确认取消，`/r/{shareCode}` 通过公开分享码 API 解析并导航到真实房间。
-- Figma 111:979 与 121:3613 均为 390×844 设计。界面保留主视觉语言；等级使用 API 所需具体 A1–C2，visibility 与 password 独立选择。预约详情没有独立设计帧。
+- Instantly connect to the reservation creation form `/v1/rooms` and `/v1/appointment-rooms`, retain server-side verification and errors; navigate by room type after success.
+- Reservation details support room host confirmation and cancellation, `/r/{shareCode}` parses and navigates to the real room through the public sharing code API.
+- Figma 111:979 and 121:3613 are both 390×844 designs. The interface retains the main visual language; the specific levels required for API use are A1–C2, and visibility and password are selected independently. There is no independent design frame for the reservation details.
 
-## 验证和边界
+## Validation and Boundaries
 
-- 表单、API 和导航的自动化测试以及 390×844 浏览器视觉夹具通过；移动端全套 23 组、72 个测试通过。
-- 真实本机 Google 会话已创建即时房并进入 LiveKit；已创建预约房、经分享链接打开详情，再通过房主取消按钮确认服务端取消状态。测试房间均已结束或取消。
-- 原生开发构建、系统权限、双设备分享打开与语音连接尚未验收；浏览器预览不替代设备证据。`expo-crypto` 新增原生模块需重建开发包。
+- Passed the automated testing of forms, APIs and navigation and the 390×844 browser visual fixture; passed a complete set of 23 sets and 72 tests on the mobile terminal.
+- The real local Google session has created an instant room and entered LiveKit; a reserved room has been created, the details are opened through the shared link, and the server cancellation status is confirmed through the room host cancel button. All test rooms have ended or been cancelled.
+- Native development build, system permissions, dual-device sharing opening and voice connection have not yet been accepted; browser preview does not replace device evidence. `expo-crypto` New native modules need to rebuild the development package.

@@ -1,17 +1,17 @@
 ## Context
 
-已确认 Figma `115:1627`、`115:1673`、`115:1720` 分别是语音弹层开始、聆听、结果状态，均为 390×844。OpenAPI 已有文字和 multipart 音频接口及同意状态/命令。当前语音房只有不可用占位。服务端说明版本由 `ASSISTANCE_NOTICE_VERSION` 控制，但未在首次同意状态中返回。
+It has been confirmed that Figma `115:1627`, `115:1673`, and `115:1720` are the voice elastic layer start, listening, and result states respectively, all of which are 390×844. OpenAPI already has text and multipart audio interfaces and consent status/commands. The current voice room only has unavailable seats. The server stated that the version was controlled by `ASSISTANCE_NOTICE_VERSION` but was not returned in the first consent state.
 
 ## Decisions
 
-1. 语音弹层沿用当前 `VoicePage` 与 StyleSheet tokens；不改变语音房主体布局。文字输入与错误态沿用同一底部弹层视觉语言，作为设计稿未单独覆盖的状态记录。
-2. 同意状态响应增加 `currentNoticeVersion`。客户端只使用服务端返回值，先读取同意状态，再主动 ACCEPT；撤回可从同一弹层完成。每次音频提交另行确认，`noticeConfirmed=true` 只在用户本次确认后发送。
-3. 录音由 `expo-audio` 平台服务封装。开始录音前等待 LiveKit 本地麦克风关闭；录音停止、取消、组件卸载和房间结束都释放资源。单段最多 30 秒；提交前检查文件大小和 MIME 类型。结果只保留在弹层内存中。
-4. 每次输入生成 UUID。网络或服务端可重试失败保留原输入/音频与 UUID；编辑输入或重新录制生成新 UUID，避免幂等冲突。音频文件只作本次重试，关闭弹层即丢弃引用。
-5. API 返回 429、503、同意失效和权限失败时显示明确文案，不改变房间状态、麦位或实时媒体。结果必须显示 AI 可能出错提示，不自动播放。
+1. The voice elastic layer inherits the current `VoicePage` and StyleSheet tokens; the voice room host body layout is not changed. Text input and error status follow the same bottom pop-up visual language as a status record that is not covered separately by the design draft.
+2. Agree status response increased by `currentNoticeVersion`. The client only uses the server return value, reads the consent status first, and then actively ACCEPTs; the withdrawal can be completed from the same elastic layer. Each audio submission requires separate confirmation. `noticeConfirmed=true` will only be sent after the user confirms this time.
+3. The recording is packaged by the `expo-audio` platform service. Wait for the LiveKit local microphone to be turned off before starting recording; recording stop, cancellation, component unloading and room end all release resources. Maximum 30 seconds per segment; check file size and MIME type before submission. The results are only kept in the elastic layer memory.
+4. Generate UUID for each input. The network or server can retry and retain the original input/audio and UUID; edit the input or re-record to generate a new UUID to avoid idempotent conflicts. The audio file will only be retried this time, and the reference will be discarded when the elastic layer is closed.
+5. API returns 429, 503, displays clear text when consent expires or permission fails, and does not change room status, wheat position or real-time media. The result must display a possible AI error message and will not play automatically.
 
 ## Risks and rollback
 
-- 同时接入 LiveKit 和设备录音存在平台差异：关闭房间麦克风后再请求设备录音，原生双设备验收独立记录。失败时保持房间麦克风关闭，避免意外公开私人话语。
-- Provider 未配置或预算关闭时，保留文字/语音输入及重试操作，房间语音继续可用。
-- API 字段为向后兼容新增；旧客户端忽略。回滚前端入口不影响现有同意与结果记录。
+- There are platform differences when connecting to LiveKit and device recording at the same time: turn off the room microphone before requesting device recording, and the native dual device acceptance is recorded independently. Keep the room microphone off on failure to avoid accidental disclosure of private words.
+- When the Provider is not configured or the budget is turned off, text/voice input and retry operations are retained, and room voice continues to be available.
+- API field added for backward compatibility; ignored by old clients. Rolling back the front-end entry does not affect existing consent and result records.

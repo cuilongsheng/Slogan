@@ -1,13 +1,13 @@
-## 1. API 与建房
+## 1. API and building a house
 
-- [x] 1.1 接入本人房间处理同意的读取、接受和撤回，验证目的/版本/幂等参数
-- [x] 1.2 建房双目的默认关闭与独立选择，显示服务端不可用和同意错误
+- [x] 1.1 Access your room to process the reading, acceptance and withdrawal of consent, and verify the purpose/version/idempotent parameters
+- [x] 1.2 Dual-purpose house building is turned off by default and selected independently, showing server unavailability and consent error.
 
-## 2. 加入与个人入口
+## 2. Join and personal entrance
 
-- [x] 2.1 房间列表/详情显示两项选择；入房规则页逐目的同意并门禁继续
-- [x] 2.2 个人隐私页独立展示与撤回未来处理
+- [x] 2.1 Room list/details display two options; agree to the room entry rules page one by one and access control continues
+- [x] 2.2 Independent display and withdrawal of personal privacy page for future processing
 
-## 3. 验收
+## 3. Acceptance
 
-- [x] 3.1 lint/typecheck/test/iOS export、390×844 夹具及 provider/设备证据边界
+- [x] 3.1 lint/typecheck/test/iOS export, 390×844 fixture and provider/device evidence boundary

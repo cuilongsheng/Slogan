@@ -1,12 +1,12 @@
 ## 1. API
 
-- [x] 1.1 接入历史分页和版本化笔记 API，验证本人授权请求与冲突错误
+- [x] 1.1 Access historical paging and versioned notes API to verify personal authorization requests and conflict errors
 
-## 2. 页面
+## 2. Page
 
-- [x] 2.1 在个人入口增加历史列表、笔记路由和关系状态，验证仅预约不显示笔记入口
-- [x] 2.2 实现笔记读取、保存、清空与冲突保护，验证失败草稿保留和手动加载远端
+- [x] 2.1 Add the history list, note routing and relationship status to the personal portal, and verify that only appointments are made and the note portal is not displayed
+- [x] 2.2 Implement note reading, saving, clearing and conflict protection, retain drafts if verification fails and manually load the remote end
 
-## 3. 验收
+## 3. Acceptance
 
-- [x] 3.1 运行移动端 lint/typecheck/test/export、390×844 运行时截图并记录无独立 Figma 与设备证据边界
+- [x] 3.1 Run mobile terminal lint/typecheck/test/export, 390×844 runtime screenshots and record no independent Figma and device evidence boundaries

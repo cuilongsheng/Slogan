@@ -1,42 +1,52 @@
 ## Purpose
 
-定义独立于多人房间的 1 对 1 实时语音请求与接受流程，确保接听双方明确同意后才能取得媒体接入资格，并处理拒绝、超时和异常结束。
+Define a 1-to-1 real-time voice request and acceptance process that is independent of multi-person rooms, ensure that both parties receiving the call have explicit consent to obtain media access qualifications, and handle rejection, timeout, and abnormal end.
 
 ## ADDED Requirements
 
-### Requirement: 语音单聊必须先请求并接受
-系统 MUST 仅允许符合账号、年龄、资料、安全和双向屏蔽条件的用户发起 1 对 1 语音请求。被叫方明确接受前，系统 MUST 不发放可接通的媒体凭证；被叫方可以拒绝，请求超时后不得再被接受。
+### Requirement: Voice chat must be requested and accepted first
 
-#### Scenario: 接受语音请求
-- **WHEN** 有效被叫方在未过期请求上点击接受且双方仍合格
-- **THEN** 系统建立仅双方可加入的语音单聊并分别发放限定范围的接入资格
+The system MUST only allow users who meet the account, age, profile, security and two-way blocking conditions to initiate 1-to-1 voice requests. The system MUST not issue connectable media credentials before the called party explicitly accepts; the called party can refuse, and the request MUST not be accepted after timeout.
 
-#### Scenario: 拒绝或超时
-- **WHEN** 被叫方拒绝请求或请求到期
-- **THEN** 系统终结该请求，不接通语音，也不向任一方发放有效媒体凭证
+#### Scenario: Accept voice request
 
-#### Scenario: 接受前资格变化
-- **WHEN** 接受时任一方被屏蔽、受限、离线或已进入不兼容的活跃语音会话
-- **THEN** 系统拒绝接通并展示可理解的不可用结果
+- **WHEN** The valid called party clicked Accept on the unexpired request and both parties are still qualified
+- **THEN** The system creates a voice chat that only two parties can join and issues limited access qualifications respectively.
 
-### Requirement: 单聊语音只允许两名有效参与者
-系统 MUST 限制单聊媒体成员为请求双方，防止第三人加入或复用过期凭证；同一用户不得并发占用不兼容的多人房间与单聊语音资格。
+#### Scenario: Rejected or timed out
 
-#### Scenario: 第三人试图加入
-- **WHEN** 非请求双方持有或伪造单聊标识尝试取得接入资格
-- **THEN** 系统拒绝其加入且不泄露参与者私密资料
+- **WHEN** The called party rejected the request or the request expired
+- **THEN** The system terminates the request, does not connect the voice, and does not issue valid media credentials to either party.
 
-#### Scenario: 并发呼叫
-- **WHEN** 同一用户同时收到或发起互相冲突的语音请求
-- **THEN** 系统最多建立一个有效单聊语音会话，其余请求得到稳定的忙碌或失效结果
+#### Scenario: Change of eligibility before acceptance
 
-### Requirement: 结束与异常状态可恢复且不保留通话内容
-系统 MUST 允许任一参与者结束单聊，及时使旧接入资格失效；网络断开时应展示重连或结束状态。系统 MUST 不默认录音、保存完整转写或将单聊音频写入文字会话历史。
+- **WHEN** Either party was blocked, restricted, offline, or in an incompatible active voice session at the time of acceptance
+- **THEN** The system refuses to connect and displays an understandable unavailable result
 
-#### Scenario: 参与者主动结束
-- **WHEN** 任一参与者结束有效单聊
-- **THEN** 双方退出该媒体会话，旧资格不能用于继续接入，消息列表可保留最小通话事件
+### Requirement: Single voice chat only allows two valid participants
 
-#### Scenario: 网络断开
-- **WHEN** 一方媒体连接异常断开
-- **THEN** 双方看到有限的重连或结束反馈，超出恢复窗口后会话结束且资源被清理
+The system MUST restrict single chat media members to the requesting parties to prevent third parties from joining or reusing expired credentials; the same user MUST not concurrently occupy incompatible multi-person rooms and single chat voice qualifications.
+
+#### Scenario: A third person tried to join
+
+- **WHEN** Non-requesting parties hold or forge single chat IDs to try to obtain access qualifications
+- **THEN** The system refuses to join and does not disclose the participant's private information
+
+#### Scenario: Concurrent calls
+
+- **WHEN** The same user receives or initiates conflicting voice requests at the same time.
+- **THEN** The system can establish at most one valid single chat voice session, and other requests will get stable busy or invalid results.
+
+### Requirement: The end and abnormal status can be restored without retaining the call content.
+
+The system MUST allow any participant to end the private chat and promptly invalidate the old access qualification; the reconnection or end status should be displayed when the network is disconnected. The system MUST not record, save full transcripts, or write single chat audio into text conversation history by default.
+
+#### Scenario: Participants voluntarily terminated
+
+- **WHEN** Any participant ends the valid private chat
+- **THEN** Both parties exited the media session, the old qualifications cannot be used for continued access, and the message list can retain the minimum call event
+
+#### Scenario: Network disconnected
+
+- **WHEN** One party's media connection is abnormally disconnected
+- **THEN** Both parties see limited reconnection or end feedback. After the recovery window is exceeded, the session ends and resources are cleared.
