@@ -9,7 +9,7 @@ Admin 与 Expo Web 客户端均要求绝对 API base URL，接口路径自带 `/
 ## Decisions
 
 - `scripts/pages-api-proxy.mjs` 是无依赖 Worker 源，构建复制为 `_worker.js`，`_routes.json` 仅 include `/v1` 与 `/v1/*`；其余请求交给 ASSETS。采用官方 advanced mode，不用外部 `_redirects` 重定向。
-- `API_UPSTREAM_ORIGIN` 为 Pages 运行时配置，只接受无凭证/查询/fragment/非默认端口的单层 `https://*.onrender.com` origin。访客无法指定目标，配置错误立即 503；静态页面仍可用。
+- `API_UPSTREAM_ORIGIN` 为 Pages 运行时配置，只接受无凭证/路径/查询/fragment/非默认端口的单层 `https://*.onrender.com` origin 或已批准的 `https://slogan-api-pi.vercel.app`。访客无法指定目标，配置错误立即 503；静态页面仍可用。后者来自 2026-10-07 已合入的 Vercel 路由修正，归档时按当前代码和发布记录同步；不放行任意 Vercel 项目。
 - `build:pages:admin` 与 `build:pages:mobile` 校验对应公开 API base 是完整 HTTPS origin，拒绝带 `/v1` 或路径的值。公开 API base 必须填各自稳定 Pages origin；构建关闭 dotenv 自动加载，复制 Worker 和路由后校验产物。上游是运行时配置，不写入浏览器 bundle。
 - 原始方法、查询、请求体流、Origin、Authorization、Cookie 保留；删除 hop-by-hop 及其 Connection 声明字段、Host、内容长度和客户端转发/IP头。API 的可信代理和限流配置不放宽；未配置可信代理时仍按连接端 IP 限流，可能共享额度。真实客户端 IP 归因需发布时验证实际链，不允许任意 X-Forwarded-For。
 - 请求使用 no-store，响应覆盖为 private, no-store，并移除实体缓存验证头。不读取或打印凭证、不记录请求/响应。90 秒首包截止允许 Render 冷启动；网络失败 502，截止 504，无重试，避免重复 POST。Render HTML 可用性页面转换为脱敏 JSON（保留 5xx，异常 2xx/4xx HTML 返回 502）。返回流不缓冲，已发出响应后 body 中断由浏览器感知，无法改写状态；HEAD/204/304 无 body。

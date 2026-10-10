@@ -4,7 +4,7 @@
 
 ## What Changes
 
-- 两个网站通过各自 `/v1`、`/v1/*` 转发到部署配置固定的 Render HTTPS origin，保留 API 和浏览器会话语义。
+- 两个网站通过各自 `/v1`、`/v1/*` 转发到部署配置固定且白名单允许的 HTTPS origin，保留 API 和浏览器会话语义；白名单保留单层 Render 域名，并包含后续已批准的 `slogan-api-pi.vercel.app`。
 - 共用 advanced-mode Worker；最终构建包含 `_worker.js`、`_routes.json`，静态页面继续走 Pages Assets。
 - 上游配置错误、网络错误和不安全重定向返回脱敏 JSON；禁止缓存、自动重放和访客控制上游。
 - 更新免费试用运行说明为 Upstash Redis，保留冷启动、任务恢复及公网验收边界。
