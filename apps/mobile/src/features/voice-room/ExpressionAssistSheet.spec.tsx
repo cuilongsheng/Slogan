@@ -20,6 +20,35 @@ const accepted = {
   status: 'ACCEPTED',
   currentNoticeVersion: 'current-v2',
 };
+test('unavailable assistance disables consent and closes without touching room audio', async () => {
+  const api = { consent: jest.fn(), acceptConsent: jest.fn(), audio: jest.fn() };
+  const mute = jest.fn();
+  const restore = jest.fn();
+  const onClose = jest.fn();
+  const page = await render(
+    <ExpressionAssistSheet
+      roomId="room-1"
+      api={api as never}
+      muteRoomMicrophone={mute}
+      restoreRoomMicrophone={restore}
+      onClose={onClose}
+    />,
+  );
+  const accept = page.getByRole('button', { name: 'Accept and continue' });
+  expect(accept.props.accessibilityState.disabled).toBe(true);
+  await fireEvent.press(accept);
+  expect(page.getByText('This feature is in development.')).toBeTruthy();
+  await fireEvent.press(page.getByRole('button', { name: 'Close' }));
+  await page.unmount();
+  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(usePrivateRecorder).not.toHaveBeenCalled();
+  expect(api.consent).not.toHaveBeenCalled();
+  expect(api.acceptConsent).not.toHaveBeenCalled();
+  expect(api.audio).not.toHaveBeenCalled();
+  expect(mute).not.toHaveBeenCalled();
+  expect(restore).not.toHaveBeenCalled();
+});
+
 test('press and release auto submit the stopped clip after microphone restoration', async () => {
   const api = {
     consent: jest.fn(async () => accepted),
@@ -28,6 +57,7 @@ test('press and release auto submit the stopped clip after microphone restoratio
   const restore = jest.fn(async () => undefined);
   const page = await render(
     <ExpressionAssistSheet
+      available
       roomId="room-1"
       api={api as never}
       muteRoomMicrophone={jest.fn(async () => true)}
@@ -65,6 +95,7 @@ test('uses current notice consent and exposes withdrawal through processing sett
   };
   const page = await render(
     <ExpressionAssistSheet
+      available
       roomId="room-1"
       api={api as never}
       muteRoomMicrophone={jest.fn(async () => true)}
@@ -99,6 +130,7 @@ test('closing after release but before the notice check completes prevents audio
   const onClose = jest.fn();
   const page = await render(
     <ExpressionAssistSheet
+      available
       roomId="room-1"
       api={api as never}
       muteRoomMicrophone={jest.fn(async () => true)}

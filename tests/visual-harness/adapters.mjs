@@ -4,14 +4,32 @@ import { View, StyleSheet } from 'react-native';
 
 // Provider/session data is deterministic. Tests exercise real UI and generated HTTP clients,
 // not LiveKit, STT, permission prompts, Android rendering, or a production auth session.
-export const getLocales = () => [{ languageTag: 'zh-CN', languageCode: 'zh' }];
+export const getLocales = () => {
+  const english = new URL(location.href).searchParams.get('language') === 'en';
+  return [{ languageTag: english ? 'en-US' : 'zh-CN', languageCode: english ? 'en' : 'zh' }];
+};
 export const randomUUID = () => crypto.randomUUID();
 export const useRouter = () => ({
   replace: (url) => history.replaceState(null, '', url),
   push: (url) => history.pushState(null, '', url),
   back: () => history.back(),
 });
-const auth = { authorized: (request) => request('visual-fixture') };
+const auth = {
+  authorized: (request) => request('visual-fixture'),
+  state: {
+    kind: 'signedIn',
+    me: { userId: 'visual-profile', onboardingState: 'PROFILE_REQUIRED' },
+  },
+  suggestedProfile: {
+    displayName: '',
+    avatarUrl:
+      'https://raw.githubusercontent.com/cuilongsheng/Slogan/main/assets/brand/slogan-logo.png',
+  },
+  logout: async () => {},
+  putProfile: async () => ({ onboardingState: 'ELIGIBLE' }),
+};
+export const validAvatarUrl = (value) => typeof value === 'string' && /^https?:\/\//.test(value);
+export class SessionError extends Error {}
 export const useAuth = () => auth;
 export const useFocusEffect = (effect) => React.useEffect(effect, [effect]);
 export const useJoinDraft = () => ({ draft: null, clear() {} });

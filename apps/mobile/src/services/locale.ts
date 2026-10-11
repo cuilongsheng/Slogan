@@ -1,6 +1,18 @@
 import { getLocales } from 'expo-localization';
 
 const zh = {
+  optionalField: '选填',
+  requiredField: '必填',
+  adultConfirmation: '我已年满 18 岁',
+  adultConfirmRequired: '请确认你已年满 18 岁。',
+  profileNameInvalid: '显示名称需要 2–40 个字符。',
+  profileCityInvalid: '城市最多填写 100 个字符。',
+  profileGenderInvalid: '请选择有效的性别，或留空。',
+  profileYearInvalid: '填写有效的四位年份，或清空年份和月份。',
+  profileMonthInvalid: '年份和月份需要一起填写；月份为 1–12，不能是未来日期。',
+  profileInterestRequired: '请至少选择一个兴趣。',
+  profileLevelRequired: '请选择适合你的英语等级。',
+
   appName: 'Slogan',
   username: '用户名',
   usernamePlaceholder: '输入用户名',
@@ -393,6 +405,7 @@ const zh = {
   assistanceConsentBody:
     '本次语音只用于临时转写和生成英文表达，不会传给房间或保存为语音记录。你可取消或撤回未来处理。',
   assistanceAccept: '同意并继续',
+  assistanceInDevelopment: '功能开发中',
   assistanceRevoke: '撤回语音处理同意',
   assistanceAudioConfirm: '确认处理本次短语音',
   assistanceResultTitle: '你的英文表达',
@@ -578,6 +591,18 @@ const zh = {
 export type MessageKey = keyof typeof zh;
 
 const en: Record<MessageKey, string> = {
+  optionalField: 'Optional',
+  requiredField: 'Required',
+  adultConfirmation: 'I am at least 18 years old',
+  adultConfirmRequired: 'Confirm that you are at least 18 years old.',
+  profileNameInvalid: 'Use 2–40 characters for your display name.',
+  profileCityInvalid: 'Use no more than 100 characters for your city.',
+  profileGenderInvalid: 'Choose a valid gender or leave it blank.',
+  profileYearInvalid: 'Enter a valid four-digit year, or clear both date fields.',
+  profileMonthInvalid: 'Enter both year and month (1–12), with no future date.',
+  profileInterestRequired: 'Select at least one interest.',
+  profileLevelRequired: 'Choose your English level.',
+
   appName: 'Slogan',
   username: 'Username',
   usernamePlaceholder: 'Enter username',
@@ -957,7 +982,7 @@ const en: Record<MessageKey, string> = {
   voiceEmptySeat: 'Invite',
   voiceAssistanceLater: 'Find English in your language · Only visible to you',
   voiceRulesBody:
-    'Use the room’s designated language. Political, sexual, gambling, drug and illegal financial content, personal attacks, harassment, discrimination and threats are prohibited.',
+    "Use the room's designated language.\nNo politics, sexual content, gambling, drugs or illegal financial activity. No personal attacks, harassment, discrimination or threats.",
   roomSendMessage: 'Send message',
   roomMessageFailed: 'Could not send. Tap send to retry.',
   roomMessageTooLong: 'Messages can have up to 1000 characters. Shorten this message to send.',
@@ -976,6 +1001,7 @@ const en: Record<MessageKey, string> = {
   assistanceConsentBody:
     'Your recording is used temporarily to transcribe and generate English. It is not sent to the room or saved as a recording. You can cancel or revoke future processing.',
   assistanceAccept: 'Accept and continue',
+  assistanceInDevelopment: 'This feature is in development.',
   assistanceRevoke: 'Revoke audio processing consent',
   assistanceAudioConfirm: 'Process this recording',
   assistanceResultTitle: 'Your English expression',
@@ -1163,6 +1189,9 @@ const en: Record<MessageKey, string> = {
 };
 
 const language = getLocales()[0]?.languageCode?.toLowerCase() === 'zh' ? 'zh' : 'en';
+export function getLanguage(): 'zh' | 'en' {
+  return language;
+}
 export function t(key: MessageKey): string {
   return language === 'zh' ? zh[key] : en[key];
 }

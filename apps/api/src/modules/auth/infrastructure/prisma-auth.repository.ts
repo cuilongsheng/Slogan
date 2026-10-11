@@ -82,7 +82,7 @@ export class PrismaAuthRepository implements AuthRepository {
       await transaction.$queryRaw`SELECT id FROM "User" WHERE id = ${input.userId}::uuid FOR UPDATE`;
       const user = await transaction.user.findUnique({
         where: { id: input.userId },
-        include: { emailCredential: true, previewAccount: true },
+        include: { emailCredential: true, previewAccount: true, publicTrialAccount: true },
       });
       if (!previewUserAllowed(user, this.config))
         throw new EmailAuthError('EMAIL_CREDENTIALS_INVALID');
@@ -97,7 +97,12 @@ export class PrismaAuthRepository implements AuthRepository {
         if (
           !credential?.passwordHash ||
           credential.credentialVersion !== input.credentialVersion ||
-          !credentialAllowed(credential, user?.previewAccount ?? null, this.config)
+          !credentialAllowed(
+            credential,
+            user?.previewAccount ?? null,
+            this.config,
+            user?.publicTrialAccount,
+          )
         )
           throw new EmailAuthError('EMAIL_CREDENTIALS_INVALID');
       }
@@ -142,7 +147,7 @@ export class PrismaAuthRepository implements AuthRepository {
             await transaction.$queryRaw`SELECT id FROM "User" WHERE id = ${token.session.userId}::uuid FOR UPDATE`;
             const user = await transaction.user.findUnique({
               where: { id: token.session.userId },
-              include: { emailCredential: true, previewAccount: true },
+              include: { emailCredential: true, previewAccount: true, publicTrialAccount: true },
             });
 
             if (token.usedAt !== null) {
@@ -218,10 +223,16 @@ export class PrismaAuthRepository implements AuthRepository {
     });
   }
 
+  async isPublicTrialViewer(userId: string): Promise<boolean> {
+    return !!(await this.prisma.publicTrialAccount.findFirst({
+      where: { userId, username: 'demo_m1' },
+    }));
+  }
+
   async isSessionActive(userId: string, sessionId: string, now: Date): Promise<boolean> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { emailCredential: true, previewAccount: true },
+      include: { emailCredential: true, previewAccount: true, publicTrialAccount: true },
     });
     if (!previewUserAllowed(user, this.config)) return false;
     return (
@@ -305,6 +316,8 @@ export class PrismaAuthRepository implements AuthRepository {
     phone: PhoneFingerprint,
     now: Date,
   ): Promise<'CREATED' | 'ALREADY_LINKED'> {
+    if (await this.prisma.publicTrialAccount.findUnique({ where: { userId } }))
+      throw new EmailAuthError('EMAIL_AUTH_UNAVAILABLE');
     return this.prisma.$transaction(
       async (transaction) => {
         await transaction.$queryRaw`SELECT id FROM "User" WHERE id = ${userId}::uuid FOR UPDATE`;
@@ -349,6 +362,8 @@ export class PrismaAuthRepository implements AuthRepository {
     identity: ProviderIdentity,
     now: Date,
   ): Promise<'CREATED' | 'ALREADY_LINKED'> {
+    if (await this.prisma.publicTrialAccount.findUnique({ where: { userId } }))
+      throw new EmailAuthError('EMAIL_AUTH_UNAVAILABLE');
     return this.prisma.$transaction(
       async (transaction) => {
         await transaction.$queryRaw`SELECT id FROM "User" WHERE id = ${userId}::uuid FOR UPDATE`;

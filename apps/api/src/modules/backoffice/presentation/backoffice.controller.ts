@@ -1,3 +1,4 @@
+import { PublicRoomQueryDto, PublicRoomListDto } from './dto/public-room.dto.js';
 import {
   Body,
   Controller,
@@ -74,6 +75,25 @@ export class BackofficeController {
     return {
       userId: identity.userId,
       roles: await this.service.authorize(identity.userId, 'BACKOFFICE_ACCESS'),
+    };
+  }
+
+  @Get('public-rooms')
+  @RequireBackofficePermission('PUBLIC_ROOM_SUMMARIES_READ')
+  @ApiOkResponse({ type: PublicRoomListDto })
+  async publicRooms(
+    @CurrentIdentity() identity: CurrentAccessIdentity,
+    @Query() query: PublicRoomQueryDto,
+  ): Promise<PublicRoomListDto> {
+    const result = await this.service.publicRooms(identity.userId, query.limit, query.cursor);
+    return {
+      ...result,
+      items: result.items.map((room) => ({
+        ...room,
+        startedAt: room.startedAt.toISOString(),
+        endsAt: room.endsAt.toISOString(),
+        createdAt: room.createdAt.toISOString(),
+      })),
     };
   }
 

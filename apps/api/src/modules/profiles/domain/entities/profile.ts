@@ -13,13 +13,14 @@ export type GenderCode = (typeof GENDER_CODES)[number];
 export interface ProfileData {
   avatarUrl: string;
   displayName: string;
-  genderCode: GenderCode;
+  genderCode?: GenderCode;
   nationalityCode?: string;
   city?: string;
   interestCodes: string[];
   cefrLevel: CefrLevel;
-  birthYear: number;
-  birthMonth: number;
+  birthYear?: number;
+  birthMonth?: number;
+  adultConfirmedAt?: Date;
 }
 
 export interface ProfileRecord extends ProfileData {

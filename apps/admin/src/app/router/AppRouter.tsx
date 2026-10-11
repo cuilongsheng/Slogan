@@ -1,3 +1,4 @@
+import { PublicRoomsPage } from '../../features/rooms/PublicRoomsPage';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '../../features/auth/auth-context';
 import { AdminLayout } from '../../layouts/AdminLayout';
@@ -33,6 +34,7 @@ function StartPage() {
   return <Navigate to={me ? firstPermittedRoute(me.roles) : '/sign-in'} replace />;
 }
 export function AppRouter() {
+  const { me } = useAuth();
   return (
     <Routes>
       <Route path="/sign-in" element={<SignInView />} />
@@ -47,8 +49,8 @@ export function AppRouter() {
         <Route
           path="/rooms"
           element={
-            <RequireRole roles={['PLATFORM_ADMIN']}>
-              <RoomsPage />
+            <RequireRole roles={['PLATFORM_ADMIN', 'PUBLIC_TRIAL_VIEWER']}>
+              {me?.roles.includes('PUBLIC_TRIAL_VIEWER') ? <PublicRoomsPage /> : <RoomsPage />}
             </RequireRole>
           }
         />

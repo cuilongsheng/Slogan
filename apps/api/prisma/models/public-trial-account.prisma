@@ -1,0 +1,9 @@
+model PublicTrialAccount {
+  userId String @id @db.Uuid
+  environmentId String @db.VarChar(64)
+  username String @db.VarChar(20)
+  disabledAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([environmentId, username])
+}

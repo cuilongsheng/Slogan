@@ -14,6 +14,7 @@ jest.mock('./draft', () => ({ ...jest.requireActual('./draft'), useProfileDraft:
 const valid: ProfileDraft = {
   avatarUrl: 'https://example.test/avatar.png',
   displayName: 'Ada',
+  adultConfirmed: true,
   genderCode: 'female',
   city: 'Shanghai',
   birthYear: '2000',
@@ -41,8 +42,29 @@ describe('first profile screens', () => {
   it('keeps basic step on invalid fields', async () => {
     const screen = await render(<Harness basic initial={{ ...valid, displayName: '' }} />);
     await fireEvent.press(screen.getByTestId('basic-continue'));
-    expect(screen.getByText(t('required'))).toBeTruthy();
+    expect(screen.getByText(t('profileNameInvalid'))).toBeTruthy();
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('clears the name error after correction without requiring optional details', async () => {
+    const screen = await render(
+      <Harness
+        basic
+        initial={{
+          ...valid,
+          displayName: '',
+          genderCode: '',
+          city: '',
+          birthYear: '',
+          birthMonth: '',
+        }}
+      />,
+    );
+    await fireEvent.press(screen.getByTestId('basic-continue'));
+    await fireEvent.changeText(screen.getByTestId('profile-name'), 'Ada');
+    expect(screen.queryByText(t('profileNameInvalid'))).toBeNull();
+    await fireEvent.press(screen.getByTestId('basic-continue'));
+    expect(router.push).toHaveBeenCalledWith('/profile/preferences');
   });
 
   it('submits selected interests and a CEFR band, then follows server age state', async () => {

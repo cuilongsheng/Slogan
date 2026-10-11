@@ -1,9 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
   ArrayMinSize,
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -29,9 +30,10 @@ export class PutProfileDto {
   @Length(2, 40)
   displayName!: string;
 
-  @ApiProperty({ enum: GENDER_CODES })
+  @ApiPropertyOptional({ enum: GENDER_CODES })
+  @IsOptional()
   @IsIn(GENDER_CODES)
-  genderCode!: (typeof GENDER_CODES)[number];
+  genderCode?: (typeof GENDER_CODES)[number];
 
   @ApiPropertyOptional({ description: 'ISO 3166-1 alpha-2 code', example: 'CN' })
   @IsOptional()
@@ -58,20 +60,32 @@ export class PutProfileDto {
   @IsIn(CEFR_LEVELS)
   cefrLevel!: (typeof CEFR_LEVELS)[number];
 
-  @ApiProperty({ minimum: 1900, maximum: 2100 })
+  @ApiPropertyOptional({ minimum: 1900, maximum: 2100 })
+  @IsOptional()
   @IsInt()
   @Min(1900)
   @Max(2100)
-  birthYear!: number;
+  birthYear?: number;
 
-  @ApiProperty({ minimum: 1, maximum: 12 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 12 })
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(12)
-  birthMonth!: number;
+  birthMonth?: number;
+
+  @ApiPropertyOptional({
+    description: 'Explicit adult confirmation; required on first completion.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  adultConfirmed?: boolean;
 }
 
-export class ProfileDto extends PutProfileDto {
+export class ProfileDto extends OmitType(PutProfileDto, ['adultConfirmed'] as const) {
+  @ApiPropertyOptional({ format: 'date-time', readOnly: true })
+  adultConfirmedAt?: string;
+
   @ApiProperty({ format: 'date-time' })
   completedAt!: string;
 }

@@ -41,7 +41,7 @@ Built as a TypeScript and pnpm monorepo, the project focuses on room lifecycle m
 
 The pilot uses five accounts provisioned by the maintainer: one platform administrator, one safety officer, and three ordinary users. Hosting is a role within a room membership, not a global account role. Account passwords are not published in the repository.
 
-As of October 10, 2026, the public pilot uses provisioned password login. Google login and email registration are disabled. `GET /v1/auth/capabilities` reports the capabilities of a particular deployment. A self-hosted installation requires its own identity configuration and cannot reuse the public pilot accounts.
+The public pilot supports provisioned password login and Google web sign-in. Email registration and WeChat sign-in are disabled. Profile gender, city and birth information are optional; first completion requires an explicit adult confirmation. The unavailable expression-assistance entry shows a development notice. `GET /v1/auth/capabilities` reports the capabilities of a particular deployment. A self-hosted installation requires its own identity configuration and cannot reuse the public pilot accounts.
 
 ## Screenshots
 

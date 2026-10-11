@@ -45,7 +45,9 @@ export interface RoomSpeechRepository {
   }): Promise<void>;
   listIncidents(input: {
     actorUserId: string;
-    actorRoles: Array<'PLATFORM_ADMIN' | 'SAFETY_OFFICER' | 'OPERATIONS_ANALYST' | 'AUDITOR'>;
+    actorRoles: Array<
+      'PLATFORM_ADMIN' | 'SAFETY_OFFICER' | 'OPERATIONS_ANALYST' | 'AUDITOR' | 'PUBLIC_TRIAL_VIEWER'
+    >;
     requestId?: string;
     roomId?: string;
     component?: SafetyCapabilityComponent;

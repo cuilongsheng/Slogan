@@ -51,6 +51,11 @@ export class MeController {
   }
 
   private toDto(profile: ProfileRecord): ProfileDto {
-    return { ...profile, completedAt: profile.completedAt.toISOString() };
+    const { adultConfirmedAt, ...data } = profile;
+    return {
+      ...data,
+      ...(adultConfirmedAt ? { adultConfirmedAt: adultConfirmedAt.toISOString() } : {}),
+      completedAt: profile.completedAt.toISOString(),
+    };
   }
 }

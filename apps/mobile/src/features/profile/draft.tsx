@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '../auth/context';
+import type { MessageKey } from '../../services/locale';
 import { validAvatarUrl, type ProfileInput } from '../auth/session';
 
 export interface ProfileDraft {
@@ -8,6 +9,7 @@ export interface ProfileDraft {
   displayName: string;
   genderCode: ProfileInput['genderCode'] | '';
   city: string;
+  adultConfirmed?: boolean;
   birthYear: string;
   birthMonth: string;
   interestCodes: string[];
@@ -19,6 +21,7 @@ const emptyDraft: ProfileDraft = {
   displayName: '',
   genderCode: '',
   city: '',
+  adultConfirmed: false,
   birthYear: '',
   birthMonth: '',
   interestCodes: [],
@@ -28,17 +31,21 @@ const emptyDraft: ProfileDraft = {
 interface DraftContextValue {
   draft: ProfileDraft;
   setDraft: React.Dispatch<React.SetStateAction<ProfileDraft>>;
+  serverErrors?: ProfileErrors;
+  setServerErrors?: React.Dispatch<React.SetStateAction<ProfileErrors>>;
 }
 const DraftContext = createContext<DraftContextValue | null>(null);
 
 export function ProfileDraftProvider({ children }: { children: React.ReactNode }) {
   const { state, suggestedProfile } = useAuth();
   const [manualDraft, setDraft] = useState<ProfileDraft>(emptyDraft);
+  const [serverErrors, setServerErrors] = useState<ProfileErrors>({});
   const owner = state.kind === 'signedIn' ? state.me.userId : null;
   const previousOwner = useRef<string | null>(null);
   useEffect(() => {
     if (previousOwner.current === owner) return;
     previousOwner.current = owner;
+    setServerErrors({});
     setDraft({
       ...emptyDraft,
       displayName: suggestedProfile?.displayName ?? '',
@@ -55,7 +62,10 @@ export function ProfileDraftProvider({ children }: { children: React.ReactNode }
     }),
     [manualDraft, suggestedProfile],
   );
-  const value = useMemo(() => ({ draft, setDraft }), [draft]);
+  const value = useMemo(
+    () => ({ draft, setDraft, serverErrors, setServerErrors }),
+    [draft, serverErrors],
+  );
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>;
 }
 
@@ -65,48 +75,88 @@ export function useProfileDraft() {
   return value;
 }
 
-export function validateBasic(draft: ProfileDraft, now = new Date()): 'required' | 'birth' | null {
-  if (
-    draft.displayName.trim().length < 2 ||
-    draft.displayName.trim().length > 40 ||
-    !draft.genderCode ||
-    !draft.city.trim() ||
-    draft.city.length > 100
-  )
-    return 'required';
+export type ProfileField =
+  | 'avatarUrl'
+  | 'displayName'
+  | 'genderCode'
+  | 'city'
+  | 'birthYear'
+  | 'birthMonth'
+  | 'adultConfirmed'
+  | 'interestCodes'
+  | 'cefrLevel';
+export type ProfileErrors = Partial<Record<ProfileField, MessageKey | undefined>>;
+
+export function validateBasic(draft: ProfileDraft, now = new Date()): ProfileErrors {
+  const errors: ProfileErrors = {};
+  if (draft.displayName.trim().length < 2 || draft.displayName.trim().length > 40)
+    errors.displayName = 'profileNameInvalid';
+  if (draft.city.trim().length > 100) errors.city = 'profileCityInvalid';
   const year = Number(draft.birthYear);
   const month = Number(draft.birthMonth);
-  if (
-    !/^\d{4}$/.test(draft.birthYear) ||
-    !/^\d{1,2}$/.test(draft.birthMonth) ||
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    year < Math.max(1900, now.getUTCFullYear() - 120) ||
-    year > now.getUTCFullYear() ||
-    month < 1 ||
-    month > 12 ||
-    (year === now.getUTCFullYear() && month > now.getUTCMonth() + 1)
-  )
-    return 'birth';
-  return null;
+  if (draft.birthYear.trim() || draft.birthMonth.trim()) {
+    if (
+      !/^\d{4}$/.test(draft.birthYear) ||
+      year < Math.max(1900, now.getUTCFullYear() - 120) ||
+      year > now.getUTCFullYear()
+    )
+      errors.birthYear = 'profileYearInvalid';
+    if (
+      !/^\d{1,2}$/.test(draft.birthMonth) ||
+      month < 1 ||
+      month > 12 ||
+      (year === now.getUTCFullYear() && month > now.getUTCMonth() + 1)
+    )
+      errors.birthMonth = 'profileMonthInvalid';
+  }
+  if (draft.adultConfirmed !== true) errors.adultConfirmed = 'adultConfirmRequired';
+  return errors;
 }
-
+export function validatePreferences(draft: ProfileDraft): ProfileErrors {
+  return {
+    ...(!validAvatarUrl(draft.avatarUrl) ? { avatarUrl: 'avatarMissing' as const } : {}),
+    ...(draft.interestCodes.length === 0
+      ? { interestCodes: 'profileInterestRequired' as const }
+      : {}),
+    ...(!draft.cefrLevel ? { cefrLevel: 'profileLevelRequired' as const } : {}),
+  };
+}
+export function profileServerErrors(details: readonly string[]): ProfileErrors {
+  const fields: Record<string, MessageKey> = {
+    avatarUrl: 'avatarMissing',
+    displayName: 'profileNameInvalid',
+    genderCode: 'profileGenderInvalid',
+    city: 'profileCityInvalid',
+    nationalityCode: 'profileCityInvalid',
+    birthYear: 'profileYearInvalid',
+    birthMonth: 'profileMonthInvalid',
+    adultConfirmed: 'adultConfirmRequired',
+    interestCodes: 'profileInterestRequired',
+    cefrLevel: 'profileLevelRequired',
+  };
+  return Object.fromEntries(
+    details
+      .map((message) => message.split(/[ .:[\]]/, 1)[0] ?? '')
+      .filter((field) => field in fields)
+      .map((field) => [field === 'nationalityCode' ? 'city' : field, fields[field]]),
+  );
+}
 export function toProfileInput(draft: ProfileDraft): ProfileInput | null {
   if (
-    validateBasic(draft) ||
-    !validAvatarUrl(draft.avatarUrl) ||
-    draft.interestCodes.length < 1 ||
-    !draft.cefrLevel ||
-    !draft.genderCode
+    Object.keys(validateBasic(draft)).length ||
+    Object.keys(validatePreferences(draft)).length ||
+    !draft.cefrLevel
   )
     return null;
   return {
     avatarUrl: draft.avatarUrl,
     displayName: draft.displayName.trim(),
-    genderCode: draft.genderCode,
-    city: draft.city.trim(),
-    birthYear: Number(draft.birthYear),
-    birthMonth: Number(draft.birthMonth),
+    ...(draft.genderCode ? { genderCode: draft.genderCode } : {}),
+    ...(draft.city.trim() ? { city: draft.city.trim() } : {}),
+    ...(draft.birthYear.trim() && draft.birthMonth.trim()
+      ? { birthYear: Number(draft.birthYear), birthMonth: Number(draft.birthMonth) }
+      : {}),
+    adultConfirmed: true,
     interestCodes: draft.interestCodes,
     cefrLevel: draft.cefrLevel,
   };

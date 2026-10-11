@@ -46,6 +46,11 @@ export default {
         )
           return mock;
         if (source === '../auth') return mock;
+        if (
+          (importer?.endsWith('/ProfileScreens.tsx') || importer?.endsWith('/draft.tsx')) &&
+          ['../auth/context', '../auth/session'].includes(source)
+        )
+          return mock;
         if (source.endsWith('/services/usePrivateRecorder')) return mock;
       },
     },

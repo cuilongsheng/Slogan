@@ -1,3 +1,4 @@
+import { isAdultProfile } from '../../profiles/index.js';
 import { roomLevelRange } from '../domain/policies/room-level-range.js';
 import { loadLockedRealtimeRoom } from './locked-realtime-room.js';
 import { roomLifecycle } from '../domain/policies/room-lifecycle.js';
@@ -224,15 +225,7 @@ export class PrismaRoomRepository implements RoomRepository {
         where: { id: input.userId },
         include: { profile: true },
       });
-      let adult = false;
-      if (user?.profile?.completedAt) {
-        const month = input.now.getUTCMonth() + 1;
-        const age =
-          input.now.getUTCFullYear() -
-          user.profile.birthYear -
-          (month < user.profile.birthMonth ? 1 : 0);
-        adult = age >= 18;
-      }
+      const adult = isAdultProfile(user?.profile ?? null, input.now);
       return {
         roomId: room.id,
         topic: room.topic,

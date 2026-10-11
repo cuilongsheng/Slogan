@@ -63,6 +63,10 @@ export class SessionService {
     await this.repository.revokeSession(identity.userId, identity.sessionId, now);
   }
 
+  async isPublicTrialViewer(userId: string): Promise<boolean> {
+    return (await this.repository.isPublicTrialViewer?.(userId)) ?? false;
+  }
+
   async verifyAccessToken(token: string, now = new Date()): Promise<AccessIdentity> {
     try {
       const claims = await this.jwt.verifyAsync<AccessClaims>(token, {

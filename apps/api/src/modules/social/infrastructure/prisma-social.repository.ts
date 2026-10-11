@@ -1,3 +1,4 @@
+import { isAdultProfile } from '../../profiles/index.js';
 import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
@@ -151,14 +152,19 @@ export class PrismaSocialRepository implements SocialRepository {
         : { requesterUserId: input.userId };
     const rows = await this.prisma.friendRequest.findMany({
       where: { ...owner, status: 'PENDING', ...this.after(input.cursor) },
-      include: { requester: { include: { profile: true } }, recipient: { include: { profile: true } } },
+      include: {
+        requester: { include: { profile: true } },
+        recipient: { include: { profile: true } },
+      },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: input.limit + 1,
     });
     return this.page(
       rows.map((row) => ({
         ...this.request(row),
-        peerDisplayName: (input.direction === 'incoming' ? row.requester : row.recipient).profile?.displayName ?? null,
+        peerDisplayName:
+          (input.direction === 'incoming' ? row.requester : row.recipient).profile?.displayName ??
+          null,
       })),
       input.limit,
     );
@@ -359,7 +365,7 @@ export class PrismaSocialRepository implements SocialRepository {
     });
     const scanned = rows.slice(0, input.limit * 5);
     const allowed = scanned
-      .filter((row) => row.profile && this.adult(row.profile, input.now))
+      .filter((row) => row.profile && isAdultProfile(row.profile, input.now))
       .map((row) => ({
         ...this.profile(row),
         createdAt: row.createdAt,
@@ -407,14 +413,9 @@ export class PrismaSocialRepository implements SocialRepository {
     return (
       user?.status === 'ACTIVE' &&
       !!user.profile &&
-      this.adult(user.profile, now) &&
+      isAdultProfile(user.profile, now) &&
       (await readEffectiveSafetyRestriction(tx, userId, now)) === null
     );
-  }
-
-  private adult(profile: { birthYear: number; birthMonth: number }, now: Date): boolean {
-    const month = now.getUTCMonth() + 1;
-    return now.getUTCFullYear() - profile.birthYear - (month < profile.birthMonth ? 1 : 0) >= 18;
   }
 
   private profile(user: {

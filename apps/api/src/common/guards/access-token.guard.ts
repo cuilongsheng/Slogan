@@ -1,3 +1,4 @@
+import { AppError } from '../errors/app-error.js';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
@@ -29,6 +30,16 @@ export class AccessTokenGuard implements CanActivate {
       throw new AuthError('ACCESS_TOKEN_INVALID', 'A valid bearer token is required');
     }
     request.user = await this.sessions.verifyAccessToken(authorization.slice('Bearer '.length));
+    if (await this.sessions.isPublicTrialViewer(request.user.userId)) {
+      const path = request.path.replace(/\/$/, '');
+      const permitted =
+        (request.method === 'GET' &&
+          ['/v1/me', '/v1/backoffice/me', '/v1/backoffice/public-rooms'].includes(path)) ||
+        (request.method === 'POST' && ['/v1/auth/logout', '/v1/auth/web/logout'].includes(path));
+      if (!permitted)
+        throw new AppError('BACKOFFICE_ACCESS_DENIED', 'Public trial access is read-only', 403);
+    }
+
     return true;
   }
 }

@@ -86,6 +86,7 @@ enum ReservationStatus {
 }
 
 enum BackofficeRole {
+  PUBLIC_TRIAL_VIEWER
   PLATFORM_ADMIN
   SAFETY_OFFICER
   OPERATIONS_ANALYST
@@ -398,6 +399,7 @@ enum EmailDeliveryStatus {
 }
 
 enum PasswordCredentialOrigin {
+  PUBLIC_TRIAL_PROVISIONED
   EMAIL_VERIFIED
   PREVIEW_PROVISIONED
 }

@@ -87,8 +87,10 @@ export class LoginMethodDto {
   @ApiProperty({ type: String, format: 'date-time', nullable: true })
   verifiedAt!: string | null;
 
-  @ApiPropertyOptional({ enum: ['EMAIL_VERIFIED', 'PREVIEW_PROVISIONED'] })
-  origin?: 'EMAIL_VERIFIED' | 'PREVIEW_PROVISIONED';
+  @ApiPropertyOptional({
+    enum: ['EMAIL_VERIFIED', 'PREVIEW_PROVISIONED', 'PUBLIC_TRIAL_PROVISIONED'],
+  })
+  origin?: 'EMAIL_VERIFIED' | 'PREVIEW_PROVISIONED' | 'PUBLIC_TRIAL_PROVISIONED';
 
   @ApiPropertyOptional({ example: '+86••78' })
   mask?: string;

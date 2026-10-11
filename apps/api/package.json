@@ -33,6 +33,7 @@
     "typecheck": "tsc --noEmit",
     "start:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker node dist/workers/auth-mail/main.js",
     "dev:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker nest start --watch --entryFile workers/auth-mail/main",
+    "public-trial:accounts": "node dist/scripts/public-trial-accounts.js",
     "preview:accounts": "node dist/scripts/preview-accounts.js",
     "start:realtime-worker": "APP_NAME=slogan-realtime-worker node dist/workers/realtime/main.js"
   },

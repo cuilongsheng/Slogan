@@ -180,6 +180,7 @@ export function LoginScreen() {
           accessibilityRole="button"
           accessibilityState={{ disabled: true }}
           accessibilityHint={t('wechatUnavailable')}
+          testID="wechat-sign-in"
           disabled
           style={[styles.socialOption, styles.wechat]}
         >
@@ -274,7 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  wechat: {},
+  wechat: { opacity: 0.4 },
   googleGlyph: { transform: [{ translateX: -3 }] },
   busyOption: { opacity: 0.48 },
   socialIcon: { width: 24, height: 24 },

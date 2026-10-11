@@ -217,14 +217,18 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
   async credential(username: string) {
     const c = await this.prisma.emailCredential.findUnique({
       where: { username },
-      include: { user: { select: { status: true, previewAccount: true } } },
+      include: {
+        user: { select: { status: true, previewAccount: true, publicTrialAccount: true } },
+      },
     });
     return c ? this.view(c) : null;
   }
   async credentialForUser(userId: string) {
     const c = await this.prisma.emailCredential.findUnique({
       where: { userId },
-      include: { user: { select: { status: true, previewAccount: true } } },
+      include: {
+        user: { select: { status: true, previewAccount: true, publicTrialAccount: true } },
+      },
     });
     return c ? this.view(c) : null;
   }
@@ -250,7 +254,8 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id=${initial.userId}::uuid FOR UPDATE`;
       await tx.$queryRaw`SELECT "userId" FROM "EmailCredential" WHERE "userId"=${initial.userId}::uuid FOR UPDATE`;
       const c = await tx.emailCredential.findUnique({ where: { email }, include: { user: true } });
-      if (!c?.passwordHash || c.user.status !== 'ACTIVE') return;
+      if (!c?.passwordHash || c.user.status !== 'ACTIVE' || c.origin === 'PUBLIC_TRIAL_PROVISIONED')
+        return;
       await this.challenge(tx, challenge, {
         purpose: 'RESET_PASSWORD',
         enrollmentId: null,
@@ -274,6 +279,7 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
       const challenge = await tx.emailChallenge.findUnique({ where: { id: initial.id } });
       if (
         !credential?.passwordHash ||
+        credential.origin === 'PUBLIC_TRIAL_PROVISIONED' ||
         !challenge ||
         challenge.consumedAt ||
         challenge.expiresAt <= now ||
@@ -319,6 +325,8 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
   }) {
     await this.transaction(async (tx) => {
       await this.activeUser(tx, input.userId, input.sessionId, input.now);
+      if (await tx.publicTrialAccount.findUnique({ where: { userId: input.userId } }))
+        throw new EmailAuthError('EMAIL_AUTH_UNAVAILABLE');
       if (input.credentialVersion !== undefined) {
         await tx.$queryRaw`SELECT "userId" FROM "EmailCredential" WHERE "userId"=${input.userId}::uuid FOR UPDATE`;
         const c = await tx.emailCredential.findUnique({ where: { userId: input.userId } });
@@ -335,6 +343,7 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
     c: EmailCredential & {
       user: {
         status: string;
+        publicTrialAccount: import('../../../generated/prisma/client.js').PublicTrialAccount | null;
         previewAccount:
           import('../../../generated/prisma/client.js').PreviewAccountProvisioning | null;
       };
@@ -343,7 +352,8 @@ export class PrismaEmailAuthRepository implements EmailAuthRepository {
     return {
       ...c,
       active:
-        c.user.status === 'ACTIVE' && credentialAllowed(c, c.user.previewAccount, this.config),
+        c.user.status === 'ACTIVE' &&
+        credentialAllowed(c, c.user.previewAccount, this.config, c.user.publicTrialAccount),
     };
   }
   private async activeUser(

@@ -724,6 +724,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/backoffice/public-rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BackofficeController_publicRooms"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/backoffice/role-assignments": {
         parameters: {
             query?: never;
@@ -2045,7 +2061,7 @@ export interface components {
         AuditEventDto: {
             /** @enum {string} */
             action: "BACKOFFICE_BOOTSTRAPPED" | "ROLE_GRANTED" | "ROLE_REVOKED" | "ROLE_ASSIGNMENTS_VIEWED" | "AUDIT_EVENTS_VIEWED" | "SAFETY_CASES_VIEWED" | "SAFETY_CASE_CREATED" | "SAFETY_CASE_VIEWED" | "SAFETY_EVIDENCE_VIEWED" | "SAFETY_CASE_ASSIGNED" | "SAFETY_CASE_CLAIMED" | "SAFETY_REVIEW_STARTED" | "SAFETY_CASE_RESOLVED" | "SAFETY_CASE_DISMISSED" | "SAFETY_RESTRICTIONS_VIEWED" | "SAFETY_RESTRICTION_CREATED" | "SAFETY_RESTRICTION_EXPIRED" | "SAFETY_RESTRICTION_LIFTED" | "SAFETY_APPEALS_VIEWED" | "SAFETY_APPEAL_SUBMITTED" | "SAFETY_APPEAL_DECIDED" | "SAFETY_ACCOUNT_DISABLED" | "SAFETY_CAPABILITY_INCIDENTS_VIEWED" | "ACCOUNT_RESTRICTED_RECORD_VIEWED" | "ACCOUNT_RESTRICTED_RECORD_REJECTED" | "ACCOUNT_DELETED" | "OPERATIONS_METRICS_VIEWED" | "OPERATIONS_DETAILS_VIEWED" | "OPERATIONAL_INCIDENTS_VIEWED" | "OPERATIONAL_INCIDENT_ACKNOWLEDGED" | "OPERATIONAL_INCIDENT_RESOLVED" | "RETENTION_POLICIES_VIEWED" | "RETENTION_DRY_RUNS_VIEWED" | "RETENTION_HOLDS_VIEWED" | "RETENTION_RUNS_VIEWED" | "DELETION_EVIDENCE_VIEWED" | "RETENTION_POLICY_CREATED" | "RETENTION_POLICY_ACTIVATED" | "RETENTION_DRY_RUN_CREATED" | "RETENTION_HOLD_CREATED" | "RETENTION_HOLD_RELEASED" | "RETENTION_RUN_CREATED" | "RETENTION_RUN_COMPLETED" | "RECOVERY_DRILLS_VIEWED" | "RECOVERY_DRILL_RECORDED" | "OPERATIONS_ACCESS_REJECTED";
-            actorRoles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR")[];
+            actorRoles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER")[];
             /** @enum {string} */
             actorType: "USER" | "SYSTEM_BOOTSTRAP" | "SYSTEM_JOB";
             /** Format: uuid */
@@ -2059,7 +2075,7 @@ export interface components {
             /** @enum {string} */
             result: "SUCCEEDED" | "REJECTED";
             /** @enum {string|null} */
-            role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | null;
+            role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER" | null;
             targetId: Record<string, never> | null;
             targetType: string;
         };
@@ -2067,7 +2083,7 @@ export interface components {
             items: {
                 /** @enum {string} */
                 action: "BACKOFFICE_BOOTSTRAPPED" | "ROLE_GRANTED" | "ROLE_REVOKED" | "ROLE_ASSIGNMENTS_VIEWED" | "AUDIT_EVENTS_VIEWED" | "SAFETY_CASES_VIEWED" | "SAFETY_CASE_CREATED" | "SAFETY_CASE_VIEWED" | "SAFETY_EVIDENCE_VIEWED" | "SAFETY_CASE_ASSIGNED" | "SAFETY_CASE_CLAIMED" | "SAFETY_REVIEW_STARTED" | "SAFETY_CASE_RESOLVED" | "SAFETY_CASE_DISMISSED" | "SAFETY_RESTRICTIONS_VIEWED" | "SAFETY_RESTRICTION_CREATED" | "SAFETY_RESTRICTION_EXPIRED" | "SAFETY_RESTRICTION_LIFTED" | "SAFETY_APPEALS_VIEWED" | "SAFETY_APPEAL_SUBMITTED" | "SAFETY_APPEAL_DECIDED" | "SAFETY_ACCOUNT_DISABLED" | "SAFETY_CAPABILITY_INCIDENTS_VIEWED" | "ACCOUNT_RESTRICTED_RECORD_VIEWED" | "ACCOUNT_RESTRICTED_RECORD_REJECTED" | "ACCOUNT_DELETED" | "OPERATIONS_METRICS_VIEWED" | "OPERATIONS_DETAILS_VIEWED" | "OPERATIONAL_INCIDENTS_VIEWED" | "OPERATIONAL_INCIDENT_ACKNOWLEDGED" | "OPERATIONAL_INCIDENT_RESOLVED" | "RETENTION_POLICIES_VIEWED" | "RETENTION_DRY_RUNS_VIEWED" | "RETENTION_HOLDS_VIEWED" | "RETENTION_RUNS_VIEWED" | "DELETION_EVIDENCE_VIEWED" | "RETENTION_POLICY_CREATED" | "RETENTION_POLICY_ACTIVATED" | "RETENTION_DRY_RUN_CREATED" | "RETENTION_HOLD_CREATED" | "RETENTION_HOLD_RELEASED" | "RETENTION_RUN_CREATED" | "RETENTION_RUN_COMPLETED" | "RECOVERY_DRILLS_VIEWED" | "RECOVERY_DRILL_RECORDED" | "OPERATIONS_ACCESS_REJECTED";
-                actorRoles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR")[];
+                actorRoles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER")[];
                 /** @enum {string} */
                 actorType: "USER" | "SYSTEM_BOOTSTRAP" | "SYSTEM_JOB";
                 /** Format: uuid */
@@ -2081,7 +2097,7 @@ export interface components {
                 /** @enum {string} */
                 result: "SUCCEEDED" | "REJECTED";
                 /** @enum {string|null} */
-                role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | null;
+                role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER" | null;
                 targetId: Record<string, never> | null;
                 targetType: string;
             }[];
@@ -2122,7 +2138,7 @@ export interface components {
             nextCursor: string | null;
         };
         BackofficeMeDto: {
-            roles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR")[];
+            roles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER")[];
             /** Format: uuid */
             userId: string;
         };
@@ -2575,7 +2591,7 @@ export interface components {
             /** @example +86••78 */
             mask?: string;
             /** @enum {string} */
-            origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED";
+            origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED" | "PUBLIC_TRIAL_PROVISIONED";
             /** @enum {string} */
             type: "PHONE" | "GOOGLE" | "WECHAT" | "EMAIL_PASSWORD";
             /** Format: date-time */
@@ -2586,7 +2602,7 @@ export interface components {
                 /** @example +86••78 */
                 mask?: string;
                 /** @enum {string} */
-                origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED";
+                origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED" | "PUBLIC_TRIAL_PROVISIONED";
                 /** @enum {string} */
                 type: "PHONE" | "GOOGLE" | "WECHAT" | "EMAIL_PASSWORD";
                 /** Format: date-time */
@@ -2597,10 +2613,12 @@ export interface components {
             /** @enum {string} */
             onboardingState: "PROFILE_REQUIRED" | "AGE_RESTRICTED" | "ELIGIBLE";
             profile: {
+                /** Format: date-time */
+                readonly adultConfirmedAt?: string;
                 /** Format: uri */
                 avatarUrl: string;
-                birthMonth: number;
-                birthYear: number;
+                birthMonth?: number;
+                birthYear?: number;
                 /** @enum {string} */
                 cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                 city?: string;
@@ -2608,7 +2626,7 @@ export interface components {
                 completedAt: string;
                 displayName: string;
                 /** @enum {string} */
-                genderCode: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
+                genderCode?: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
                 interestCodes: string[];
                 /**
                  * @description ISO 3166-1 alpha-2 code
@@ -2799,10 +2817,12 @@ export interface components {
         };
         PresenceHeartbeatDto: Record<string, never>;
         ProfileDto: {
+            /** Format: date-time */
+            readonly adultConfirmedAt?: string;
             /** Format: uri */
             avatarUrl: string;
-            birthMonth: number;
-            birthYear: number;
+            birthMonth?: number;
+            birthYear?: number;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
             city?: string;
@@ -2810,13 +2830,58 @@ export interface components {
             completedAt: string;
             displayName: string;
             /** @enum {string} */
-            genderCode: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
+            genderCode?: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
             interestCodes: string[];
             /**
              * @description ISO 3166-1 alpha-2 code
              * @example CN
              */
             nationalityCode?: string;
+        };
+        PublicRoomListDto: {
+            items: {
+                capacity: number;
+                cefrLevel: string;
+                cefrLevelMax: string | null;
+                cefrLevelMin: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                endsAt: string;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                kind: "INSTANT" | "APPOINTMENT";
+                memberCount: number;
+                /** Format: date-time */
+                startedAt: string;
+                /** @enum {string} */
+                status: "OPEN" | "SCHEDULED";
+                topic: string;
+            }[];
+            nextCursor: string | null;
+            openCount: number;
+            scheduledCount: number;
+        };
+        PublicRoomSummaryDto: {
+            capacity: number;
+            cefrLevel: string;
+            cefrLevelMax: string | null;
+            cefrLevelMin: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "INSTANT" | "APPOINTMENT";
+            memberCount: number;
+            /** Format: date-time */
+            startedAt: string;
+            /** @enum {string} */
+            status: "OPEN" | "SCHEDULED";
+            topic: string;
         };
         PublicSocialProfileDto: {
             /** Format: uri */
@@ -2831,16 +2896,18 @@ export interface components {
             userId: string;
         };
         PutProfileDto: {
+            /** @description Explicit adult confirmation; required on first completion. */
+            adultConfirmed?: boolean;
             /** Format: uri */
             avatarUrl: string;
-            birthMonth: number;
-            birthYear: number;
+            birthMonth?: number;
+            birthYear?: number;
             /** @enum {string} */
             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
             city?: string;
             displayName: string;
             /** @enum {string} */
-            genderCode: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
+            genderCode?: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
             interestCodes: string[];
             /**
              * @description ISO 3166-1 alpha-2 code
@@ -3011,7 +3078,7 @@ export interface components {
             /** Format: date-time */
             revokedAt: Record<string, never> | null;
             /** @enum {string} */
-            role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR";
+            role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER";
             /** Format: uuid */
             userId: string;
             version: number;
@@ -3026,7 +3093,7 @@ export interface components {
                 /** Format: date-time */
                 revokedAt: Record<string, never> | null;
                 /** @enum {string} */
-                role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR";
+                role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER";
                 /** Format: uuid */
                 userId: string;
                 version: number;
@@ -6425,7 +6492,7 @@ export interface operations {
                         items: {
                             /** @enum {string} */
                             action: "BACKOFFICE_BOOTSTRAPPED" | "ROLE_GRANTED" | "ROLE_REVOKED" | "ROLE_ASSIGNMENTS_VIEWED" | "AUDIT_EVENTS_VIEWED" | "SAFETY_CASES_VIEWED" | "SAFETY_CASE_CREATED" | "SAFETY_CASE_VIEWED" | "SAFETY_EVIDENCE_VIEWED" | "SAFETY_CASE_ASSIGNED" | "SAFETY_CASE_CLAIMED" | "SAFETY_REVIEW_STARTED" | "SAFETY_CASE_RESOLVED" | "SAFETY_CASE_DISMISSED" | "SAFETY_RESTRICTIONS_VIEWED" | "SAFETY_RESTRICTION_CREATED" | "SAFETY_RESTRICTION_EXPIRED" | "SAFETY_RESTRICTION_LIFTED" | "SAFETY_APPEALS_VIEWED" | "SAFETY_APPEAL_SUBMITTED" | "SAFETY_APPEAL_DECIDED" | "SAFETY_ACCOUNT_DISABLED" | "SAFETY_CAPABILITY_INCIDENTS_VIEWED" | "ACCOUNT_RESTRICTED_RECORD_VIEWED" | "ACCOUNT_RESTRICTED_RECORD_REJECTED" | "ACCOUNT_DELETED" | "OPERATIONS_METRICS_VIEWED" | "OPERATIONS_DETAILS_VIEWED" | "OPERATIONAL_INCIDENTS_VIEWED" | "OPERATIONAL_INCIDENT_ACKNOWLEDGED" | "OPERATIONAL_INCIDENT_RESOLVED" | "RETENTION_POLICIES_VIEWED" | "RETENTION_DRY_RUNS_VIEWED" | "RETENTION_HOLDS_VIEWED" | "RETENTION_RUNS_VIEWED" | "DELETION_EVIDENCE_VIEWED" | "RETENTION_POLICY_CREATED" | "RETENTION_POLICY_ACTIVATED" | "RETENTION_DRY_RUN_CREATED" | "RETENTION_HOLD_CREATED" | "RETENTION_HOLD_RELEASED" | "RETENTION_RUN_CREATED" | "RETENTION_RUN_COMPLETED" | "RECOVERY_DRILLS_VIEWED" | "RECOVERY_DRILL_RECORDED" | "OPERATIONS_ACCESS_REJECTED";
-                            actorRoles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR")[];
+                            actorRoles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER")[];
                             /** @enum {string} */
                             actorType: "USER" | "SYSTEM_BOOTSTRAP" | "SYSTEM_JOB";
                             /** Format: uuid */
@@ -6439,7 +6506,7 @@ export interface operations {
                             /** @enum {string} */
                             result: "SUCCEEDED" | "REJECTED";
                             /** @enum {string|null} */
-                            role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | null;
+                            role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER" | null;
                             targetId: Record<string, never> | null;
                             targetType: string;
                         }[];
@@ -8701,7 +8768,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        roles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR")[];
+                        roles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER")[];
                         /** Format: uuid */
                         userId: string;
                     };
@@ -9481,11 +9548,91 @@ export interface operations {
             };
         };
     };
+    BackofficeController_publicRooms: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            capacity: number;
+                            cefrLevel: string;
+                            cefrLevelMax: string | null;
+                            cefrLevelMin: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            endsAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "INSTANT" | "APPOINTMENT";
+                            memberCount: number;
+                            /** Format: date-time */
+                            startedAt: string;
+                            /** @enum {string} */
+                            status: "OPEN" | "SCHEDULED";
+                            topic: string;
+                        }[];
+                        nextCursor: string | null;
+                        openCount: number;
+                        scheduledCount: number;
+                    };
+                };
+            };
+            /** @description ACCESS_TOKEN_INVALID */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            /** @description BACKOFFICE_ACCESS_DENIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
     BackofficeController_assignments: {
         parameters: {
             query?: {
                 userId?: string;
-                role?: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR";
+                role?: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER";
                 active?: boolean;
                 cursor?: string;
                 limit?: number;
@@ -9511,7 +9658,7 @@ export interface operations {
                             /** Format: date-time */
                             revokedAt: Record<string, never> | null;
                             /** @enum {string} */
-                            role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR";
+                            role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER";
                             /** Format: uuid */
                             userId: string;
                             version: number;
@@ -11726,7 +11873,7 @@ export interface operations {
             header?: never;
             path: {
                 userId: string;
-                role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR";
+                role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER";
             };
             cookie?: never;
         };
@@ -11754,7 +11901,7 @@ export interface operations {
                         /** Format: date-time */
                         revokedAt: Record<string, never> | null;
                         /** @enum {string} */
-                        role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR";
+                        role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER";
                         /** Format: uuid */
                         userId: string;
                         version: number;
@@ -11867,7 +12014,7 @@ export interface operations {
             header?: never;
             path: {
                 userId: string;
-                role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR";
+                role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER";
             };
             cookie?: never;
         };
@@ -11895,7 +12042,7 @@ export interface operations {
                         /** Format: date-time */
                         revokedAt: Record<string, never> | null;
                         /** @enum {string} */
-                        role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR";
+                        role: "PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER";
                         /** Format: uuid */
                         userId: string;
                         version: number;
@@ -13087,10 +13234,12 @@ export interface operations {
                         /** @enum {string} */
                         onboardingState: "PROFILE_REQUIRED" | "AGE_RESTRICTED" | "ELIGIBLE";
                         profile: {
+                            /** Format: date-time */
+                            readonly adultConfirmedAt?: string;
                             /** Format: uri */
                             avatarUrl: string;
-                            birthMonth: number;
-                            birthYear: number;
+                            birthMonth?: number;
+                            birthYear?: number;
                             /** @enum {string} */
                             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                             city?: string;
@@ -13098,7 +13247,7 @@ export interface operations {
                             completedAt: string;
                             displayName: string;
                             /** @enum {string} */
-                            genderCode: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
+                            genderCode?: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
                             interestCodes: string[];
                             /**
                              * @description ISO 3166-1 alpha-2 code
@@ -13678,7 +13827,7 @@ export interface operations {
                             /** @example +86••78 */
                             mask?: string;
                             /** @enum {string} */
-                            origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED";
+                            origin?: "EMAIL_VERIFIED" | "PREVIEW_PROVISIONED" | "PUBLIC_TRIAL_PROVISIONED";
                             /** @enum {string} */
                             type: "PHONE" | "GOOGLE" | "WECHAT" | "EMAIL_PASSWORD";
                             /** Format: date-time */
@@ -14576,16 +14725,18 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description Explicit adult confirmation; required on first completion. */
+                    adultConfirmed?: boolean;
                     /** Format: uri */
                     avatarUrl: string;
-                    birthMonth: number;
-                    birthYear: number;
+                    birthMonth?: number;
+                    birthYear?: number;
                     /** @enum {string} */
                     cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                     city?: string;
                     displayName: string;
                     /** @enum {string} */
-                    genderCode: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
+                    genderCode?: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
                     interestCodes: string[];
                     /**
                      * @description ISO 3166-1 alpha-2 code
@@ -14605,10 +14756,12 @@ export interface operations {
                         /** @enum {string} */
                         onboardingState: "PROFILE_REQUIRED" | "AGE_RESTRICTED" | "ELIGIBLE";
                         profile: {
+                            /** Format: date-time */
+                            readonly adultConfirmedAt?: string;
                             /** Format: uri */
                             avatarUrl: string;
-                            birthMonth: number;
-                            birthYear: number;
+                            birthMonth?: number;
+                            birthYear?: number;
                             /** @enum {string} */
                             cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                             city?: string;
@@ -14616,7 +14769,7 @@ export interface operations {
                             completedAt: string;
                             displayName: string;
                             /** @enum {string} */
-                            genderCode: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
+                            genderCode?: "female" | "male" | "non_binary" | "self_described" | "prefer_not_to_say";
                             interestCodes: string[];
                             /**
                              * @description ISO 3166-1 alpha-2 code

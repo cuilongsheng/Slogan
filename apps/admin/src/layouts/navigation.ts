@@ -15,7 +15,14 @@ const safetyRead: Role[] = ['PLATFORM_ADMIN', 'SAFETY_OFFICER', 'AUDITOR'];
 export const nav: Array<{ group: string; items: NavItem[] }> = [
   {
     group: zhCN.groups.business,
-    items: [{ path: '/rooms', label: zhCN.pages.rooms.title, icon: roomsIcon, roles: admin }],
+    items: [
+      {
+        path: '/rooms',
+        label: zhCN.pages.rooms.title,
+        icon: roomsIcon,
+        roles: [...admin, 'PUBLIC_TRIAL_VIEWER'],
+      },
+    ],
   },
   {
     group: zhCN.groups.safety,
