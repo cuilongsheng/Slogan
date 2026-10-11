@@ -29,3 +29,5 @@ export type {
   PreviewAccountInput,
   PreviewAccountState,
 } from './domain/ports/preview-accounts.repository.js';
+
+export { PublicTrialService } from './application/services/public-trial.service.js';

@@ -1,14 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  ScrollView,
+  TextInput,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { AuthPage, FormField, PrimaryButton, StepHeader } from '../../components/ui/AuthPage';
 import { t } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth/context';
 import { onboardingRoute } from '../auth/routes';
-import { validAvatarUrl } from '../auth/session';
-import { toProfileInput, useProfileDraft, validateBasic, type ProfileDraft } from './draft';
+import { SessionError, validAvatarUrl } from '../auth/session';
+import {
+  toProfileInput,
+  useProfileDraft,
+  validateBasic,
+  validatePreferences,
+  profileServerErrors,
+  type ProfileDraft,
+} from './draft';
 
 const interests = [
   { code: 'travel', label: 'travel', color: tokens.color.peach },
@@ -56,21 +71,48 @@ function Choice({
 export function BasicProfileScreen() {
   const router = useRouter();
   const { logout } = useAuth();
-  const { draft, setDraft } = useProfileDraft();
-  const [error, setError] = useState<string | null>(null);
-  const update = <K extends keyof ProfileDraft>(key: K, value: ProfileDraft[K]) =>
+  const { draft, setDraft, serverErrors = {}, setServerErrors } = useProfileDraft();
+  const [submitted, setSubmitted] = useState(false);
+  const errors = { ...serverErrors, ...(submitted ? validateBasic(draft) : {}) };
+  const scroll = useRef<ScrollView>(null);
+  const name = useRef<TextInput>(null);
+  const city = useRef<TextInput>(null);
+  const year = useRef<TextInput>(null);
+  const month = useRef<TextInput>(null);
+  const confirmationY = useRef(0);
+  useEffect(() => {
+    if (serverErrors.displayName) name.current?.focus();
+    else if (serverErrors.city) city.current?.focus();
+    else if (serverErrors.birthYear) year.current?.focus();
+    else if (serverErrors.birthMonth) month.current?.focus();
+    else if (serverErrors.adultConfirmed)
+      scroll.current?.scrollTo({ y: confirmationY.current, animated: true });
+  }, [
+    serverErrors.displayName,
+    serverErrors.city,
+    serverErrors.birthYear,
+    serverErrors.birthMonth,
+    serverErrors.adultConfirmed,
+  ]);
+  const update = <K extends keyof ProfileDraft>(key: K, value: ProfileDraft[K]) => {
+    setServerErrors?.((current) => ({ ...current, [key]: undefined }));
     setDraft((current) => ({ ...current, [key]: value }));
+  };
   const continueToPreferences = () => {
+    setSubmitted(true);
     const invalid = validateBasic(draft);
-    if (invalid) {
-      setError(t(invalid === 'birth' ? 'invalidBirth' : 'required'));
+    if (Object.keys(invalid).length) {
+      if (invalid.displayName) name.current?.focus();
+      else if (invalid.city) city.current?.focus();
+      else if (invalid.birthYear) year.current?.focus();
+      else if (invalid.birthMonth) month.current?.focus();
+      else scroll.current?.scrollTo({ y: confirmationY.current, animated: true });
       return;
     }
-    setError(null);
     router.push('/profile/preferences');
   };
   return (
-    <AuthPage scroll>
+    <AuthPage scroll scrollRef={scroll}>
       <StepHeader
         title={t('profileTitle')}
         description={t('profileDescription')}
@@ -96,43 +138,59 @@ export function BasicProfileScreen() {
       </View>
       {!validAvatarUrl(draft.avatarUrl) && <Text style={styles.notice}>{t('avatarMissing')}</Text>}
       <FormField
-        label={t('displayName')}
+        label={`${t('displayName')} · ${t('requiredField')}`}
+        inputRef={name}
+        testID="profile-name"
+        error={errors.displayName && t(errors.displayName)}
         value={draft.displayName}
         onChangeText={(value) => update('displayName', value)}
         placeholder={t('displayName')}
         maxLength={40}
       />
-      <Text style={styles.label}>{t('gender')}</Text>
+      <Text style={styles.label}>
+        {t('gender')} · {t('optionalField')}
+      </Text>
       <View style={styles.row}>
         <Choice
           label={t('male')}
           selected={draft.genderCode === 'male'}
-          onPress={() => update('genderCode', 'male')}
+          onPress={() => update('genderCode', draft.genderCode === 'male' ? '' : 'male')}
           color={tokens.color.mint}
         />
         <Choice
           label={t('female')}
           selected={draft.genderCode === 'female'}
-          onPress={() => update('genderCode', 'female')}
+          onPress={() => update('genderCode', draft.genderCode === 'female' ? '' : 'female')}
         />
         <Choice
           label={t('privateGender')}
           selected={draft.genderCode === 'prefer_not_to_say'}
-          onPress={() => update('genderCode', 'prefer_not_to_say')}
+          onPress={() =>
+            update(
+              'genderCode',
+              draft.genderCode === 'prefer_not_to_say' ? '' : 'prefer_not_to_say',
+            )
+          }
         />
       </View>
       <FormField
-        label={t('city')}
+        label={`${t('city')} · ${t('optionalField')}`}
+        inputRef={city}
+        error={errors.city && t(errors.city)}
         value={draft.city}
         onChangeText={(value) => update('city', value)}
         placeholder={t('cityPlaceholder')}
         maxLength={100}
       />
-      <Text style={styles.label}>{t('birth')}</Text>
+      <Text style={styles.label}>
+        {t('birth')} · {t('optionalField')}
+      </Text>
       <View style={styles.birthRow}>
         <View style={styles.birthField}>
           <FormField
-            label=""
+            label={t('birthYear')}
+            inputRef={year}
+            error={errors.birthYear && t(errors.birthYear)}
             value={draft.birthYear}
             onChangeText={(value) => update('birthYear', value)}
             placeholder={t('birthYear')}
@@ -142,7 +200,9 @@ export function BasicProfileScreen() {
         </View>
         <View style={styles.birthField}>
           <FormField
-            label=""
+            label={t('birthMonth')}
+            inputRef={month}
+            error={errors.birthMonth && t(errors.birthMonth)}
             value={draft.birthMonth}
             onChangeText={(value) => update('birthMonth', value)}
             placeholder={t('birthMonth')}
@@ -151,11 +211,31 @@ export function BasicProfileScreen() {
           />
         </View>
       </View>
-      {error && (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {error}
-        </Text>
-      )}
+      <View
+        onLayout={(event) => {
+          confirmationY.current = event.nativeEvent.layout.y;
+        }}
+      >
+        <TouchableOpacity
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: draft.adultConfirmed === true }}
+          testID="adult-confirmation"
+          onPress={() => update('adultConfirmed', !draft.adultConfirmed)}
+          style={styles.confirmation}
+        >
+          <View style={[styles.checkbox, draft.adultConfirmed && styles.checkboxChecked]}>
+            {draft.adultConfirmed && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.confirmationText}>
+            {t('adultConfirmation')} · {t('requiredField')}
+          </Text>
+        </TouchableOpacity>
+        {errors.adultConfirmed && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {t(errors.adultConfirmed)}
+          </Text>
+        )}
+      </View>
       <View style={styles.action}>
         <PrimaryButton
           label={t('continue')}
@@ -169,10 +249,15 @@ export function BasicProfileScreen() {
 
 export function PreferencesScreen() {
   const router = useRouter();
-  const { draft, setDraft } = useProfileDraft();
+  const { draft, setDraft, serverErrors = {}, setServerErrors } = useProfileDraft();
   const { putProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const scroll = useRef<ScrollView>(null);
+  const interestsY = useRef(0);
+  const levelsY = useRef(0);
+  const errors = submitted ? { ...serverErrors, ...validatePreferences(draft) } : serverErrors;
   const toggleInterest = (code: string) =>
     setDraft((current) => ({
       ...current,
@@ -181,13 +266,17 @@ export function PreferencesScreen() {
         : [...current.interestCodes, code],
     }));
   const save = async () => {
-    if (!validAvatarUrl(draft.avatarUrl)) {
-      setError(t('avatarMissing'));
-      return;
-    }
+    setSubmitted(true);
+    const invalid = validatePreferences(draft);
     const body = toProfileInput(draft);
-    if (!body) {
-      setError(t('required'));
+    if (Object.keys(invalid).length || !body) {
+      if (invalid.interestCodes)
+        scroll.current?.scrollTo({ y: interestsY.current, animated: true });
+      else if (invalid.cefrLevel) scroll.current?.scrollTo({ y: levelsY.current, animated: true });
+      else {
+        setError(t('profileFailed'));
+        router.push('/profile/basic');
+      }
       return;
     }
     setError(null);
@@ -195,21 +284,43 @@ export function PreferencesScreen() {
     try {
       const me = await putProfile(body);
       router.replace(onboardingRoute(me.onboardingState));
-    } catch {
-      setError(t('profileFailed'));
+    } catch (failure) {
+      const fields = failure instanceof SessionError ? profileServerErrors(failure.violations) : {};
+      setServerErrors?.(fields);
+      if (Object.keys(fields).length) {
+        const firstStep = Object.keys(fields).some(
+          (field) => !['interestCodes', 'cefrLevel'].includes(field),
+        );
+        setError(null);
+        if (firstStep) {
+          router.back();
+          return;
+        }
+        scroll.current?.scrollTo({
+          y: fields.interestCodes ? interestsY.current : levelsY.current,
+          animated: true,
+        });
+      } else setError(t('profileFailed'));
     } finally {
       setSaving(false);
     }
   };
   return (
-    <AuthPage scroll>
+    <AuthPage scroll scrollRef={scroll}>
       <StepHeader
         title={t('preferencesTitle')}
         description={t('preferencesDescription')}
         step={2}
         onBack={() => router.back()}
       />
-      <Text style={[styles.label, styles.firstLabel]}>{t('interests')}</Text>
+      <Text
+        onLayout={(event) => {
+          interestsY.current = event.nativeEvent.layout.y;
+        }}
+        style={[styles.label, styles.firstLabel]}
+      >
+        {t('interests')} · {t('requiredField')}
+      </Text>
       <View style={styles.grid}>
         {interests.map((item) => (
           <Choice
@@ -217,13 +328,28 @@ export function PreferencesScreen() {
             testID={`interest-${item.code}`}
             label={t(item.label)}
             selected={draft.interestCodes.includes(item.code)}
-            onPress={() => toggleInterest(item.code)}
+            onPress={() => {
+              setServerErrors?.((current) => ({ ...current, interestCodes: undefined }));
+              toggleInterest(item.code);
+            }}
             color={item.color}
           />
         ))}
       </View>
       <Text style={styles.hint}>{t('interestHint')}</Text>
-      <Text style={[styles.label, styles.levelLabel]}>{t('level')}</Text>
+      {errors.interestCodes && (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {t(errors.interestCodes)}
+        </Text>
+      )}
+      <Text
+        onLayout={(event) => {
+          levelsY.current = event.nativeEvent.layout.y;
+        }}
+        style={[styles.label, styles.levelLabel]}
+      >
+        {t('level')} · {t('requiredField')}
+      </Text>
       <View style={styles.grid}>
         {levels.map((item) => (
           <Choice
@@ -231,11 +357,19 @@ export function PreferencesScreen() {
             testID={`level-${item.value}`}
             label={item.label}
             selected={draft.cefrLevel === item.value}
-            onPress={() => setDraft((current) => ({ ...current, cefrLevel: item.value }))}
+            onPress={() => {
+              setServerErrors?.((current) => ({ ...current, cefrLevel: undefined }));
+              setDraft((current) => ({ ...current, cefrLevel: item.value }));
+            }}
             color={item.color}
           />
         ))}
       </View>
+      {errors.cefrLevel && (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {t(errors.cefrLevel)}
+        </Text>
+      )}
       <View style={styles.levelNote}>
         <Text style={styles.levelNoteText}>{t('levelNote')}</Text>
       </View>
@@ -259,6 +393,27 @@ export function PreferencesScreen() {
 }
 
 const styles = StyleSheet.create({
+  confirmation: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 44,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: tokens.color.border,
+    backgroundColor: tokens.color.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: { borderColor: tokens.color.purple, backgroundColor: tokens.color.purple },
+  checkmark: { color: '#FFFFFF', fontSize: 16 },
+  confirmationText: { flex: 1, fontSize: 13, lineHeight: 20, color: tokens.color.foreground },
+
   avatarRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, marginBottom: 2 },
   avatar: {
     width: 72,

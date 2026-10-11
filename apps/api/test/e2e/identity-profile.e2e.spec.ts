@@ -86,6 +86,7 @@ describe('identity-and-profile HTTP API', () => {
       interestCodes: ['backend'],
       cefrLevel: 'B1_B2',
       birthMonth: 1,
+      adultConfirmed: true,
     };
     const underage = await request(app.getHttpServer())
       .put('/v1/me/profile')
@@ -94,9 +95,15 @@ describe('identity-and-profile HTTP API', () => {
       .expect(200);
     expect(underage.body.onboardingState).toBe('AGE_RESTRICTED');
 
-    const adult = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .put('/v1/me/profile')
       .set('authorization', `Bearer ${loginResult.tokens.accessToken}`)
+      .send({ ...baseProfile, birthYear: 2000 })
+      .expect(400);
+    const adultLogin = await login('adult-profile-owner');
+    const adult = await request(app.getHttpServer())
+      .put('/v1/me/profile')
+      .set('authorization', `Bearer ${adultLogin.tokens.accessToken}`)
       .send({ ...baseProfile, birthYear: 2000 })
       .expect(200);
     expect(adult.body).toMatchObject({
@@ -105,7 +112,7 @@ describe('identity-and-profile HTTP API', () => {
     });
     const legacy = await request(app.getHttpServer())
       .put('/v1/me/profile')
-      .set('authorization', `Bearer ${loginResult.tokens.accessToken}`)
+      .set('authorization', `Bearer ${adultLogin.tokens.accessToken}`)
       .send({ ...baseProfile, cefrLevel: 'B1', birthYear: 2000 })
       .expect(200);
     expect(legacy.body.profile.cefrLevel).toBe('B1');

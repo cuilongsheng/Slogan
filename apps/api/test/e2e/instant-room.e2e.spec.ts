@@ -75,6 +75,7 @@ describe('instant room HTTP API', () => {
         nationalityCode: 'CN',
         interestCodes: ['backend'],
         cefrLevel: 'B1',
+        adultConfirmed: true,
         birthYear,
         birthMonth: 1,
       })

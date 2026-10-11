@@ -1,4 +1,5 @@
 model User {
+  publicTrialAccount PublicTrialAccount?
   roomTextMessages RoomTextMessage[]
   emailCredential           EmailCredential?
   previewAccount            PreviewAccountProvisioning?

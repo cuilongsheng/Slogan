@@ -30,6 +30,7 @@ export class SessionError extends Error {
   constructor(
     public readonly code: 'CONFIG' | 'AUTH' | 'NETWORK' | 'SERVER',
     message: string,
+    public readonly violations: string[] = [],
   ) {
     super(message);
   }
@@ -315,5 +316,10 @@ function responseError(status: number, error: unknown): SessionError {
     return new SessionError('NETWORK', code || 'Service unavailable');
   if (status === 401 || code.startsWith('AUTH_') || code.startsWith('REFRESH_'))
     return new SessionError('AUTH', code || 'Authentication failed');
-  return new SessionError('SERVER', code || 'Request failed');
+  const details =
+    typeof error === 'object' && error !== null && 'details' in error ? error.details : undefined;
+  const violations = Array.isArray(details)
+    ? details.filter((field): field is string => typeof field === 'string')
+    : [];
+  return new SessionError('SERVER', code || 'Request failed', violations);
 }

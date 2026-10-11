@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, type Ref } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -17,7 +17,15 @@ import { t } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import statusBarPreview from '../../../assets/icons/statusbar-v2.png';
 
-export function AuthPage({ children, scroll = false }: { children: ReactNode; scroll?: boolean }) {
+export function AuthPage({
+  children,
+  scroll = false,
+  scrollRef,
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  scrollRef?: Ref<ScrollView>;
+}) {
   const page = (
     <SafeAreaView
       style={[styles.safe, Platform.OS === 'web' && styles.webPage]}
@@ -43,7 +51,11 @@ export function AuthPage({ children, scroll = false }: { children: ReactNode; sc
         }
       >
         {scroll ? (
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+          >
             {children}
           </ScrollView>
         ) : (
@@ -86,6 +98,9 @@ export function FormField({
   placeholder,
   keyboardType = 'default',
   maxLength,
+  error,
+  inputRef,
+  testID,
 }: {
   label: string;
   value: string;
@@ -93,11 +108,16 @@ export function FormField({
   placeholder: string;
   keyboardType?: 'default' | 'number-pad';
   maxLength?: number;
+  error?: string | undefined;
+  inputRef?: Ref<TextInput>;
+  testID?: string;
 }) {
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
+        ref={inputRef}
+        testID={testID}
         accessibilityLabel={label}
         value={value}
         onChangeText={onChangeText}
@@ -105,8 +125,16 @@ export function FormField({
         placeholderTextColor={tokens.color.muted}
         keyboardType={keyboardType}
         maxLength={maxLength}
-        style={styles.field}
+        style={[styles.field, error ? { borderColor: tokens.color.error } : null]}
       />
+      {error && (
+        <Text
+          accessibilityRole="alert"
+          style={{ color: tokens.color.error, fontSize: 12, lineHeight: 18, marginTop: 6 }}
+        >
+          {error}
+        </Text>
+      )}
     </View>
   );
 }

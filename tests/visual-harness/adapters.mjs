@@ -14,7 +14,22 @@ export const useRouter = () => ({
   push: (url) => history.pushState(null, '', url),
   back: () => history.back(),
 });
-const auth = { authorized: (request) => request('visual-fixture') };
+const auth = {
+  authorized: (request) => request('visual-fixture'),
+  state: {
+    kind: 'signedIn',
+    me: { userId: 'visual-profile', onboardingState: 'PROFILE_REQUIRED' },
+  },
+  suggestedProfile: {
+    displayName: '',
+    avatarUrl:
+      'https://raw.githubusercontent.com/cuilongsheng/Slogan/main/assets/brand/slogan-logo.png',
+  },
+  logout: async () => {},
+  putProfile: async () => ({ onboardingState: 'ELIGIBLE' }),
+};
+export const validAvatarUrl = (value) => typeof value === 'string' && /^https?:\/\//.test(value);
+export class SessionError extends Error {}
 export const useAuth = () => auth;
 export const useFocusEffect = (effect) => React.useEffect(effect, [effect]);
 export const useJoinDraft = () => ({ draft: null, clear() {} });

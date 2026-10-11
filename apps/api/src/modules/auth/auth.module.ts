@@ -1,3 +1,6 @@
+import { PublicTrialService } from './application/services/public-trial.service.js';
+import { PrismaPublicTrialRepository } from './infrastructure/prisma-public-trial.repository.js';
+import { PUBLIC_TRIAL_REPOSITORY } from './domain/ports/public-trial.repository.js';
 import { PreviewAccountsService } from './application/services/preview-accounts.service.js';
 import { PrismaPreviewAccountsRepository } from './infrastructure/prisma-preview-accounts.repository.js';
 import { PREVIEW_ACCOUNTS_REPOSITORY } from './domain/ports/preview-accounts.repository.js';
@@ -49,6 +52,9 @@ import { MeAuthController } from './presentation/me-auth.controller.js';
     EmailAuthController,
   ],
   providers: [
+    PublicTrialService,
+    PrismaPublicTrialRepository,
+    { provide: PUBLIC_TRIAL_REPOSITORY, useExisting: PrismaPublicTrialRepository },
     PreviewAccountsService,
     PrismaPreviewAccountsRepository,
     { provide: PREVIEW_ACCOUNTS_REPOSITORY, useExisting: PrismaPreviewAccountsRepository },
@@ -83,6 +89,7 @@ import { MeAuthController } from './presentation/me-auth.controller.js';
     { provide: APP_GUARD, useClass: AccessTokenGuard },
   ],
   exports: [
+    PublicTrialService,
     PreviewAccountsService,
     EmailAuthService,
     AuthMailService,

@@ -28,6 +28,7 @@ export interface AuthRepository {
     now: Date;
   }): Promise<RotateRefreshResult>;
   revokeSession(userId: string, sessionId: string, now: Date): Promise<void>;
+  isPublicTrialViewer?(userId: string): Promise<boolean>;
   isSessionActive(userId: string, sessionId: string, now: Date): Promise<boolean>;
   findProviderForUser(userId: string): Promise<OAuthProviderName | null>;
   findOrCreatePhoneUser(

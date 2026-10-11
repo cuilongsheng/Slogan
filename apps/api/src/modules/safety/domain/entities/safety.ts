@@ -14,7 +14,9 @@ export type SafetyAppealStatus = 'PENDING' | SafetyAppealDecision;
 
 export interface SafetyActor {
   userId: string;
-  roles: Array<'PLATFORM_ADMIN' | 'SAFETY_OFFICER' | 'OPERATIONS_ANALYST' | 'AUDITOR'>;
+  roles: Array<
+    'PLATFORM_ADMIN' | 'SAFETY_OFFICER' | 'OPERATIONS_ANALYST' | 'AUDITOR' | 'PUBLIC_TRIAL_VIEWER'
+  >;
   requestId?: string;
 }
 

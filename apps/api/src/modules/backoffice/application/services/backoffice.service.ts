@@ -21,6 +21,11 @@ import {
 export class BackofficeService {
   constructor(@Inject(BACKOFFICE_REPOSITORY) private readonly repository: BackofficeRepository) {}
 
+  async publicRooms(userId: string, limit: number, cursor?: string) {
+    await this.authorize(userId, 'PUBLIC_ROOM_SUMMARIES_READ');
+    return this.repository.publicRooms(limit, cursor);
+  }
+
   async roles(userId: string): Promise<BackofficeRole[]> {
     return this.repository.currentRoles(userId);
   }

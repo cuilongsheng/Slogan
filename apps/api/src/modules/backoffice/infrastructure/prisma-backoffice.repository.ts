@@ -63,6 +63,60 @@ function assignmentView(row: {
 export class PrismaBackofficeRepository implements BackofficeRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async publicRooms(limit: number, cursor?: string) {
+    const decoded = decodeCursor(cursor);
+    return this.prisma.$transaction(async (tx) => {
+      // Explicit selection is the redaction boundary. Never return an entire Room row.
+      const rooms = await tx.room.findMany({
+        where: {
+          status: { in: ['OPEN', 'SCHEDULED'] },
+          visibility: 'PUBLIC',
+          ...(decoded
+            ? {
+                OR: [
+                  { createdAt: { lt: new Date(decoded.at) } },
+                  { createdAt: new Date(decoded.at), id: { lt: decoded.id } },
+                ],
+              }
+            : {}),
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        select: {
+          id: true,
+          topic: true,
+          kind: true,
+          status: true,
+          cefrLevel: true,
+          cefrLevelMin: true,
+          cefrLevelMax: true,
+          capacity: true,
+          startedAt: true,
+          endsAt: true,
+          createdAt: true,
+          _count: { select: { memberships: { where: { lifecycle: 'ACTIVE' } } } },
+        },
+      });
+      const items = rooms.slice(0, limit).map(({ _count, ...room }) => ({
+        ...room,
+        status: room.status as 'OPEN' | 'SCHEDULED',
+        memberCount: _count.memberships,
+      }));
+      const last = items.at(-1);
+      return {
+        items,
+        nextCursor:
+          rooms.length > limit && last
+            ? encodeCursor({ at: last.createdAt.toISOString(), id: last.id })
+            : null,
+        openCount: await tx.room.count({ where: { status: 'OPEN', visibility: 'PUBLIC' } }),
+        scheduledCount: await tx.room.count({
+          where: { status: 'SCHEDULED', visibility: 'PUBLIC' },
+        }),
+      };
+    });
+  }
+
   async currentRoles(userId: string): Promise<BackofficeRole[]> {
     const rows = await this.prisma.backofficeRoleAssignment.findMany({
       where: { userId, revokedAt: null, user: { status: 'ACTIVE' } },
@@ -77,6 +131,8 @@ export class PrismaBackofficeRepository implements BackofficeRepository {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(${BOOTSTRAP_LOCK})`;
         const user = await tx.user.findUnique({ where: { id: userId }, select: { status: true } });
         if (!user || user.status !== 'ACTIVE') throw BackofficeError.userNotFound();
+        if (await tx.publicTrialAccount.findUnique({ where: { userId } }))
+          throw BackofficeError.denied();
         const activeAdmins = await tx.backofficeRoleAssignment.findMany({
           where: { role: 'PLATFORM_ADMIN', revokedAt: null, user: { status: 'ACTIVE' } },
           select: { userId: true },
@@ -147,6 +203,12 @@ export class PrismaBackofficeRepository implements BackofficeRepository {
             select: { status: true },
           });
           if (!target || target.status !== 'ACTIVE') throw BackofficeError.userNotFound();
+          const publicTarget = await tx.publicTrialAccount.findUnique({
+            where: { userId: input.targetUserId },
+          });
+          if (input.action === 'GRANT' && (publicTarget || input.role === 'PUBLIC_TRIAL_VIEWER'))
+            throw BackofficeError.denied();
+
           let row = await tx.backofficeRoleAssignment.findUnique({
             where: { userId_role: { userId: input.targetUserId, role: input.role } },
           });

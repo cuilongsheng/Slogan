@@ -1,6 +1,7 @@
 import type { BackofficePermission, BackofficeRole } from '../entities/backoffice.js';
 
 const permissions: Record<BackofficeRole, readonly BackofficePermission[]> = {
+  PUBLIC_TRIAL_VIEWER: ['BACKOFFICE_ACCESS', 'PUBLIC_ROOM_SUMMARIES_READ'],
   PLATFORM_ADMIN: [
     'BACKOFFICE_ACCESS',
     'ROLE_ASSIGNMENTS_READ',
@@ -49,6 +50,7 @@ export function sortBackofficeRoles(roles: readonly BackofficeRole[]): Backoffic
     'SAFETY_OFFICER',
     'OPERATIONS_ANALYST',
     'AUDITOR',
+    'PUBLIC_TRIAL_VIEWER',
   ];
   return [...new Set(roles)].sort((a, b) => order.indexOf(a) - order.indexOf(b));
 }

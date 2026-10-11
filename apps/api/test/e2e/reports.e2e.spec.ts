@@ -253,6 +253,7 @@ describe('reports HTTP on PostgreSQL', () => {
           nationalityCode: 'CN',
           interestCodes: ['travel'],
           cefrLevel: 'B1',
+          adultConfirmed: true,
           birthYear: 2000,
           birthMonth: 1,
         })

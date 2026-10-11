@@ -1,6 +1,18 @@
 import { getLocales } from 'expo-localization';
 
 const zh = {
+  optionalField: '选填',
+  requiredField: '必填',
+  adultConfirmation: '我已年满 18 岁',
+  adultConfirmRequired: '请确认你已年满 18 岁。',
+  profileNameInvalid: '显示名称需要 2–40 个字符。',
+  profileCityInvalid: '城市最多填写 100 个字符。',
+  profileGenderInvalid: '请选择有效的性别，或留空。',
+  profileYearInvalid: '填写有效的四位年份，或清空年份和月份。',
+  profileMonthInvalid: '年份和月份需要一起填写；月份为 1–12，不能是未来日期。',
+  profileInterestRequired: '请至少选择一个兴趣。',
+  profileLevelRequired: '请选择适合你的英语等级。',
+
   appName: 'Slogan',
   username: '用户名',
   usernamePlaceholder: '输入用户名',
@@ -579,6 +591,18 @@ const zh = {
 export type MessageKey = keyof typeof zh;
 
 const en: Record<MessageKey, string> = {
+  optionalField: 'Optional',
+  requiredField: 'Required',
+  adultConfirmation: 'I am at least 18 years old',
+  adultConfirmRequired: 'Confirm that you are at least 18 years old.',
+  profileNameInvalid: 'Use 2–40 characters for your display name.',
+  profileCityInvalid: 'Use no more than 100 characters for your city.',
+  profileGenderInvalid: 'Choose a valid gender or leave it blank.',
+  profileYearInvalid: 'Enter a valid four-digit year, or clear both date fields.',
+  profileMonthInvalid: 'Enter both year and month (1–12), with no future date.',
+  profileInterestRequired: 'Select at least one interest.',
+  profileLevelRequired: 'Choose your English level.',
+
   appName: 'Slogan',
   username: 'Username',
   usernamePlaceholder: 'Enter username',

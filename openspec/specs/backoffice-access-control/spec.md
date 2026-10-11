@@ -8,27 +8,32 @@ Define multi-role authorization after back-end account reuses existing identity 
 
 ### Requirement: The administrative role uses persistent multi-role authorization
 
-The system MUST support four administrative roles: `PLATFORM_ADMIN`, `SAFETY_OFFICER`, `OPERATIONS_ANALYST` and `AUDITOR`, and allow the same user to hold multiple roles at the same time. Backend access MUST also require a valid normal session, available account status and a currently valid backend role. You MUST not only trust the role information in the client statement or the old token.
+The system MUST support `PLATFORM_ADMIN`, `SAFETY_OFFICER`, `OPERATIONS_ANALYST`, `AUDITOR`, and the restricted `PUBLIC_TRIAL_VIEWER` role. Existing private roles may coexist on one user; a public trial identity MUST NOT combine its role with private backoffice roles. Backend access MUST require a valid session, available account status, and currently valid persisted role. Client declarations and old tokens MUST NOT independently grant permissions.
 
 #### Scenario: The administrator also serves as safety officer
 
-- **WHEN** A valid user holds both the platform administrator and safety officer roles
-- **THEN** The system returns the two current roles and allows them to access the implemented and explicitly authorized capabilities of these two roles.
+- **WHEN** a valid private user holds both platform administrator and safety officer roles
+- **THEN** the system returns both current roles and allows only their explicitly authorized capabilities
 
 #### Scenario: Ordinary users directly call the background interface
 
-- **WHEN** Users who only have valid normal sessions but do not have any administrative roles directly request the background interface.
-- **THEN** The system returns a stable background access rejection and does not return admin data.
+- **WHEN** a user with a valid normal session but no administrative role requests a backoffice endpoint
+- **THEN** the system rejects backoffice access without returning admin data
 
 #### Scenario: Session or account invalid
 
-- **WHEN** The administrative role holder's session has expired, or the account is no longer available.
-- **THEN** The system rejects the request based on existing authentication boundaries. Background roles must not bypass session and account status.
+- **WHEN** the role holder's session expires or account becomes unavailable
+- **THEN** existing authentication boundaries reject access, regardless of the role
 
 #### Scenario: One character does not imply another character
 
-- **WHEN** The platform administrator does not have the role of safety officer, or the safety officer does not have the role of platform administrator.
-- **THEN** The system refuses to perform safety officer exclusive actions or role management actions respectively, and will not automatically relax it because it has other high-privilege roles.
+- **WHEN** a platform administrator lacks the safety officer role or a safety officer lacks the administrator role
+- **THEN** the system denies the exclusive actions of the missing role
+
+#### Scenario: Public trial role cannot be elevated
+
+- **WHEN** a role-management request targets a public trial identity for any private backoffice role
+- **THEN** the request is rejected without changing that identity's roles
 
 ### Requirement: The first backend administrator is established via controlled bootstrap
 
@@ -139,3 +144,27 @@ The system MUST allow the current `PLATFORM_ADMIN` to view all security cases an
 
 - **WHEN** User accounts holding the safety officer role are no longer available
 - **THEN** The system denies its backend access and puts its open cases into the recoverable reassignment process
+
+### Requirement: Public backoffice viewers have a server-enforced safe read surface
+
+The system MUST limit `PUBLIC_TRIAL_VIEWER` to sanitized active/scheduled room summaries and aggregate counts. It MUST deny room administration, safety disposition, appeals handling, role management, governance commands, and other business mutations. It MUST NOT expose credentials, personal contact details, raw safety evidence, private conversations, or identifiable private audit records. Client-side hiding of controls MUST NOT substitute for server-side checks.
+
+#### Scenario: View public-safe rooms
+
+- **WHEN** an active public viewer requests the allowed room summary
+- **THEN** the server returns public-safe room metadata and aggregate counts without private account identifiers or evidence
+
+#### Scenario: Direct mutation bypass
+
+- **WHEN** a public viewer directly calls a room, safety, role, or governance mutation endpoint
+- **THEN** the server rejects the request and business state remains unchanged
+
+#### Scenario: Direct private data request
+
+- **WHEN** a public viewer requests private audits, safety evidence, or account records
+- **THEN** access is denied without returning those records
+
+#### Scenario: Role revocation
+
+- **WHEN** the public viewer role is revoked while its old token remains valid
+- **THEN** subsequent backoffice requests use current persisted roles and reject access

@@ -35,7 +35,6 @@ describe('ProfilePolicy', () => {
     ['avatarUrl', { avatarUrl: 'file:///tmp/avatar' }],
     ['displayName', { displayName: 'x' }],
     ['genderCode', { genderCode: 'unknown' }],
-    ['nationalityOrCity', { nationalityCode: undefined, city: undefined }],
     ['interestCodes', { interestCodes: ['same', 'same'] }],
     ['cefrLevel', { cefrLevel: 'B9' }],
     ['birthMonth', { birthMonth: 13 }],
@@ -49,6 +48,28 @@ describe('ProfilePolicy', () => {
     } catch (error) {
       expect((error as ProfileValidationError).violations).toContain(field);
     }
+  });
+
+  it('accepts omitted optional details and uses only a server confirmation', () => {
+    const input = {
+      avatarUrl: validProfile.avatarUrl,
+      displayName: 'Ada',
+      interestCodes: ['travel'],
+      cefrLevel: 'B1' as const,
+    };
+    expect(policy.validate(input, now)).toEqual(input);
+    const stored = { ...input, userId: 'user', completedAt: now };
+    expect(policy.onboardingState(stored, now)).toBe('AGE_RESTRICTED');
+    expect(policy.onboardingState({ ...stored, adultConfirmedAt: now }, now)).toBe('ELIGIBLE');
+    expect(
+      policy.onboardingState(
+        { ...stored, adultConfirmedAt: now, birthYear: 2015, birthMonth: 1 },
+        now,
+      ),
+    ).toBe('AGE_RESTRICTED');
+    expect(() => policy.validate({ ...input, birthYear: 2000 }, now)).toThrow(
+      ProfileValidationError,
+    );
   });
 
   it('requires a completed profile before room eligibility', () => {

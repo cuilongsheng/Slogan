@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { OnboardingState, ProfileData, ProfileRecord } from '../../domain/entities/profile.js';
-import { ProfilePolicy } from '../../domain/policies/profile.policy.js';
+import {
+  ProfilePolicy,
+  ProfileValidationError,
+  isAdultProfile,
+} from '../../domain/policies/profile.policy.js';
 import {
   PROFILE_REPOSITORY,
   type ProfileRepository,
@@ -30,8 +34,27 @@ export class ProfilesService {
       throw new Error('PREVIEW_PROFILE_NOT_ADULT');
     return profile;
   }
-  async put(userId: string, input: ProfileData, now = new Date()): Promise<ProfileRecord> {
+  async put(
+    userId: string,
+    input: ProfileData & { adultConfirmed?: boolean },
+    now = new Date(),
+  ): Promise<ProfileRecord> {
     const profile = this.policy.validate(input, now);
-    return this.profiles.upsert(userId, profile, now);
+    const existing = await this.profiles.findByUserId(userId);
+    if (!existing && input.adultConfirmed !== true)
+      throw new ProfileValidationError(['adultConfirmed']);
+    if (
+      existing?.birthYear != null &&
+      !isAdultProfile(existing, now) &&
+      (profile.birthYear !== existing.birthYear || profile.birthMonth !== existing.birthMonth)
+    )
+      throw new ProfileValidationError(['birthYear', 'birthMonth']);
+    const adultConfirmedAt =
+      existing?.adultConfirmedAt ?? (input.adultConfirmed === true ? now : undefined);
+    return this.profiles.upsert(
+      userId,
+      { ...profile, ...(adultConfirmedAt ? { adultConfirmedAt } : {}) },
+      now,
+    );
   }
 }

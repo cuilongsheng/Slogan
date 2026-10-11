@@ -3,11 +3,13 @@ export const BACKOFFICE_ROLES = [
   'SAFETY_OFFICER',
   'OPERATIONS_ANALYST',
   'AUDITOR',
+  'PUBLIC_TRIAL_VIEWER',
 ] as const;
 export type BackofficeRole = (typeof BACKOFFICE_ROLES)[number];
 
 export const BACKOFFICE_PERMISSIONS = [
   'BACKOFFICE_ACCESS',
+  'PUBLIC_ROOM_SUMMARIES_READ',
   'ROLE_ASSIGNMENTS_READ',
   'ROLE_ASSIGNMENTS_MANAGE',
   'AUDIT_EVENTS_READ',
@@ -134,4 +136,19 @@ export interface AuditEventQuery {
   to?: Date;
   cursor?: string;
   limit: number;
+}
+
+export interface PublicRoomSummary {
+  id: string;
+  topic: string;
+  kind: 'INSTANT' | 'APPOINTMENT';
+  status: 'OPEN' | 'SCHEDULED';
+  cefrLevel: string;
+  cefrLevelMin: string | null;
+  cefrLevelMax: string | null;
+  capacity: number;
+  memberCount: number;
+  startedAt: Date;
+  endsAt: Date;
+  createdAt: Date;
 }

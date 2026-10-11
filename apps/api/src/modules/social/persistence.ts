@@ -1,3 +1,4 @@
+import { isAdultProfile } from '../profiles/index.js';
 import { createHash, randomUUID } from 'node:crypto';
 
 import { Prisma, type SocialCommandType } from '../../generated/prisma/client.js';
@@ -103,8 +104,8 @@ export async function readSocialUserEligible(
 ): Promise<boolean> {
   const user = await tx.user.findUnique({ where: { id: userId }, include: { profile: true } });
   if (user?.status !== 'ACTIVE' || !user.profile) return false;
-  const month = now.getUTCMonth() + 1;
-  const age =
-    now.getUTCFullYear() - user.profile.birthYear - (month < user.profile.birthMonth ? 1 : 0);
-  return age >= 18 && (await readEffectiveSafetyRestriction(tx, userId, now)) === null;
+  return (
+    isAdultProfile(user.profile, now) &&
+    (await readEffectiveSafetyRestriction(tx, userId, now)) === null
+  );
 }

@@ -7,6 +7,7 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
 const draft: ProfileDraft = {
   avatarUrl: 'https://example.test/avatar.png',
   displayName: 'Ada',
+  adultConfirmed: true,
   genderCode: 'prefer_not_to_say',
   city: 'Shanghai',
   birthYear: '2000',
@@ -16,10 +17,31 @@ const draft: ProfileDraft = {
 };
 
 describe('profile draft', () => {
+  it('omits optional details without inventing personal data', () => {
+    expect(
+      toProfileInput({ ...draft, genderCode: '', city: '', birthYear: '', birthMonth: '' }),
+    ).toEqual({
+      avatarUrl: draft.avatarUrl,
+      displayName: 'Ada',
+      adultConfirmed: true,
+      interestCodes: ['travel'],
+      cefrLevel: 'B1_B2',
+    });
+  });
+  it('requires explicit adult confirmation and rejects partial dates', () => {
+    expect(validateBasic({ ...draft, adultConfirmed: false })).toMatchObject({
+      adultConfirmed: 'adultConfirmRequired',
+    });
+    expect(validateBasic({ ...draft, birthMonth: '' })).toMatchObject({
+      birthMonth: 'profileMonthInvalid',
+    });
+  });
+
   it('submits the selected CEFR band and required fields', () => {
     expect(toProfileInput(draft)).toEqual({
       avatarUrl: draft.avatarUrl,
       displayName: 'Ada',
+      adultConfirmed: true,
       genderCode: 'prefer_not_to_say',
       city: 'Shanghai',
       birthYear: 2000,
@@ -31,6 +53,8 @@ describe('profile draft', () => {
 
   it('rejects a local file avatar and a future birth date', () => {
     expect(toProfileInput({ ...draft, avatarUrl: 'file:///avatar.png' })).toBeNull();
-    expect(validateBasic({ ...draft, birthYear: '2100' }, new Date('2026-09-24'))).toBe('birth');
+    expect(validateBasic({ ...draft, birthYear: '2100' }, new Date('2026-09-24'))).toMatchObject({
+      birthYear: 'profileYearInvalid',
+    });
   });
 });

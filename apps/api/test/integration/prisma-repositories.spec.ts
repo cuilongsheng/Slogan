@@ -205,7 +205,7 @@ describe('Prisma identity, session and profile repositories', () => {
     expect(await auth.isSessionActive(userId, sessionId, now)).toBe(false);
   });
 
-  it('upserts only the current user profile and persists changed birth data idempotently', async () => {
+  it('preserves recorded underage birth data and the current user boundary', async () => {
     const userId = randomUUID();
     await prisma.user.create({ data: { id: userId, createdAt: now, updatedAt: now } });
     const baseProfile = {
@@ -215,16 +215,19 @@ describe('Prisma identity, session and profile repositories', () => {
       nationalityCode: 'CN',
       interestCodes: ['backend'],
       cefrLevel: 'B1' as const,
+      adultConfirmed: true,
       birthYear: 2000,
       birthMonth: 1,
     };
 
     await profileService.put(userId, { ...baseProfile, birthYear: 2009, birthMonth: 10 }, now);
     expect(await profileService.getOnboardingState(userId, now)).toBe('AGE_RESTRICTED');
-    await profileService.put(userId, { ...baseProfile, birthMonth: 2 }, now);
+    await expect(
+      profileService.put(userId, { ...baseProfile, birthMonth: 2 }, now),
+    ).rejects.toThrow('Profile validation failed');
 
-    expect(await profiles.findByUserId(userId)).toMatchObject({ birthYear: 2000, birthMonth: 2 });
-    expect(await profileService.getOnboardingState(userId, now)).toBe('ELIGIBLE');
+    expect(await profiles.findByUserId(userId)).toMatchObject({ birthYear: 2009, birthMonth: 10 });
+    expect(await profileService.getOnboardingState(userId, now)).toBe('AGE_RESTRICTED');
     expect(await prisma.userProfile.count()).toBe(1);
     await expect(profiles.findByUserId(randomUUID())).resolves.toBeNull();
   });

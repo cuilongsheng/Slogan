@@ -34,12 +34,12 @@ export class ProfilePolicy {
     }
 
     if (displayName.length < 2 || displayName.length > 40) violations.push('displayName');
-    if (!GENDER_CODES.includes(input.genderCode)) violations.push('genderCode');
+    if (input.genderCode != null && !GENDER_CODES.includes(input.genderCode))
+      violations.push('genderCode');
     if (nationalityCode !== undefined && !/^[A-Z]{2}$/.test(nationalityCode)) {
       violations.push('nationalityCode');
     }
     if (city !== undefined && city.length > 100) violations.push('city');
-    if (nationalityCode === undefined && city === undefined) violations.push('nationalityOrCity');
     if (
       interestCodes.length < 1 ||
       interestCodes.length > 10 ||
@@ -49,16 +49,21 @@ export class ProfilePolicy {
       violations.push('interestCodes');
     }
     if (!CEFR_LEVELS.includes(input.cefrLevel)) violations.push('cefrLevel');
-    if (!Number.isInteger(input.birthMonth) || input.birthMonth < 1 || input.birthMonth > 12) {
-      violations.push('birthMonth');
-    }
+    const year = input.birthYear ?? undefined;
+    const month = input.birthMonth ?? undefined;
     const currentYear = now.getUTCFullYear();
-    if (
-      !Number.isInteger(input.birthYear) ||
-      input.birthYear < currentYear - 120 ||
-      input.birthYear > currentYear
-    ) {
-      violations.push('birthYear');
+    if (year !== undefined || month !== undefined) {
+      if (month === undefined || !Number.isInteger(month) || month < 1 || month > 12)
+        violations.push('birthMonth');
+      if (
+        year === undefined ||
+        !Number.isInteger(year) ||
+        year < Math.max(1900, currentYear - 120) ||
+        year > currentYear
+      )
+        violations.push('birthYear');
+      if (year === currentYear && month !== undefined && month > now.getUTCMonth() + 1)
+        violations.push('birthMonth');
     }
 
     if (violations.length > 0) throw new ProfileValidationError([...new Set(violations)]);
@@ -66,19 +71,35 @@ export class ProfilePolicy {
     return {
       avatarUrl: input.avatarUrl,
       displayName,
-      genderCode: input.genderCode,
+      ...(input.genderCode == null ? {} : { genderCode: input.genderCode }),
       ...(nationalityCode === undefined ? {} : { nationalityCode }),
       ...(city === undefined ? {} : { city }),
       interestCodes,
       cefrLevel: input.cefrLevel,
-      birthYear: input.birthYear,
-      birthMonth: input.birthMonth,
+      ...(year === undefined ? {} : { birthYear: year }),
+      ...(month === undefined ? {} : { birthMonth: month }),
     };
   }
 
   onboardingState(profile: ProfileRecord | null, now: Date): OnboardingState {
     if (profile === null) return 'PROFILE_REQUIRED';
-    const eligibleFrom = new Date(Date.UTC(profile.birthYear + 18, profile.birthMonth, 1));
-    return now.getTime() >= eligibleFrom.getTime() ? 'ELIGIBLE' : 'AGE_RESTRICTED';
+    return isAdultProfile(profile, now) ? 'ELIGIBLE' : 'AGE_RESTRICTED';
   }
+}
+
+/** A recorded birth date overrides self-declaration; retain the conservative month boundary. */
+export function isAdultProfile(
+  profile: {
+    birthYear?: number | null;
+    birthMonth?: number | null;
+    adultConfirmedAt?: Date | null;
+  } | null,
+  now: Date,
+): boolean {
+  if (!profile) return false;
+  if (profile.birthYear != null || profile.birthMonth != null) {
+    if (profile.birthYear == null || profile.birthMonth == null) return false;
+    return now.getTime() >= Date.UTC(profile.birthYear + 18, profile.birthMonth, 1);
+  }
+  return profile.adultConfirmedAt != null && profile.adultConfirmedAt.getTime() <= now.getTime();
 }

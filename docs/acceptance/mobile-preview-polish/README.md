@@ -40,6 +40,6 @@ The actual React Native Web components ran in the existing local visual harness 
 
 Formatting and `git diff --check` were performed. No test suite, lint, typecheck, build, production deployment, or APK update was run for this batch, following the owner's no-test instruction. A regression case was added for disabled consent and closing without recorder/API/microphone work; it remains unexecuted. Native close behavior and real keyboard behavior remain owner/device acceptance items.
 
-## Separate pending work
+## Follow-up delivery
 
-`add-public-trial-accounts` remains planning-only on `codex/public-trial-accounts` with 0/11 implementation tasks complete; public demo identities have not been provisioned. The new optional-profile/adult-confirmation change also remains planning-only. Neither change is bundled into this repair commit.
+The optional-profile and public-trial changes were subsequently implemented in the same authorized release branch. See [optional profile](../optional-profile/README.md) and [public trial accounts](../public-trial-accounts/README.md) for their separate database, auth and runtime evidence. Automated suites remain unexecuted under the owner instruction. Native crash reproduction and keyboard acceptance remain separate.
