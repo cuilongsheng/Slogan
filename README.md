@@ -39,7 +39,15 @@ Built as a TypeScript and pnpm monorepo, the project focuses on room lifecycle m
 | Admin console | [Open admin](https://slogan-preview-admin.pages.dev)                                                                                                       | Requires the appropriate administrative permissions                                                 |
 | Build history | [GitHub Releases](https://github.com/cuilongsheng/Slogan/releases)                                                                                         | Release commits, APK files, and verification metadata                                               |
 
-The pilot uses five accounts provisioned by the maintainer: one platform administrator, one safety officer, and three ordinary users. Hosting is a role within a room membership, not a global account role. Account passwords are not published in the repository.
+Use these public accounts to explore the pilot:
+
+| Entry         | Username  | Password   | Access                          |
+| ------------- | --------- | ---------- | ------------------------------- |
+| Web / Android | `demo_s1` | `12345678` | Ordinary user                   |
+| Web / Android | `demo_s2` | `12345678` | Ordinary user                   |
+| Admin console | `demo_m1` | `12345678` | Read-only public room summaries |
+
+These are shared identities: other visitors can see the same account's activity, and simultaneous sessions can compete over room membership. Do not enter personal or confidential information. The admin trial excludes private rooms, member identities, reports, audit records and management actions. Hosting is a role within a room membership, not a global account role. The maintainer's five private accounts are separate and their credentials remain private.
 
 The public pilot supports provisioned password login and Google web sign-in. Email registration and WeChat sign-in are disabled. Profile gender, city and birth information are optional; first completion requires an explicit adult confirmation. The unavailable expression-assistance entry shows a development notice. `GET /v1/auth/capabilities` reports the capabilities of a particular deployment. A self-hosted installation requires its own identity configuration and cannot reuse the public pilot accounts.
 
@@ -60,7 +68,7 @@ These English screenshots show actual mobile components running in React Native 
     <th>Expression assistance</th><th>In-app invitation</th><th>Reconnecting</th>
   </tr>
   <tr>
-    <td><img src="docs/readme/images/expression-assistance.png" width="260" alt="English expression assistance result" /></td>
+    <td><img src="docs/readme/images/expression-assistance.png" width="260" alt="Expression assistance disabled with a development notice" /></td>
     <td><img src="docs/readme/images/invite.png" width="260" alt="Invite available people inside the app" /></td>
     <td><img src="docs/readme/images/reconnecting.png" width="260" alt="English reconnecting screen" /></td>
   </tr>

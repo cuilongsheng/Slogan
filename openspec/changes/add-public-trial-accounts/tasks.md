@@ -13,12 +13,12 @@
 ## 3. Client and public documentation
 
 - [ ] 3.1 Use the project figma-to-frontend workflow for the viewer's existing room-list layout and permission states; verify allowed navigation works, mutation controls are absent, and original-to-runtime evidence covers the altered state.
-- [ ] 3.2 Prepare reciprocal English/Chinese README instructions for demo_s1, demo_s2, demo_m1 and the shared public password; verify private credentials are absent and publication remains conditional on successful target provisioning.
+- [x] 3.2 Prepare reciprocal English/Chinese README instructions for demo_s1, demo_s2, demo_m1 and the shared public password; verify private credentials are absent and publication remains conditional on successful target provisioning.
 
 ## 4. Acceptance and release
 
 - [ ] 4.1 When testing is authorized, run the affected auth/provisioning/role/API checks once and record denial, redaction, revocation, migration, and compatibility evidence; until then mark checks unexecuted rather than PASS.
-- [ ] 4.2 Back up the named target, apply compatible migrations, deploy the API/client support, dry-run then provision the public identities; verify deployed login, read boundaries, direct mutation denials, and private account compatibility before publishing credentials.
+- [x] 4.2 Back up the named target, apply compatible migrations, deploy the API/client support, dry-run then provision the public identities; verify deployed login, read boundaries, direct mutation denials, and private account compatibility before publishing credentials.
 - [ ] 4.3 Publish the verified public account instructions in both root READMEs and record deployed commit/configuration/provisioning evidence plus disable/revocation rollback steps; verify repository homepage language links and trial entries match the target release.
 
-Implementation note (2026-10-11): additive schema, explicit target CLI, auth restrictions, sanitized endpoint and generated client are implemented. Migration and dry-run completed on slogan-preview; automated suites were not executed. Deployed boundary checks and public README publication are still release gates.
+Implementation note (2026-10-11): migrations, dry-run, atomic provisioning and idempotent repeat completed on slogan-preview. API and both Pages deployed application commit d5e0b8d. All three public and five private accounts logged in, public viewer boundaries returned the expected 403, and native/browser logout revoked validation sessions. Both root README instructions are prepared for publication. Automated suites, populated-card visual comparison and native checks remain unexecuted; see docs/acceptance/public-trial-accounts.

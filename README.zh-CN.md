@@ -39,9 +39,17 @@ Slogan 是面向英语口语练习的实时语音社区，包含 Android / Web �
 | 管理后台   | [打开后台](https://slogan-preview-admin.pages.dev)                                                                                                  | 需要对应后台权限                                               |
 | 构建记录   | [GitHub Releases](https://github.com/cuilongsheng/Slogan/releases)                                                                                  | 查看发布提交、APK 与校验信息                                   |
 
-体验使用由项目维护者分配的五个预置账号：一名平台管理员、一名安全员、三名普通用户。房主身份来自当前房间成员关系，不是全局账号角色。账号密码不会公开在仓库中。
+可以直接使用以下公开账号体验：
 
-公开体验版支持预置账号密码登录与 Google 网页登录，邮箱注册和微信登录暂未开放。性别、城市、出生年月选填；首次完善资料需要明确确认已年满 18 岁。尚未开放的表达辅助入口显示“功能开发中”。`GET /v1/auth/capabilities` 返回为准。自行部署需要单独配置身份服务，不能直接复用线上账号。
+| 入口           | 用户名    | 密码       | 权限                 |
+| -------------- | --------- | ---------- | -------------------- |
+| 网页 / Android | `demo_s1` | `12345678` | 普通用户             |
+| 网页 / Android | `demo_s2` | `12345678` | 普通用户             |
+| 管理后台       | `demo_m1` | `12345678` | 只读查看公开房间摘要 |
+
+这些是多人共享的账号：其他体验者可以看到同一账号的活动，同时登录可能影响房间成员状态，请勿填写个人或保密信息。后台体验账号不提供私有房间、成员身份、举报、审计记录或管理操作。房主身份来自当前房间成员关系，不是全局账号角色。维护者原有的五个私有账号与体验账号分开，其凭据保持私有。
+
+公开体验版支持预置账号密码登录与 Google 网页登录，邮箱注册和微信登录暂未开放。性别、城市、出生年月选填；首次完善资料需要明确确认已年满 18 岁。尚未开放的表达辅助入口显示“功能开发中”。实际登录能力以 `GET /v1/auth/capabilities` 返回为准。自行部署需要单独配置身份服务，不能直接复用线上账号。
 
 ## 界面预览
 
@@ -60,7 +68,7 @@ Slogan 是面向英语口语练习的实时语音社区，包含 Android / Web �
     <th>母语表达辅助</th><th>站内邀请</th><th>网络重连</th>
   </tr>
   <tr>
-    <td><img src="docs/readme/images/expression-assistance.png" width="260" alt="English expression assistance result" /></td>
+    <td><img src="docs/readme/images/expression-assistance.png" width="260" alt="Expression assistance disabled with development notice" /></td>
     <td><img src="docs/readme/images/invite.png" width="260" alt="Invite available people inside the app" /></td>
     <td><img src="docs/readme/images/reconnecting.png" width="260" alt="English reconnecting screen" /></td>
   </tr>
