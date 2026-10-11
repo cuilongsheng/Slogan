@@ -4,7 +4,10 @@ import { View, StyleSheet } from 'react-native';
 
 // Provider/session data is deterministic. Tests exercise real UI and generated HTTP clients,
 // not LiveKit, STT, permission prompts, Android rendering, or a production auth session.
-export const getLocales = () => [{ languageTag: 'zh-CN', languageCode: 'zh' }];
+export const getLocales = () => {
+  const english = new URL(location.href).searchParams.get('language') === 'en';
+  return [{ languageTag: english ? 'en-US' : 'zh-CN', languageCode: english ? 'en' : 'zh' }];
+};
 export const randomUUID = () => crypto.randomUUID();
 export const useRouter = () => ({
   replace: (url) => history.replaceState(null, '', url),

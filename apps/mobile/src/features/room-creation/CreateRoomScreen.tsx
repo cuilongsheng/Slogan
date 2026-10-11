@@ -1,7 +1,15 @@
 import { AppText as Text } from '../../components/ui/AppText';
 import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
 import { t, tf } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
@@ -260,7 +268,7 @@ export function CreateRoomScreen() {
           </Text>
         ) : null}
       </ScrollView>
-      <View style={[roomPageStyles.footer, form.mode === 'scheduled' && styles.scheduledFooter]}>
+      <View style={styles.footer}>
         <RoomAction
           label={
             busy
@@ -390,7 +398,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  scheduledFooter: { bottom: 28 },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'web' ? 24 : 16,
+    borderTopWidth: 1,
+    borderTopColor: tokens.color.border,
+    backgroundColor: tokens.color.surface,
+  },
   dateInput: { flex: 1, textAlign: 'right', color: tokens.color.foreground, fontSize: 13 },
   timeInput: { width: 70, textAlign: 'center', color: tokens.color.foreground, fontSize: 13 },
   error: { color: tokens.color.error, marginHorizontal: 20, marginTop: 12, fontSize: 12 },

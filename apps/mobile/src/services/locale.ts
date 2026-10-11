@@ -393,6 +393,7 @@ const zh = {
   assistanceConsentBody:
     '本次语音只用于临时转写和生成英文表达，不会传给房间或保存为语音记录。你可取消或撤回未来处理。',
   assistanceAccept: '同意并继续',
+  assistanceInDevelopment: '功能开发中',
   assistanceRevoke: '撤回语音处理同意',
   assistanceAudioConfirm: '确认处理本次短语音',
   assistanceResultTitle: '你的英文表达',
@@ -957,7 +958,7 @@ const en: Record<MessageKey, string> = {
   voiceEmptySeat: 'Invite',
   voiceAssistanceLater: 'Find English in your language · Only visible to you',
   voiceRulesBody:
-    'Use the room’s designated language. Political, sexual, gambling, drug and illegal financial content, personal attacks, harassment, discrimination and threats are prohibited.',
+    "Use the room's designated language.\nNo politics, sexual content, gambling, drugs or illegal financial activity. No personal attacks, harassment, discrimination or threats.",
   roomSendMessage: 'Send message',
   roomMessageFailed: 'Could not send. Tap send to retry.',
   roomMessageTooLong: 'Messages can have up to 1000 characters. Shorten this message to send.',
@@ -976,6 +977,7 @@ const en: Record<MessageKey, string> = {
   assistanceConsentBody:
     'Your recording is used temporarily to transcribe and generate English. It is not sent to the room or saved as a recording. You can cancel or revoke future processing.',
   assistanceAccept: 'Accept and continue',
+  assistanceInDevelopment: 'This feature is in development.',
   assistanceRevoke: 'Revoke audio processing consent',
   assistanceAudioConfirm: 'Process this recording',
   assistanceResultTitle: 'Your English expression',
@@ -1163,6 +1165,9 @@ const en: Record<MessageKey, string> = {
 };
 
 const language = getLocales()[0]?.languageCode?.toLowerCase() === 'zh' ? 'zh' : 'en';
+export function getLanguage(): 'zh' | 'en' {
+  return language;
+}
 export function t(key: MessageKey): string {
   return language === 'zh' ? zh[key] : en[key];
 }

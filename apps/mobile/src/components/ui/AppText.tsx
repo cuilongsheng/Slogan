@@ -2,7 +2,10 @@ import { Text, StyleSheet, type TextProps } from 'react-native';
 
 // Named static faces preserve the Figma weights without synthesizing bold on web or Android.
 export function AppText({ style, ...props }: TextProps) {
-  const weight = StyleSheet.flatten(style)?.fontWeight;
+  const flattened = StyleSheet.flatten(style);
+  // Explicit typography overrides keep Latin copy in its chosen font and weight.
+  if (flattened?.fontFamily) return <Text {...props} style={style} />;
+  const weight = flattened?.fontWeight;
   const numeric = weight === 'bold' ? 700 : Number(weight ?? 400);
   const fontFamily =
     numeric >= 700

@@ -18,7 +18,7 @@ import {
 import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
 import { RoomShareAction } from '../../components/ui/RoomShareAction';
 import { VoicePage } from '../../components/ui/VoicePage';
-import { t, tf } from '../../services/locale';
+import { getLanguage, t, tf } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { RoomDiscoveryApi } from '../room-discovery/api';
@@ -517,8 +517,12 @@ function VoiceRoomBody({
             <Image source={rulesIcon} style={styles.rulesImage} />
           </View>
           <View style={styles.rulesText}>
-            <Text style={styles.rulesTitle}>{t('voiceRoomRules')}</Text>
-            <Text style={styles.rulesPreview}>{t('voiceRulesBody')}</Text>
+            <Text style={[styles.rulesTitle, getLanguage() === 'en' && styles.englishRulesTitle]}>
+              {t('voiceRoomRules')}
+            </Text>
+            <Text style={[styles.rulesPreview, getLanguage() === 'en' && styles.englishRules]}>
+              {t('voiceRulesBody')}
+            </Text>
           </View>
         </View>
         {snapshot.role === 'HOST' &&
@@ -1318,6 +1322,20 @@ const styles = StyleSheet.create({
   safetyAlertsCount: { color: '#77E5D4', fontSize: 14, fontWeight: '700' },
   rulesTitle: { color: '#FFFFFF', fontSize: 11, lineHeight: 16, fontWeight: '500' },
   rulesPreview: { color: '#FFFFFF', fontSize: 11, lineHeight: 17 },
+  englishRulesTitle: {
+    fontFamily:
+      Platform.OS === 'web' ? 'system-ui' : Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+  englishRules: {
+    fontFamily:
+      Platform.OS === 'web' ? 'system-ui' : Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    fontSize: 11,
+    lineHeight: 17,
+  },
   membersHeading: {
     color: '#D7CFF0',
     fontSize: 12,

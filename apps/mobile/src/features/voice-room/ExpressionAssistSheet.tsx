@@ -21,19 +21,55 @@ function failureMessage(error: unknown) {
   }
   return t('assistanceAudioFailed');
 }
-export function ExpressionAssistSheet({
-  roomId,
-  api,
-  muteRoomMicrophone,
-  restoreRoomMicrophone,
-  onClose,
-}: {
+interface ExpressionAssistSheetProps {
   roomId: string;
   api: ExpressionAssistanceApi;
   muteRoomMicrophone: () => Promise<boolean>;
   restoreRoomMicrophone: () => Promise<void>;
   onClose: () => void;
-}) {
+  available?: boolean;
+}
+
+// Keep the unavailable release state outside the recorder-owning component.
+// Opening or closing this notice must not touch the room's audio session.
+export function ExpressionAssistSheet(props: ExpressionAssistSheetProps) {
+  if (props.available) return <AvailableExpressionAssistSheet {...props} />;
+  return (
+    <View style={styles.overlay}>
+      <View style={styles.sheet}>
+        <View style={styles.grabber} />
+        <View style={styles.headingRow}>
+          <Text style={styles.title}>{t('assistanceTitle')}</Text>
+          <Image source={burstIcon} style={styles.burst} />
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t('roomCloseSheet')}
+            style={styles.closeButton}
+            onPress={props.onClose}
+          >
+            <Text style={styles.close}>×</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.private}>{t('assistancePrivate')}</Text>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.explanation}>{t('assistanceConsentBody')}</Text>
+          <Primary label={t('assistanceAccept')} disabled onPress={() => undefined} />
+          <Text accessibilityRole="text" style={styles.hint}>
+            {t('assistanceInDevelopment')}
+          </Text>
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
+
+function AvailableExpressionAssistSheet({
+  roomId,
+  api,
+  muteRoomMicrophone,
+  restoreRoomMicrophone,
+  onClose,
+}: ExpressionAssistSheetProps) {
   const { start, stop, discard, elapsedSeconds } = usePrivateRecorder();
   const [consent, setConsent] = useState<AudioConsent | null>(null);
   const [busy, setBusy] = useState(false);
@@ -126,9 +162,10 @@ export function ExpressionAssistSheet({
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={t('roomCloseSheet')}
+            style={styles.closeButton}
             onPress={() => {
-              onClose();
               void hold.cancel();
+              onClose();
             }}
           >
             <Text style={styles.close}>×</Text>
@@ -216,8 +253,9 @@ function Primary({
   return (
     <TouchableOpacity
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
       disabled={disabled}
-      style={styles.primary}
+      style={[styles.primary, disabled && styles.disabled]}
       onPress={onPress}
     >
       <Text style={styles.primaryText}>{label}</Text>
@@ -254,15 +292,23 @@ const styles = StyleSheet.create({
     marginBottom: 13,
   },
   headingRow: {
-    height: 30,
+    minHeight: 44,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  title: { color: tokens.color.foreground, fontSize: 21, lineHeight: 29, fontWeight: '700' },
-  burst: { position: 'absolute', right: 52, top: -5, width: 27, height: 27 },
+  title: {
+    flex: 1,
+    paddingRight: 48,
+    color: tokens.color.foreground,
+    fontSize: 21,
+    lineHeight: 29,
+    fontWeight: '700',
+  },
+  burst: { position: 'absolute', right: 52, top: 4, width: 27, height: 27 },
+  closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   close: { width: 26, color: tokens.color.muted, fontSize: 26, lineHeight: 30 },
-  private: { color: tokens.color.muted, fontSize: 13, lineHeight: 18, height: 24, marginTop: 5 },
+  private: { color: tokens.color.muted, fontSize: 13, lineHeight: 18, marginTop: 5 },
   content: { minHeight: 245, paddingBottom: 12 },
   micCircle: {
     width: 80,
@@ -307,6 +353,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  disabled: { opacity: 0.4 },
   resultCard: {
     backgroundColor: tokens.color.mint,
     borderRadius: 20,
