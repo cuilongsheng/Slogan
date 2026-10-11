@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   Image,
-  ScrollView,
-  TextInput,
+  type ScrollView,
+  type TextInput,
   StyleSheet,
   Text,
   TouchableOpacity,

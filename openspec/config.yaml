@@ -1,8 +1,8 @@
 schema: spec-driven
 
 context: |
-  Language: zh
-  All artifacts must be written in zh.
+  Language: en
+  All artifacts must be written in English.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
   Project: host-led English voice rooms for adults.
   Delivery lifecycle is project-level; a change enters only the stages it actually impacts.
