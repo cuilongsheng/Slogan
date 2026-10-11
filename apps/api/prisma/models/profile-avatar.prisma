@@ -1,0 +1,9 @@
+model ProfileAvatar {
+  id String @id @db.Uuid
+  userId String @unique @db.Uuid
+  image Bytes
+  sha256 String @db.VarChar(64)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+}

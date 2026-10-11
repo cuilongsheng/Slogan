@@ -16,21 +16,26 @@ export function IncidentsPage() {
   const [component, setComponent] = useState<Incident['component'] | ''>('');
   const [range, setRange] = useState<'' | '7d' | '30d'>('');
   const [selected, setSelected] = useState<Incident | null>(null);
-  const page = useCursorPage(['admin', 'safety-incidents', status, component, range], async (cursor) => {
-    const result = await adminApi.GET('/v1/backoffice/safety-capability-incidents', {
-      params: {
-        query: {
-          limit: 20,
-          ...(status ? { status } : {}),
-          ...(component ? { component } : {}),
-          ...(range ? { from: new Date(Date.now() - (range === '7d' ? 7 : 30) * 86400000).toISOString() } : {}),
-          ...(cursor ? { cursor } : {}),
+  const page = useCursorPage(
+    ['admin', 'safety-incidents', status, component, range],
+    async (cursor) => {
+      const result = await adminApi.GET('/v1/backoffice/safety-capability-incidents', {
+        params: {
+          query: {
+            limit: 20,
+            ...(status ? { status } : {}),
+            ...(component ? { component } : {}),
+            ...(range
+              ? { from: new Date(Date.now() - (range === '7d' ? 7 : 30) * 86400000).toISOString() }
+              : {}),
+            ...(cursor ? { cursor } : {}),
+          },
         },
-      },
-    });
-    if (!result.response.ok || !result.data) throw apiError(result.response, result.error);
-    return result.data;
-  });
+      });
+      if (!result.response.ok || !result.data) throw apiError(result.response, result.error);
+      return result.data;
+    },
+  );
   return (
     <>
       <PageHeading {...zhCN.pages.incidents} />
@@ -47,29 +52,59 @@ export function IncidentsPage() {
         canNext={page.canNext}
         onPrevious={page.previous}
         onNext={page.next}
-        filters={<>
-          <select
-            aria-label="事件状态"
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as Incident['status'] | '');
-              page.reset();
-            }}
-          >
-            <option value="">全部状态</option>
-            <option value="OPEN">降级中</option>
-            <option value="RECOVERED">已恢复</option>
-          </select>
-          <select aria-label="能力组件" value={component} onChange={(event) => { setComponent(event.target.value as typeof component); page.reset(); }}>
-            <option value="">全部组件</option>
-            {(['MEDIA_SUBSCRIPTION', 'STREAMING_STT', 'RISK_RULES', 'COORDINATION', 'HOST_ALERT_DELIVERY', 'KEYWORD_CANDIDATE_EXTRACTION', 'KEYWORD_CANDIDATE_STORE'] as const).map((value) => <option key={value} value={value}>{componentLabel(value)}</option>)}
-          </select>
-          <select aria-label="事件时间" value={range} onChange={(event) => { setRange(event.target.value as typeof range); page.reset(); }}>
-            <option value="">全部时间</option>
-            <option value="7d">最近 7 天</option>
-            <option value="30d">最近 30 天</option>
-          </select>
-        </>}
+        filters={
+          <>
+            <select
+              aria-label="事件状态"
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as Incident['status'] | '');
+                page.reset();
+              }}
+            >
+              <option value="">全部状态</option>
+              <option value="OPEN">降级中</option>
+              <option value="RECOVERED">已恢复</option>
+            </select>
+            <select
+              aria-label="能力组件"
+              value={component}
+              onChange={(event) => {
+                setComponent(event.target.value as typeof component);
+                page.reset();
+              }}
+            >
+              <option value="">全部组件</option>
+              {(
+                [
+                  'MEDIA_SUBSCRIPTION',
+                  'STREAMING_STT',
+                  'RISK_RULES',
+                  'COORDINATION',
+                  'HOST_ALERT_DELIVERY',
+                  'KEYWORD_CANDIDATE_EXTRACTION',
+                  'KEYWORD_CANDIDATE_STORE',
+                ] as const
+              ).map((value) => (
+                <option key={value} value={value}>
+                  {componentLabel(value)}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="事件时间"
+              value={range}
+              onChange={(event) => {
+                setRange(event.target.value as typeof range);
+                page.reset();
+              }}
+            >
+              <option value="">全部时间</option>
+              <option value="7d">最近 7 天</option>
+              <option value="30d">最近 30 天</option>
+            </select>
+          </>
+        }
         columns={[
           { key: 'id', label: '事件编号', render: (row) => shortId(row.id) },
           { key: 'room', label: '关联房间', render: (row) => shortId(row.roomId) },

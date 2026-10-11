@@ -9,3 +9,5 @@ export {
   assertReportContext,
   reportRetry,
 } from './domain/policies/report.policy.js';
+
+export { ReportReceiptDto } from './presentation/dto/report.dto.js';

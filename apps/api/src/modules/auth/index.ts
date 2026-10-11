@@ -31,3 +31,5 @@ export type {
 } from './domain/ports/preview-accounts.repository.js';
 
 export { PublicTrialService } from './application/services/public-trial.service.js';
+
+export { assertNewPassword } from './domain/policies/email-password.policy.js';

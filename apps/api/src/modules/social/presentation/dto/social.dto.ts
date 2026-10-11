@@ -72,7 +72,8 @@ export class PublicSocialProfileDto {
   @ApiProperty({ format: 'uuid' }) userId!: string;
   @ApiProperty() displayName!: string;
   @ApiProperty({ format: 'uri' }) avatarUrl!: string;
-  @ApiProperty({ enum: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] }) cefrLevel!: string;
+  @ApiProperty({ enum: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'A1_A2', 'B1_B2', 'C1_C2'] })
+  cefrLevel!: string;
   @ApiProperty({ type: String, nullable: true }) nationalityCode!: string | null;
   @ApiProperty({ type: String, nullable: true }) city!: string | null;
   @ApiProperty({ type: [String] }) interestCodes!: string[];

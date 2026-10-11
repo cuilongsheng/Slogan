@@ -23,7 +23,7 @@ export interface SafetyActor {
 export interface SafetyCaseView {
   id: string;
   reportId: string;
-  roomId: string;
+  roomId: string | null;
   targetUserId: string;
   category: string;
   status: SafetyCaseStatus;

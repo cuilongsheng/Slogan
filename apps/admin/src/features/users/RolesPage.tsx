@@ -18,8 +18,9 @@ const roleNames: Record<Role, string> = {
   SAFETY_OFFICER: '安全员',
   OPERATIONS_ANALYST: '运营分析员',
   AUDITOR: '审计员',
+  PUBLIC_TRIAL_VIEWER: '公开只读体验',
 };
-const roles = Object.keys(roleNames) as Role[];
+const roles = (Object.keys(roleNames) as Role[]).filter((role) => role !== 'PUBLIC_TRIAL_VIEWER');
 
 export function RolesPage() {
   const queryClient = useQueryClient();
@@ -90,7 +91,11 @@ export function RolesPage() {
     }
   }
   function reviewGrant() {
-    if (!/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(targetUserId.trim())) {
+    if (
+      !/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(
+        targetUserId.trim(),
+      )
+    ) {
       setError('请输入有效的用户 UUID');
       return;
     }
@@ -170,23 +175,50 @@ export function RolesPage() {
       {mutation === 'grant' && !grantReview && (
         <DetailDrawer title="授予后台角色" onClose={() => setMutation(null)}>
           <p className="drawer-intro">仅平台管理员可操作。授予会写入审计记录。</p>
-          <form onSubmit={(event) => { event.preventDefault(); reviewGrant(); }}>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              reviewGrant();
+            }}
+          >
             <label className="drawer-field">
               目标用户 ID
-              <input required value={targetUserId} placeholder="输入已存在的用户标识" onChange={(event) => setTargetUserId(event.target.value)} />
+              <input
+                required
+                value={targetUserId}
+                placeholder="输入已存在的用户标识"
+                onChange={(event) => setTargetUserId(event.target.value)}
+              />
             </label>
             <label className="drawer-field">
               选择角色
-              <select value={targetRole} onChange={(event) => setTargetRole(event.target.value as Role)}>
-                {roles.map((role) => <option key={role} value={role}>{roleNames[role]}</option>)}
+              <select
+                value={targetRole}
+                onChange={(event) => setTargetRole(event.target.value as Role)}
+              >
+                {roles.map((role) => (
+                  <option key={role} value={role}>
+                    {roleNames[role]}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="drawer-field">
               变更原因
-              <textarea required maxLength={500} value={reason} placeholder="说明授予原因" onChange={(event) => setReason(event.target.value)} />
+              <textarea
+                required
+                maxLength={500}
+                value={reason}
+                placeholder="说明授予原因"
+                onChange={(event) => setReason(event.target.value)}
+              />
             </label>
             <p className="drawer-warning">系统会拒绝移除最后一名有效平台管理员。</p>
-            {error && <p className="form-error" role="alert">{error}</p>}
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
             <button className="primary-button drawer-primary">下一步：确认</button>
           </form>
         </DetailDrawer>
@@ -197,46 +229,52 @@ export function RolesPage() {
           busy={busy}
           error={error}
           sensitive={mutation === 'grant'}
-          onCancel={() => mutation === 'grant' ? setGrantReview(false) : setMutation(null)}
+          onCancel={() => (mutation === 'grant' ? setGrantReview(false) : setMutation(null))}
           onConfirm={() => void submit()}
         >
           {mutation === 'grant' ? (
-            <p>此操作会变更后台授权或安全处理结果。请核对目标与原因后再确认。<br />{shortId(targetUserId)} · {roleNames[targetRole]}</p>
-          ) : <>
-          <label>
-            用户标识
-            <input
-              required
-              pattern="[a-fA-F0-9-]{36}"
-              readOnly={mutation === 'revoke'}
-              value={targetUserId}
-              onChange={(event) => setTargetUserId(event.target.value)}
-            />
-          </label>
-          <label>
-            角色
-            <select
-              value={targetRole}
-              disabled={mutation === 'revoke'}
-              onChange={(event) => setTargetRole(event.target.value as Role)}
-            >
-              {roles.map((role) => (
-                <option key={role} value={role}>
-                  {roleNames[role]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            变更原因
-            <textarea
-              required
-              maxLength={500}
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-            />
-          </label>
-          </>}
+            <p>
+              此操作会变更后台授权或安全处理结果。请核对目标与原因后再确认。
+              <br />
+              {shortId(targetUserId)} · {roleNames[targetRole]}
+            </p>
+          ) : (
+            <>
+              <label>
+                用户标识
+                <input
+                  required
+                  pattern="[a-fA-F0-9-]{36}"
+                  readOnly={mutation === 'revoke'}
+                  value={targetUserId}
+                  onChange={(event) => setTargetUserId(event.target.value)}
+                />
+              </label>
+              <label>
+                角色
+                <select
+                  value={targetRole}
+                  disabled={mutation === 'revoke'}
+                  onChange={(event) => setTargetRole(event.target.value as Role)}
+                >
+                  {roles.map((role) => (
+                    <option key={role} value={role}>
+                      {roleNames[role]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                变更原因
+                <textarea
+                  required
+                  maxLength={500}
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                />
+              </label>
+            </>
+          )}
         </ConfirmDialog>
       )}
     </>

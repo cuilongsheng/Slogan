@@ -33,7 +33,9 @@ test('My has exactly three working entries and calls logout before returning to 
   await expect(page.getByRole('button', { name: '我的限制与申诉' })).toBeVisible();
   await expect(page.getByRole('button', { name: '我的词汇' })).toBeVisible();
   await expect(page.getByRole('button', { name: '退出', exact: true })).toBeVisible();
-  await expect(page.getByRole('button')).toHaveCount(4); // Three entries and back.
+  await expect(page.getByRole('button', { name: /房间历史|好友与邀请/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'English', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '中文', exact: true })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
     path: 'docs/acceptance/simplify-room-and-mobile-experience/me-runtime-fixture.png',

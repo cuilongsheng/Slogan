@@ -18,7 +18,6 @@ const expectedNames = new Set([
 ]);
 
 const deferredPackages = new Set([
-  '@tanstack/react-query',
   '@tanstack/react-table',
   'axios',
   'date-fns',

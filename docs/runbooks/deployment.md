@@ -1,12 +1,14 @@
 # Deployment Runbook
 
+Phase-one production releases use the [guarded release workflow](../deployment/phase-one-guarded-release.md): backup, isolated restore and invariants, migration, then API deployment. Configure the protected production environment before merging this batch.
+
 The repository's delivery path is Vercel for the NestJS API and managed realtime consumer, Cloudflare Pages for the admin and mobile web clients, and GitHub Actions / Releases for Android. The earlier Render deployment proposal has been retired. This guide describes the source configuration; dated [release records](../releases/README.md) establish what was verified in a particular environment.
 
 ## Application delivery
 
 | Target       | Source configuration                                                                   | Output / release trigger                                                               |
 | ------------ | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Vercel API   | Project root `apps/api`; `prisma generate && nest build`                               | Branch previews; production from `main`                                                |
+| Vercel API   | Project root `apps/api`; `prisma generate && nest build`                               | Git branch previews; guarded workflow promotes `main`                                                |
 | Admin Pages  | `pnpm build:pages:admin`                                                               | `apps/admin/dist`; production from `main`                                              |
 | Mobile Pages | `pnpm build:pages:mobile`                                                              | `apps/mobile/dist-pages`; production from `main`                                       |
 | Android      | [.github/workflows/android-delivery.yml](../../.github/workflows/android-delivery.yml) | PR / branch artifacts; publish from `main` after the production deployment gate passes |

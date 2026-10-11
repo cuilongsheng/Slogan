@@ -1,6 +1,6 @@
-import { BACKOFFICE_PERMISSIONS } from '../../src/modules/backoffice/domain/entities/backoffice.js';
+import { BACKOFFICE_PERMISSIONS } from '../../src/modules/backoffice/index.js';
 import { hasBackofficePermission } from '../../src/modules/backoffice/index.js';
-import { assertNewPassword } from '../../src/modules/auth/domain/policies/email-password.policy.js';
+import { assertNewPassword } from '../../src/modules/auth/index.js';
 describe('public trial permission boundary', () => {
   it('has exactly the safe read surface and no private permissions', () => {
     const allowed = BACKOFFICE_PERMISSIONS.filter((permission) =>

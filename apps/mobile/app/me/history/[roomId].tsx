@@ -4,5 +4,9 @@ import { NoteScreen } from '../../../src/features/history/NoteScreen';
 
 export default function NoteRoute() {
   const { roomId } = useLocalSearchParams<{ roomId: string }>();
-  return <Gate allow="ELIGIBLE"><NoteScreen roomId={roomId} /></Gate>;
+  return (
+    <Gate allow="ELIGIBLE">
+      <NoteScreen roomId={roomId} />
+    </Gate>
+  );
 }

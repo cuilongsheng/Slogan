@@ -3,6 +3,9 @@ import { expect, test } from '@playwright/test';
 test.use({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
 
 test('Google login remains enabled on the approved mobile login layout', async ({ page }) => {
+  await page.route('**/v1/auth/web/refresh', (route) =>
+    route.fulfill({ status: 401, json: { code: 'AUTH_REQUIRED' } }),
+  );
   await page.goto('http://localhost:8082/sign-in');
   const google = page.getByTestId('google-sign-in');
   await expect(google).toBeVisible();

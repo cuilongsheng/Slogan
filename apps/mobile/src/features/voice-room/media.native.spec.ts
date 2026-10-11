@@ -27,7 +27,12 @@ jest.mock('expo-audio', () => ({
 }));
 jest.mock('livekit-client', () => ({
   Room: jest.fn(() => ({
-    localParticipant: { identity: 'self', isSpeaking: false, isMicrophoneEnabled: false },
+    localParticipant: {
+      identity: 'self',
+      audioTrackPublications: new Map(),
+      isSpeaking: false,
+      isMicrophoneEnabled: false,
+    },
     remoteParticipants: new Map(),
     on: jest.fn(),
     connect: jest.fn(async () => {}),

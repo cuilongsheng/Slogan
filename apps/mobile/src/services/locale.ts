@@ -1,6 +1,66 @@
+import { useSyncExternalStore } from 'react';
+import { languageStorage } from './languageStorage';
 import { getLocales } from 'expo-localization';
 
 const zh = {
+  languageSaveFailed: '\u8bed\u8a00\u8bbe\u7f6e\u672a\u4fdd\u5b58\uff0c\u8bf7\u91cd\u8bd5\u3002',
+  directCallMute: '\u9759\u97f3',
+  directCallUnmute: '\u5f00\u9ea6',
+  languageSetting: '界面语言',
+  profileSettings: '个人资料',
+  changeAvatar: '更换头像',
+  avatarUploading: '头像上传中…',
+  avatarUploadFailed: '头像未上传，请选择图片后重试。',
+  partnersSubtitle: '空闲的人，先从一句话开始',
+  partnersAvailable: '当前在线且空闲',
+  partnersEmpty: '现在还没有空闲伙伴。',
+  directCallStopped: '你的麦克风和音频已停止。',
+  directConfirm: '确认',
+  directBlockNote: '双方将无法继续发送消息和通话。',
+  directListFailed: '暂时无法读取会话。',
+  directFriend: '好友',
+  directManageFriends: '管理好友',
+  directDeviceRetry: '检查麦克风权限和音频输出，点击重试。',
+  directAvailable: '空闲',
+  directDeleteShort: '删除我的记录',
+  directChatAction: '聊一聊',
+  messagesSubtitle: '最近聊过的人和好友',
+  directRecent: '最近会话',
+  directFriends: '好友',
+  directEmpty: '还没有会话，去找伙伴打个招呼吧。',
+  directPrivate: '只有你和对方可见',
+  directPlaceholder: '说点什么…',
+  directVoiceAction: '语音通话',
+  directSend: '发送',
+  directRetrySend: '发送未确认，点击重试',
+  directDelete: '删除我的聊天记录',
+  directDeleteNote: '只删除你能看到的历史，对方的记录不受影响。',
+  directBlocked: '暂时无法与此伙伴互动。',
+  directUnavailable: '对方已不在线或忙碌，请稍后再试。',
+  directRateLimited: '消息发送过于频繁，请等待对方回复或稍后重试。',
+  directLoadFailed: '暂时无法读取会话，请重试。',
+  directReport: '举报消息',
+  directReportReason: '请输入举报原因',
+  directReported: '举报已提交',
+  directCallIncoming: '邀请你进行语音通话',
+  directCallOutgoing: '等待对方接听…',
+  directCallPrivate: '一对一语音，不录音，不转录',
+  directCallAccept: '接听',
+  directCallReject: '拒绝',
+  directCallEnd: '结束通话',
+  directCallActive: '正在通话',
+  directCallConnecting: '正在连接…',
+  directCallReconnecting: '连接中断，正在恢复…',
+  directCallEnded: '通话已结束',
+  directCallExpired: '对方暂未接听',
+  directCallRejected: '对方拒绝了通话',
+  directCallBusy: '你或对方正在语音房或通话中。',
+  directCallDevice: '麦克风或音频不可用，请检查权限和设备。',
+  directCallReturn: '返回聊天',
+  directCallUnconfirmed: '语音已断开，服务器正在确认结束。',
+  directNew: '开始聊天',
+  refreshAction: '刷新',
+
   optionalField: '选填',
   requiredField: '必填',
   adultConfirmation: '我已年满 18 岁',
@@ -591,6 +651,64 @@ const zh = {
 export type MessageKey = keyof typeof zh;
 
 const en: Record<MessageKey, string> = {
+  languageSaveFailed: 'Language preference was not saved. Please retry.',
+  directCallMute: 'Mute',
+  directCallUnmute: 'Unmute',
+  languageSetting: 'App language',
+  profileSettings: 'Profile settings',
+  changeAvatar: 'Change photo',
+  avatarUploading: 'Uploading photo\u2026',
+  avatarUploadFailed: 'Photo upload failed. Choose a photo and try again.',
+  partnersSubtitle: 'Say hello to someone available',
+  partnersAvailable: 'Online and available',
+  partnersEmpty: 'No available partners right now.',
+  directCallStopped: 'Your microphone and audio have stopped.',
+  directConfirm: 'Confirm',
+  directBlockNote: 'New messages and calls will be unavailable in both directions.',
+  directListFailed: 'Could not load conversations.',
+  directFriend: 'Friend',
+  directManageFriends: 'Manage friends',
+  directDeviceRetry: 'Check microphone permission and audio output. Tap to retry.',
+  directAvailable: 'Available',
+  directDeleteShort: 'Delete my history',
+  directChatAction: 'Chat',
+  messagesSubtitle: 'Recent conversations and friends',
+  directRecent: 'Recent',
+  directFriends: 'Friends',
+  directEmpty: 'No conversations yet. Say hello to a partner.',
+  directPrivate: 'Visible only to you and your partner',
+  directPlaceholder: 'Say something\u2026',
+  directVoiceAction: 'Voice call',
+  directSend: 'Send',
+  directRetrySend: 'Send unconfirmed. Tap to retry',
+  directDelete: 'Delete my chat history',
+  directDeleteNote: 'Only your history is deleted. Your partner keeps theirs.',
+  directBlocked: 'Interaction with this partner is unavailable.',
+  directUnavailable: 'Your partner is offline or busy. Try again later.',
+  directRateLimited: 'Please wait for a reply or try again later.',
+  directLoadFailed: 'Could not load conversations. Try again.',
+  directReport: 'Report message',
+  directReportReason: 'Describe why you are reporting this\nmessage.',
+  directReported: 'Report submitted',
+  directCallIncoming: 'is inviting you to a voice call',
+  directCallOutgoing: 'Waiting for your partner\u2026',
+  directCallPrivate: 'Private voice. No recording or transcription.',
+  directCallAccept: 'Accept',
+  directCallReject: 'Decline',
+  directCallEnd: 'End call',
+  directCallActive: 'In a call',
+  directCallConnecting: 'Connecting\u2026',
+  directCallReconnecting: 'Reconnecting\u2026',
+  directCallEnded: 'Call ended',
+  directCallExpired: 'No answer',
+  directCallRejected: 'Call declined',
+  directCallBusy: 'One of you is already in a voice session.',
+  directCallDevice: 'Microphone or audio unavailable. Check permissions and your device.',
+  directCallReturn: 'Back to chat',
+  directCallUnconfirmed: 'Audio disconnected. The server is confirming the end.',
+  directNew: 'Start chatting',
+  refreshAction: 'Refresh',
+
   optionalField: 'Optional',
   requiredField: 'Required',
   adultConfirmation: 'I am at least 18 years old',
@@ -726,7 +844,7 @@ const en: Record<MessageKey, string> = {
   understood: 'Got it',
   eligibleTitle: 'Profile complete',
   eligibleDescription: 'Your account is ready. Voice rooms will arrive in a later release.',
-  logout: 'Sign out',
+  logout: 'Log out',
   logoutUnconfirmed: 'Signed out on this device; server revocation was not confirmed.',
   roomsTitle: 'Start a conversation',
   roomsSubtitle: 'Practice real expression with real people',
@@ -1188,7 +1306,43 @@ const en: Record<MessageKey, string> = {
   cancelAction: 'Cancel',
 };
 
-const language = getLocales()[0]?.languageCode?.toLowerCase() === 'zh' ? 'zh' : 'en';
+let language: 'zh' | 'en' = getLocales()[0]?.languageCode?.toLowerCase() === 'zh' ? 'zh' : 'en';
+const listeners = new Set<() => void>();
+let preferenceVersion = 0;
+let restoring: Promise<void> | undefined;
+function notifyLanguage() {
+  preferenceVersion++;
+  for (const listener of listeners) listener();
+}
+export function restoreLanguage(): Promise<void> {
+  return (restoring ??= languageStorage
+    .get()
+    .then((value) => {
+      // An explicit choice during startup wins over a delayed storage read.
+      if (preferenceVersion === 0 && (value === 'zh' || value === 'en') && value !== language) {
+        language = value;
+        notifyLanguage();
+      }
+    })
+    .catch(() => undefined));
+}
+export async function setLanguage(value: 'zh' | 'en'): Promise<void> {
+  await languageStorage.set(value);
+  language = value;
+  notifyLanguage();
+}
+export function useLanguage(): 'zh' | 'en' {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    getLanguage,
+    getLanguage,
+  );
+}
 export function getLanguage(): 'zh' | 'en' {
   return language;
 }

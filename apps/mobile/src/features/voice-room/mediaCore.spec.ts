@@ -24,6 +24,7 @@ describe('LiveKit voice media', () => {
   it('connects muted and publishes microphone audio only after an explicit action', async () => {
     const localParticipant = {
       identity: 'self',
+      audioTrackPublications: new Map(),
       isSpeaking: false,
       isMicrophoneEnabled: false,
       setMicrophoneEnabled: jest.fn(async (enabled: boolean) => {
@@ -88,7 +89,12 @@ describe('LiveKit voice media', () => {
   it('notifies only for a matching safety alert packet from the active room', async () => {
     const handlers = new Map<string, (...args: unknown[]) => void>();
     const room = {
-      localParticipant: { identity: 'self', isSpeaking: false, isMicrophoneEnabled: false },
+      localParticipant: {
+        identity: 'self',
+        audioTrackPublications: new Map(),
+        isSpeaking: false,
+        isMicrophoneEnabled: false,
+      },
       remoteParticipants: new Map(),
       on: jest.fn((event: string, listener: (...args: unknown[]) => void) =>
         handlers.set(event, listener),
@@ -128,6 +134,7 @@ function deviceFixture(
 ) {
   const localParticipant = {
     identity: 'self',
+    audioTrackPublications: new Map(),
     isSpeaking: false,
     isMicrophoneEnabled: false,
     setMicrophoneEnabled: jest.fn(async () => {}),
@@ -219,15 +226,19 @@ it('publishing waits for the unpublished device probe to finish', async () => {
 it('exit during a pending LiveKit connection never starts a device probe or restores connected state', async () => {
   const { media, room, platform } = deviceFixture(async () => 'ready');
   let connected!: () => void;
+  let started!: () => void;
+  const startedPromise = new Promise<void>((resolve) => {
+    started = resolve;
+  });
   room.connect.mockImplementationOnce(
     () =>
       new Promise<void>((resolve) => {
         connected = resolve;
+        started();
       }),
   );
   const connecting = media.connect(deviceCredential);
-  await Promise.resolve();
-  await Promise.resolve();
+  await startedPromise;
   await media.disconnect();
   connected();
   await connecting;

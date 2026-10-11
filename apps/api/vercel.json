@@ -2,7 +2,32 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/realtime.ts": {
-      "experimentalTriggers": [{ "type": "queue/v2beta", "topic": "slogan-realtime" }]
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "slogan-realtime"
+        }
+      ]
+    },
+    "api/maintenance.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "slogan-maintenance"
+        }
+      ],
+      "maxDuration": 300
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/maintenance-seed",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": false
     }
   }
 }

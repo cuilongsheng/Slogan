@@ -36,7 +36,7 @@ describe('first profile screens', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(router);
-    (useAuth as jest.Mock).mockReturnValue({ putProfile });
+    (useAuth as jest.Mock).mockReturnValue({ putProfile, state: { kind: 'signedOut' } });
   });
 
   it('keeps basic step on invalid fields', async () => {

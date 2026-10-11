@@ -29,6 +29,11 @@ export async function lockSocialPair(
     throw new SocialError('SOCIAL_TARGET_UNAVAILABLE', 'Social target is unavailable');
   const pair: [string, string] =
     leftUserId < rightUserId ? [leftUserId, rightUserId] : [rightUserId, leftUserId];
+  // Use the same user-before-pair order as direct-call and room occupancy decisions.
+  // FK checks while holding only the pair lock can otherwise deadlock against a call reservation.
+  for (const id of pair) {
+    await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "User" WHERE "id"=${id}::uuid FOR UPDATE`);
+  }
   await tx.$executeRaw(
     Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${pair[0]}:${pair[1]}`}, 0))`,
   );

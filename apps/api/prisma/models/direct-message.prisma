@@ -1,0 +1,16 @@
+model DirectMessage {
+  id String @id @db.Uuid
+  conversationId String @db.Uuid
+  senderUserId String @db.Uuid
+  clientRequestId String @db.Uuid
+  sequence Int
+  text String @db.VarChar(2000)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  conversation DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  sender User @relation(fields: [senderUserId], references: [id], onDelete: Restrict)
+  reports Report[]
+  @@unique([conversationId, sequence])
+  @@unique([senderUserId, clientRequestId])
+  @@index([conversationId, createdAt, id])
+  @@index([senderUserId, createdAt])
+}

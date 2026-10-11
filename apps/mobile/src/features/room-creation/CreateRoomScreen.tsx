@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
-import { t, tf } from '../../services/locale';
+import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import burstIcon from '../../../assets/icons/speech-burst.png';
 import { useAuth } from '../auth';
@@ -75,6 +75,7 @@ function Chip({
 }
 
 export function CreateRoomScreen() {
+  useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
   const api = useMemo(() => new RoomCreationApi(authorized), [authorized]);

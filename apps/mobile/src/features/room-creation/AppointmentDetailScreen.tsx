@@ -11,13 +11,14 @@ import {
 } from 'react-native';
 import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
 import { RoomShareAction } from '../../components/ui/RoomShareAction';
-import { t, tf } from '../../services/locale';
+import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { RoomCreationApi } from './api';
 
 type Appointment = Awaited<ReturnType<RoomCreationApi['scheduledDetail']>>;
 export function AppointmentDetailScreen({ roomId }: { roomId: string }) {
+  useLanguage();
   const router = useRouter();
   const { authorized, state } = useAuth();
   const userId = state.kind === 'signedIn' ? state.me.userId : null;

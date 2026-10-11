@@ -560,7 +560,7 @@ describe('safety cases, restrictions and appeals on PostgreSQL', () => {
     })) as ResolveView;
     await prisma.safetyRestriction.update({
       where: { id: resolved.restriction!.id },
-      data: { endsAt: new Date(Date.now() - 1) },
+      data: { startsAt: new Date(Date.now() - 60_000), endsAt: new Date(Date.now() - 1) },
     });
     expect(
       await prisma.$transaction((tx) => readEffectiveSafetyRestriction(tx, pending.targetUserId)),
@@ -713,6 +713,7 @@ describe('safety cases, restrictions and appeals on PostgreSQL', () => {
     expect(Object.keys(evidence.report).sort()).toEqual([
       'category',
       'description',
+      'directMessage',
       'id',
       'reporterUserId',
       'roomId',

@@ -94,7 +94,7 @@ export class SafetyAppealListQueryDto extends PageQueryDto {
 export class SafetyCaseDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ format: 'uuid' }) reportId!: string;
-  @ApiProperty({ format: 'uuid' }) roomId!: string;
+  @ApiProperty({ type: String, format: 'uuid', nullable: true }) roomId!: string | null;
   @ApiProperty({ format: 'uuid' }) targetUserId!: string;
   @ApiProperty() category!: string;
   @ApiProperty({ enum: SAFETY_CASE_STATUSES }) status!: SafetyCaseStatus;
@@ -187,9 +187,21 @@ export class SafetyResolveResultDto {
   @ApiProperty({ type: SafetyRestrictionDto, nullable: true })
   restriction!: SafetyRestrictionDto | null;
 }
-class SafetyEvidenceReportDto {
+class ReportedDirectMessageDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
-  @ApiProperty({ format: 'uuid' }) roomId!: string;
+  @ApiProperty({ format: 'uuid' }) conversationId!: string;
+  @ApiProperty({ format: 'uuid' }) senderUserId!: string;
+  @ApiProperty({
+    description: 'Only the reported message; does not expose the remaining conversation',
+  })
+  text!: string;
+  @ApiProperty({ format: 'date-time' }) createdAt!: string;
+}
+class SafetyEvidenceReportDto {
+  @ApiProperty({ type: ReportedDirectMessageDto, nullable: true })
+  directMessage!: ReportedDirectMessageDto | null;
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty({ type: String, format: 'uuid', nullable: true }) roomId!: string | null;
   @ApiProperty({ format: 'uuid' }) reporterUserId!: string;
   @ApiProperty({ format: 'uuid' }) targetUserId!: string;
   @ApiProperty({
@@ -226,7 +238,7 @@ class SafetyEvidenceRoomEventDto {
 }
 class SafetyEvidenceRelatedReportDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
-  @ApiProperty({ format: 'uuid' }) roomId!: string;
+  @ApiProperty({ type: String, format: 'uuid', nullable: true }) roomId!: string | null;
   @ApiProperty() category!: string;
   @ApiProperty({ format: 'date-time' }) submittedAt!: string;
 }

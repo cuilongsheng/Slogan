@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { RoomHeader, RoomPage } from '../../components/ui/RoomPage';
-import { t, type MessageKey } from '../../services/locale';
+import { t, type MessageKey, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import {
@@ -49,6 +49,7 @@ function entryId(entry: Entry) {
 }
 
 export function SocialScreen() {
+  useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
   const api = useMemo(() => new SocialApi(authorized), [authorized]);

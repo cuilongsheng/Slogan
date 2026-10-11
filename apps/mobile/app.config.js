@@ -36,6 +36,14 @@ module.exports = () => {
     },
     plugins: [
       'expo-font',
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Choose a profile picture for your Slogan account.',
+          cameraPermission: false,
+          microphonePermission: false,
+        },
+      ],
       ...base.plugins,
       ['expo-build-properties', { ios: { enableSceneSupport: true } }],
       ...(iosUrlScheme

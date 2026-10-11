@@ -18,7 +18,7 @@ const auth = {
   authorized: (request) => request('visual-fixture'),
   state: {
     kind: 'signedIn',
-    me: { userId: 'visual-profile', onboardingState: 'PROFILE_REQUIRED' },
+    me: { userId: 'visual-profile', onboardingState: 'ELIGIBLE', profile: {displayName: 'Luna', avatarUrl: ''} },
   },
   suggestedProfile: {
     displayName: '',
@@ -33,7 +33,20 @@ export class SessionError extends Error {}
 export const useAuth = () => auth;
 export const useFocusEffect = (effect) => React.useEffect(effect, [effect]);
 export const useJoinDraft = () => ({ draft: null, clear() {} });
-export const createVoiceMedia = () => ({});
+export const useNavigation = () => ({ addListener: () => () => {} });
+export const createVoiceMedia = () => {
+  const query = new URL(location.href).searchParams;
+  const listeners = new Set();
+  const fixture = {
+    snapshot: { connection: query.get('connection') ?? 'connected', microphoneEnabled: true, audioPlaybackAllowed: true, participants: [], deviceCheck: {microphone: query.has('device') ? 'blocked' : 'ready', playback: 'ready'} },
+    subscribe(listener) { listeners.add(listener); listener(this.snapshot); return () => listeners.delete(listener); },
+    async connect() {}, async checkDevices() {},
+    async disconnect() { globalThis.__mediaStopped = true; },
+    async startAudio() {},
+    async setMicrophoneEnabled(enabled) { this.snapshot = {...this.snapshot, microphoneEnabled: enabled}; listeners.forEach(listener => listener(this.snapshot)); },
+  };
+  return fixture;
+};
 export const StatusBar = () => null;
 export const SafeAreaView = ({ children, style }) => React.createElement(View, { style }, children);
 export const LinearGradient = ({ children, style, colors }) =>
@@ -193,3 +206,7 @@ const stop = async () => ({
 });
 const discard = () => {};
 export const usePrivateRecorder = () => ({ start, stop, discard, elapsedSeconds: 0 });
+
+export const ImageManipulator = {};
+export const SaveFormat = {PNG:'png'};
+export const launchImageLibraryAsync = async () => ({canceled:true});

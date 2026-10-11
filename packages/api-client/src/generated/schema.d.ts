@@ -340,6 +340,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/avatars/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AvatarController_default"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/avatars/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AvatarController_image"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/backoffice/accounts/{userId}/restricted-record": {
         parameters: {
             query?: never;
@@ -1045,6 +1077,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DirectController_open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{conversationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DirectController_detail"];
+        put?: never;
+        post?: never;
+        delete: operations["DirectController_hide"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{conversationId}/calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DirectController_callHistory"];
+        put?: never;
+        post: operations["DirectController_requestCall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{conversationId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DirectController_messages"];
+        put?: never;
+        post: operations["DirectController_send"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{conversationId}/messages/{messageId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DirectController_report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{conversationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DirectController_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/direct-calls/{callId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DirectController_call"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/direct-calls/{callId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DirectController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/direct-calls/{callId}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DirectController_credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/direct-calls/{callId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DirectController_end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/direct-calls/{callId}/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DirectController_heartbeat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/direct-calls/{callId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DirectController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/friend-requests": {
         parameters: {
             query?: never;
@@ -1199,6 +1423,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["MeAuthController_deletePhoneProof"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AvatarController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DirectController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/direct-calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DirectController_calls"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2112,7 +2384,7 @@ export interface components {
             /** Format: uri */
             avatarUrl: string;
             /** @enum {string} */
-            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
             city: string | null;
             displayName: string;
             interestCodes: string[];
@@ -2126,7 +2398,7 @@ export interface components {
                 /** Format: uri */
                 avatarUrl: string;
                 /** @enum {string} */
-                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                 city: string | null;
                 displayName: string;
                 interestCodes: string[];
@@ -2136,6 +2408,14 @@ export interface components {
                 userId: string;
             }[];
             nextCursor: string | null;
+        };
+        AvatarResponseDto: {
+            /** Format: uri */
+            avatarUrl: string;
+        };
+        AvatarUploadDto: {
+            /** @description Base64 PNG bytes, without a data URL prefix */
+            imageBase64: string;
         };
         BackofficeMeDto: {
             roles: ("PLATFORM_ADMIN" | "SAFETY_OFFICER" | "OPERATIONS_ANALYST" | "AUDITOR" | "PUBLIC_TRIAL_VIEWER")[];
@@ -2308,6 +2588,286 @@ export interface components {
         DeleteVocabularyItemDto: {
             expectedVersion: number;
         };
+        DirectCallDto: {
+            /** Format: date-time */
+            acceptedAt: string | null;
+            /** Format: uuid */
+            calleeUserId: string;
+            /** Format: uuid */
+            callerUserId: string;
+            /** Format: uuid */
+            conversationId: string;
+            endReason: string | null;
+            /** Format: date-time */
+            endedAt: string | null;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: uuid */
+            id: string;
+            peer?: {
+                /** Format: uri */
+                avatarUrl: string;
+                /** @enum {string} */
+                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                displayName: string;
+                /** Format: uuid */
+                userId: string;
+            };
+            sequence: number;
+            /** @enum {string} */
+            status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+        };
+        DirectCallHistoryPageDto: {
+            items: {
+                /** Format: date-time */
+                acceptedAt: string | null;
+                /** Format: uuid */
+                calleeUserId: string;
+                /** Format: uuid */
+                callerUserId: string;
+                /** Format: uuid */
+                conversationId: string;
+                endReason: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: date-time */
+                expiresAt: string;
+                /** Format: uuid */
+                id: string;
+                peer?: {
+                    /** Format: uri */
+                    avatarUrl: string;
+                    /** @enum {string} */
+                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                    displayName: string;
+                    /** Format: uuid */
+                    userId: string;
+                };
+                sequence: number;
+                /** @enum {string} */
+                status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+            }[];
+            nextCursor: string | null;
+            visibleAfterSequence: number;
+        };
+        DirectCallPageDto: {
+            items: {
+                /** Format: date-time */
+                acceptedAt: string | null;
+                /** Format: uuid */
+                calleeUserId: string;
+                /** Format: uuid */
+                callerUserId: string;
+                /** Format: uuid */
+                conversationId: string;
+                endReason: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: date-time */
+                expiresAt: string;
+                /** Format: uuid */
+                id: string;
+                peer?: {
+                    /** Format: uri */
+                    avatarUrl: string;
+                    /** @enum {string} */
+                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                    displayName: string;
+                    /** Format: uuid */
+                    userId: string;
+                };
+                sequence: number;
+                /** @enum {string} */
+                status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+            }[];
+        };
+        DirectCommandDto: {
+            /** Format: uuid */
+            clientRequestId: string;
+        };
+        DirectConversationDto: {
+            canInteract: boolean;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            lastActivityAt: string;
+            lastCall: {
+                /** Format: date-time */
+                acceptedAt: string | null;
+                /** Format: uuid */
+                calleeUserId: string;
+                /** Format: uuid */
+                callerUserId: string;
+                /** Format: uuid */
+                conversationId: string;
+                endReason: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: date-time */
+                expiresAt: string;
+                /** Format: uuid */
+                id: string;
+                peer?: {
+                    /** Format: uri */
+                    avatarUrl: string;
+                    /** @enum {string} */
+                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                    displayName: string;
+                    /** Format: uuid */
+                    userId: string;
+                };
+                sequence: number;
+                /** @enum {string} */
+                status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+            } | null;
+            lastMessage: {
+                /** Format: uuid */
+                clientRequestId: string;
+                /** Format: uuid */
+                conversationId: string;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                senderUserId: string;
+                sequence: number;
+                text: string;
+            } | null;
+            peer: {
+                /** Format: uri */
+                avatarUrl: string;
+                /** @enum {string} */
+                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                displayName: string;
+                /** Format: uuid */
+                userId: string;
+            };
+            unreadCount: number;
+        };
+        DirectConversationPageDto: {
+            items: {
+                canInteract: boolean;
+                /** Format: uuid */
+                id: string;
+                /** Format: date-time */
+                lastActivityAt: string;
+                lastCall: {
+                    /** Format: date-time */
+                    acceptedAt: string | null;
+                    /** Format: uuid */
+                    calleeUserId: string;
+                    /** Format: uuid */
+                    callerUserId: string;
+                    /** Format: uuid */
+                    conversationId: string;
+                    endReason: string | null;
+                    /** Format: date-time */
+                    endedAt: string | null;
+                    /** Format: date-time */
+                    expiresAt: string;
+                    /** Format: uuid */
+                    id: string;
+                    peer?: {
+                        /** Format: uri */
+                        avatarUrl: string;
+                        /** @enum {string} */
+                        cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                        displayName: string;
+                        /** Format: uuid */
+                        userId: string;
+                    };
+                    sequence: number;
+                    /** @enum {string} */
+                    status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                } | null;
+                lastMessage: {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                    /** Format: uuid */
+                    conversationId: string;
+                    /** Format: date-time */
+                    createdAt: string;
+                    /** Format: uuid */
+                    id: string;
+                    /** Format: uuid */
+                    senderUserId: string;
+                    sequence: number;
+                    text: string;
+                } | null;
+                peer: {
+                    /** Format: uri */
+                    avatarUrl: string;
+                    /** @enum {string} */
+                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                    displayName: string;
+                    /** Format: uuid */
+                    userId: string;
+                };
+                unreadCount: number;
+            }[];
+            nextCursor: string | null;
+        };
+        DirectCredentialsDto: {
+            /** Format: date-time */
+            expiresAt: string;
+            identity: string;
+            roomName: string;
+            token: string;
+            /** Format: uri */
+            url: string;
+        };
+        DirectMessageDto: {
+            /** Format: uuid */
+            clientRequestId: string;
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            senderUserId: string;
+            sequence: number;
+            text: string;
+        };
+        DirectMessagePageDto: {
+            items: {
+                /** Format: uuid */
+                clientRequestId: string;
+                /** Format: uuid */
+                conversationId: string;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                senderUserId: string;
+                sequence: number;
+                text: string;
+            }[];
+            nextCursor: string | null;
+            visibleAfterSequence: number;
+        };
+        DirectPeerDto: {
+            /** Format: uri */
+            avatarUrl: string;
+            /** @enum {string} */
+            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+            displayName: string;
+            /** Format: uuid */
+            userId: string;
+        };
+        DirectReadDto: {
+            sequence: number;
+        };
+        DirectReportDto: {
+            /** @enum {string} */
+            category: "HARASSMENT_ABUSE" | "HATE_DISCRIMINATION" | "SEXUAL_CONTENT" | "SPAM_ADVERTISING" | "OTHER";
+            /** Format: uuid */
+            clientRequestId: string;
+            description: string;
+        };
         DryRunDto: {
             /** Format: uuid */
             clientRequestId: string;
@@ -2421,7 +2981,7 @@ export interface components {
                 /** Format: uri */
                 avatarUrl: string;
                 /** @enum {string} */
-                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                 city: string | null;
                 displayName: string;
                 interestCodes: string[];
@@ -2441,7 +3001,7 @@ export interface components {
                     /** Format: uri */
                     avatarUrl: string;
                     /** @enum {string} */
-                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                     city: string | null;
                     displayName: string;
                     interestCodes: string[];
@@ -2683,6 +3243,10 @@ export interface components {
             /** @example slogan://oauth/google */
             redirectUri: string;
         };
+        OpenConversationDto: {
+            /** Format: uuid */
+            targetUserId: string;
+        };
         OperationsRoomCountsDto: {
             memberships: number;
             reports: number;
@@ -2887,7 +3451,7 @@ export interface components {
             /** Format: uri */
             avatarUrl: string;
             /** @enum {string} */
-            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
             city: string | null;
             displayName: string;
             interestCodes: string[];
@@ -3009,6 +3573,18 @@ export interface components {
              * @description First submission server time, retained on retries.
              */
             submittedAt: string;
+        };
+        ReportedDirectMessageDto: {
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            senderUserId: string;
+            /** @description Only the reported message; does not expose the remaining conversation */
+            text: string;
         };
         ReservationDto: {
             /** Format: uuid */
@@ -3589,7 +4165,7 @@ export interface components {
             /** Format: date-time */
             reviewStartedAt: string | null;
             /** Format: uuid */
-            roomId: string;
+            roomId: string | null;
             /** @enum {string} */
             status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
             /** Format: uuid */
@@ -3619,7 +4195,7 @@ export interface components {
                 /** Format: date-time */
                 reviewStartedAt: string | null;
                 /** Format: uuid */
-                roomId: string;
+                roomId: string | null;
                 /** @enum {string} */
                 status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                 /** Format: uuid */
@@ -3715,7 +4291,7 @@ export interface components {
                     /** Format: uuid */
                     id: string;
                     /** Format: uuid */
-                    roomId: string;
+                    roomId: string | null;
                     /** Format: date-time */
                     submittedAt: string;
                 }[];
@@ -3725,12 +4301,24 @@ export interface components {
                 /** @enum {string} */
                 category: "HARASSMENT_ABUSE" | "HATE_DISCRIMINATION" | "SEXUAL_CONTENT" | "SPAM_ADVERTISING" | "OTHER";
                 description: string;
+                directMessage: {
+                    /** Format: uuid */
+                    conversationId: string;
+                    /** Format: date-time */
+                    createdAt: string;
+                    /** Format: uuid */
+                    id: string;
+                    /** Format: uuid */
+                    senderUserId: string;
+                    /** @description Only the reported message; does not expose the remaining conversation */
+                    text: string;
+                } | null;
                 /** Format: uuid */
                 id: string;
                 /** Format: uuid */
                 reporterUserId: string;
                 /** Format: uuid */
-                roomId: string;
+                roomId: string | null;
                 /** Format: date-time */
                 submittedAt: string;
                 /** Format: uuid */
@@ -3859,7 +4447,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
-            roomId: string;
+            roomId: string | null;
             /** Format: date-time */
             submittedAt: string;
         };
@@ -3869,7 +4457,7 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 /** Format: uuid */
-                roomId: string;
+                roomId: string | null;
                 /** Format: date-time */
                 submittedAt: string;
             }[];
@@ -3879,12 +4467,24 @@ export interface components {
             /** @enum {string} */
             category: "HARASSMENT_ABUSE" | "HATE_DISCRIMINATION" | "SEXUAL_CONTENT" | "SPAM_ADVERTISING" | "OTHER";
             description: string;
+            directMessage: {
+                /** Format: uuid */
+                conversationId: string;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                senderUserId: string;
+                /** @description Only the reported message; does not expose the remaining conversation */
+                text: string;
+            } | null;
             /** Format: uuid */
             id: string;
             /** Format: uuid */
             reporterUserId: string;
             /** Format: uuid */
-            roomId: string;
+            roomId: string | null;
             /** Format: date-time */
             submittedAt: string;
             /** Format: uuid */
@@ -4084,7 +4684,7 @@ export interface components {
                 /** Format: date-time */
                 reviewStartedAt: string | null;
                 /** Format: uuid */
-                roomId: string;
+                roomId: string | null;
                 /** @enum {string} */
                 status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                 /** Format: uuid */
@@ -4183,6 +4783,11 @@ export interface components {
             /** @description Whitespace-only content clears the note. */
             content: string;
             expectedVersion: number;
+        };
+        SendDirectMessageDto: {
+            /** Format: uuid */
+            clientRequestId: string;
+            text: string;
         };
         SendRoomMessageDto: {
             /** Format: uuid */
@@ -6420,6 +7025,46 @@ export interface operations {
                         /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
                         requestId?: string;
                     };
+                };
+            };
+        };
+    };
+    AvatarController_default: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+        };
+    };
+    AvatarController_image: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
                 };
             };
         };
@@ -10277,7 +10922,7 @@ export interface operations {
                             /** Format: date-time */
                             reviewStartedAt: string | null;
                             /** Format: uuid */
-                            roomId: string;
+                            roomId: string | null;
                             /** @enum {string} */
                             status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                             /** Format: uuid */
@@ -10543,7 +11188,7 @@ export interface operations {
                         /** Format: date-time */
                         reviewStartedAt: string | null;
                         /** Format: uuid */
-                        roomId: string;
+                        roomId: string | null;
                         /** @enum {string} */
                         status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                         /** Format: uuid */
@@ -10695,7 +11340,7 @@ export interface operations {
                         /** Format: date-time */
                         reviewStartedAt: string | null;
                         /** Format: uuid */
-                        roomId: string;
+                        roomId: string | null;
                         /** @enum {string} */
                         status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                         /** Format: uuid */
@@ -10848,7 +11493,7 @@ export interface operations {
                         /** Format: date-time */
                         reviewStartedAt: string | null;
                         /** Format: uuid */
-                        roomId: string;
+                        roomId: string | null;
                         /** @enum {string} */
                         status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                         /** Format: uuid */
@@ -11030,7 +11675,7 @@ export interface operations {
                                 /** Format: uuid */
                                 id: string;
                                 /** Format: uuid */
-                                roomId: string;
+                                roomId: string | null;
                                 /** Format: date-time */
                                 submittedAt: string;
                             }[];
@@ -11040,12 +11685,24 @@ export interface operations {
                             /** @enum {string} */
                             category: "HARASSMENT_ABUSE" | "HATE_DISCRIMINATION" | "SEXUAL_CONTENT" | "SPAM_ADVERTISING" | "OTHER";
                             description: string;
+                            directMessage: {
+                                /** Format: uuid */
+                                conversationId: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                senderUserId: string;
+                                /** @description Only the reported message; does not expose the remaining conversation */
+                                text: string;
+                            } | null;
                             /** Format: uuid */
                             id: string;
                             /** Format: uuid */
                             reporterUserId: string;
                             /** Format: uuid */
-                            roomId: string;
+                            roomId: string | null;
                             /** Format: date-time */
                             submittedAt: string;
                             /** Format: uuid */
@@ -11278,7 +11935,7 @@ export interface operations {
                             /** Format: date-time */
                             reviewStartedAt: string | null;
                             /** Format: uuid */
-                            roomId: string;
+                            roomId: string | null;
                             /** @enum {string} */
                             status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                             /** Format: uuid */
@@ -11459,7 +12116,7 @@ export interface operations {
                         /** Format: date-time */
                         reviewStartedAt: string | null;
                         /** Format: uuid */
-                        roomId: string;
+                        roomId: string | null;
                         /** @enum {string} */
                         status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                         /** Format: uuid */
@@ -12532,6 +13189,2556 @@ export interface operations {
             };
         };
     };
+    DirectController_open: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    targetUserId: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        canInteract: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: date-time */
+                        lastActivityAt: string;
+                        lastCall: {
+                            /** Format: date-time */
+                            acceptedAt: string | null;
+                            /** Format: uuid */
+                            calleeUserId: string;
+                            /** Format: uuid */
+                            callerUserId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            endReason: string | null;
+                            /** Format: date-time */
+                            endedAt: string | null;
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            peer?: {
+                                /** Format: uri */
+                                avatarUrl: string;
+                                /** @enum {string} */
+                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                displayName: string;
+                                /** Format: uuid */
+                                userId: string;
+                            };
+                            sequence: number;
+                            /** @enum {string} */
+                            status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                        } | null;
+                        lastMessage: {
+                            /** Format: uuid */
+                            clientRequestId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            senderUserId: string;
+                            sequence: number;
+                            text: string;
+                        } | null;
+                        peer: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        unreadCount: number;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        canInteract: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: date-time */
+                        lastActivityAt: string;
+                        lastCall: {
+                            /** Format: date-time */
+                            acceptedAt: string | null;
+                            /** Format: uuid */
+                            calleeUserId: string;
+                            /** Format: uuid */
+                            callerUserId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            endReason: string | null;
+                            /** Format: date-time */
+                            endedAt: string | null;
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            peer?: {
+                                /** Format: uri */
+                                avatarUrl: string;
+                                /** @enum {string} */
+                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                displayName: string;
+                                /** Format: uuid */
+                                userId: string;
+                            };
+                            sequence: number;
+                            /** @enum {string} */
+                            status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                        } | null;
+                        lastMessage: {
+                            /** Format: uuid */
+                            clientRequestId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            senderUserId: string;
+                            sequence: number;
+                            text: string;
+                        } | null;
+                        peer: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        unreadCount: number;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_hide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        canInteract: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: date-time */
+                        lastActivityAt: string;
+                        lastCall: {
+                            /** Format: date-time */
+                            acceptedAt: string | null;
+                            /** Format: uuid */
+                            calleeUserId: string;
+                            /** Format: uuid */
+                            callerUserId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            endReason: string | null;
+                            /** Format: date-time */
+                            endedAt: string | null;
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            peer?: {
+                                /** Format: uri */
+                                avatarUrl: string;
+                                /** @enum {string} */
+                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                displayName: string;
+                                /** Format: uuid */
+                                userId: string;
+                            };
+                            sequence: number;
+                            /** @enum {string} */
+                            status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                        } | null;
+                        lastMessage: {
+                            /** Format: uuid */
+                            clientRequestId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            senderUserId: string;
+                            sequence: number;
+                            text: string;
+                        } | null;
+                        peer: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        unreadCount: number;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_callHistory: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: date-time */
+                            acceptedAt: string | null;
+                            /** Format: uuid */
+                            calleeUserId: string;
+                            /** Format: uuid */
+                            callerUserId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            endReason: string | null;
+                            /** Format: date-time */
+                            endedAt: string | null;
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            peer?: {
+                                /** Format: uri */
+                                avatarUrl: string;
+                                /** @enum {string} */
+                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                displayName: string;
+                                /** Format: uuid */
+                                userId: string;
+                            };
+                            sequence: number;
+                            /** @enum {string} */
+                            status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                        }[];
+                        nextCursor: string | null;
+                        visibleAfterSequence: number;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_requestCall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        acceptedAt: string | null;
+                        /** Format: uuid */
+                        calleeUserId: string;
+                        /** Format: uuid */
+                        callerUserId: string;
+                        /** Format: uuid */
+                        conversationId: string;
+                        endReason: string | null;
+                        /** Format: date-time */
+                        endedAt: string | null;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        /** Format: uuid */
+                        id: string;
+                        peer?: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        sequence: number;
+                        /** @enum {string} */
+                        status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_messages: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            clientRequestId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            senderUserId: string;
+                            sequence: number;
+                            text: string;
+                        }[];
+                        nextCursor: string | null;
+                        visibleAfterSequence: number;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                    text: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        clientRequestId: string;
+                        /** Format: uuid */
+                        conversationId: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        senderUserId: string;
+                        sequence: number;
+                        text: string;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    category: "HARASSMENT_ABUSE" | "HATE_DISCRIMINATION" | "SEXUAL_CONTENT" | "SPAM_ADVERTISING" | "OTHER";
+                    /** Format: uuid */
+                    clientRequestId: string;
+                    description: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        caseId: string;
+                        /** Format: uuid */
+                        id: string;
+                        /**
+                         * Format: date-time
+                         * @description First submission server time, retained on retries.
+                         */
+                        submittedAt: string;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sequence: number;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        canInteract: boolean;
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: date-time */
+                        lastActivityAt: string;
+                        lastCall: {
+                            /** Format: date-time */
+                            acceptedAt: string | null;
+                            /** Format: uuid */
+                            calleeUserId: string;
+                            /** Format: uuid */
+                            callerUserId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            endReason: string | null;
+                            /** Format: date-time */
+                            endedAt: string | null;
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            peer?: {
+                                /** Format: uri */
+                                avatarUrl: string;
+                                /** @enum {string} */
+                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                displayName: string;
+                                /** Format: uuid */
+                                userId: string;
+                            };
+                            sequence: number;
+                            /** @enum {string} */
+                            status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                        } | null;
+                        lastMessage: {
+                            /** Format: uuid */
+                            clientRequestId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            senderUserId: string;
+                            sequence: number;
+                            text: string;
+                        } | null;
+                        peer: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        unreadCount: number;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_call: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        acceptedAt: string | null;
+                        /** Format: uuid */
+                        calleeUserId: string;
+                        /** Format: uuid */
+                        callerUserId: string;
+                        /** Format: uuid */
+                        conversationId: string;
+                        endReason: string | null;
+                        /** Format: date-time */
+                        endedAt: string | null;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        /** Format: uuid */
+                        id: string;
+                        peer?: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        sequence: number;
+                        /** @enum {string} */
+                        status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        acceptedAt: string | null;
+                        /** Format: uuid */
+                        calleeUserId: string;
+                        /** Format: uuid */
+                        callerUserId: string;
+                        /** Format: uuid */
+                        conversationId: string;
+                        endReason: string | null;
+                        /** Format: date-time */
+                        endedAt: string | null;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        /** Format: uuid */
+                        id: string;
+                        peer?: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        sequence: number;
+                        /** @enum {string} */
+                        status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_credentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        expiresAt: string;
+                        identity: string;
+                        roomName: string;
+                        token: string;
+                        /** Format: uri */
+                        url: string;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_end: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        acceptedAt: string | null;
+                        /** Format: uuid */
+                        calleeUserId: string;
+                        /** Format: uuid */
+                        callerUserId: string;
+                        /** Format: uuid */
+                        conversationId: string;
+                        endReason: string | null;
+                        /** Format: date-time */
+                        endedAt: string | null;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        /** Format: uuid */
+                        id: string;
+                        peer?: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        sequence: number;
+                        /** @enum {string} */
+                        status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_heartbeat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        acceptedAt: string | null;
+                        /** Format: uuid */
+                        calleeUserId: string;
+                        /** Format: uuid */
+                        callerUserId: string;
+                        /** Format: uuid */
+                        conversationId: string;
+                        endReason: string | null;
+                        /** Format: date-time */
+                        endedAt: string | null;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        /** Format: uuid */
+                        id: string;
+                        peer?: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        sequence: number;
+                        /** @enum {string} */
+                        status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        acceptedAt: string | null;
+                        /** Format: uuid */
+                        calleeUserId: string;
+                        /** Format: uuid */
+                        callerUserId: string;
+                        /** Format: uuid */
+                        conversationId: string;
+                        endReason: string | null;
+                        /** Format: date-time */
+                        endedAt: string | null;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        /** Format: uuid */
+                        id: string;
+                        peer?: {
+                            /** Format: uri */
+                            avatarUrl: string;
+                            /** @enum {string} */
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                            displayName: string;
+                            /** Format: uuid */
+                            userId: string;
+                        };
+                        sequence: number;
+                        /** @enum {string} */
+                        status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
     SocialController_requests: {
         parameters: {
             query: {
@@ -13545,6 +16752,456 @@ export interface operations {
             };
         };
     };
+    AvatarController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Base64 PNG bytes, without a data URL prefix */
+                    imageBase64: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uri */
+                        avatarUrl: string;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            canInteract: boolean;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: date-time */
+                            lastActivityAt: string;
+                            lastCall: {
+                                /** Format: date-time */
+                                acceptedAt: string | null;
+                                /** Format: uuid */
+                                calleeUserId: string;
+                                /** Format: uuid */
+                                callerUserId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                endReason: string | null;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: uuid */
+                                id: string;
+                                peer?: {
+                                    /** Format: uri */
+                                    avatarUrl: string;
+                                    /** @enum {string} */
+                                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                    displayName: string;
+                                    /** Format: uuid */
+                                    userId: string;
+                                };
+                                sequence: number;
+                                /** @enum {string} */
+                                status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                            } | null;
+                            lastMessage: {
+                                /** Format: uuid */
+                                clientRequestId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                senderUserId: string;
+                                sequence: number;
+                                text: string;
+                            } | null;
+                            peer: {
+                                /** Format: uri */
+                                avatarUrl: string;
+                                /** @enum {string} */
+                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                displayName: string;
+                                /** Format: uuid */
+                                userId: string;
+                            };
+                            unreadCount: number;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_calls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: date-time */
+                            acceptedAt: string | null;
+                            /** Format: uuid */
+                            calleeUserId: string;
+                            /** Format: uuid */
+                            callerUserId: string;
+                            /** Format: uuid */
+                            conversationId: string;
+                            endReason: string | null;
+                            /** Format: date-time */
+                            endedAt: string | null;
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            peer?: {
+                                /** Format: uri */
+                                avatarUrl: string;
+                                /** @enum {string} */
+                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                displayName: string;
+                                /** Format: uuid */
+                                userId: string;
+                            };
+                            sequence: number;
+                            /** @enum {string} */
+                            status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                        }[];
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
     SocialController_friends: {
         parameters: {
             query?: {
@@ -13570,7 +17227,7 @@ export interface operations {
                                 /** Format: uri */
                                 avatarUrl: string;
                                 /** @enum {string} */
-                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                                cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                                 city: string | null;
                                 displayName: string;
                                 interestCodes: string[];
@@ -16284,7 +19941,7 @@ export interface operations {
                             /** Format: uri */
                             avatarUrl: string;
                             /** @enum {string} */
-                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+                            cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
                             city: string | null;
                             displayName: string;
                             interestCodes: string[];

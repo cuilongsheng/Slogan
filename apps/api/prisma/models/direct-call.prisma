@@ -1,0 +1,34 @@
+model DirectCall {
+  id String @id @db.Uuid
+  conversationId String @db.Uuid
+  sequence Int
+  stateSequence Int
+  callerUserId String @db.Uuid
+  calleeUserId String @db.Uuid
+  status String @default("RINGING") @db.VarChar(20)
+  credentialExpiresAt DateTime? @db.Timestamptz(3)
+  caller User @relation("DirectCaller", fields: [callerUserId], references: [id], onDelete: Restrict)
+  callee User @relation("DirectCallee", fields: [calleeUserId], references: [id], onDelete: Restrict)
+  expiresAt DateTime @db.Timestamptz(3)
+  acceptedAt DateTime? @db.Timestamptz(3)
+  endedAt DateTime? @db.Timestamptz(3)
+  endReason String? @db.VarChar(40)
+  callerHeartbeatAt DateTime? @db.Timestamptz(3)
+  calleeHeartbeatAt DateTime? @db.Timestamptz(3)
+  cleanupStatus String @default("NONE") @db.VarChar(20)
+  cleanupGeneration Int @default(0)
+  cleanupLeaseId String? @db.Uuid
+  cleanupLockedUntil DateTime? @db.Timestamptz(3)
+  cleanupAttempts Int @default(0)
+  cleanupNextAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  conversation DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  occupancy DirectCallOccupancy[]
+  @@unique([conversationId, sequence])
+  @@index([conversationId, stateSequence])
+  @@index([callerUserId, status, createdAt])
+  @@index([calleeUserId, status, createdAt])
+  @@index([status, expiresAt])
+  @@index([cleanupStatus, cleanupNextAt])
+}

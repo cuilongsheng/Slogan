@@ -38,7 +38,9 @@ export function CasesPage() {
         query: {
           limit: 20,
           ...(status ? { status } : {}),
-          ...(range ? { from: new Date(Date.now() - (range === '7d' ? 7 : 30) * 86400000).toISOString() } : {}),
+          ...(range
+            ? { from: new Date(Date.now() - (range === '7d' ? 7 : 30) * 86400000).toISOString() }
+            : {}),
           ...(cursor ? { cursor } : {}),
         },
       },
@@ -157,35 +159,37 @@ export function CasesPage() {
         canNext={page.canNext}
         onPrevious={page.previous}
         onNext={page.next}
-        filters={<>
-          <select
-            aria-label="案件状态"
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as CaseStatus | '');
-              page.reset();
-            }}
-          >
-            <option value="">全部状态</option>
-            {(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED'] as const).map((value) => (
-              <option key={value} value={value}>
-                {statusLabel(value)}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="发生时间"
-            value={range}
-            onChange={(event) => {
-              setRange(event.target.value as typeof range);
-              page.reset();
-            }}
-          >
-            <option value="">全部时间</option>
-            <option value="7d">最近 7 天</option>
-            <option value="30d">最近 30 天</option>
-          </select>
-        </>}
+        filters={
+          <>
+            <select
+              aria-label="案件状态"
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as CaseStatus | '');
+                page.reset();
+              }}
+            >
+              <option value="">全部状态</option>
+              {(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED'] as const).map((value) => (
+                <option key={value} value={value}>
+                  {statusLabel(value)}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="发生时间"
+              value={range}
+              onChange={(event) => {
+                setRange(event.target.value as typeof range);
+                page.reset();
+              }}
+            >
+              <option value="">全部时间</option>
+              <option value="7d">最近 7 天</option>
+              <option value="30d">最近 30 天</option>
+            </select>
+          </>
+        }
         columns={[
           { key: 'id', label: '案件编号', render: (row) => shortId(row.id) },
           { key: 'category', label: '事件类型', render: (row) => categoryLabel(row.category) },
@@ -194,12 +198,17 @@ export function CasesPage() {
             label: '关联房间 / 用户',
             render: (row) => (
               <>
-                {shortId(row.roomId)} · {shortId(row.targetUserId)}
+                {row.roomId ? shortId(row.roomId) : zhCN.privateEvidence.context} ·{' '}
+                {shortId(row.targetUserId)}
               </>
             ),
           },
           { key: 'created', label: '发生时间', render: (row) => formatTime(row.createdAt) },
-          { key: 'priority', label: '优先级', render: (row) => row.assessedSeverity ? severityLabel(row.assessedSeverity) : '—' },
+          {
+            key: 'priority',
+            label: '优先级',
+            render: (row) => (row.assessedSeverity ? severityLabel(row.assessedSeverity) : '—'),
+          },
           {
             key: 'status',
             label: '状态',
@@ -232,7 +241,12 @@ export function CasesPage() {
                   </div>
                   <div>
                     <dt>状态</dt>
-                    <dd>{statusLabel(detail.data.status)}{detail.data.assigneeUserId ? ` · ${shortId(detail.data.assigneeUserId)}` : ''}</dd>
+                    <dd>
+                      {statusLabel(detail.data.status)}
+                      {detail.data.assigneeUserId
+                        ? ` · ${shortId(detail.data.assigneeUserId)}`
+                        : ''}
+                    </dd>
                   </div>
                   <div>
                     <dt>被举报用户</dt>
@@ -240,10 +254,25 @@ export function CasesPage() {
                   </div>
                   <div>
                     <dt>关联房间</dt>
-                    <dd>{shortId(detail.data.roomId)} · {categoryLabel(detail.data.category)}</dd>
+                    <dd>
+                      {detail.data.roomId
+                        ? shortId(detail.data.roomId)
+                        : zhCN.privateEvidence.context}{' '}
+                      · {categoryLabel(detail.data.category)}
+                    </dd>
                   </div>
-                  {detail.data.decisionType && <div><dt>决定</dt><dd>{detail.data.decisionType}</dd></div>}
-                  {detail.data.decisionReason && <div><dt>理由</dt><dd>{detail.data.decisionReason}</dd></div>}
+                  {detail.data.decisionType && (
+                    <div>
+                      <dt>决定</dt>
+                      <dd>{detail.data.decisionType}</dd>
+                    </div>
+                  )}
+                  {detail.data.decisionReason && (
+                    <div>
+                      <dt>理由</dt>
+                      <dd>{detail.data.decisionReason}</dd>
+                    </div>
+                  )}
                 </dl>
               </>
             )
@@ -258,21 +287,43 @@ export function CasesPage() {
               <strong>举报内容摘要</strong>
               <p>{evidence.data.report.description || '举报者未填写说明。'}</p>
               <hr />
-              <strong>关联房间与系统事件</strong>
+              {evidence.data.report.directMessage ? (
+                <>
+                  <strong>{zhCN.privateEvidence.title}</strong>
+                  <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                    {evidence.data.report.directMessage.text}
+                  </p>
+                  <p>
+                    {zhCN.privateEvidence.sender}:{' '}
+                    {shortId(evidence.data.report.directMessage.senderUserId)} ·{' '}
+                    {formatTime(evidence.data.report.directMessage.createdAt)}
+                  </p>
+                </>
+              ) : (
+                <strong>关联房间与系统事件</strong>
+              )}
               <p>{evidence.data.activities.length} 条处理活动；只展示服务端实际记录。</p>
             </div>
           ) : null}
           <p className="drawer-warning">案件结论必须由安全员人工提交，并填写理由。</p>
           {canWork && detail.data?.status === 'OPEN' && !detail.data.assigneeUserId && (
-            <button className="primary-button drawer-primary" onClick={() => openCommand('claim')}>进入人工处置 · 领取案件</button>
+            <button className="primary-button drawer-primary" onClick={() => openCommand('claim')}>
+              进入人工处置 · 领取案件
+            </button>
           )}
           {canWork && detail.data?.status === 'OPEN' && isAssignee && (
-            <button className="primary-button drawer-primary" onClick={() => openCommand('start')}>进入人工处置 · 开始处理</button>
+            <button className="primary-button drawer-primary" onClick={() => openCommand('start')}>
+              进入人工处置 · 开始处理
+            </button>
           )}
           {canWork && detail.data?.status === 'UNDER_REVIEW' && isAssignee && (
             <div className="drawer-actions">
-              <button className="outline-button" onClick={() => openCommand('dismiss')}>驳回案件</button>
-              <button className="primary-button" onClick={() => openCommand('resolve')}>提交结论</button>
+              <button className="outline-button" onClick={() => openCommand('dismiss')}>
+                驳回案件
+              </button>
+              <button className="primary-button" onClick={() => openCommand('resolve')}>
+                提交结论
+              </button>
             </div>
           )}
         </DetailDrawer>

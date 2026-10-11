@@ -1,25 +1,25 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { deploymentState, PAGE_CHECKS } from '../release/deployment-gate.mjs';
-const status = (state) => ({ statuses: [{ context: 'Vercel', state }] });
+const status = { statuses: [] };
+const names = [...PAGE_CHECKS, 'Phase-one verification', 'Guarded production API'];
 const checks = (conclusion = 'success', state = 'completed') => ({
-  check_runs: PAGE_CHECKS.map((name) => ({ name, status: state, conclusion })),
+  check_runs: names.map((name) => ({ name, status: state, conclusion })),
 });
-test('requires all three exact deployments; unrelated successful checks are insufficient', () => {
-  assert.equal(deploymentState(status('success'), checks()), true);
-  assert.equal(deploymentState({ statuses: [] }, checks()), false);
-  assert.equal(deploymentState(status('pending'), checks()), false);
-  assert.equal(
-    deploymentState(status('success'), { check_runs: checks().check_runs.slice(0, 1) }),
-    false,
-  );
-  assert.equal(deploymentState(status('success'), checks(null, 'in_progress')), false);
+test('requires exact Pages, verification, and guarded production checks', () => {
+  assert.equal(deploymentState(status, checks()), true);
+  for (const name of names)
+    assert.equal(
+      deploymentState(status, {
+        check_runs: checks().check_runs.filter((row) => row.name !== name),
+      }),
+      false,
+    );
+  assert.equal(deploymentState(status, checks(null, 'in_progress')), false);
 });
-test('failed/cancelled deployment stops publication', () => {
-  for (const state of ['failure', 'error'])
-    assert.throws(() => deploymentState(status(state), checks()));
-  for (const c of ['failure', 'cancelled', 'timed_out', 'neutral', null])
-    assert.throws(() => deploymentState(status('success'), checks(c)));
+test('failed or cancelled gates stop APK publication', () => {
+  for (const conclusion of ['failure', 'cancelled', 'timed_out', 'neutral', null])
+    assert.throws(() => deploymentState(status, checks(conclusion)));
 });
 
 test('production runtime gate rejects stale API, stale Pages and HTML fallback; permits three matching commits', async () => {

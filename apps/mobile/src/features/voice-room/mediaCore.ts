@@ -76,9 +76,12 @@ export class LiveKitVoiceMedia {
     this.listeners.forEach((listener) => listener(snapshot));
   }
 
-  async connect(credential: RealtimeCredential): Promise<void> {
+  async connect(
+    credential: Pick<RealtimeCredential, 'serverUrl' | 'participantToken' | 'roomId'>,
+  ): Promise<void> {
+    const generation = this.connectionGeneration + 1;
     await this.disconnect();
-    const generation = this.connectionGeneration;
+    if (generation !== this.connectionGeneration) return;
     this.connection = 'connecting';
     this.emit();
     try {
@@ -231,11 +234,18 @@ export class LiveKitVoiceMedia {
     const room = this.room;
     this.room = null;
     this.connection = 'disconnected';
-    if (room) await room.disconnect();
-    if (this.platformStarted) {
-      this.platformStarted = false;
-      await this.platform.stop();
+    if (room) {
+      // Stop local capture synchronously before waiting for provider disconnect.
+      for (const publication of room.localParticipant.audioTrackPublications.values())
+        publication.track?.stop();
+      for (const participant of room.remoteParticipants.values())
+        for (const publication of participant.audioTrackPublications.values())
+          if (publication.track) this.platform.detachRemoteAudio(publication.track);
     }
+    const stopping = this.platformStarted ? this.platform.stop() : Promise.resolve();
+    this.platformStarted = false;
     this.emit();
+    // Release native output ownership even if provider disconnect stalls or fails.
+    await Promise.allSettled([stopping, ...(room ? [room.disconnect()] : [])]);
   }
 }

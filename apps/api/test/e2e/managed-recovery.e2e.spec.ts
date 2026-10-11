@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import express from 'express';
 import request from 'supertest';
 import { configureManagedRecovery } from '../../src/bootstrap/managed-recovery.js';
+import { MaintenanceService } from '../../src/modules/maintenance/index.js';
 import { RealtimeQueue } from '../../src/infrastructure/redis/realtime-queue.service.js';
 import { StructuredLogger } from '../../src/infrastructure/observability/structured-logger.service.js';
 const jest = import.meta.jest;
@@ -44,7 +45,12 @@ describe('Vercel request recovery seed', () => {
     };
     const logger = { warn: jest.fn() };
     configureManagedRecovery({
-      get: (token: unknown) => (token === RealtimeQueue ? queue : logger),
+      get: (token: unknown) =>
+        token === RealtimeQueue
+          ? queue
+          : token === MaintenanceService
+            ? { seed: async () => {} }
+            : logger,
       use: (handler: express.RequestHandler) => server.use(handler),
     } as unknown as INestApplication);
     server.get('/probe', (_req, res) => res.json({ ok: true }));
@@ -80,7 +86,13 @@ describe('Vercel request recovery seed', () => {
     const server = express();
     configureManagedRecovery({
       get: (token: unknown) =>
-        token === RealtimeQueue ? queue : token === StructuredLogger ? logger : undefined,
+        token === RealtimeQueue
+          ? queue
+          : token === MaintenanceService
+            ? { seed: async () => {} }
+            : token === StructuredLogger
+              ? logger
+              : undefined,
       use: (handler: express.RequestHandler) => server.use(handler),
     } as unknown as INestApplication);
     server.get('/probe', (_req, res) => res.sendStatus(200));

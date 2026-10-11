@@ -1,0 +1,10 @@
+model DirectCommand {
+  actorUserId String @db.Uuid
+  clientRequestId String @db.Uuid
+  operation String @db.VarChar(40)
+  payloadHash String @db.VarChar(64)
+  result Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  actor User @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  @@id([actorUserId, clientRequestId])
+}

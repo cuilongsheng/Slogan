@@ -33,6 +33,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof AppError) {
+      const retry =
+        typeof exception.details === 'object' &&
+        exception.details !== null &&
+        'retryAfterSeconds' in exception.details
+          ? Number(exception.details.retryAfterSeconds)
+          : 0;
+      if (Number.isFinite(retry) && retry > 0) response.setHeader('Retry-After', String(retry));
       response.status(exception.statusCode).json({
         code: exception.code,
         message: exception.message,
@@ -178,6 +185,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       'ROOM_EXTENSION_NOT_AVAILABLE',
       'ROOM_EXTENSION_LIMIT',
       'ROOM_EXTENSION_REQUEST_CONFLICT',
+      'ROOM_VOICE_BUSY',
       'ROOM_NOT_STARTED',
       'ROOM_CANCELLED',
       'APPOINTMENT_ALREADY_STARTED',
@@ -341,7 +349,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
     )
       return HttpStatus.CONFLICT;
     if (code === 'ROOM_MESSAGE_RATE_LIMITED') return HttpStatus.TOO_MANY_REQUESTS;
-    if (code === 'ROOM_ENDED' || code === 'ROOM_FULL') return HttpStatus.CONFLICT;
+    if (code === 'ROOM_VOICE_BUSY' || code === 'ROOM_ENDED' || code === 'ROOM_FULL')
+      return HttpStatus.CONFLICT;
     if (code === 'ROOM_PASSWORD_REQUIRED' || code === 'ROOM_PASSWORD_INVALID') {
       return HttpStatus.FORBIDDEN;
     }

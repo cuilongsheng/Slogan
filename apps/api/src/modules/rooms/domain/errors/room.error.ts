@@ -1,4 +1,5 @@
 export type RoomErrorCode =
+  | 'ROOM_VOICE_BUSY'
   | 'ROOM_NOT_STARTED'
   | 'ROOM_CANCELLED'
   | 'APPOINTMENT_ALREADY_STARTED'

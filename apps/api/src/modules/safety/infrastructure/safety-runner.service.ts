@@ -13,6 +13,7 @@ export class SafetyRunner implements OnModuleInit, OnModuleDestroy {
     private readonly logger: StructuredLogger,
   ) {}
   async onModuleInit() {
+    if (process.env.VERCEL === '1') return;
     await this.queue.start(async (job) => {
       if (job.kind === 'restriction-expiry') await this.repository.expire(job.id);
       else await this.repository.recoverAssignments();

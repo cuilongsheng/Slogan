@@ -1,0 +1,7 @@
+model DirectCallOccupancy {
+  userId String @id @db.Uuid
+  callId String @db.Uuid
+  call DirectCall @relation(fields: [callId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@index([callId])
+}

@@ -47,7 +47,15 @@ export function ConfirmDialog({
       >
         <div className="confirm-header">
           <h2>{title}</h2>
-          <button type="button" className="drawer-close" aria-label={zhCN.common.close} disabled={busy} onClick={onCancel}>×</button>
+          <button
+            type="button"
+            className="drawer-close"
+            aria-label={zhCN.common.close}
+            disabled={busy}
+            onClick={onCancel}
+          >
+            ×
+          </button>
         </div>
         <div className={sensitive ? 'confirm-warning' : 'confirm-body'}>{children}</div>
         {error && (

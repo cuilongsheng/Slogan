@@ -30,7 +30,7 @@ export default {
       { find: /^react\/jsx-runtime$/, replacement: requireMobile.resolve('react/jsx-runtime') },
       { find: /^react-dom\/client$/, replacement: requireMobile.resolve('react-dom/client') },
       {
-        find: /^(expo-router|expo-crypto|expo-localization|expo-status-bar|expo-linear-gradient|react-native-safe-area-context)$/,
+        find: /^(expo-image-manipulator|expo-image-picker|expo-router|expo-crypto|expo-localization|expo-status-bar|expo-linear-gradient|react-native-safe-area-context)$/,
         replacement: mock,
       },
     ],
@@ -46,6 +46,9 @@ export default {
         )
           return mock;
         if (source === '../auth') return mock;
+        if (importer?.endsWith('/CallScreen.tsx') && source === '../voice-room') return mock;
+        if (importer?.endsWith('/locale.ts') && source === './languageStorage')
+          return fileURLToPath(new URL('../../apps/mobile/src/services/languageStorage.web.ts', import.meta.url));
         if (
           (importer?.endsWith('/ProfileScreens.tsx') || importer?.endsWith('/draft.tsx')) &&
           ['../auth/context', '../auth/session'].includes(source)

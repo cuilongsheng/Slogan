@@ -277,6 +277,40 @@ export class PrismaAccountLifecycleRepository implements AccountLifecycleReposit
       data: { revokedAt: input.now, updatedAt: input.now },
     });
 
+    // A deleted account immediately stops occupying a direct call. Media cleanup
+    // remains durable and is completed by the managed maintenance consumer.
+    const calls = await tx.$queryRaw<
+      Array<{
+        id: string;
+        conversationId: string;
+        status: string;
+        credentialExpiresAt: Date | null;
+      }>
+    >`
+      SELECT id, "conversationId", status, "credentialExpiresAt" FROM "DirectCall"
+      WHERE status IN ('RINGING', 'ACTIVE') AND
+        ("callerUserId" = ${input.userId}::uuid OR "calleeUserId" = ${input.userId}::uuid)
+      ORDER BY id FOR UPDATE`;
+    for (const call of calls) {
+      const conversation = await tx.directConversation.update({
+        where: { id: call.conversationId },
+        data: { nextSequence: { increment: 1 }, lastActivityAt: input.now },
+      });
+      await tx.directCall.update({
+        where: { id: call.id },
+        data: {
+          stateSequence: conversation.nextSequence - 1,
+          status: 'ENDED',
+          endReason: 'ACCOUNT_DELETED',
+          endedAt: input.now,
+          cleanupStatus: call.status === 'ACTIVE' || call.credentialExpiresAt ? 'PENDING' : 'NONE',
+          cleanupNextAt: input.now,
+        },
+      });
+      await tx.directCallOccupancy.deleteMany({ where: { callId: call.id } });
+    }
+    await tx.profileAvatar.deleteMany({ where: { userId: input.userId } });
+
     for (const room of hosted) {
       if (room.status === 'SCHEDULED') {
         await tx.room.update({

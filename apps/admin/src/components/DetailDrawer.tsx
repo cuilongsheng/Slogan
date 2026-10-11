@@ -29,7 +29,12 @@ export function DetailDrawer({
       <aside className="drawer" role="dialog" aria-modal="true" aria-label={title}>
         <div className="drawer-header">
           <h2>{title}</h2>
-          <button className="drawer-close" ref={closeRef} onClick={onClose} aria-label={zhCN.common.close}>
+          <button
+            className="drawer-close"
+            ref={closeRef}
+            onClick={onClose}
+            aria-label={zhCN.common.close}
+          >
             ×
           </button>
         </div>

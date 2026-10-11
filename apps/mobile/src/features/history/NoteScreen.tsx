@@ -11,13 +11,14 @@ import {
 } from 'react-native';
 
 import { RoomHeader, RoomPage } from '../../components/ui/RoomPage';
-import { t } from '../../services/locale';
+import { t, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { RoomApiError } from '../room-discovery/api';
 import { RoomHistoryApi, type RoomNote } from './api';
 
 export function NoteScreen({ roomId }: { roomId: string }) {
+  useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
   const api = useMemo(() => new RoomHistoryApi(authorized), [authorized]);

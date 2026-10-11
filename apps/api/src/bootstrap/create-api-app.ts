@@ -5,7 +5,7 @@ import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { HelmetOptions } from 'helmet';
-import { raw, type Express, type RequestHandler } from 'express';
+import { json, raw, type Express, type RequestHandler } from 'express';
 import { pinoHttp } from 'pino-http';
 
 import { AppModule } from '../app.module.js';
@@ -28,7 +28,7 @@ export function configureApiApp(app: INestApplication): void {
   const config = app.get<ConfigService<Environment, true>>(ConfigService);
 
   const trustedProxies = config.get('EMAIL_AUTH_TRUSTED_PROXIES', { infer: true });
-  if (config.get('EMAIL_PASSWORD_AUTH_ENABLED', { infer: true }) && trustedProxies) {
+  if (trustedProxies) {
     (app.getHttpAdapter().getInstance() as Express).set(
       'trust proxy',
       trustedProxies.split(',').map((value) => value.trim()),
@@ -44,7 +44,11 @@ export function configureApiApp(app: INestApplication): void {
       next();
     }) as RequestHandler);
   }
+  app.use('/v1/me/avatar', json({ limit: '384kb' }));
   app.use('/v1/webhooks/livekit', raw({ type: 'application/webhook+json', limit: '256kb' }));
+  // Nest detects a route-scoped jsonParser as installed and skips its default parser.
+  // Keep a global parser after the bounded avatar and raw webhook parsers.
+  app.use(json({ limit: '100kb' }));
   app.use(
     pinoHttp({
       level: config.get('NODE_ENV', { infer: true }) === 'test' ? 'silent' : 'info',

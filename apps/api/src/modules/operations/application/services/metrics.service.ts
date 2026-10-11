@@ -2,7 +2,11 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../../../config/environment.js';
 import type { BackofficeRole } from '../../../backoffice/index.js';
-import type { MetricGrain, MetricSnapshotQuery, RoomOperationsQuery } from '../../domain/entities/operations.js';
+import type {
+  MetricGrain,
+  MetricSnapshotQuery,
+  RoomOperationsQuery,
+} from '../../domain/entities/operations.js';
 import { OperationsError } from '../../domain/errors/operations.error.js';
 import {
   METRICS_REPOSITORY,

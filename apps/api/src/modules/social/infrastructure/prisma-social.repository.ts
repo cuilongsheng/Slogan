@@ -278,6 +278,34 @@ export class PrismaSocialRepository implements SocialRepository {
             },
             data: { status: 'CANCELLED', resolvedAt: input.now, updatedAt: input.now },
           });
+          const calls = await tx.directCall.findMany({
+            where: {
+              status: { in: ['RINGING', 'ACTIVE'] },
+              OR: [
+                { callerUserId: userLowId, calleeUserId: userHighId },
+                { callerUserId: userHighId, calleeUserId: userLowId },
+              ],
+            },
+          });
+          for (const call of calls) {
+            const revision = await tx.directConversation.update({
+              where: { id: call.conversationId },
+              data: { nextSequence: { increment: 1 }, lastActivityAt: input.now },
+            });
+            await tx.directCall.update({
+              where: { id: call.id },
+              data: {
+                stateSequence: revision.nextSequence - 1,
+                status: 'ENDED',
+                endReason: 'BLOCKED',
+                endedAt: input.now,
+                cleanupStatus:
+                  call.status === 'ACTIVE' || call.credentialExpiresAt ? 'PENDING' : 'NONE',
+                cleanupNextAt: input.now,
+              },
+            });
+            await tx.directCallOccupancy.deleteMany({ where: { callId: call.id } });
+          }
           return { id: block.id };
         },
       ),
@@ -342,6 +370,7 @@ export class PrismaSocialRepository implements SocialRepository {
         status: 'ACTIVE',
         profile: { isNot: null },
         roomMemberships: { none: { lifecycle: 'ACTIVE' } },
+        directCallOccupancy: { is: null },
         safetyRestrictions: {
           none: {
             kind: 'TEMPORARY',
@@ -401,7 +430,9 @@ export class PrismaSocialRepository implements SocialRepository {
 
   async isTargetOutsideRooms(userId: string): Promise<boolean> {
     return (
-      (await this.prisma.roomMembership.count({ where: { userId, lifecycle: 'ACTIVE' } })) === 0
+      (await this.prisma.roomMembership.count({
+        where: { userId, lifecycle: 'ACTIVE', room: { status: { in: ['OPEN', 'ENDING'] } } },
+      })) === 0 && (await this.prisma.directCallOccupancy.count({ where: { userId } })) === 0
     );
   }
 

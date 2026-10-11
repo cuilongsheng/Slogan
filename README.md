@@ -13,7 +13,7 @@
   <a href="https://slogan-preview-admin.pages.dev">Admin console</a>
 </p>
 
-Slogan is a realtime voice community for practicing spoken English, with Android and web clients, an admin console, and a NestJS API. People join topic-based rooms of 2–6 participants by proficiency level, exchange text messages, invite partners, and use native-language expression assistance to find something to say in English. The admin console provides room management, safety cases, restriction appeals, permissions, and audit records.
+Slogan is a realtime voice community for practicing spoken English, with Android and web clients, an admin console, and a NestJS API. People join topic-based rooms of 2–6 participants by proficiency level, exchange room text messages, find available partners, and start private conversations or two-party calls. The admin console provides room management, safety cases, restriction appeals, permissions, and audit records.
 
 Built as a TypeScript and pnpm monorepo, the project focuses on room lifecycle management, consistency between realtime services and the database, secure sessions, and coordinated delivery of the API, frontends, and APK. It is currently a controlled `0.0.x` pilot.
 
@@ -78,17 +78,19 @@ See [image notes](docs/readme/README.md) for provenance, fixture boundaries, and
 
 ## Features and current scope
 
-| Area                    | Implemented capabilities                                                                                                                                        | Boundaries                                                                                                               |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Discovery and creation  | Room list, immediate / scheduled rooms, 2–6 seats, A1–A2 / B1–B2 / C1–C2 ranges, four-digit room passwords                                                      | Language filters and topic categories are deferred; discovery avatar previews lack API fields                            |
-| Entry and voice         | Direct entry from a room card; a password prompt for protected rooms; automatic device checks and warnings; LiveKit audio, mute, member state, and reconnection | LiveKit must be configured; device permissions and audio behavior require device validation                              |
-| Room interaction        | Room text messages, four seats per row, member management, host handoff, and fast exit                                                                          | Room messages are not one-to-one private conversations                                                                   |
-| In-app invitations      | Hosts select currently available people; authenticated foreground presence heartbeats                                                                           | Invitations do not reserve seats; the server rechecks eligibility and capacity on entry                                  |
-| Expression and learning | Hold to speak in a native language, release for English; room microphone muted during recording; vocabulary, restrictions and appeals, logout                   | AI / transcription requires external providers, feature flags, and processing consent; availability varies by deployment |
-| Administration          | Active / scheduled rooms, expanded room cards, safety cases, appeals, degraded incidents, roles, and audit records                                              | Authorization is enforced on the server; the admin interface is currently primarily Chinese                              |
-| Delivery                | PR previews, Android builds, production deployment after merge, and a gated public APK download                                                                 | Database migrations are separate; PR APKs currently connect to the production API                                        |
+| Area                    | Implemented capabilities                                                                                                                                        | Boundaries                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Discovery and creation  | Room list, immediate / scheduled rooms, 2–6 seats, A1–A2 / B1–B2 / C1–C2 ranges, four-digit room passwords                                                      | Language filters and topic categories are deferred; discovery avatar previews lack API fields                                           |
+| Entry and voice         | Direct entry from a room card; a password prompt for protected rooms; automatic device checks and warnings; LiveKit audio, mute, member state, and reconnection | LiveKit must be configured; device permissions and audio behavior require device validation                                             |
+| Room interaction        | Room text messages, four seats per row, member management, host handoff, and fast exit                                                                          | Room messages and participant-only private conversations have separate history and permission boundaries                                |
+| In-app invitations      | Hosts select currently available people; authenticated foreground presence heartbeats                                                                           | Invitations do not reserve seats; the server rechecks eligibility and capacity on entry                                                 |
+| Expression and learning | Vocabulary, restrictions and appeals, logout; expression-assistance entry disabled with a development notice                                                    | AI / transcription requires external providers, feature flags, and processing consent; availability varies by deployment                |
+| Administration          | Active / scheduled rooms, expanded room cards, safety cases, appeals, degraded incidents, roles, and audit records                                              | Authorization is enforced on the server; the admin interface is currently primarily Chinese                                             |
+| Delivery                | PR previews, Android builds, production deployment after merge, and a gated public APK download                                                                 | Main API delivery requires encrypted backup, isolated restore and compatible migration; PR APKs currently connect to the production API |
 
-A dedicated partner discovery page and one-to-one conversation list / messaging are not finished; their discovery navigation items remain static. iOS delivery is deferred. Continuous room speech processing, post-room keywords, and some governance capabilities have backend implementations but require separate configuration, workers, and external-service acceptance. See [OpenSpec](openspec/) for requirements and ongoing changes; a visible entry alone does not establish feature completion.
+iOS delivery, expression assistance and continuous room speech processing are deferred. Post-room keywords and some governance capabilities require separate configuration, workers, and external-service acceptance. See [OpenSpec](openspec/) for requirements and ongoing changes; a visible entry alone does not establish feature completion.
+
+Private conversations include persistent text history, unread state, personal history deletion, blocking and message reporting. Two-party voice calls require callee acceptance and cannot overlap room participation. Manual Chinese/English selection is persisted; profile photos use bounded PNG uploads. These capabilities are implemented in the Phase-one completion batch; its [task ledger](docs/releases/phase-one-completion-tasks.md) separates source implementation from release and device acceptance.
 
 ## Architecture
 
@@ -232,14 +234,14 @@ Database tests require Docker. External-service and device capabilities need add
 
 ![Slogan delivery flow](docs/readme/delivery.svg)
 
-| Trigger          | API / frontends                                              | Android                                                                                                               |
-| ---------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| PR / branch push | Git integrations create Vercel and Pages preview deployments | Actions builds downloadable workflow artifacts; the public APK stays unchanged                                        |
-| Merge to `main`  | Vercel and both Pages projects deploy production versions    | After build and verification of all three deployed versions, publish to Releases and update the stable download entry |
+| Trigger          | API / frontends                                                                         | Android                                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| PR / branch push | Git integrations create Vercel and Pages preview deployments                            | Actions builds downloadable workflow artifacts; the public APK stays unchanged                                        |
+| Merge to `main`  | Guarded Actions deploys the API after migration; both Pages projects deploy through Git | After build and verification of all three deployed versions, publish to Releases and update the stable download entry |
 
 The APK release gate checks the API's `x-slogan-commit`, both Pages `release.json` files, current `main`, APK metadata, and SHA-256. The download page reads release metadata; large APKs are not committed into the frontend source. PR APKs currently use the production API rather than the matching backend preview.
 
-API builds do not automatically apply Prisma migrations. Schema releases require backup, compatible migrations, and rollback sequencing through the [deployment runbook](docs/runbooks/deployment.md). Redis configuration and data lifecycle are also separate from Git-driven application deployment.
+The [guarded main workflow](docs/deployment/phase-one-guarded-release.md) verifies the release, encrypts a backup, proves isolated restore and schema upgrade, applies compatible migrations, then deploys the API. Production requires protected environment configuration; branch previews never migrate production. Redis configuration and data lifecycle are also separate from Git-driven application deployment.
 
 ## Documentation
 

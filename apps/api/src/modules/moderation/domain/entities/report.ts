@@ -19,7 +19,8 @@ export interface ReportReceipt {
   caseId: string;
   submittedAt: Date;
 }
-export interface ReportRecord extends ReportInput {
+export interface ReportRecord extends Omit<ReportInput, 'roomId'> {
+  roomId: string | null;
   id: string;
   submittedAt: Date;
   safetyCase: { id: string } | null;

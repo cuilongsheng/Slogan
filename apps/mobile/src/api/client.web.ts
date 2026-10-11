@@ -1,4 +1,5 @@
 import { createSloganApiClient } from '@slogan/api-client';
+import { boundedFetch } from './boundedFetch';
 
 export function createMobileApiClient(baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL) {
   if (!baseUrl) {
@@ -7,6 +8,6 @@ export function createMobileApiClient(baseUrl = process.env.EXPO_PUBLIC_API_BASE
 
   return createSloganApiClient({
     baseUrl,
-    fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+    fetch: (input, init) => boundedFetch(input, { ...init, credentials: 'include' }),
   });
 }

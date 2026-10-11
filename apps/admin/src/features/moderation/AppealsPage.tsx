@@ -128,7 +128,13 @@ export function AppealsPage() {
         ]}
       />
       {selected && (
-        <DetailDrawer title={`申诉详情 · ${shortId(selected.id)}`} onClose={() => { setSelected(null); setReviewDecision(false); }}>
+        <DetailDrawer
+          title={`申诉详情 · ${shortId(selected.id)}`}
+          onClose={() => {
+            setSelected(null);
+            setReviewDecision(false);
+          }}
+        >
           <dl className="drawer-summary">
             <div>
               <dt>申诉编号</dt>
@@ -146,25 +152,64 @@ export function AppealsPage() {
               <dt>状态</dt>
               <dd>{statusLabel(selected.status)}</dd>
             </div>
-            {selected.decisionReason && <div><dt>决定原因</dt><dd>{selected.decisionReason}</dd></div>}
+            {selected.decisionReason && (
+              <div>
+                <dt>决定原因</dt>
+                <dd>{selected.decisionReason}</dd>
+              </div>
+            )}
           </dl>
           <h3 className="drawer-section-title">用户陈述</h3>
-          <div className="drawer-evidence"><p>{selected.reason}</p></div>
+          <div className="drawer-evidence">
+            <p>{selected.reason}</p>
+          </div>
           {me?.roles.includes('SAFETY_OFFICER') && selected.status === 'PENDING' && (
-            <form onSubmit={(event) => { event.preventDefault(); if (decision && reason.trim()) { setError(''); setReviewDecision(true); } else setError('请选择决定并填写理由'); }}>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (decision && reason.trim()) {
+                  setError('');
+                  setReviewDecision(true);
+                } else setError('请选择决定并填写理由');
+              }}
+            >
               <h3 className="drawer-section-title">人工复核决定</h3>
               <div className="drawer-radio-row">
-                {([['UPHELD', '维持限制'], ['LIFTED', '解除限制']] as const).map(([value, label]) => (
+                {(
+                  [
+                    ['UPHELD', '维持限制'],
+                    ['LIFTED', '解除限制'],
+                  ] as const
+                ).map(([value, label]) => (
                   <label key={value}>
-                    <input type="radio" name="appeal-decision" checked={decision === value} onChange={() => { setDecision(value); setDecisionRequestId(crypto.randomUUID()); }} />{label}
+                    <input
+                      type="radio"
+                      name="appeal-decision"
+                      checked={decision === value}
+                      onChange={() => {
+                        setDecision(value);
+                        setDecisionRequestId(crypto.randomUUID());
+                      }}
+                    />
+                    {label}
                   </label>
                 ))}
               </div>
               <label className="drawer-field">
                 <span className="sr-only">复核理由</span>
-                <textarea required maxLength={500} value={reason} placeholder="填写复核理由" onChange={(event) => setReason(event.target.value)} />
+                <textarea
+                  required
+                  maxLength={500}
+                  value={reason}
+                  placeholder="填写复核理由"
+                  onChange={(event) => setReason(event.target.value)}
+                />
               </label>
-              {error && <p className="form-error" role="alert">{error}</p>}
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
               <button className="primary-button drawer-primary">提交复核决定</button>
             </form>
           )}
@@ -179,7 +224,11 @@ export function AppealsPage() {
           onCancel={() => setReviewDecision(false)}
           onConfirm={() => void decide()}
         >
-          <p>此操作会变更安全处理结果。请核对目标与原因后再确认。<br />{decision === 'LIFTED' ? '解除限制' : '维持限制'} · {shortId(selected?.id ?? '')}</p>
+          <p>
+            此操作会变更安全处理结果。请核对目标与原因后再确认。
+            <br />
+            {decision === 'LIFTED' ? '解除限制' : '维持限制'} · {shortId(selected?.id ?? '')}
+          </p>
         </ConfirmDialog>
       )}
     </>

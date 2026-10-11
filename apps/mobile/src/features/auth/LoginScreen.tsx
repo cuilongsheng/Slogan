@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'reac
 import { Redirect, router } from 'expo-router';
 
 import { AuthPage, PrimaryButton } from '../../components/ui/AuthPage';
-import { t } from '../../services/locale';
+import { t, useLanguage } from '../../services/locale';
 import {
   googleServerCode,
   googleSignInConfigured,
@@ -19,6 +19,7 @@ import googleIcon from '../../../assets/icons/google.png';
 import wechatIcon from '../../../assets/icons/wechat.png';
 
 export function LoginScreen() {
+  useLanguage();
   const { state, loginGoogle, loginPassword, retry } = useAuth();
   const configured = googleSignInConfigured();
   const [busy, setBusy] = useState(false);

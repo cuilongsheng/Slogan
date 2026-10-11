@@ -128,6 +128,14 @@ export async function clearRealtimeFixtures(prisma: PrismaService) {
   await prisma.backofficeRoleAssignment.deleteMany();
   await prisma.roomEvent.deleteMany({ where: { reportId: { not: null } } });
   await prisma.report.deleteMany();
+  await prisma.directCallOccupancy.deleteMany();
+  await prisma.directCall.deleteMany();
+  await prisma.directMessage.deleteMany();
+  await prisma.directConversationMember.deleteMany();
+  await prisma.directConversation.deleteMany();
+  await prisma.directCommand.deleteMany();
+  await prisma.profileAvatar.deleteMany();
+  await prisma.managedMaintenanceLease.deleteMany();
   await prisma.roomNote.deleteMany();
   await prisma.roomReservation.deleteMany();
   await prisma.roomShareAttribution.deleteMany();

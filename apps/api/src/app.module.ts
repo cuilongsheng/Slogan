@@ -1,5 +1,7 @@
 import { ModerationModule } from './modules/moderation/index.js';
 import { VoiceModule } from './modules/voice/voice.module.js';
+import { MaintenanceModule } from './modules/maintenance/index.js';
+import { DirectModule } from './modules/direct/index.js';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
@@ -37,6 +39,8 @@ import { OperationsModule } from './modules/operations/index.js';
     BackofficeModule,
     SafetyModule,
     SocialModule,
+    DirectModule,
+    MaintenanceModule,
     AssistanceModule,
     SpeechSafetyModule,
     PostRoomLearningModule,

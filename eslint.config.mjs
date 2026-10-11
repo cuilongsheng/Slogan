@@ -8,6 +8,8 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      '**/dist-pages/**',
+      '**/dist-web/**',
       '**/coverage/**',
       '**/node_modules/**',
       '**/.expo/**',
@@ -18,7 +20,13 @@ export default tseslint.config(
   },
   eslint.configs.recommended,
   {
-    files: ['scripts/**/*.mjs', '*.config.{mjs,cjs,ts}', 'apps/api/*.config.cjs'],
+    files: [
+      'scripts/**/*.mjs',
+      'apps/api/scripts/**/*.mjs',
+      '*.config.{mjs,cjs,ts}',
+      'apps/api/*.config.cjs',
+      'apps/mobile/app.config.js',
+    ],
     languageOptions: {
       globals: {
         ...globals.node,
@@ -35,6 +43,10 @@ export default tseslint.config(
     },
   },
   ...tseslint.configs.recommended,
+  {
+    files: ['apps/mobile/app.config.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {

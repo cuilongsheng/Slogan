@@ -1,0 +1,18 @@
+model DirectConversation {
+  id String @id @db.Uuid
+  userLowId String @db.Uuid
+  userHighId String @db.Uuid
+  initiatorUserId String @db.Uuid
+  initiator User @relation("DirectInitiator", fields: [initiatorUserId], references: [id], onDelete: Restrict)
+  nextSequence Int @default(1)
+  lastActivityAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  userLow User @relation("DirectPairLow", fields: [userLowId], references: [id], onDelete: Restrict)
+  userHigh User @relation("DirectPairHigh", fields: [userHighId], references: [id], onDelete: Restrict)
+  participants DirectConversationMember[]
+  messages DirectMessage[]
+  calls DirectCall[]
+  @@unique([userLowId, userHighId])
+  @@index([lastActivityAt, id])
+  @@index([initiatorUserId, createdAt])
+}
