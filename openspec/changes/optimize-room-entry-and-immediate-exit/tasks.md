@@ -12,4 +12,4 @@
 ## 3. Evidence and delivery
 
 - [x] 3.1 Record actual and simplified flow diagrams, runtime fixtures and separate latency/device evidence; synchronize requirements.
-- [ ] 3.2 Run consolidated affected verification, update PR #22 and publish matching main/API/Pages/APK after all gates pass.
+- [x] 3.2 Run consolidated affected verification, update PR #22 and publish matching main/API/Pages/APK after all gates pass.

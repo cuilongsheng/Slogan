@@ -14,4 +14,4 @@
 ## 3. Discovery and delivery
 
 - [x] 3.1 Diagnose two independent sessions and repair observed presence/occupancy/pagination boundaries; verify symmetric presence, busy/block exclusion and complete paging.
-- [ ] 3.2 Run one consolidated affected verification, record visual/device boundaries, synchronize requirements and deliver through PR/main gates with verified APK.
+- [x] 3.2 Run one consolidated affected verification, record visual/device boundaries, synchronize requirements and deliver through PR/main gates with verified APK.
