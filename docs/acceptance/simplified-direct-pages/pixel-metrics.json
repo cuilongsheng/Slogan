@@ -1,0 +1,22 @@
+{
+  "partners": {
+    "size": [390, 844],
+    "meanAbsoluteChannelDifference": 1.428
+  },
+  "recent": {
+    "size": [390, 844],
+    "meanAbsoluteChannelDifference": 1.101
+  },
+  "chat": {
+    "size": [390, 844],
+    "meanAbsoluteChannelDifference": 0.993
+  },
+  "incoming": {
+    "size": [390, 844],
+    "meanAbsoluteChannelDifference": 0.805
+  },
+  "active": {
+    "size": [390, 844],
+    "meanAbsoluteChannelDifference": 0.615
+  }
+}

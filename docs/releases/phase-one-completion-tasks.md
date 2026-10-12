@@ -68,3 +68,16 @@ Approved scope: the 2026-10-11 project audit followed by the owner's instruction
 ## Current status
 
 Local consolidated verification and focused repairs are complete. [Acceptance record](../acceptance/phase-one-completion/README.md) contains the executed tests, 17 original/runtime screenshot pairs and isolated recovery evidence. Production schema and application deployment have not changed in this batch. GitHub Production has been restricted to main; production credentials and release/provider/device evidence remain pending. Commit and PR delivery are recorded below when performed.
+
+## 2026-10-12 interface revision and CI repair
+
+- [x] Create five simplified high-fidelity V2 targets through Desktop Bridge, preserving V1 and the existing visual system.
+- [x] Simplify partner/recent/chat/call layouts and keep actual unread, paging, retry, report selection, blocking and immediate local audio shutdown.
+- [x] Run the full mobile tests (176), visual/interaction harness (30), mobile lint/types and Pages web export; retain [five V2 source/runtime comparisons](../acceptance/simplified-direct-pages/README.md).
+- [x] Synchronize the approved direct-messaging, partner-discovery and phase-one specification revisions.
+- [x] Diagnose and repair inherited CI Redis connections in two unit fixtures; full API unit tests (236) exit naturally under `--detectOpenHandles` with the CI Redis environment.
+- [x] Verify owner-entered `VERCEL_TOKEN` exists and save the Vercel project/team IDs, approved database fingerprint and backup key identifier in the main-only GitHub Production environment.
+- [ ] Obtain the pending specific authorization to save the existing production database connection and existing backup key in GitHub Production Secrets.
+- [ ] Complete owner entry of the new Vercel cron credential, verify configured scheduling/alert delivery, and finish guarded production release plus matching APK publication.
+
+PR #17 (implementation) and PR #18 (service command quoting) were merged by the owner. Their first verification runs did not establish release acceptance: obsolete runs stalled after passing API unit tests because of unclosed Redis/BullMQ connections, and were canceled after the cause was reproduced and repaired. The current interface revision and test cleanup require a fresh PR/CI run. No new production database migration or matching production APK is claimed by this update.

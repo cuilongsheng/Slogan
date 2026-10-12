@@ -8,7 +8,7 @@ Define the responsibilities of the three entrances of mobile rooms, idle partner
 
 ### Requirement: The bottom entrances each carry independent content
 
-The system MUST allow "Discover" to display discoverable rooms, "Find Partners" to display eligible idle users, "Messages" to display personal conversations and friend portals, and "My" to display personal information; "Find Partners" and "Messages" MUST not display room lists repeatedly.
+The system MUST allow "Discover" to display discoverable rooms, "Find Partners" to display eligible idle users, "Messages" to display personal recent conversations, and "My" to display personal information; "Find Partners" and "Messages" MUST not display room lists repeatedly.
 
 #### Scenario: User switching entrance
 

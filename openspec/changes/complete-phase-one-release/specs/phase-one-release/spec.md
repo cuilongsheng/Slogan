@@ -39,3 +39,17 @@ OAuth exchange and refresh throttling MUST apply across API instances and MUST r
 
 - **WHEN** one source exceeds its authentication allowance across multiple instances
 - **THEN** subsequent requests are throttled using the same shared quota
+
+### Requirement: Direct communication uses the approved simplified layout
+
+The mobile application MUST use the approved V2 high-fidelity partner, recent-message, chat, incoming-call and active-call layouts. It MUST retain existing request/retry, unread, safety, device-error and local audio shutdown behavior while removing redundant text and controls.
+
+#### Scenario: Report from the simplified chat toolbar
+
+- **WHEN** a participant chooses Report message and selects a received message visible to them
+- **THEN** the existing reporting confirmation identifies that message and submits its identifier through the generated contract
+
+#### Scenario: End a direct call
+
+- **WHEN** a participant uses the circular End call control
+- **THEN** local audio stops immediately and durable cleanup continues independently

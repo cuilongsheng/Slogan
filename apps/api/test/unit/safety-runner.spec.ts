@@ -14,7 +14,8 @@ describe('SafetyRunner without Redis', () => {
         warnings.push(value);
       },
     } as StructuredLogger;
-    const config = new ConfigService<Environment, true>(testEnvironment());
+    // Keep this no-Redis unit fixture independent of the CI process environment.
+    const config = new ConfigService<Environment, true>(testEnvironment({ REDIS_URL: '' }));
     let recovered = 0;
     let scanned = 0;
     const unused = async () => undefined;
@@ -47,9 +48,13 @@ describe('SafetyRunner without Redis', () => {
     const queue = new SafetyQueue(config, logger);
     const runner = new SafetyRunner(queue, repository, logger);
 
-    await runner.onModuleInit();
-    await runner.recover();
-    await runner.onModuleDestroy();
+    try {
+      await runner.onModuleInit();
+      await runner.recover();
+    } finally {
+      await runner.onModuleDestroy();
+      await queue.onModuleDestroy();
+    }
 
     expect(recovered).toBeGreaterThan(0);
     expect(scanned).toBeGreaterThan(0);

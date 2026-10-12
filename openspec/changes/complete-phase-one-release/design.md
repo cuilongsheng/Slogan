@@ -31,3 +31,15 @@ New schemas are additive. Back up before a production migration, validate the ta
 ## Acceptance sequence
 
 Complete implementation, then execute one consolidated verification cycle. Repair failures and revalidate affected evidence before release. Production migrations and real cloud checks happen only in the final release stage. Unavailable external resources remain explicitly incomplete.
+
+## Approved 2026-10-12 interface simplification
+
+The owner revised five frames in `01 Prototype / Partner & Direct Chat / Flow Draft` and requested matching high-fidelity design while broadly retaining the existing visual language. Source frames: `112:1102`, `112:1151`, `112:1193`, `112:1216`, `112:1231` at 390 × 844. Preserve the old V1 UI and create a separate V2 design section using its existing bound colors, Noto Sans SC typography, photo avatars, peer rows and actions. No backend data or contracts are removed.
+
+Remove list subtitles, the successful-list refresh button and the Messages Friends tab. Pull-to-refresh, paging and empty/error recovery remain. Messages shows recent conversations with View actions and a compact unread indicator; no fake conversations are created for friends. Existing friendship persistence and management routes remain intact.
+
+Move chat blocking and message-report guidance into the bottom toolbar; personal history deletion remains available on the conversation list. Reporting must identify the selected received message, never implicitly report an arbitrary message. The toolbar enters selection mode and the participant taps the message to report. Keep existing confirmation, retry and blocked states.
+
+Combine the incoming caller name and invitation text, remove redundant prose, and show the active peer in the call heading. Keep the established circular photo, timer and operational media/error handling. Replace active pill controls with circular microphone/end actions plus short labels.
+
+Design readiness: references are the revised prototype and three current high-fidelity page families. Existing V3 semantic color/radius/type variables, local Noto Sans SC styles, AvatarPhoto, peer-row, navigation and action components have been inspected through Desktop Bridge. There are no mobile Code Connect files. Reuse and targeted component reconciliation are sufficient; no new global theme or external library is needed. Exact source vector icons are reused. Native OS chrome/audio fidelity remains owner validation.
