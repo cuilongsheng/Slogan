@@ -14,6 +14,8 @@ Local exit starts microphone shutdown and disconnection without awaiting media I
 
 Host end commits the room state, generation revocation and durable cleanup commands before returning. A tracked Vercel post-response wakeup schedules committed command IDs promptly; existing managed queue/recovery owns provider retries. Other host operations retain their existing synchronization semantics.
 
+Production Pages build their assets but wait for the exact deployed API commit before successful publication. Vercel Git production deployment is already disabled for main; the guarded migration/API job remains authoritative. Preview/local builds skip this readiness gate. A failed or timed-out gate retains the previously deployed production assets; retry after the API is ready. The bounded wait is fifteen minutes inside the Pages build budget, with no credentials or new provider permissions.
+
 ## Risks and rollback
 
 - Late entry data after exit could reconnect audio: generation/disposal guards and deferred-promise tests.

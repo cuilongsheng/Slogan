@@ -133,4 +133,6 @@ Backend end returns after the durable transaction. Vercel waitUntil tracks queue
 
 ## Migration and rollback
 
+Production Pages assets are built first, then wait for the exact migrated/deployed API commit before successful publication. Preview/local builds skip this gate; timeouts fail closed and retain the old production assets. The wait is bounded at fifteen minutes.
+
 No new schema migration is needed for the lifecycle optimization. PR #22 separately contains the nullable room-report target migration. Rollback may restore old admission/navigation behavior, but must retain compatibility with persisted exit intent and committed realtime cleanup commands. Never bypass final authorization, erase outbox commands, or rewrite frozen PRD history to make a rollback appear complete.

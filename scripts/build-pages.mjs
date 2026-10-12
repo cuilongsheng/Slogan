@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { access, copyFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { API_ORIGIN } from './release/deployment-gate.mjs';
 
 export const API_ROUTES = {
   version: 1,
@@ -70,6 +71,43 @@ export async function packagePages(output) {
   await writeFile(new URL('_routes.json', output), `${JSON.stringify(API_ROUTES, null, 2)}\n`);
 }
 
+// Production assets must not overtake the guarded API/migration rollout.
+export async function waitForProductionPagesApi(
+  env = process.env,
+  {
+    fetchApi = fetch,
+    now = Date.now,
+    pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    timeoutMs = 15 * 60_000,
+  } = {},
+) {
+  if (env.CF_PAGES_BRANCH !== 'main') return;
+  const commit = env.CF_PAGES_COMMIT_SHA;
+  if (!/^[a-f0-9]{40}$/.test(commit || '')) throw new Error('Production Pages commit is required');
+  const deadline = now() + timeoutMs;
+  while (now() < deadline) {
+    try {
+      const response = await fetchApi(`${API_ORIGIN}/v1/auth/capabilities`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (
+        response.ok &&
+        response.headers.get('content-type')?.includes('application/json') &&
+        response.headers.get('x-slogan-commit') === commit
+      ) {
+        await response.json();
+        return;
+      }
+    } catch {
+      /* Keep the previously deployed assets when readiness cannot be confirmed. */
+    }
+    console.log('Waiting for the matching production API before publishing Pages');
+    await pause(15_000);
+  }
+  throw new Error('Production API is not ready; previous Pages deployment must remain active');
+}
+
 async function main() {
   const site = sites[process.argv[2]];
   if (!site) throw new Error('Choose admin or mobile');
@@ -81,6 +119,7 @@ async function main() {
   });
   if (result.error || result.status !== 0) throw new Error('Pages frontend build failed');
   await packagePages(new URL(site.output, root));
+  await waitForProductionPagesApi();
   console.log(`Pages ${process.argv[2]} output includes worker and API routes`);
 }
 

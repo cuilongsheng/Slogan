@@ -9,6 +9,7 @@ The owner explicitly requested faster creation/admission and immediate local ret
 - Remove redundant provisioning reads while retaining reservation, final authorization and room-generation checks.
 - Return locally to discovery immediately after explicit leave/end intent, using the existing joining-order successor default and validating designated successors.
 - Keep exit intent in an account-bound persisted client queue; retries do not require the room screen and never claim server completion early.
+- Gate production Pages publication on the matching deployed API commit so new room operations do not precede migration/backend rollout.
 - Commit host end operations before provider I/O and let existing durable cleanup recovery run asynchronously.
 
 ## Capabilities
