@@ -95,7 +95,7 @@ export class SafetyCaseDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ format: 'uuid' }) reportId!: string;
   @ApiProperty({ type: String, format: 'uuid', nullable: true }) roomId!: string | null;
-  @ApiProperty({ format: 'uuid' }) targetUserId!: string;
+  @ApiProperty({ type: String, format: 'uuid', nullable: true }) targetUserId!: string | null;
   @ApiProperty() category!: string;
   @ApiProperty({ enum: SAFETY_CASE_STATUSES }) status!: SafetyCaseStatus;
   @ApiProperty({ type: String, format: 'uuid', nullable: true }) assigneeUserId!: string | null;
@@ -203,7 +203,7 @@ class SafetyEvidenceReportDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ type: String, format: 'uuid', nullable: true }) roomId!: string | null;
   @ApiProperty({ format: 'uuid' }) reporterUserId!: string;
-  @ApiProperty({ format: 'uuid' }) targetUserId!: string;
+  @ApiProperty({ type: String, format: 'uuid', nullable: true }) targetUserId!: string | null;
   @ApiProperty({
     enum: [
       'HARASSMENT_ABUSE',

@@ -7,7 +7,7 @@ import {
   type ReportInput,
   type ReportContext,
 } from '../../src/modules/moderation/index.js';
-const input = (): ReportInput => ({
+const input = (): ReportInput & { targetUserId: string } => ({
   roomId: randomUUID(),
   reporterUserId: randomUUID(),
   targetUserId: randomUUID(),
@@ -18,7 +18,7 @@ const input = (): ReportInput => ({
 const context = (i: ReportInput): ReportContext => ({
   roomId: i.roomId,
   reporter: { userId: i.reporterUserId, joinedAt: new Date(0) },
-  target: { userId: i.targetUserId, joinedAt: new Date(1000) },
+  target: i.targetUserId ? { userId: i.targetUserId, joinedAt: new Date(1000) } : null,
 });
 describe('report policy', () => {
   it.each(REPORT_CATEGORIES)('normalizes UUIDs and preserves valid category %s', (category) => {
@@ -61,6 +61,25 @@ describe('report policy', () => {
     ).toThrow(expect.objectContaining({ code: 'REPORT_CONTEXT_NOT_FOUND' }));
     expect(() => assertReportContext(i, { ...c, roomId: randomUUID() })).toThrow();
     expect(() => assertReportContext(i, null)).toThrow();
+  });
+  it('room reporting requires actual membership and never invents a member target', () => {
+    const memberInput = input();
+    const roomInput = normalizeReport({ ...memberInput, targetUserId: undefined });
+    expect(roomInput.targetUserId).toBeNull();
+    expect(() => assertReportContext(roomInput, context(roomInput))).not.toThrow();
+    expect(() =>
+      assertReportContext(roomInput, { ...context(roomInput), reporter: null }),
+    ).toThrow();
+    const stored = {
+      ...roomInput,
+      id: randomUUID(),
+      submittedAt: new Date(),
+      safetyCase: { id: randomUUID() },
+    };
+    expect(reportRetry(roomInput, stored).caseId).toBe(stored.safetyCase.id);
+    expect(() => reportRetry(memberInput, stored)).toThrow(
+      expect.objectContaining({ code: 'REPORT_REQUEST_CONFLICT' }),
+    );
   });
   it('checks reporter context before disclosing self or target information', () => {
     const i = input();

@@ -9,6 +9,7 @@ export async function mockRoomEntry(
   options: { password?: boolean; processing?: boolean } = {},
 ) {
   const joins: Record<string, unknown>[] = [];
+  const detailReads: string[] = [];
   const accepted = new Set<string>();
   const consentCommands: string[] = [];
   const room = {
@@ -45,7 +46,10 @@ export async function mockRoomEntry(
   await page.route(/\/v1\/rooms(?:\?.*)?$/, (route) =>
     route.fulfill({ json: { items: [room], nextCursor: null } }),
   );
-  await page.route(`**/v1/rooms/${entryRoomId}`, (route) => route.fulfill({ json: room }));
+  await page.route(`**/v1/rooms/${entryRoomId}`, (route) => {
+    detailReads.push(entryRoomId);
+    return route.fulfill({ json: room });
+  });
   await page.route(`**/v1/rooms/${entryRoomId}/memberships`, async (route) => {
     const body = route.request().postDataJSON();
     joins.push(body);
@@ -107,5 +111,5 @@ export async function mockRoomEntry(
       },
     });
   });
-  return { joins, accepted, consentCommands };
+  return { joins, accepted, consentCommands, detailReads };
 }

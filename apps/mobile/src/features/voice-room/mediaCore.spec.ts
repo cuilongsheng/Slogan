@@ -4,6 +4,7 @@ import { LiveKitVoiceMedia } from './mediaCore';
 
 jest.mock('livekit-client', () => ({
   Room: jest.fn(),
+  DisconnectReason: { ROOM_DELETED: 1, PARTICIPANT_REMOVED: 2, DUPLICATE_IDENTITY: 3 },
   RoomEvent: {
     ParticipantConnected: 'participantConnected',
     ParticipantDisconnected: 'participantDisconnected',
@@ -245,4 +246,26 @@ it('exit during a pending LiveKit connection never starts a device probe or rest
   expect(media.snapshot.connection).toBe('disconnected');
   expect(platform.checkMicrophone).not.toHaveBeenCalled();
   expect(room.disconnect).toHaveBeenCalled();
+});
+
+it('warms the same SDK Room without waiting for the warmup request before connecting', async () => {
+  const { room, media } = deviceFixture(async () => 'ready');
+  const prepare = jest.fn(() => new Promise<void>(() => {}));
+  Object.assign(room, { prepareConnection: prepare });
+  await media.connect(deviceCredential);
+  expect(prepare).toHaveBeenCalledWith('wss://example.invalid');
+  expect(prepare.mock.invocationCallOrder[0]).toBeLessThan(
+    room.connect.mock.invocationCallOrder[0]!,
+  );
+  expect(Room).toHaveBeenCalled();
+  expect(media.snapshot.timings?.connectedMs).toEqual(expect.any(Number));
+  await media.disconnect();
+});
+it('classifies provider room deletion separately from transient network recovery', async () => {
+  const { room, media } = deviceFixture(async () => 'ready');
+  await media.connect(deviceCredential);
+  const handler = room.on.mock.calls.find((call) => call[0] === 'disconnected')![1];
+  handler(1);
+  expect(media.snapshot).toMatchObject({ connection: 'disconnected', disconnectReason: 'ended' });
+  await media.disconnect();
 });

@@ -7,7 +7,12 @@ import { AppModule } from '../../src/app.module.js';
 import { configureApiApp } from '../../src/bootstrap/create-api-app.js';
 import { PrismaService } from '../../src/infrastructure/database/prisma.service.js';
 import { SessionService } from '../../src/modules/auth/index.js';
-import { RoomsService, RoomRealtimeService } from '../../src/modules/rooms/index.js';
+import {
+  RoomsService,
+  RoomRealtimeService,
+  ROOM_COMMAND_DELIVERY,
+  type RoomCommandDelivery,
+} from '../../src/modules/rooms/index.js';
 import { REALTIME_PROVIDER } from '../../src/modules/voice/index.js';
 import { RealtimeRunner } from '../../src/modules/voice/testing.js';
 import { installTestEnvironment } from '../fixtures/environment.js';
@@ -183,17 +188,17 @@ describe('host controls HTTP contract', () => {
       }),
     ).toBeGreaterThan(0);
   });
-  it('returns committed operation details when provider cleanup fails and supports end retries', async () => {
+  it('commits end without provider cleanup and supports durable recovery and retries', async () => {
     await post('realtime-credentials', memberToken).expect(200);
     provider.fail = true;
-    const failed = await post('end').expect(503);
-    expect(failed.body).toMatchObject({
-      code: 'REALTIME_PROVIDER_UNAVAILABLE',
-      details: { roomStatus: 'ENDING', providerStatus: 'UNAVAILABLE' },
-    });
+    const committed = await post('end').expect(200);
+    expect(committed.body).toMatchObject({ roomStatus: 'ENDING', providerStatus: 'PENDING' });
+    expect(provider.revoked).toEqual([]);
+    expect(provider.deleted).toEqual([]);
     await post('realtime-credentials', memberToken).expect(409);
     provider.fail = false;
     await prisma.realtimeCommand.updateMany({ data: { nextAttemptAt: new Date(0) } });
+    await app.get<RoomCommandDelivery>(ROOM_COMMAND_DELIVERY).dispatchPending(roomId);
     const recovered = await post('end').expect(200);
     expect(['ENDING', 'ENDED']).toContain(recovered.body.roomStatus);
     expect((await post('end').expect(200)).body.roomStatus).toBe('ENDED');

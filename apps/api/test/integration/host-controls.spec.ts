@@ -281,10 +281,9 @@ describe('host controls PostgreSQL transactions', () => {
       code: 'ROOM_HOST_REQUIRED',
     });
   });
-  it('requires explicit online successor and closes when none remain', async () => {
+  it('selects an online successor in joining order and closes when none remain', async () => {
     await connect(thirdId);
-    await expect(leave(hostId)).rejects.toMatchObject({ code: 'ROOM_SUCCESSOR_INVALID' });
-    await leave(hostId, (await membership(thirdId)).id);
+    await leave(hostId);
     expect((await room()).hostUserId).toBe(thirdId);
     await leave(thirdId);
     expect((await room()).status).toBe('ENDING');

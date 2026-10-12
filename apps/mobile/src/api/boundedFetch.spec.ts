@@ -20,12 +20,44 @@ describe('bounded API transport', () => {
     expect(await response.json()).toEqual({ code: 'DENIED' });
   });
 
+  it('preserves UTF-8 room titles, member names and emoji through native JSON transport', async () => {
+    const testRequire = require as unknown as {
+      resolve(id: string, options?: { paths: string[] }): string;
+    };
+    const native = jest.requireActual(
+      testRequire.resolve('whatwg-fetch', {
+        paths: [testRequire.resolve('react-native/package.json')],
+      }),
+    );
+    const originalResponse = globalThis.Response;
+    globalThis.Response = native.Response;
+    const payload = { topic: '测试房间 · Travel 🌏', displayName: '崔龙生' };
+    const text = JSON.stringify(payload);
+    const utf8Bytes = encodeURIComponent(text).replace(/%([A-F0-9]{2})/g, (_, hex: string) =>
+      String.fromCharCode(Number.parseInt(hex, 16)),
+    );
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      status: 200,
+      statusText: 'OK',
+      headers: new native.Headers({ 'Content-Type': 'application/json' }),
+      text: async () => text,
+      arrayBuffer: async () =>
+        Uint8Array.from(utf8Bytes, (character) => character.charCodeAt(0)).buffer,
+    });
+    try {
+      const response = await boundedFetch('https://example.invalid/v1/rooms');
+      expect(await response.json()).toEqual(payload);
+    } finally {
+      globalThis.Response = originalResponse;
+    }
+  });
+
   it('bounds stalls while reading the response body and propagates caller cancellation', async () => {
     jest.useFakeTimers();
     globalThis.fetch = jest.fn((_input: RequestInfo | URL, init?: RequestInit) =>
       Promise.resolve({
-        arrayBuffer: () =>
-          new Promise<ArrayBuffer>((_resolve, reject) => {
+        text: () =>
+          new Promise<string>((_resolve, reject) => {
             init?.signal?.addEventListener('abort', () => reject(new Error('Aborted')), {
               once: true,
             });

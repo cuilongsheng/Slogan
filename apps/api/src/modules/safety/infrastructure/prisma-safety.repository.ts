@@ -339,13 +339,27 @@ export class PrismaSafetyRepository implements SafetyRepository {
             },
           }),
           tx.report.findMany({
-            where: { targetUserId: row.targetUserId, id: { not: row.reportId } },
+            where: {
+              ...(row.targetUserId
+                ? { targetUserId: row.targetUserId }
+                : row.roomId
+                  ? { targetUserId: null, roomId: row.roomId }
+                  : { id: { in: [] } }),
+              NOT: { id: row.reportId },
+            },
             orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
             take: 101,
             select: { id: true, roomId: true, category: true, submittedAt: true },
           }),
           tx.safetyCase.findMany({
-            where: { targetUserId: row.targetUserId, id: { not: row.id } },
+            where: {
+              ...(row.targetUserId
+                ? { targetUserId: row.targetUserId }
+                : row.roomId
+                  ? { targetUserId: null, roomId: row.roomId }
+                  : { id: { in: [] } }),
+              NOT: { id: row.id },
+            },
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take: 101,
             select: {
@@ -357,7 +371,7 @@ export class PrismaSafetyRepository implements SafetyRepository {
             },
           }),
           tx.safetyRestriction.findMany({
-            where: { userId: row.targetUserId },
+            where: row.targetUserId ? { userId: row.targetUserId } : { id: { in: [] } },
             orderBy: [{ startsAt: 'desc' }, { id: 'desc' }],
             take: 101,
             select: {
@@ -373,7 +387,7 @@ export class PrismaSafetyRepository implements SafetyRepository {
           tx.roomSpeechRiskEvent.findMany({
             where: {
               ...(row.roomId ? { roomId: row.roomId } : { id: { in: [] } }),
-              subjectUserId: row.targetUserId,
+              ...(row.targetUserId ? { subjectUserId: row.targetUserId } : {}),
               lastOccurredAt: { gte: signalFrom, lte: signalTo },
             },
             orderBy: [{ lastOccurredAt: 'asc' }, { id: 'asc' }],
@@ -804,7 +818,10 @@ export class PrismaSafetyRepository implements SafetyRepository {
           throw SafetyError.stateConflict();
         const now = await databaseNow(tx);
         let restriction: JsonObject | null = null;
+        if (input.resolution !== 'NO_ACTION' && row.targetUserId === null)
+          throw SafetyError.validation();
         if (input.resolution === 'PERMANENT_DISABLE') {
+          if (row.targetUserId === null) throw SafetyError.validation();
           await tx.$queryRaw(
             Prisma.sql`SELECT "id" FROM "User" WHERE "id"=${row.targetUserId}::uuid FOR UPDATE`,
           );
@@ -843,6 +860,7 @@ export class PrismaSafetyRepository implements SafetyRepository {
           }
         }
         if (input.resolution !== 'NO_ACTION') {
+          if (row.targetUserId === null) throw SafetyError.validation();
           const severity = input.severity!;
           const temporary = input.resolution === 'TEMPORARY_RESTRICTION';
           const saved = await tx.safetyRestriction.create({
@@ -906,7 +924,10 @@ export class PrismaSafetyRepository implements SafetyRepository {
           actorRoles: roles,
           action,
           targetType: input.resolution === 'PERMANENT_DISABLE' ? 'USER' : 'SAFETY_CASE',
-          targetId: input.resolution === 'PERMANENT_DISABLE' ? row.targetUserId : row.id,
+          targetId:
+            input.resolution === 'PERMANENT_DISABLE' && row.targetUserId
+              ? row.targetUserId
+              : row.id,
           reason,
           result: 'SUCCEEDED',
           clientRequestId: input.clientRequestId,

@@ -24,7 +24,7 @@ export interface SafetyCaseView {
   id: string;
   reportId: string;
   roomId: string | null;
-  targetUserId: string;
+  targetUserId: string | null;
   category: string;
   status: SafetyCaseStatus;
   assigneeUserId: string | null;

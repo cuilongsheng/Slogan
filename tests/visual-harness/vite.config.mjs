@@ -46,9 +46,24 @@ export default {
         )
           return mock;
         if (source === '../auth') return mock;
+        if (
+          importer?.endsWith('/RoomExitProvider.tsx') &&
+          source === '../../services/roomExitStorage'
+        )
+          return fileURLToPath(
+            new URL('../../apps/mobile/src/services/roomExitStorage.web.ts', import.meta.url),
+          );
+        if (
+          importer?.endsWith('/index.ts') &&
+          importer.includes('/voice-room/') &&
+          source === './media'
+        )
+          return mock;
         if (importer?.endsWith('/CallScreen.tsx') && source === '../voice-room') return mock;
         if (importer?.endsWith('/locale.ts') && source === './languageStorage')
-          return fileURLToPath(new URL('../../apps/mobile/src/services/languageStorage.web.ts', import.meta.url));
+          return fileURLToPath(
+            new URL('../../apps/mobile/src/services/languageStorage.web.ts', import.meta.url),
+          );
         if (
           (importer?.endsWith('/ProfileScreens.tsx') || importer?.endsWith('/draft.tsx')) &&
           ['../auth/context', '../auth/session'].includes(source)

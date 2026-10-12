@@ -4169,7 +4169,7 @@ export interface components {
             /** @enum {string} */
             status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
             /** Format: uuid */
-            targetUserId: string;
+            targetUserId: string | null;
             version: number;
         };
         SafetyCaseListDto: {
@@ -4199,7 +4199,7 @@ export interface components {
                 /** @enum {string} */
                 status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                 /** Format: uuid */
-                targetUserId: string;
+                targetUserId: string | null;
                 version: number;
             }[];
             nextCursor: string | null;
@@ -4322,7 +4322,7 @@ export interface components {
                 /** Format: date-time */
                 submittedAt: string;
                 /** Format: uuid */
-                targetUserId: string;
+                targetUserId: string | null;
             };
             restrictions: {
                 items: {
@@ -4488,7 +4488,7 @@ export interface components {
             /** Format: date-time */
             submittedAt: string;
             /** Format: uuid */
-            targetUserId: string;
+            targetUserId: string | null;
         };
         SafetyEvidenceRestrictionDto: {
             /** Format: date-time */
@@ -4688,7 +4688,7 @@ export interface components {
                 /** @enum {string} */
                 status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                 /** Format: uuid */
-                targetUserId: string;
+                targetUserId: string | null;
                 version: number;
             };
             restriction: {
@@ -4817,8 +4817,11 @@ export interface components {
             clientRequestId: string;
             /** @description Plain text. Trimmed before validation; 1–2000 Unicode code points. Never included in response or audit. */
             description: string;
-            /** Format: uuid */
-            targetUserId: string;
+            /**
+             * Format: uuid
+             * @description Omit for a room report. A supplied identifier reports that joined member.
+             */
+            targetUserId?: string | null;
         };
         SubmitSafetyAppealDto: {
             /** Format: uuid */
@@ -10926,7 +10929,7 @@ export interface operations {
                             /** @enum {string} */
                             status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                             /** Format: uuid */
-                            targetUserId: string;
+                            targetUserId: string | null;
                             version: number;
                         }[];
                         nextCursor: string | null;
@@ -11192,7 +11195,7 @@ export interface operations {
                         /** @enum {string} */
                         status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                         /** Format: uuid */
-                        targetUserId: string;
+                        targetUserId: string | null;
                         version: number;
                     };
                 };
@@ -11344,7 +11347,7 @@ export interface operations {
                         /** @enum {string} */
                         status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                         /** Format: uuid */
-                        targetUserId: string;
+                        targetUserId: string | null;
                         version: number;
                     };
                 };
@@ -11497,7 +11500,7 @@ export interface operations {
                         /** @enum {string} */
                         status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                         /** Format: uuid */
-                        targetUserId: string;
+                        targetUserId: string | null;
                         version: number;
                     };
                 };
@@ -11706,7 +11709,7 @@ export interface operations {
                             /** Format: date-time */
                             submittedAt: string;
                             /** Format: uuid */
-                            targetUserId: string;
+                            targetUserId: string | null;
                         };
                         restrictions: {
                             items: {
@@ -11939,7 +11942,7 @@ export interface operations {
                             /** @enum {string} */
                             status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                             /** Format: uuid */
-                            targetUserId: string;
+                            targetUserId: string | null;
                             version: number;
                         };
                         restriction: {
@@ -12120,7 +12123,7 @@ export interface operations {
                         /** @enum {string} */
                         status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
                         /** Format: uuid */
-                        targetUserId: string;
+                        targetUserId: string | null;
                         version: number;
                     };
                 };
@@ -20772,23 +20775,6 @@ export interface operations {
                     };
                 };
             };
-            /** @description REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example VALIDATION_FAILED */
-                        code: string;
-                        details?: Record<string, never>;
-                        /** @example Request validation failed */
-                        message: string;
-                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
-                        requestId?: string;
-                    };
-                };
-            };
         };
     };
     AssistanceController_audio: {
@@ -22900,8 +22886,11 @@ export interface operations {
                     clientRequestId: string;
                     /** @description Plain text. Trimmed before validation; 1–2000 Unicode code points. Never included in response or audit. */
                     description: string;
-                    /** Format: uuid */
-                    targetUserId: string;
+                    /**
+                     * Format: uuid
+                     * @description Omit for a room report. A supplied identifier reports that joined member.
+                     */
+                    targetUserId?: string | null;
                 };
             };
         };

@@ -1,7 +1,7 @@
 import { AppText as Text } from '../../components/ui/AppText';
 import { roomLevelLabel } from '../room-discovery/presentation';
 import { useRoomMessages } from './useRoomMessages';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
@@ -15,7 +15,6 @@ import {
   View,
 } from 'react-native';
 
-import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
 import { RoomShareAction } from '../../components/ui/RoomShareAction';
 import { VoicePage } from '../../components/ui/VoicePage';
 import { getLanguage, t, tf, useLanguage } from '../../services/locale';
@@ -32,6 +31,7 @@ import { ExpressionAssistSheet } from './ExpressionAssistSheet';
 import { RoomControls } from './RoomControls';
 import { RoomExtensionSheet } from './RoomExtensionSheet';
 import { RoomSafetyAlertsSheet } from './RoomSafetyAlertsSheet';
+import { useRoomExitDelivery } from './RoomExitProvider';
 import { createVoiceMedia } from './media';
 import { ReconnectingScreen } from './ReconnectingScreen';
 import { RoomDeviceNotice } from './RoomDeviceNotice';
@@ -135,6 +135,7 @@ function SessionState({
     'POST_ROOM_KEYWORDS_CONSENT_REQUIRED',
   ].includes(snapshot.errorCode ?? '');
   const exiting = ['leaving', 'leaveUnconfirmed'].includes(snapshot.phase);
+  const reconnecting = snapshot.phase === 'active';
   const chooseSuccessor = snapshot.errorCode === 'ROOM_SUCCESSOR_INVALID';
   const busy = ['joining', 'connecting', 'leaving', 'idle'].includes(snapshot.phase);
   const title = exiting
@@ -172,18 +173,18 @@ function SessionState({
             {t(
               exiting
                 ? 'voiceLeave'
-                : snapshot.credentialVersion === null
-                  ? 'voiceJoiningTitle'
-                  : 'voiceReconnectingTitle',
+                : reconnecting
+                  ? 'voiceReconnectingTitle'
+                  : 'voiceJoiningTitle',
             )}
           </Text>
           <Text style={styles.stateSubtitle}>
             {t(
               exiting
                 ? 'voiceLocalAudioStopped'
-                : snapshot.credentialVersion === null
-                  ? 'voiceJoiningSubtitle'
-                  : 'voiceReconnectSubtitle',
+                : reconnecting
+                  ? 'voiceReconnectSubtitle'
+                  : 'voiceJoiningSubtitle',
             )}
           </Text>
         </View>
@@ -278,45 +279,16 @@ function SessionState({
   );
 }
 
-function Ended({ snapshot }: { snapshot: VoiceSessionSnapshot }) {
-  const router = useRouter();
-  return (
-    <RoomPage ambient>
-      <RoomHeader
-        title={t('voiceEndedTitle')}
-        subtitle={t('voiceEndedSubtitle')}
-        onBack={() => router.replace('/rooms')}
-      />
-      <View style={styles.endedMark}>
-        <Text style={styles.endedCheck}>✓</Text>
-      </View>
-      <Text style={styles.endedHeading}>{t('voiceEndedThanks')}</Text>
-      <Text style={styles.endedBody}>{t('voiceEndedExplanation')}</Text>
-      <View style={styles.endedSummary}>
-        <Text style={styles.endedSummaryLabel}>{t('voiceThisRoom')}</Text>
-        <Text style={styles.endedTopic}>{snapshot.room?.topic ?? t('voiceEndedTitle')}</Text>
-        {snapshot.room && (
-          <Text style={styles.endedMeta}>
-            {roomLevelLabel(snapshot.room)} ·{' '}
-            {tf('roomPeople', { count: snapshot.room.memberCount })}
-          </Text>
-        )}
-      </View>
-      <View style={[roomPageStyles.footer, styles.endedFooter]}>
-        <RoomAction label={t('voiceBackToDiscover')} onPress={() => router.replace('/rooms')} />
-      </View>
-    </RoomPage>
-  );
-}
-
 function MemberSeat({
   member,
   snapshot,
   onPress,
   onRemove,
   columnIndex,
+  isSelf,
 }: {
   columnIndex: number;
+  isSelf: boolean;
   member: RoomMember;
   snapshot: VoiceSessionSnapshot;
   onPress: () => void;
@@ -333,6 +305,8 @@ function MemberSeat({
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={member.displayName}
+        disabled={isSelf}
+        accessibilityState={{ disabled: isSelf }}
         onPress={onPress}
         style={styles.seatPress}
       >
@@ -405,6 +379,9 @@ function VoiceRoomBody({
   assistanceApi: ExpressionAssistanceApi;
 }) {
   const chat = useRoomMessages(api, snapshot.room!.id);
+  useLayoutEffect(() => {
+    session.recordRoomVisible();
+  }, [session]);
   const messageScroll = useRef<ScrollView>(null);
   const messageAtBottom = useRef(true);
   const muteRoomMicrophone = useCallback(async () => {
@@ -424,11 +401,12 @@ function VoiceRoomBody({
     await session.setMicrophoneEnabled(true);
     if (!session.snapshot.media.microphoneEnabled) throw new Error('ROOM_MIC_RESTORE_FAILED');
   }, [session]);
-  const [endConfirm, setEndConfirm] = useState(false);
-  const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<RoomMember | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [reportRoomOpen, setReportRoomOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<RoomMember | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
   const [assistanceOpen, setAssistanceOpen] = useState(false);
@@ -437,7 +415,6 @@ function VoiceRoomBody({
     endsAt: string;
     providerStatus: 'COMPLETED' | 'PENDING' | 'UNAVAILABLE';
   } | null>(null);
-  const [successorMembershipId, setSuccessorMembershipId] = useState<string | null>(null);
   const members = [...snapshot.members].sort((a, b) => a.position - b.position);
   const [seatRowWidth, setSeatRowWidth] = useState(359);
   const room = snapshot.room;
@@ -458,12 +435,7 @@ function VoiceRoomBody({
           accessibilityLabel={t('back')}
           style={styles.backHit}
           onPress={() => {
-            if (
-              snapshot.role === 'HOST' &&
-              members.some((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
-            )
-              setLeaveConfirm(true);
-            else void session.leave();
+            void session.leave();
           }}
         >
           <Image source={backIcon} style={styles.backIcon} />
@@ -479,12 +451,7 @@ function VoiceRoomBody({
             accessibilityLabel={t('voiceLeave')}
             style={styles.exitHit}
             onPress={() => {
-              if (
-                snapshot.role === 'HOST' &&
-                members.some((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
-              )
-                setLeaveConfirm(true);
-              else void session.leave();
+              void session.leave();
             }}
           >
             <Image source={exitIcon} style={styles.exitIcon} />
@@ -492,9 +459,9 @@ function VoiceRoomBody({
         }
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel={t('roomShareAction')}
+          accessibilityLabel={t('roomMoreActions')}
           style={styles.moreHit}
-          onPress={() => setShareOpen(true)}
+          onPress={() => setMoreOpen(true)}
         >
           <View style={styles.moreDots}>
             {[0, 1, 2].map((dot) => (
@@ -507,8 +474,12 @@ function VoiceRoomBody({
             {room.memberCount} / {room.capacity} {t('voiceOnline')} ·{' '}
             {tf('roomRemainingMinutes', { minutes: remainingMinutes(room.endsAt) })}
           </Text>
-          <Text style={styles.headerLevel}>{roomLevelLabel(room).replace('–', ' ～ ')}</Text>
-          <Text style={styles.live}>{'●  LIVE'}</Text>
+          <Text numberOfLines={1} style={styles.headerLevel}>
+            {roomLevelLabel(room).replace('–', ' ～ ')}
+          </Text>
+          <Text numberOfLines={1} style={styles.live}>
+            {snapshot.media.connection === 'connected' ? '●\u00a0 LIVE' : t('voiceAudioConnecting')}
+          </Text>
         </View>
       </View>
       <ScrollView style={styles.memberScroll} contentContainerStyle={styles.bodyContent}>
@@ -592,9 +563,21 @@ function VoiceRoomBody({
                       {member ? (
                         <MemberSeat
                           member={member}
+                          isSelf={
+                            member.participantIdentity === snapshot.media.localIdentity ||
+                            member.membershipId === room.currentMembership?.id
+                          }
                           columnIndex={index}
                           snapshot={snapshot}
-                          onPress={() => setControlsOpen(true)}
+                          onPress={() => {
+                            if (
+                              member.participantIdentity === snapshot.media.localIdentity ||
+                              member.membershipId === room.currentMembership?.id
+                            )
+                              return;
+                            setReportTarget(member);
+                            setControlsOpen(true);
+                          }}
                           onRemove={
                             snapshot.role === 'HOST' && member.role !== 'HOST'
                               ? () => {
@@ -706,6 +689,10 @@ function VoiceRoomBody({
               accessibilityLabel={
                 snapshot.media.microphoneEnabled ? t('voiceMute') : t('voiceUnmute')
               }
+              disabled={snapshot.phase !== 'active' || snapshot.media.connection !== 'connected'}
+              accessibilityState={{
+                disabled: snapshot.phase !== 'active' || snapshot.media.connection !== 'connected',
+              }}
               onPress={() => void session.setMicrophoneEnabled(!snapshot.media.microphoneEnabled)}
               style={[styles.micButton, snapshot.media.microphoneEnabled && styles.micOn]}
             >
@@ -717,119 +704,56 @@ function VoiceRoomBody({
           </View>
         </View>
       </View>
-      {(endConfirm || leaveConfirm) && (
+      {moreOpen && (
         <View style={styles.overlay}>
-          <View style={[styles.confirmSheet, leaveConfirm && styles.handoffSheet]}>
-            <View style={leaveConfirm && styles.handoffHeader}>
-              <Text style={[styles.confirmTitle, leaveConfirm && styles.handoffTitle]}>
-                {endConfirm ? t('voiceEndConfirmTitle') : t('voiceLeaveConfirmTitle')}
-              </Text>
-              {leaveConfirm && (
-                <>
-                  <View pointerEvents="none" style={styles.handoffDots}>
-                    <View style={[styles.handoffDot, { backgroundColor: '#FF6F70' }]} />
-                    <View
-                      style={[styles.handoffDot, { backgroundColor: '#FFD65A', marginTop: 3 }]}
-                    />
-                    <View style={[styles.handoffDot, { backgroundColor: '#23C8BE' }]} />
-                  </View>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityLabel={t('roomCloseSheet')}
-                    style={styles.handoffClose}
-                    onPress={() => {
-                      setLeaveConfirm(false);
-                      setSuccessorMembershipId(null);
-                    }}
-                  >
-                    <Text style={styles.handoffCloseText}>×</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+          <View style={[styles.confirmSheet, styles.moreSheet]}>
+            <Text style={styles.moreTitle}>{t('roomMoreActions')}</Text>
+            <View pointerEvents="none" style={styles.moreBrandDots}>
+              <View style={[styles.handoffDot, { backgroundColor: '#FF6F70' }]} />
+              <View style={[styles.handoffDot, { backgroundColor: '#FFD65A', marginTop: 3 }]} />
+              <View style={[styles.handoffDot, { backgroundColor: '#23C8BE' }]} />
             </View>
-            <Text style={[styles.confirmBody, leaveConfirm && styles.handoffBody]}>
-              {endConfirm ? t('voiceEndConfirmBody') : t('roomLeaveHostBody')}
-            </Text>
-            {leaveConfirm && snapshot.role === 'HOST' && (
-              <View style={[styles.successors, styles.handoffCandidates]}>
-                {members.filter(
-                  (member) => member.role !== 'HOST' && member.presence === 'CONNECTED',
-                ).length === 0 ? (
-                  <Text style={styles.successorHint}>{t('roomLeaveNoSuccessor')}</Text>
-                ) : (
-                  <>
-                    <Text style={styles.handoffHint}>{t('roomLeaveSuccessor')}</Text>
-                    {members
-                      .filter((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
-                      .map((member) => (
-                        <TouchableOpacity
-                          key={member.membershipId}
-                          accessibilityRole="button"
-                          accessibilityLabel={member.displayName}
-                          onPress={() => setSuccessorMembershipId(member.membershipId)}
-                          style={[
-                            styles.handoffOption,
-                            successorMembershipId === member.membershipId &&
-                              styles.successorSelected,
-                          ]}
-                        >
-                          <Text style={styles.handoffName}>{member.displayName}</Text>
-                          <Text style={styles.handoffPresence}>
-                            {t(
-                              snapshot.media.participants.some(
-                                (p) => p.identity === member.participantIdentity && p.speaking,
-                              )
-                                ? 'roomHandoffSpeaking'
-                                : snapshot.media.participants.some(
-                                      (p) =>
-                                        p.identity === member.participantIdentity &&
-                                        p.microphoneEnabled,
-                                    )
-                                  ? 'roomHandoffOnline'
-                                  : 'roomHandoffMuted',
-                            )}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                  </>
-                )}
-              </View>
-            )}
-            <VoiceButton
-              style={leaveConfirm ? styles.handoffAction : {}}
-              textStyle={leaveConfirm ? styles.handoffActionText : {}}
-              disabled={
-                !endConfirm &&
-                leaveConfirm &&
-                !successorMembershipId &&
-                members.some((member) => member.role !== 'HOST' && member.presence === 'CONNECTED')
-              }
-              label={
-                endConfirm
-                  ? t('voiceEndRoom')
-                  : leaveConfirm && snapshot.role === 'HOST'
-                    ? t('roomLeaveTransferAction')
-                    : t('voiceLeave')
-              }
-              onPress={() => {
-                if (endConfirm) void session.end();
-                else void session.leave(successorMembershipId ?? undefined);
-                setEndConfirm(false);
-                setLeaveConfirm(false);
-                setSuccessorMembershipId(null);
-              }}
-            />
-            {endConfirm && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('roomCloseSheet')}
+              style={styles.moreClose}
+              onPress={() => setMoreOpen(false)}
+            >
+              <Text style={styles.moreCloseText}>×</Text>
+            </TouchableOpacity>
+            <View style={styles.moreActions}>
               <TouchableOpacity
                 accessibilityRole="button"
+                style={styles.moreAction}
                 onPress={() => {
-                  setEndConfirm(false);
-                  setLeaveConfirm(false);
+                  setMoreOpen(false);
+                  setReportRoomOpen(true);
+                  setControlsOpen(true);
                 }}
               >
-                <Text style={styles.cancel}>{t('cancelAction')}</Text>
+                <Text style={styles.moreActionText}>{t('roomReportRoom')}</Text>
               </TouchableOpacity>
-            )}
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.moreAction}
+                onPress={() => {
+                  setMoreOpen(false);
+                  void session.leave();
+                }}
+              >
+                <Text style={styles.moreActionText}>{t('voiceLeave')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.moreAction}
+                onPress={() => {
+                  setMoreOpen(false);
+                  setShareOpen(true);
+                }}
+              >
+                <Text style={styles.moreActionText}>{t('roomShareAction')}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
@@ -854,7 +778,7 @@ function VoiceRoomBody({
                     accessibilityRole="button"
                     onPress={() => {
                       setShareOpen(false);
-                      setEndConfirm(true);
+                      void session.end();
                     }}
                   >
                     <Text style={styles.cancel}>{t('voiceEndRoom')}</Text>
@@ -888,12 +812,21 @@ function VoiceRoomBody({
           isHost={snapshot.role === 'HOST'}
           api={api}
           refresh={() => session.refresh()}
-          {...(inviteOpen ? { initialMode: 'invite' as const } : {})}
+          roomTopic={room.topic}
+          {...(inviteOpen
+            ? { initialMode: 'invite' as const }
+            : reportRoomOpen
+              ? { initialMode: 'reportRoom' as const }
+              : reportTarget
+                ? { initialMode: 'report' as const, initialReportTarget: reportTarget }
+                : {})}
           {...(removeTarget ? { initialRemoveTarget: removeTarget } : {})}
           onClose={() => {
             setControlsOpen(false);
             setInviteOpen(false);
             setRemoveTarget(null);
+            setReportTarget(null);
+            setReportRoomOpen(false);
           }}
         />
       )}
@@ -930,7 +863,9 @@ export function VoiceRoomScreen({
 }) {
   useLanguage();
   const router = useRouter();
-  const { authorized } = useAuth();
+  const { authorized, state } = useAuth();
+  const actorUserId = state.kind === 'signedIn' ? state.me.userId : undefined;
+  const { queue } = useRoomExitDelivery();
   const { draft, clear } = useJoinDraft();
   const [entryDraft, setEntryDraft] = useState(() =>
     beginDirectJoin(
@@ -943,12 +878,22 @@ export function VoiceRoomScreen({
   const api = useMemo(() => new VoiceRoomApi(authorized), [authorized]);
   const assistanceApi = useMemo(() => new ExpressionAssistanceApi(authorized), [authorized]);
   const session = useMemo(
-    () => new VoiceRoomSession(roomId, new RoomDiscoveryApi(authorized), api, createVoiceMedia()),
-    [roomId, authorized, api],
+    () =>
+      new VoiceRoomSession(
+        roomId,
+        new RoomDiscoveryApi(authorized),
+        api,
+        createVoiceMedia(),
+        queue,
+        actorUserId,
+      ),
+    [roomId, authorized, api, queue, actorUserId],
   );
   const [snapshot, setSnapshot] = useState(session.snapshot);
+  const hasEntered = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    hasEntered.current = false;
     const unsubscribe = session.subscribe(setSnapshot);
     void session.start(initialDraft.current);
     return () => {
@@ -961,8 +906,8 @@ export function VoiceRoomScreen({
     if (snapshot.phase === 'active' && draft) clear();
   }, [snapshot.phase, draft, clear]);
 
-  useEffect(() => {
-    if (snapshot.phase === 'left') router.replace('/rooms');
+  useLayoutEffect(() => {
+    if (snapshot.phase === 'left' || snapshot.phase === 'ended') router.replace('/rooms');
   }, [snapshot.phase, router]);
 
   useEffect(() => {
@@ -998,13 +943,22 @@ export function VoiceRoomScreen({
     .join('|');
   useEffect(() => {
     if (snapshot.phase === 'active' && snapshot.media.connection === 'connected') {
+      // Entry already requests members. Only subsequent participant changes refresh.
+      if (!hasEntered.current) {
+        hasEntered.current = true;
+        return;
+      }
       if (AppState.currentState !== 'background' && AppState.currentState !== 'inactive')
         void session.refresh();
     }
   }, [session, snapshot.phase, snapshot.media.connection, participantIdentities]);
 
-  if (snapshot.phase === 'ended') return <Ended snapshot={snapshot} />;
-  if (snapshot.phase === 'active' && snapshot.media.connection === 'connected') {
+  if (snapshot.phase === 'ended' || snapshot.phase === 'left') return null;
+  if (
+    snapshot.room &&
+    (snapshot.phase === 'connecting' ||
+      (snapshot.phase === 'active' && snapshot.media.connection === 'connected'))
+  ) {
     return (
       <VoiceRoomBody
         snapshot={snapshot}
@@ -1030,6 +984,36 @@ export function VoiceRoomScreen({
 }
 
 const styles = StyleSheet.create({
+  moreSheet: {
+    height: 300,
+    minHeight: 0,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    backgroundColor: '#34274F',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+  moreTitle: { color: '#fff', fontSize: 20, lineHeight: 31, fontWeight: '500' },
+  moreBrandDots: { position: 'absolute', top: 24, right: 81, flexDirection: 'row', gap: 5 },
+  moreClose: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+  },
+  moreCloseText: { fontSize: 28, lineHeight: 36, color: '#CBC2DD' },
+  moreActions: { marginTop: 27, gap: 14 },
+  moreAction: {
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: '#49395F',
+  },
+  moreActionText: { color: '#E4DDF4', fontSize: 14, lineHeight: 22 },
   assistanceButton: {
     width: 38,
     height: 38,
@@ -1210,37 +1194,6 @@ const styles = StyleSheet.create({
   },
   stateHint: { color: '#C8BEE1', fontSize: 12, marginTop: 17, textAlign: 'center' },
   stateActions: { marginHorizontal: 20, marginTop: 104 },
-  endedMark: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: '#E4FAF3',
-    alignSelf: 'center',
-    marginTop: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  endedCheck: { color: '#24C7A6', fontSize: 54 },
-  endedHeading: {
-    color: tokens.color.foreground,
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginTop: 36,
-  },
-  endedBody: { color: tokens.color.muted, fontSize: 12, textAlign: 'center', marginTop: 26 },
-  endedSummary: {
-    marginHorizontal: 16,
-    marginTop: 88,
-    height: 140,
-    borderRadius: 24,
-    backgroundColor: tokens.color.peach,
-    padding: 18,
-  },
-  endedFooter: { bottom: Platform.OS === 'web' ? 104 : 82 },
-  endedSummaryLabel: { color: tokens.color.foreground, fontSize: 16, fontWeight: '700' },
-  endedTopic: { color: tokens.color.foreground, fontSize: 17, fontWeight: '700', marginTop: 16 },
-  endedMeta: { color: tokens.color.muted, fontSize: 12, marginTop: 18 },
   header: {
     height: 68,
     flexShrink: 0,
@@ -1268,14 +1221,22 @@ const styles = StyleSheet.create({
     gap: 13,
   },
   headerMeta: { flex: 1, minWidth: 0, color: '#C8BBFF', fontSize: 12, lineHeight: 17 },
-  headerLevel: { width: 44, color: '#C8BBFF', fontSize: 11, lineHeight: 15, fontWeight: '500' },
+  headerLevel: {
+    minWidth: 44,
+    flexShrink: 0,
+    color: '#C8BBFF',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '500',
+  },
   exitHit: { position: 'absolute', right: 54, top: 0, width: 34, height: 34 },
   exitIcon: { position: 'absolute', left: 13, top: 3, width: 24, height: 24 },
   moreHit: { position: 'absolute', right: -4, top: -2, width: 34, height: 42 },
   moreDots: { position: 'absolute', left: 8, top: 12, flexDirection: 'row', gap: 3 },
   moreDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF' },
   live: {
-    width: 39,
+    minWidth: 39,
+    flexShrink: 0,
     textAlign: 'right',
     color: '#77E5C9',
     fontSize: 11,
@@ -1463,50 +1424,7 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
   },
   confirmTitle: { color: tokens.color.foreground, fontSize: 21, fontWeight: '700' },
-  handoffSheet: {
-    minHeight: 420,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 42,
-    backgroundColor: '#34274F',
-  },
-  handoffHeader: { height: 30 },
-  handoffTitle: { color: '#FFFFFF', fontSize: 20, lineHeight: 28, fontWeight: '500' },
-  handoffClose: {
-    position: 'absolute',
-    right: 0,
-    top: -4,
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-  },
-  handoffCloseText: { color: '#D6CBE9', fontSize: 22, fontWeight: '500', lineHeight: 28 },
-  handoffDots: { position: 'absolute', left: 254, top: 0, flexDirection: 'row', gap: 5 },
   handoffDot: { width: 7, height: 7, borderRadius: 4 },
-  handoffBody: {
-    color: '#C8BCE0',
-    fontSize: 13,
-    lineHeight: 18,
-    height: 52,
-    marginTop: 14,
-    marginBottom: 9,
-  },
-  handoffCandidates: { gap: 8, marginBottom: 22 },
-  handoffHint: { color: '#C8BCE0', fontSize: 12, lineHeight: 17, height: 22, fontWeight: '500' },
-  handoffOption: {
-    height: 44,
-    borderRadius: 24,
-    backgroundColor: '#45365E',
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  handoffName: { color: '#FFFFFF', fontSize: 14, lineHeight: 20, fontWeight: '500' },
-  handoffPresence: { color: '#C8BCE0', fontSize: 11, lineHeight: 16, width: 86 },
-  handoffAction: { height: 48, minHeight: 48, borderRadius: 24, backgroundColor: '#6D4DE3' },
-  handoffActionText: { fontWeight: '500' },
-  confirmBody: { color: tokens.color.muted, fontSize: 13, marginTop: 17, marginBottom: 32 },
   extensionNotice: {
     marginHorizontal: 16,
     marginTop: 8,
@@ -1516,8 +1434,6 @@ const styles = StyleSheet.create({
   },
   extensionNoticeText: { color: '#E7DFFA', fontSize: 12, lineHeight: 18 },
   shareContent: { marginTop: 22 },
-  successors: { marginBottom: 20, gap: 7 },
-  successorHint: { color: tokens.color.muted, fontSize: 12, marginBottom: 5 },
   successorOption: {
     minHeight: 40,
     borderRadius: 16,

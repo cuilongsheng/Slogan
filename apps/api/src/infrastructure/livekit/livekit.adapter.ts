@@ -34,23 +34,19 @@ export class LivekitAdapter implements RealtimeProvider {
   }
   async ensureRoom(roomId: string, capacity: number, metadata: string) {
     return this.call(async (client) => {
-      const existing = (await client.listRooms([this.name(roomId)]))[0];
-      if (existing) {
-        if (existing.maxParticipants !== capacity)
-          throw new RealtimeError('REALTIME_PROVIDER_UNAVAILABLE');
-        if (existing.metadata !== metadata)
-          await client.updateRoomMetadata(this.name(roomId), metadata);
-        return existing.sid;
-      }
-      return (
-        await client.createRoom({
-          name: this.name(roomId),
-          maxParticipants: capacity,
-          emptyTimeout: 300,
-          departureTimeout: 120,
-          metadata,
-        })
-      ).sid;
+      // LiveKit CreateRoom is get-or-create. Avoid list-then-create network I/O.
+      // https://github.com/livekit/livekit/blob/master/pkg/service/roommanager.go
+      const room = await client.createRoom({
+        name: this.name(roomId),
+        maxParticipants: capacity,
+        emptyTimeout: 300,
+        departureTimeout: 120,
+        metadata,
+      });
+      if (room.maxParticipants !== capacity)
+        throw new RealtimeError('REALTIME_PROVIDER_UNAVAILABLE');
+      if (room.metadata !== metadata) await client.updateRoomMetadata(this.name(roomId), metadata);
+      return room.sid;
     });
   }
   async updateRoomMetadata(roomId: string, metadata: string) {

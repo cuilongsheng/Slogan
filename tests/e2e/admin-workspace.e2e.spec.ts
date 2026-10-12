@@ -86,3 +86,42 @@ test('role revocation requires explicit confirmation', async ({ page }) => {
   await page.getByRole('button', { name: '取消' }).click();
   expect(revokeCalls).toBe(0);
 });
+
+test('room cases are labeled and cannot select personal sanctions', async ({ page }) => {
+  const userId = '00000000-0000-4000-8000-000000000001';
+  const id = '00000000-0000-4000-8000-000000000021';
+  const row = {
+    id,
+    category: 'OTHER',
+    roomId: '00000000-0000-4000-8000-000000000031',
+    targetUserId: null,
+    status: 'UNDER_REVIEW',
+    assessedSeverity: null,
+    createdAt: '2026-10-12T00:00:00Z',
+    assigneeUserId: userId,
+    version: 1,
+  };
+  await page.route('**/v1/auth/web/refresh', (route) =>
+    route.fulfill({ json: { accessToken: 'fixture', accessTokenExpiresInSeconds: 900 } }),
+  );
+  await page.route('**/v1/backoffice/me', (route) =>
+    route.fulfill({ json: { userId, roles: ['SAFETY_OFFICER'] } }),
+  );
+  await page.route('**/v1/backoffice/safety/cases?*', (route) =>
+    route.fulfill({ json: { items: [row], nextCursor: null } }),
+  );
+  await page.route('**/v1/backoffice/safety/cases/summary', (route) =>
+    route.fulfill({ json: { open: 1, highRisk: 0, closed: 0 } }),
+  );
+  await page.route(`**/v1/backoffice/safety/cases/${id}`, (route) => route.fulfill({ json: row }));
+  await page.route(`**/v1/backoffice/safety/cases/${id}/evidence`, (route) =>
+    route.fulfill({ json: { report: { description: 'Room report' }, activities: [] } }),
+  );
+  await page.goto('/safety/cases');
+  await expect(page.getByText(/举报房间/)).toBeVisible();
+  await page.getByRole('button', { name: '查看 ›' }).click();
+  await page.getByRole('button', { name: '提交结论', exact: true }).click();
+  const options = page.getByRole('dialog').getByRole('combobox').locator('option');
+  await expect(options).toHaveCount(1);
+  await expect(options).toHaveAttribute('value', 'NO_ACTION');
+});

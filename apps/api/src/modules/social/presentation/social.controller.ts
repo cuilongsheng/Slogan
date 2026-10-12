@@ -178,6 +178,7 @@ export class SocialController {
   }
 
   @Get('people/available')
+  @ApiServiceUnavailableResponse({ type: ErrorResponseDto })
   @ApiOkResponse({ type: AvailableUserPageDto })
   available(
     @CurrentIdentity() identity: CurrentAccessIdentity,

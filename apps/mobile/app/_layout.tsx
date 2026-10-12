@@ -12,6 +12,7 @@ import { EmailFlowProvider } from '../src/features/auth/emailFlow';
 import { ProfileDraftProvider } from '../src/features/profile/draft';
 import { JoinProvider } from '../src/features/room-discovery/join';
 import { DirectCallObserver } from '../src/features/direct/DirectCallObserver';
+import { RoomExitProvider } from '../src/features/voice-room/exits';
 import { PresenceHeartbeat } from '../src/features/social/PresenceHeartbeat';
 
 export default function RootLayout() {
@@ -31,13 +32,15 @@ export default function RootLayout() {
     <AuthProvider>
       <PresenceHeartbeat />
       <DirectCallObserver />
-      <EmailFlowProvider>
-        <ProfileDraftProvider>
-          <JoinProvider>
-            <Stack screenOptions={{ headerShown: false }} />
-          </JoinProvider>
-        </ProfileDraftProvider>
-      </EmailFlowProvider>
+      <RoomExitProvider>
+        <EmailFlowProvider>
+          <ProfileDraftProvider>
+            <JoinProvider>
+              <Stack screenOptions={{ headerShown: false }} />
+            </JoinProvider>
+          </ProfileDraftProvider>
+        </EmailFlowProvider>
+      </RoomExitProvider>
     </AuthProvider>
   );
 }

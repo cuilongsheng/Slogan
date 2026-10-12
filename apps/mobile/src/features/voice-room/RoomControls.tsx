@@ -34,6 +34,8 @@ export function RoomControls({
   onClose,
   initialRemoveTarget,
   initialMode,
+  initialReportTarget,
+  roomTopic,
 }: {
   roomId: string;
   members: RoomMember[];
@@ -43,17 +45,21 @@ export function RoomControls({
   refresh: () => Promise<void>;
   onClose: () => void;
   initialRemoveTarget?: RoomMember;
-  initialMode?: 'invite';
+  initialMode?: 'invite' | 'report' | 'reportRoom';
+  initialReportTarget?: RoomMember;
+  roomTopic?: string;
 }) {
   const [mode, setMode] = useState<Mode>(
-    isHost && initialMode === 'invite'
-      ? 'invite'
-      : initialRemoveTarget && isHost
-        ? 'remove'
-        : 'members',
+    initialMode === 'report' || initialMode === 'reportRoom'
+      ? 'report'
+      : isHost && initialMode === 'invite'
+        ? 'invite'
+        : initialRemoveTarget && isHost
+          ? 'remove'
+          : 'members',
   );
   const [target, setTarget] = useState<RoomMember | null>(
-    isHost ? (initialRemoveTarget ?? null) : null,
+    initialReportTarget ?? (isHost ? (initialRemoveTarget ?? null) : null),
   );
   const [category, setCategory] = useState<Category | null>(null);
   const [description, setDescription] = useState('');
@@ -198,8 +204,9 @@ export function RoomControls({
     }
   }
 
+  const reportingRoom = initialMode === 'reportRoom';
   async function report() {
-    if (!target || !category || busy) return;
+    if ((!target && !reportingRoom) || !category || busy) return;
     const trimmed = description.trim();
     if ([...trimmed].length < 1 || [...trimmed].length > 2000) {
       setError(t('roomReportInvalid'));
@@ -209,7 +216,7 @@ export function RoomControls({
     setError('');
     try {
       const result = await api.report(roomId, {
-        targetUserId: target.userId,
+        ...(target ? { targetUserId: target.userId } : {}),
         clientRequestId: requestId,
         category,
         description: trimmed,
@@ -242,6 +249,7 @@ export function RoomControls({
           styles.sheet,
           isMembers && styles.membersSheet,
           mode === 'invite' && styles.inviteSheet,
+          mode === 'report' && styles.reportSheet,
         ]}
       >
         <View style={styles.headingRow}>
@@ -250,6 +258,7 @@ export function RoomControls({
               styles.title,
               isMembers && styles.darkTitle,
               mode === 'invite' && styles.inviteTitle,
+              mode === 'report' && styles.reportTitle,
             ]}
           >
             {mode === 'members'
@@ -261,7 +270,7 @@ export function RoomControls({
                   : mode === 'invite'
                     ? t('roomInvitePeople')
                     : mode === 'report'
-                      ? t('roomReportMember')
+                      ? t(reportingRoom ? 'roomReportRoom' : 'roomReportMember')
                       : t('roomReportReceived')}
           </Text>
           <TouchableOpacity
@@ -280,7 +289,7 @@ export function RoomControls({
             </Text>
           </TouchableOpacity>
         </View>
-        {mode === 'invite' && (
+        {(mode === 'invite' || mode === 'report') && (
           <View pointerEvents="none" style={styles.brandDots}>
             <View style={[styles.brandDot, { backgroundColor: '#FF6F70' }]} />
             <View style={[styles.brandDot, { backgroundColor: '#FFD65A', marginTop: 3 }]} />
@@ -478,10 +487,12 @@ export function RoomControls({
         {mode === 'report' && (
           <>
             <ScrollView style={styles.reportScroll} keyboardShouldPersistTaps="handled">
-              <Text style={styles.body}>{t('roomReportHint')}</Text>
-              <Text style={styles.label}>{t('roomReportTarget')}</Text>
-              <Text style={styles.selected}>{target?.displayName}</Text>
-              <Text style={styles.label}>{t('roomReportCategory')}</Text>
+              <Text style={[styles.body, styles.reportBody]}>
+                {t(reportingRoom ? 'roomReportRoomHint' : 'roomReportHint')}
+              </Text>
+              <Text style={[styles.label, styles.targetLabel]}>{t('roomReportTarget')}</Text>
+              <Text style={styles.selected}>{reportingRoom ? roomTopic : target?.displayName}</Text>
+              <Text style={[styles.label, styles.categoryLabel]}>{t('roomReportCategory')}</Text>
               <View style={styles.categories}>
                 {categories.map((item) => (
                   <TouchableOpacity
@@ -498,7 +509,7 @@ export function RoomControls({
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={styles.label}>{t('roomReportDescription')}</Text>
+              <Text style={[styles.label, styles.detailsLabel]}>{t('roomReportDescription')}</Text>
               <TextInput
                 accessibilityLabel={t('roomReportDescription')}
                 multiline
@@ -516,10 +527,16 @@ export function RoomControls({
             <TouchableOpacity
               accessibilityRole="button"
               disabled={busy || !category || !description.trim()}
-              style={[styles.primary, (busy || !category || !description.trim()) && styles.dim]}
+              style={[
+                styles.primary,
+                styles.reportSubmit,
+                (busy || !category || !description.trim()) && styles.reportDisabled,
+              ]}
               onPress={() => void report()}
             >
-              <Text style={styles.primaryText}>{t('roomReportSubmit')}</Text>
+              <Text style={[styles.primaryText, styles.reportSubmitText]}>
+                {t('roomReportSubmit')}
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -646,7 +663,22 @@ const styles = StyleSheet.create({
   body: { color: '#C7BBD8', fontSize: 13, lineHeight: 20, marginTop: 18 },
   memberHint: { color: tokens.color.muted, marginTop: 8, marginBottom: 10 },
   scroll: { flexGrow: 0, flex: 1, marginTop: 14 },
-  reportScroll: { flexGrow: 0, flex: 1, marginTop: 14 },
+  reportSheet: {
+    height: 634,
+    minHeight: 0,
+    maxHeight: '100%',
+    paddingBottom: 65,
+    backgroundColor: '#34274F',
+  },
+  reportSubmit: { height: 48, minHeight: 48, marginTop: 31, borderRadius: 24 },
+  reportTitle: { fontSize: 20, lineHeight: 31, fontWeight: '500' },
+  reportBody: { marginTop: 0, minHeight: 40, fontSize: 12, lineHeight: 20 },
+  reportScroll: { flex: 1, minHeight: 0, marginTop: 13 },
+  targetLabel: { marginTop: 10 },
+  categoryLabel: { marginBottom: 7 },
+  detailsLabel: { marginTop: 17, marginBottom: 6 },
+  reportDisabled: { backgroundColor: '#49395F' },
+  reportSubmitText: { fontSize: 14, lineHeight: 22, fontWeight: '500' },
   memberRow: {
     minHeight: 90,
     flexDirection: 'row',
@@ -724,19 +756,35 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   loadMore: { color: '#fff', textAlign: 'center', marginVertical: 15 },
-  label: { color: '#C7BBD8', marginTop: 22, marginBottom: 8 },
-  selected: { backgroundColor: '#49395F', color: '#fff', borderRadius: 20, padding: 15 },
+  label: {
+    color: '#C7BBD8',
+    fontSize: 12,
+    lineHeight: 20,
+    fontWeight: '500',
+    marginTop: 22,
+    marginBottom: 5,
+  },
+  selected: {
+    backgroundColor: '#49395F',
+    color: '#fff',
+    borderRadius: 20,
+    height: 48,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 12,
+    lineHeight: 20,
+  },
   categories: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   category: {
-    width: '48%',
+    width: '48.5%',
     backgroundColor: '#49395F',
     borderRadius: 20,
-    minHeight: 37,
+    minHeight: 32,
     justifyContent: 'center',
     paddingHorizontal: 14,
   },
   categorySelected: { backgroundColor: tokens.color.purple },
-  categoryText: { color: '#fff', fontSize: 12 },
+  categoryText: { color: '#fff', fontSize: 11, lineHeight: 18 },
   textarea: {
     minHeight: 95,
     maxHeight: 130,

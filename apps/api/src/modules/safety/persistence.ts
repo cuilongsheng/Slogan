@@ -112,7 +112,7 @@ export async function createSafetyCaseForReport(
   input: {
     reportId: string;
     roomId: string | null;
-    targetUserId: string;
+    targetUserId: string | null;
     submittedAt: Date;
   },
 ): Promise<string> {

@@ -84,6 +84,7 @@ export function CasesPage() {
   function openCommand(value: Command) {
     setCommandRequestId(crypto.randomUUID());
     setReason('');
+    setResolution('NO_ACTION');
     setFactsConfirmed(false);
     setCommandError('');
     setCommand(value);
@@ -199,7 +200,7 @@ export function CasesPage() {
             render: (row) => (
               <>
                 {row.roomId ? shortId(row.roomId) : zhCN.privateEvidence.context} ·{' '}
-                {shortId(row.targetUserId)}
+                {row.targetUserId ? shortId(row.targetUserId) : '举报房间'}
               </>
             ),
           },
@@ -250,7 +251,9 @@ export function CasesPage() {
                   </div>
                   <div>
                     <dt>被举报用户</dt>
-                    <dd>{shortId(detail.data.targetUserId)}</dd>
+                    <dd>
+                      {detail.data.targetUserId ? shortId(detail.data.targetUserId) : '举报房间'}
+                    </dd>
                   </div>
                   <div>
                     <dt>关联房间</dt>
@@ -366,8 +369,12 @@ export function CasesPage() {
                   onChange={(event) => setResolution(event.target.value as typeof resolution)}
                 >
                   <option value="NO_ACTION">不处罚</option>
-                  <option value="TEMPORARY_RESTRICTION">临时限制</option>
-                  <option value="PERMANENT_DISABLE">永久禁用</option>
+                  {detail.data?.targetUserId && (
+                    <>
+                      <option value="TEMPORARY_RESTRICTION">临时限制</option>
+                      <option value="PERMANENT_DISABLE">永久禁用</option>
+                    </>
+                  )}
                 </select>
               </label>
               {resolution !== 'NO_ACTION' && (

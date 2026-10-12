@@ -11,6 +11,7 @@ import { StructuredLogger } from '../observability/structured-logger.service.js'
 export class SocialPresenceStore implements SocialPresence, OnModuleDestroy {
   private readonly client: Redis | undefined;
   private readonly ttlSeconds: number;
+  private connecting: Promise<void> | null = null;
 
   constructor(
     config: ConfigService<Environment, true>,
@@ -46,14 +47,16 @@ export class SocialPresenceStore implements SocialPresence, OnModuleDestroy {
   }
 
   async online(userIds: string[]): Promise<Set<string>> {
-    if (!this.client || !userIds.length) return new Set();
+    if (!userIds.length) return new Set();
+    if (!this.client)
+      throw new SocialError('SOCIAL_PRESENCE_UNAVAILABLE', 'Presence is temporarily unavailable');
     try {
       await this.connect();
       const values = await this.client.mget(userIds.map((userId) => this.key(userId)));
       return new Set(userIds.filter((_userId, index) => values[index] !== null));
     } catch {
       this.client.disconnect();
-      return new Set();
+      throw new SocialError('SOCIAL_PRESENCE_UNAVAILABLE', 'Presence is temporarily unavailable');
     }
   }
 
@@ -72,7 +75,13 @@ export class SocialPresenceStore implements SocialPresence, OnModuleDestroy {
   }
 
   private async connect(): Promise<void> {
-    if (this.client && ['wait', 'end'].includes(this.client.status)) await this.client.connect();
+    if (!this.client || this.client.status === 'ready') return;
+    if (this.connecting) return this.connecting;
+    const operation = this.client.connect().finally(() => {
+      if (this.connecting === operation) this.connecting = null;
+    });
+    this.connecting = operation;
+    return operation;
   }
 
   private key(userId: string): string {

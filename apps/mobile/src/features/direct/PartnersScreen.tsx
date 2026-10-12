@@ -109,10 +109,13 @@ export function PartnersScreen() {
             <Text style={styles.emptyText}>{t(error ?? 'partnersEmpty')}</Text>
             <TouchableOpacity
               accessibilityRole="button"
-              onPress={() => void refresh()}
+              onPress={() => void (cursor ? moreItems() : refresh())}
+              disabled={more}
               style={styles.emptyRefresh}
             >
-              <Text style={styles.emptyRefreshText}>{t('refreshAction')}</Text>
+              <Text style={styles.emptyRefreshText}>
+                {t(cursor ? 'socialLoadMore' : 'refreshAction')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

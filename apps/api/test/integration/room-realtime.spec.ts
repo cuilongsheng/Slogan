@@ -69,6 +69,19 @@ describe('realtime PostgreSQL state and recovery', () => {
   async function releaseIssuance() {
     await prisma.realtimeIssuance.deleteMany();
   }
+  it('rejects a changed reservation and durably repairs stale provider time metadata', async () => {
+    await ready();
+    const reservation = await issued();
+    await prisma.room.update({ where: { id: roomId }, data: { stateVersion: { increment: 1 } } });
+    await expect(realtime.confirmCredential(reservation, hostId, 'RM_test')).rejects.toMatchObject({
+      code: 'ROOM_MEMBERSHIP_REQUIRED',
+    });
+    expect(
+      await prisma.realtimeCommand.count({
+        where: { roomId, type: 'SYNC_ROOM_TIME', status: 'PENDING' },
+      }),
+    ).toBe(1);
+  });
   it('rejects non-members and disabled accounts without recording a credential', async () => {
     const stranger = await seedAdult(prisma);
     await expect(realtime.reserveCredential(roomId, stranger.id)).rejects.toMatchObject({

@@ -26,12 +26,17 @@ export function BottomNavigation({ active }: { active: 0 | 1 | 2 | 3 }) {
           accessibilityLabel={t(tab.label)}
           accessibilityState={{ selected: active === index }}
           onPress={() => {
-            if (active !== index) router.replace(tab.path);
+            if (active !== index) router.navigate(tab.path);
           }}
           style={styles.item}
         >
-          {active === index && <View style={styles.halo} />}
-          <Image source={icons[index]} style={styles.icon} />
+          <Image
+            source={icons[index]}
+            style={styles.icon}
+            tintColor={
+              active === index ? tokens.discovery.color.tabAccent : tokens.discovery.color.tabMuted
+            }
+          />
           <Text style={[styles.label, active === index && styles.selected]}>{t(tab.label)}</Text>
         </TouchableOpacity>
       ))}
@@ -49,14 +54,6 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.panel,
   },
   item: { flex: 1, minWidth: 0, height: 62, marginTop: 5, alignItems: 'center' },
-  halo: {
-    position: 'absolute',
-    top: -2,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: tokens.color.purpleSoft,
-  },
   icon: { width: 24, height: 24, marginTop: 5 },
   label: {
     marginTop: 9,

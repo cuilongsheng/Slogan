@@ -6,12 +6,13 @@ test.use({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
 test('missing speech purposes are explicitly accepted in the direct entry state', async ({
   page,
 }) => {
-  const { joins, consentCommands } = await mockRoomEntry(page, { processing: true });
+  const { joins, consentCommands, detailReads } = await mockRoomEntry(page, { processing: true });
   await page.goto(`${mobileOrigin}/rooms`);
   await page.getByText('旅行英语练习').click();
   await expect(page).toHaveURL(new RegExp(`/rooms/${entryRoomId}/session$`));
   await expect(page.getByText('房间语音处理同意')).toBeVisible();
   expect(consentCommands).toEqual([]);
+  expect(detailReads).toEqual([entryRoomId]);
   await expect(page.getByRole('button', { name: '重试', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: '阅读并同意此目的' }).first().click();
   await expect.poll(() => consentCommands.length).toBe(1);

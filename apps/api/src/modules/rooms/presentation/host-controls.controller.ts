@@ -106,16 +106,13 @@ export class HostControlsController {
       ...body,
     });
   }
-  @ApiServiceUnavailableResponse({
-    type: ErrorResponseDto,
-    description:
-      'REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back.',
-  })
   @Post(':roomId/end')
   @HttpCode(200)
   @ApiOkResponse({ type: HostActionResultDto })
-  end(@CurrentIdentity() actor: CurrentAccessIdentity, @Param() params: RoomIdParamsDto) {
-    return this.run(params.roomId, actor.userId, { kind: 'end' });
+  async end(@CurrentIdentity() actor: CurrentAccessIdentity, @Param() params: RoomIdParamsDto) {
+    const committed = await this.host.execute(params.roomId, actor.userId, { kind: 'end' });
+    // Existing durable command recovery owns LiveKit cleanup, as for explicit leave.
+    return { ...committed, ...(await this.host.deliveryStatus(params.roomId)) };
   }
   private async run(roomId: string, userId: string, action: HostAction) {
     const committed = await this.host.execute(roomId, userId, action);

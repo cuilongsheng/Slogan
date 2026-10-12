@@ -30,6 +30,7 @@ const mockSession = {
     listener(mockSnapshot);
     return jest.fn();
   },
+  recordRoomVisible: jest.fn(),
   start: jest.fn(async () => undefined),
   refresh: jest.fn(async () => undefined),
   dispose: jest.fn(async () => undefined),
@@ -39,7 +40,12 @@ const mockSession = {
   }),
 };
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) }));
-jest.mock('../auth', () => ({ useAuth: () => ({ authorized: mockAuthorized }) }));
+jest.mock('../auth', () => ({
+  useAuth: () => ({
+    authorized: mockAuthorized,
+    state: { kind: 'signedIn', me: { userId: 'member' } },
+  }),
+}));
 jest.mock('../room-discovery/join', () => ({
   ...jest.requireActual('../room-discovery/join'),
   useJoinDraft: () => ({ draft: null, clear: mockClear }),
@@ -88,6 +94,65 @@ beforeEach(() => {
   };
 });
 
+test('confirmed admission shows the room while initial media connection remains pending', async () => {
+  mockSnapshot = {
+    ...mockSnapshot,
+    phase: 'connecting',
+    media: { ...mockSnapshot.media, connection: 'connecting', microphoneEnabled: false },
+  };
+  const screen = await render(<VoiceRoomScreen roomId="room" />);
+  expect(screen.getByText('Travel')).toBeTruthy();
+  expect(screen.getByText('Connecting')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Turn on microphone' })).toBeDisabled();
+  expect(screen.queryByText('Reconnecting')).toBeNull();
+  await screen.unmount();
+});
+
+test('level and LIVE are single-line nonshrinking labels, without a redundant initial refresh', async () => {
+  const screen = await render(<VoiceRoomScreen roomId="room" />);
+  expect(screen.getByText('B1 ～ B2').props.numberOfLines).toBe(1);
+  expect(screen.getByText('●\u00a0 LIVE').props.numberOfLines).toBe(1);
+  expect(mockSession.refresh).not.toHaveBeenCalled();
+});
+
+test('pressing another occupied avatar opens that member report directly', async () => {
+  mockSnapshot.members = [
+    {
+      membershipId: 'other-membership',
+      userId: 'other-user',
+      participantIdentity: 'other',
+      displayName: 'Mika',
+      avatarUrl: null,
+      nationalityCode: 'JP',
+      cefrLevel: 'B1',
+      credentialVersion: 1,
+      hostReconnectDeadline: null,
+      position: 1,
+      role: 'MEMBER',
+      lifecycle: 'ACTIVE',
+      presence: 'CONNECTED',
+      joinedAt: '2026-10-07T00:00:00Z',
+    } as VoiceSessionSnapshot['members'][number],
+  ];
+  const page = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(page.getByRole('button', { name: 'Mika' }));
+  expect(page.getByText('Report a member')).toBeTruthy();
+  expect(page.getAllByText('Mika')).toHaveLength(2);
+  expect(page.queryByText('Manage members')).toBeNull();
+});
+
+test('the room overflow has report, leave and share actions and opens room reporting directly', async () => {
+  const page = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(page.getByRole('button', { name: 'Room actions' }));
+  expect(page.getByRole('button', { name: 'Report room' })).toBeTruthy();
+  expect(page.getByRole('button', { name: 'Share room link' })).toBeTruthy();
+  await fireEvent.press(page.getByRole('button', { name: 'Report room' }));
+  expect(page.getByText('Choose a reason and describe what happened in this room.')).toBeTruthy();
+  expect(page.getAllByText('Travel')).toHaveLength(2);
+  await fireEvent.press(page.getAllByRole('button', { name: 'Close' }).at(-1)!);
+  expect(mockReplace).not.toHaveBeenCalled();
+});
+
 test('the actual composer sends room text and renders the result without calling expression assistance', async () => {
   const screen = await render(<VoiceRoomScreen roomId="room" />);
   await fireEvent.changeText(screen.getByLabelText('Say something…'), 'Hello room');
@@ -110,7 +175,7 @@ test('ordinary exit returns to discovery directly, with no handoff or rejoin', a
   expect(mockSession.start).toHaveBeenCalledTimes(1);
 });
 
-test('a host alone exits directly; a host with an online member must select the successor', async () => {
+test('host exit returns immediately and delegates default succession to the server', async () => {
   mockSnapshot.role = 'HOST';
   const alone = await render(<VoiceRoomScreen roomId="room" />);
   await fireEvent.press(alone.getByRole('button', { name: 'Leave room' }));
@@ -131,10 +196,9 @@ test('a host alone exits directly; a host with an online member must select the 
   mockSession.leave.mockClear();
   const host = await render(<VoiceRoomScreen roomId="room" />);
   await fireEvent.press(host.getByRole('button', { name: 'Leave room' }));
-  expect(mockSession.leave).not.toHaveBeenCalled();
-  await fireEvent.press(host.getAllByRole('button', { name: 'Alex' }).at(-1)!);
-  await fireEvent.press(host.getByRole('button', { name: 'Transfer host and leave' }));
-  await waitFor(() => expect(mockSession.leave).toHaveBeenCalledWith('successor'));
+  expect(mockSession.leave).toHaveBeenCalledWith();
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/rooms'));
+  expect(host.queryByRole('button', { name: 'Transfer host and leave' })).toBeNull();
 });
 
 test('password rejection stays in a dialog and retries the same session with invitation preserved', async () => {

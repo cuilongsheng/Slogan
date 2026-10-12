@@ -28,6 +28,7 @@ module.exports = () => {
       package: 'com.slogan.mobile',
       versionCode,
       softwareKeyboardLayoutMode: 'resize',
+      permissions: ['android.permission.RECORD_AUDIO'],
       icon: '../../assets/brand/android-icon.png',
       adaptiveIcon: {
         foregroundImage: '../../assets/brand/android-adaptive-foreground.png',
@@ -41,7 +42,7 @@ module.exports = () => {
         {
           photosPermission: 'Choose a profile picture for your Slogan account.',
           cameraPermission: false,
-          microphonePermission: false,
+          microphonePermission: 'Allow Slogan to use your microphone in voice rooms.',
         },
       ],
       ...base.plugins,

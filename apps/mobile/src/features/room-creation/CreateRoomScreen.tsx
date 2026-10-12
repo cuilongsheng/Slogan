@@ -9,12 +9,15 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
 import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import burstIcon from '../../../assets/icons/speech-burst.png';
 import { useAuth } from '../auth';
+import { useJoinDraft } from '../room-discovery/join';
 import { CreateRoomError, RoomCreationApi } from './api';
 import {
   initialRoomForm,
@@ -46,12 +49,14 @@ function Chip({
   onPress,
   compact = false,
   soft = false,
+  style,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
   compact?: boolean;
   soft?: boolean;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
     <TouchableOpacity
@@ -62,6 +67,7 @@ function Chip({
         soft && styles.levelChip,
         compact && styles.compactChip,
         selected && styles.chipSelected,
+        style,
       ]}
       onPress={onPress}
     >
@@ -78,6 +84,7 @@ export function CreateRoomScreen() {
   useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
+  const joinDraft = useJoinDraft();
   const api = useMemo(() => new RoomCreationApi(authorized), [authorized]);
   const [form, setForm] = useState<RoomForm>(initialRoomForm);
   const [busy, setBusy] = useState(false);
@@ -97,9 +104,12 @@ export function CreateRoomScreen() {
     submitting.current = true;
     setBusy(true);
     setError('');
+    const entryStartedAt = performance.now();
     try {
       if (form.mode === 'instant') {
         const room = await api.instant(instantInput(form));
+        if (room.currentMembership)
+          joinDraft.created(room, room.currentMembership.userId, entryStartedAt);
         router.replace(`/rooms/${room.id}/session`);
       } else {
         const room = await api.scheduled(scheduledInput(form));
@@ -179,6 +189,7 @@ export function CreateRoomScreen() {
             {[2, 3, 4, 5, 6].map((capacity) => (
               <Chip
                 key={capacity}
+                style={styles.capacityChip}
                 label={tf('createRoomCapacityOption', { count: capacity })}
                 selected={form.capacity === capacity}
                 onPress={() => update({ capacity })}
@@ -186,13 +197,15 @@ export function CreateRoomScreen() {
             ))}
           </View>
           <View style={styles.accessRow}>
-            <Text style={styles.label}>{t('createRoomAccess')}</Text>
+            <Text style={[styles.label, styles.accessLabel]}>{t('createRoomAccess')}</Text>
             <Chip
+              style={[styles.accessChip, styles.openChip]}
               label={t('createRoomOpen')}
               selected={!form.passwordEnabled}
               onPress={() => update({ passwordEnabled: false, password: '' })}
             />
             <Chip
+              style={[styles.accessChip, styles.passwordChip]}
               label={t('createRoomPassword')}
               selected={form.passwordEnabled}
               onPress={() => update({ passwordEnabled: true })}
@@ -301,14 +314,14 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 14,
     paddingTop: 12,
-    minHeight: 207,
+    minHeight: 223,
   },
   cardTop: { flexDirection: 'row', gap: 6, alignItems: 'center', minHeight: 28 },
-  burst: { width: 25, height: 25, marginLeft: 'auto' },
+  burst: { width: 25, height: 25, position: 'absolute', right: 39, top: -4 },
   label: { fontSize: 14, lineHeight: 24, fontWeight: '700', color: tokens.color.foreground },
   topicInput: {
     height: 56,
-    marginTop: 18,
+    marginTop: 10,
     fontFamily: 'NotoSansSC',
     backgroundColor: '#fff',
     borderColor: tokens.color.border,
@@ -343,8 +356,13 @@ const styles = StyleSheet.create({
     padding: 14,
     minHeight: 173,
   },
-  capacityLabel: { marginTop: 13 },
-  chipRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 11 },
+  capacityLabel: { marginTop: 4, marginLeft: 2, lineHeight: 25 },
+  chipRow: { flexDirection: 'row', gap: 9, width: '100%', maxWidth: 326, marginTop: 15 },
+  capacityChip: { flex: 1, minWidth: 0, minHeight: 36, paddingHorizontal: 0 },
+  accessChip: { minHeight: 32, minWidth: 0, flexShrink: 1, paddingHorizontal: 6 },
+  openChip: { width: 100 },
+  passwordChip: { width: 115 },
+  accessLabel: { width: 96, flexShrink: 1, lineHeight: 20 },
   chip: {
     minWidth: 48,
     minHeight: 35,
@@ -365,7 +383,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 6,
-    marginTop: 13,
+    marginTop: 15,
   },
   passwordInput: {
     height: 39,
@@ -384,7 +402,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderRadius: 24,
     backgroundColor: tokens.color.peach,
-    minHeight: 95,
+    minHeight: 80,
   },
   modeRow: { flexDirection: 'row', gap: 8, marginBottom: 0 },
   dateRow: {

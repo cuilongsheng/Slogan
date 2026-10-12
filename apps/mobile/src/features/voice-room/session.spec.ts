@@ -18,7 +18,7 @@ function setup(active = false) {
   };
   const rooms = { detail: jest.fn(async () => room) };
   const api = {
-    join: jest.fn(async () => ({ currentMembership: membership })),
+    join: jest.fn(async () => ({ ...room, currentMembership: membership })),
     credentials: jest.fn(async () => ({
       serverUrl: 'wss://example.invalid',
       participantToken: 'short-lived',
@@ -57,6 +57,47 @@ function setup(active = false) {
 }
 
 describe('voice room admission and recovery', () => {
+  it('shows a connected room while member details are still pending', async () => {
+    const { api, media, session } = setup(true);
+    let resolveMembers!: (members: never[]) => void;
+    api.members.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveMembers = resolve;
+        }),
+    );
+    media.snapshot.connection = 'connected';
+    await session.start(null);
+    expect(api.members).toHaveBeenCalledTimes(1);
+    expect(session.snapshot.phase).toBe('active');
+    resolveMembers([]);
+    await Promise.resolve();
+    expect(session.snapshot.errorCode).toBeNull();
+    await session.dispose();
+  });
+
+  it('does not connect after disposal during a pending credential request', async () => {
+    const { api, media, session } = setup(true);
+    let resolveCredential!: (value: Awaited<ReturnType<typeof api.credentials>>) => void;
+    api.credentials.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCredential = resolve;
+        }),
+    );
+    const entering = session.start(null);
+    await Promise.resolve();
+    await session.dispose();
+    resolveCredential({
+      serverUrl: 'wss://example.invalid',
+      participantToken: 'short-lived',
+      credentialVersion: 3,
+      role: 'MEMBER',
+    });
+    await entering;
+    expect(media.connect).not.toHaveBeenCalled();
+  });
+
   it('does not query safety alerts for an ordinary member even in an enabled room', async () => {
     const { room, api, media, session } = setup(true);
     room.sensitiveSpeechDetectionEnabled = true;
@@ -373,5 +414,195 @@ test('participant events and the fallback timer share one in-flight room refresh
   finish(room);
   await Promise.all([first, second]);
   expect(api.members).toHaveBeenCalledTimes(1);
+  await session.dispose();
+});
+
+describe('fast admission and local exit', () => {
+  it('admits directly and starts members while credentials remain pending', async () => {
+    const { rooms, api, media, session } = setup();
+    let finish!: (value: Awaited<ReturnType<typeof api.credentials>>) => void;
+    const credentials = api.credentials();
+    const value = await credentials;
+    api.credentials.mockClear();
+    api.credentials.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const entering = session.start({ roomId: 'room-1', password: '1234', rulesAccepted: true });
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+    expect(rooms.detail).not.toHaveBeenCalled();
+    expect(api.join).toHaveBeenCalledWith('room-1', { rulesAccepted: true, password: '1234' });
+    expect(session.snapshot.phase).toBe('connecting');
+    expect(session.snapshot.room?.topic).toBe('Travel');
+    expect(api.members).toHaveBeenCalledTimes(1);
+    finish(value);
+    media.snapshot.connection = 'connected';
+    await entering;
+    await session.dispose();
+  });
+  it('reuses only fresh creation context for the authenticated creator', async () => {
+    const { rooms, api, media, room } = setup(true);
+    const queue = { enqueue: jest.fn() };
+    const session = new VoiceRoomSession(
+      'room-1',
+      rooms as never,
+      api as never,
+      media as never,
+      queue,
+      'actor-a',
+    );
+    await session.start({
+      roomId: 'room-1',
+      password: '',
+      rulesAccepted: true,
+      createdRoom: room as never,
+      createdAt: Date.now(),
+      createdForUserId: 'actor-a',
+    });
+    expect(rooms.detail).not.toHaveBeenCalled();
+    expect(api.join).not.toHaveBeenCalled();
+    expect(api.credentials).toHaveBeenCalledTimes(1);
+    await session.dispose();
+  });
+  it('returns locally while disconnect is pending and keeps root delivery after disposal', async () => {
+    const { rooms, api, media } = setup(true);
+    const queue = { enqueue: jest.fn() };
+    const session = new VoiceRoomSession(
+      'room-1',
+      rooms as never,
+      api as never,
+      media as never,
+      queue,
+      'actor-a',
+    );
+    await session.start(null);
+    const observed: string[] = [];
+    session.subscribe((snapshot) => observed.push(snapshot.phase));
+    let finish!: () => void;
+    media.disconnect.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve(undefined);
+        }),
+    );
+    await session.leave();
+    expect(session.snapshot.phase).toBe('left');
+    expect(observed).toContain('left');
+    expect(queue.enqueue).toHaveBeenCalledWith({
+      roomId: 'room-1',
+      action: 'leave',
+      expectedCredentialVersion: 3,
+    });
+    expect(api.leave).not.toHaveBeenCalled();
+    const disposing = session.dispose();
+    finish();
+    await disposing;
+  });
+  it('cancels a pending admission locally and leaves its late confirmed membership without connecting', async () => {
+    const { rooms, api, media, room } = setup(true);
+    let admitted!: (value: never) => void;
+    api.join.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          admitted = resolve;
+        }),
+    );
+    const queue = { enqueue: jest.fn() };
+    const session = new VoiceRoomSession(
+      'room-1',
+      rooms as never,
+      api as never,
+      media as never,
+      queue,
+      'actor-a',
+    );
+    const entering = session.start({ roomId: 'room-1', password: '', rulesAccepted: true });
+    await session.leave();
+    await session.dispose();
+    admitted(room as never);
+    await entering;
+    expect(queue.enqueue).toHaveBeenCalledWith({
+      roomId: 'room-1',
+      action: 'leave',
+      expectedCredentialVersion: 3,
+    });
+    expect(media.connect).not.toHaveBeenCalled();
+  });
+});
+
+it.each(['actor-b', 'expired'] as const)('does not trust %s creation context', async (kind) => {
+  const { room, rooms, api, media } = setup(true);
+  const session = new VoiceRoomSession(
+    'room-1',
+    rooms as never,
+    api as never,
+    media as never,
+    null,
+    'actor-a',
+  );
+  await session.start({
+    roomId: 'room-1',
+    password: '',
+    rulesAccepted: true,
+    createdRoom: room as never,
+    createdForUserId: kind === 'expired' ? 'actor-a' : kind,
+    createdAt: kind === 'expired' ? Date.now() - 20_000 : Date.now(),
+  });
+  expect(api.join).toHaveBeenCalledTimes(1);
+  expect(rooms.detail).not.toHaveBeenCalled();
+  await session.dispose();
+});
+it('revoked member display data cancels pending credential connection', async () => {
+  const { rooms, api, media, session } = setup(true);
+  let finish!: (value: Awaited<ReturnType<typeof api.credentials>>) => void;
+  api.members.mockRejectedValueOnce(new RoomApiError(403, 'ROOM_MEMBERSHIP_REQUIRED'));
+  api.credentials.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const entering = session.start(null);
+  for (let i = 0; i < 8; i++) await Promise.resolve();
+  expect(session.snapshot.phase).toBe('ended');
+  finish({
+    serverUrl: 'wss://example.invalid',
+    participantToken: 'short-lived',
+    credentialVersion: 3,
+    role: 'MEMBER',
+  });
+  await entering;
+  expect(media.connect).not.toHaveBeenCalled();
+  expect(rooms.detail).toHaveBeenCalledTimes(1);
+  await session.dispose();
+});
+
+it('fetches room processing flags only after authoritative consent refusal, without bypassing admission', async () => {
+  const { room, rooms, api, session } = setup();
+  room.sensitiveSpeechDetectionEnabled = true;
+  api.join.mockRejectedValueOnce(new RoomApiError(403, 'ROOM_SPEECH_CONSENT_REQUIRED'));
+  await session.start({ roomId: 'room-1', password: '', rulesAccepted: true });
+  expect(rooms.detail).toHaveBeenCalledTimes(1);
+  expect(session.snapshot).toMatchObject({
+    phase: 'failed',
+    errorCode: 'ROOM_SPEECH_CONSENT_REQUIRED',
+    room: { sensitiveSpeechDetectionEnabled: true },
+  });
+  expect(api.credentials).not.toHaveBeenCalled();
+  await session.dispose();
+});
+it('metadata failure during consent recovery remains retryable rather than disabling an absent consent panel', async () => {
+  const { rooms, api, session } = setup();
+  api.join.mockRejectedValueOnce(new RoomApiError(403, 'ROOM_SPEECH_CONSENT_REQUIRED'));
+  rooms.detail.mockRejectedValueOnce(new Error('offline'));
+  await session.start({ roomId: 'room-1', password: '', rulesAccepted: true });
+  expect(session.snapshot).toMatchObject({
+    phase: 'failed',
+    errorCode: 'NETWORK_ERROR',
+    room: null,
+  });
+  expect(api.credentials).not.toHaveBeenCalled();
   await session.dispose();
 });

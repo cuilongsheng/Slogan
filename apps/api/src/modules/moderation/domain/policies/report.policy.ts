@@ -23,7 +23,7 @@ export function normalizeReport(input: { [K in keyof ReportInput]: unknown }): R
   return {
     roomId: reportUuid(input.roomId),
     reporterUserId: reportUuid(input.reporterUserId),
-    targetUserId: reportUuid(input.targetUserId),
+    targetUserId: input.targetUserId == null ? null : reportUuid(input.targetUserId),
     clientRequestId: reportUuid(input.clientRequestId),
     category: input.category as ReportCategory,
     description: reportDescription(input.description),
@@ -37,6 +37,7 @@ export function assertReportContext(input: ReportInput, context: ReportContext |
     !context.reporter.joinedAt
   )
     throw new ReportError('REPORT_CONTEXT_NOT_FOUND');
+  if (input.targetUserId === null) return;
   if (input.reporterUserId === input.targetUserId) throw new ReportError('REPORT_TARGET_INVALID');
   if (context.target?.userId !== input.targetUserId || !context.target.joinedAt)
     throw new ReportError('REPORT_CONTEXT_NOT_FOUND');

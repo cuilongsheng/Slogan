@@ -29,7 +29,11 @@ describe('social presence Redis runtime', () => {
     try {
       await redis.connect();
       await redis.del(`social:presence:${userId}`);
-      const refreshed = await store.refresh(userId);
+      const [refreshed] = await Promise.all([
+        store.refresh(userId),
+        store.refresh(randomUUID()),
+        store.online([userId]),
+      ]);
       expect(refreshed.refreshAfterSeconds).toBe(15);
       expect(refreshed.expiresAt.getTime()).toBeGreaterThan(Date.now());
       expect(await store.online([userId, randomUUID()])).toEqual(new Set([userId]));
@@ -50,7 +54,9 @@ describe('social presence Redis runtime', () => {
       logger,
     );
     try {
-      await expect(store.online([randomUUID()])).resolves.toEqual(new Set());
+      await expect(store.online([randomUUID()])).rejects.toMatchObject({
+        code: 'SOCIAL_PRESENCE_UNAVAILABLE',
+      });
       await expect(store.refresh(randomUUID())).rejects.toMatchObject({
         code: 'SOCIAL_PRESENCE_UNAVAILABLE',
       });
