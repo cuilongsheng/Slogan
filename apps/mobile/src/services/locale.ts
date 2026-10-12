@@ -3,6 +3,16 @@ import { languageStorage } from './languageStorage';
 import { getLocales } from 'expo-localization';
 
 const zh = {
+  directViewAction: '查看',
+  directUnreadConversation: '{name}，{count} 条未读消息',
+  directCallConsentNotice: '语音邀请需对方接受后才能接通',
+  directReportSelect: '请选择一条收到的消息进行举报',
+  directSelectMessage: '举报这条消息：{text}',
+  directCallerIncoming: '{name} 邀请你语音单聊',
+  directCallWithPeer: '正在与 {name} 语音单聊',
+  directCallConnected: '双人语音 · 已接通',
+  directMicrophone: '麦克风',
+
   languageSaveFailed: '\u8bed\u8a00\u8bbe\u7f6e\u672a\u4fdd\u5b58\uff0c\u8bf7\u91cd\u8bd5\u3002',
   directCallMute: '\u9759\u97f3',
   directCallUnmute: '\u5f00\u9ea6',
@@ -651,6 +661,16 @@ const zh = {
 export type MessageKey = keyof typeof zh;
 
 const en: Record<MessageKey, string> = {
+  directViewAction: 'View',
+  directUnreadConversation: '{name}, {count} unread messages',
+  directCallConsentNotice: 'Voice calls connect after your partner accepts.',
+  directReportSelect: 'Select a received message to report.',
+  directSelectMessage: 'Report this message: {text}',
+  directCallerIncoming: '{name} is calling',
+  directCallWithPeer: 'In a call with {name}',
+  directCallConnected: 'Private voice · Connected',
+  directMicrophone: 'Microphone',
+
   languageSaveFailed: 'Language preference was not saved. Please retry.',
   directCallMute: 'Mute',
   directCallUnmute: 'Unmute',

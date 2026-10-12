@@ -1,6 +1,7 @@
 import defaultAvatar from '../../../assets/profile/default-avatar.png';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText as Text } from '../../components/ui/AppText';
+import { tf } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 export const directColors = {
   ink: '#26233B',
@@ -8,9 +9,15 @@ export const directColors = {
   canvas: tokens.color.surface,
   muted: tokens.color.muted,
 };
-export function DirectHeading({ title, subtitle }: { title: string; subtitle?: string }) {
+export function DirectHeading({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string | undefined;
+}) {
   return (
-    <View style={styles.heading}>
+    <View style={[styles.heading, !subtitle && styles.compactHeading]}>
       <Text style={styles.title}>{title}</Text>
       {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
     </View>
@@ -24,7 +31,6 @@ export function PeerRow({
   onPress,
   onLongPress,
   unread = 0,
-  time,
 }: {
   name: string;
   avatar: string;
@@ -33,11 +39,11 @@ export function PeerRow({
   onPress: () => void;
   onLongPress?: () => void;
   unread?: number;
-  time?: string;
 }) {
   return (
     <TouchableOpacity
       accessibilityRole="button"
+      accessibilityLabel={unread ? tf('directUnreadConversation', { name, count: unread }) : name}
       onPress={onPress}
       onLongPress={onLongPress}
       style={styles.row}
@@ -51,25 +57,18 @@ export function PeerRow({
           {detail}
         </Text>
       </View>
-      {action ? (
+      {action && (
         <View style={styles.action}>
           <Text style={styles.actionText}>{action}</Text>
         </View>
-      ) : (
-        <View style={styles.metadata}>
-          <Text style={styles.time}>{time}</Text>
-          {unread > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unread > 99 ? '99+' : unread}</Text>
-            </View>
-          )}
-        </View>
       )}
+      {unread > 0 && <View style={styles.unread} />}
     </TouchableOpacity>
   );
 }
 const styles = StyleSheet.create({
   heading: { height: 86, paddingHorizontal: 20 },
+  compactHeading: { height: 58 },
   title: { fontSize: 28, height: 42, lineHeight: 38, fontWeight: '700', color: directColors.ink },
   subtitle: { fontSize: 14, height: 24, lineHeight: 20, color: directColors.muted, marginTop: 10 },
   row: {
@@ -77,7 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: tokens.color.purpleSoft,
     marginHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 14,
@@ -97,23 +96,13 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   actionText: { color: '#FFFFFF', fontSize: 14, fontWeight: '500', lineHeight: 22 },
-  metadata: { width: 56, alignItems: 'flex-end', gap: 12 },
-  time: {
-    width: 58,
-    height: 20,
-    alignSelf: 'flex-start',
-    fontSize: 11,
-    lineHeight: 20,
-    color: directColors.muted,
+  unread: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: tokens.color.coral,
   },
-  badge: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    paddingHorizontal: 6,
-    backgroundColor: directColors.violet,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: { fontSize: 14, lineHeight: 20, height: 22, color: '#FFFFFF', fontWeight: '500' },
 });

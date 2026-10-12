@@ -95,17 +95,10 @@ export function PartnersScreen() {
   };
   return (
     <RoomPage direct hidePreviewIndicator>
-      <DirectHeading title={t('navPartners')} subtitle={t('partnersSubtitle')} />
+      <DirectHeading title={t('navPartners')} />
       {(loading || items.length > 0) && (
         <View style={styles.summary}>
           <Text style={styles.heading}>{t('partnersAvailable')}</Text>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={styles.refresh}
-            onPress={() => void refresh()}
-          >
-            <Text style={styles.refreshText}>{t('refreshAction')}</Text>
-          </TouchableOpacity>
         </View>
       )}
       {loading ? (
@@ -163,22 +156,14 @@ export function PartnersScreen() {
 }
 const styles = StyleSheet.create({
   summary: {
-    height: 55,
+    height: 35,
     paddingHorizontal: 20,
-    paddingTop: 13,
+    paddingTop: 2,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   heading: { fontSize: 14, lineHeight: 24, fontWeight: '500', color: directColors.ink },
-  refresh: {
-    width: 90,
-    height: 32,
-    paddingHorizontal: 15,
-    borderRadius: 16,
-    backgroundColor: tokens.color.purpleSoft,
-  },
-  refreshText: { textAlign: 'center', fontSize: 14, lineHeight: 32, color: directColors.violet },
   list: { flexGrow: 1, paddingBottom: 16 },
   center: { flex: 1 },
   emptyPanel: { position: 'absolute', top: 192, left: 30, right: 30, alignItems: 'center' },

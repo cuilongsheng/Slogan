@@ -1,5 +1,5 @@
 import backIcon from '../../../assets/icons/back.png';
-import micIcon from '../../../assets/icons/mic.png';
+import phoneIcon from '../../../assets/icons/direct-phone.png';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
 import { useRouter } from 'expo-router';
@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { RoomPage } from '../../components/ui/RoomPage';
 import { AppText as Text } from '../../components/ui/AppText';
-import { t, useLanguage, type MessageKey } from '../../services/locale';
+import { t, tf, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { SocialApi } from '../social';
@@ -53,7 +53,8 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
   const [dialog, setDialog] = useState<'block' | 'hide' | 'report' | null>(null),
     [reportMessage, setReportMessage] = useState<DirectMessage | null>(null),
     [reason, setReason] = useState(''),
-    [notice, setNotice] = useState<MessageKey | null>(null);
+    [notice, setNotice] = useState<MessageKey | null>(null),
+    [selectingReport, setSelectingReport] = useState(false);
   const cursor = useRef<string | undefined>(undefined),
     callCursor = useRef<string | undefined>(undefined),
     lastRead = useRef(0),
@@ -171,7 +172,13 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     }
   };
   const command = async () => {
-    if (!dialog || busy || !conversation || (dialog === 'report' && !reason.trim())) return;
+    if (
+      !dialog ||
+      busy ||
+      !conversation ||
+      (dialog === 'report' && (!reportMessage || !reason.trim()))
+    )
+      return;
     setBusy(true);
     const action =
       dialog + ':' + (reportMessage?.id ?? '') + ':' + (dialog === 'report' ? reason.trim() : '');
@@ -229,20 +236,11 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
           style={styles.voice}
           onPress={() => void requestCall()}
         >
-          <Image source={micIcon} style={styles.icon} />
+          <Image source={phoneIcon} style={styles.icon} />
         </TouchableOpacity>
       </View>
       <View style={styles.privacy}>
-        <Text style={styles.privacyText}>{t('directPrivate')}</Text>
-      </View>
-      <View style={styles.tools}>
-        <TouchableOpacity disabled={!conversation} onPress={() => setDialog('block')}>
-          <Text style={styles.toolText}>{t('socialBlock')}</Text>
-        </TouchableOpacity>
-        <Text style={styles.toolText}> · </Text>
-        <TouchableOpacity disabled={!conversation} onPress={() => setDialog('hide')}>
-          <Text style={styles.toolText}>{t('directDeleteShort')}</Text>
-        </TouchableOpacity>
+        <Text style={styles.privacyText}>{t('directCallConsentNotice')}</Text>
       </View>
       {loading ? (
         <ActivityIndicator style={{ flex: 1 }} color={directColors.violet} />
@@ -305,11 +303,26 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
             return (
               <TouchableOpacity
                 activeOpacity={own ? 1 : 0.7}
+                accessibilityRole={!own ? 'button' : undefined}
+                accessibilityLabel={
+                  !own && selectingReport
+                    ? tf('directSelectMessage', { text: item.value.text })
+                    : undefined
+                }
+                onPress={() => {
+                  if (!own && selectingReport) {
+                    setReportMessage(item.value);
+                    setDialog('report');
+                    setReason('');
+                    setSelectingReport(false);
+                  }
+                }}
                 onLongPress={() => {
                   if (!own) {
                     setReportMessage(item.value);
                     setDialog('report');
                     setReason('');
+                    setSelectingReport(false);
                   }
                 }}
                 style={[styles.bubble, own ? styles.outgoing : styles.incoming]}
@@ -331,6 +344,16 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
         </TouchableOpacity>
       )}
       {notice && <Text style={styles.notice}>{t(notice)}</Text>}
+      {selectingReport && (
+        <View style={styles.selection}>
+          <Text accessibilityRole="alert" style={styles.selectionText}>
+            {t('directReportSelect')}
+          </Text>
+          <TouchableOpacity accessibilityRole="button" onPress={() => setSelectingReport(false)}>
+            <Text style={styles.toolText}>{t('cancelAction')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <View style={styles.composer}>
         <TextInput
           testID="direct-message-input"
@@ -352,6 +375,25 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
           style={styles.send}
         >
           <Text style={styles.sendText}>↑</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.tools}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={!messages.some((message) => message.senderUserId !== userId)}
+          onPress={() => setSelectingReport(true)}
+          style={styles.toolAction}
+        >
+          <Text style={styles.toolText}>⋯ {t('directReport')}</Text>
+        </TouchableOpacity>
+        <Text style={[styles.toolText, styles.toolDivider]}> · </Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={!conversation}
+          onPress={() => setDialog('block')}
+          style={styles.toolAction}
+        >
+          <Text style={styles.toolText}>{t('socialBlock')}</Text>
         </TouchableOpacity>
       </View>
       <Modal visible={dialog !== null} transparent onRequestClose={() => setDialog(null)}>
@@ -389,7 +431,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
               />
             )}
             <TouchableOpacity
-              disabled={busy || (dialog === 'report' && !reason.trim())}
+              disabled={busy || (dialog === 'report' && (!reportMessage || !reason.trim()))}
               onPress={() => void command()}
               style={styles.confirm}
             >
@@ -405,8 +447,15 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
   );
 }
 const styles = StyleSheet.create({
-  header: { height: 62, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  back: { width: 48, height: 44, justifyContent: 'center', transform: [{ translateY: -7 }] },
+  header: { height: 73, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  back: {
+    width: 48,
+    height: 44,
+    paddingLeft: 4,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+    justifyContent: 'center',
+  },
   icon: { width: 24, height: 24 },
   title: {
     alignSelf: 'flex-start',
@@ -423,20 +472,33 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateY: -7 }],
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    transform: [{ translateX: -1 }],
   },
   privacy: {
-    height: 44,
+    height: 51,
     marginHorizontal: 16,
     backgroundColor: tokens.color.purpleSoft,
     borderRadius: 18,
     paddingHorizontal: 14,
     justifyContent: 'center',
   },
-  privacyText: { height: 24, fontSize: 12, lineHeight: 18, color: directColors.muted },
-  tools: { height: 42, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' },
+  privacyText: { minHeight: 34, fontSize: 12, lineHeight: 18, color: directColors.muted },
+  tools: {
+    height: 82,
+    paddingTop: 15,
+    paddingHorizontal: 22,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: tokens.color.surface,
+  },
+  toolAction: { minHeight: 36, justifyContent: 'center' },
+  toolDivider: { marginTop: 7 },
+  selection: { paddingHorizontal: 16, paddingVertical: 6, flexDirection: 'row', gap: 12 },
+  selectionText: { flex: 1, fontSize: 12, lineHeight: 20, color: directColors.violet },
   toolText: { height: 22, fontSize: 12, lineHeight: 18, color: directColors.muted },
-  timeline: { paddingHorizontal: 16, paddingBottom: 16, gap: 18, paddingTop: 0 },
+  timeline: { paddingHorizontal: 16, paddingBottom: 16, gap: 23, paddingTop: 52 },
   bubble: {
     width: 264,
     maxWidth: '74%',
@@ -446,7 +508,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 20,
   },
-  incoming: { width: 262, alignSelf: 'flex-start', backgroundColor: tokens.color.mint },
+  incoming: {
+    width: 262,
+    paddingBottom: 9,
+    alignSelf: 'flex-start',
+    backgroundColor: tokens.color.mint,
+  },
   outgoing: { alignSelf: 'flex-end', backgroundColor: tokens.color.purpleSoft },
   pending: { opacity: 0.65 },
   message: { fontSize: 14, lineHeight: 20, color: directColors.ink },
@@ -459,19 +526,20 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   composer: {
-    minHeight: 108,
+    minHeight: 82,
     paddingTop: 12,
-    paddingBottom: 30,
+    paddingBottom: 20,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
+    paddingRight: 24,
     backgroundColor: tokens.color.surface,
   },
   input: {
     flex: 1,
     minWidth: 0,
-    height: 54,
+    height: 50,
     maxHeight: 120,
     backgroundColor: tokens.color.panel,
     borderRadius: 20,
@@ -484,7 +552,7 @@ const styles = StyleSheet.create({
   },
   send: {
     width: 50,
-    height: 54,
+    height: 50,
     borderRadius: 27,
     backgroundColor: directColors.violet,
     alignItems: 'center',

@@ -77,10 +77,7 @@ export function RoomPage({
       {Platform.OS === 'web' && !hidePreviewIndicator && (
         <View
           pointerEvents="none"
-          style={[
-            styles.homeIndicator,
-            direct && dark && { backgroundColor: '#FFFFFF', width: 125 },
-          ]}
+          style={[styles.homeIndicator, direct && dark && { backgroundColor: '#FFFFFF' }]}
         />
       )}
     </SafeAreaView>

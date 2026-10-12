@@ -1,3 +1,5 @@
+import micIcon from '../../../assets/icons/direct-microphone.png';
+import micOffIcon from '../../../assets/icons/voice-mic-off.png';
 import defaultAvatar from '../../../assets/profile/default-avatar.png';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
@@ -13,7 +15,7 @@ import {
 } from 'react-native';
 import { RoomPage } from '../../components/ui/RoomPage';
 import { AppText as Text } from '../../components/ui/AppText';
-import { t, useLanguage, type MessageKey } from '../../services/locale';
+import { t, tf, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { createVoiceMedia } from '../voice-room';
@@ -214,19 +216,19 @@ export function CallScreen({ callId }: { callId: string }) {
         <View style={styles.body}>
           {active ? (
             <>
-              <Text style={styles.activeTitle}>
-                {t(
-                  snapshot.connection === 'reconnecting'
-                    ? 'directCallReconnecting'
-                    : 'directCallActive',
-                )}
+              <Text numberOfLines={1} style={styles.activeTitle}>
+                {tf('directCallWithPeer', { name: call.peer?.displayName ?? '' })}
               </Text>
               <Text style={styles.duration}>{duration}</Text>
             </>
           ) : (
             <DirectHeading
               title={t(live ? 'directVoiceAction' : endedLabel)}
-              subtitle={t(call.status === 'ENDED' ? 'directCallStopped' : 'directCallPrivate')}
+              subtitle={
+                incoming && live
+                  ? undefined
+                  : t(call.status === 'ENDED' ? 'directCallStopped' : 'directCallPrivate')
+              }
             />
           )}
           <Image
@@ -234,17 +236,29 @@ export function CallScreen({ callId }: { callId: string }) {
             style={[styles.photo, active && styles.activePhoto]}
           />
           {live && (
-            <Text style={[styles.name, active && styles.activeName]}>
-              {call.peer?.displayName ?? ''}
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+              style={[styles.name, active && styles.activeName]}
+            >
+              {active
+                ? t(
+                    snapshot.connection === 'connected'
+                      ? 'directCallConnected'
+                      : snapshot.connection === 'reconnecting'
+                        ? 'directCallReconnecting'
+                        : 'directCallConnecting',
+                  )
+                : incoming && call.status === 'RINGING'
+                  ? tf('directCallerIncoming', { name: call.peer?.displayName ?? '' })
+                  : (call.peer?.displayName ?? '')}
             </Text>
           )}
-          {call.status === 'RINGING' && (
+          {call.status === 'RINGING' && !incoming && (
             <Text style={styles.hint}>
               {t(incoming ? 'directCallIncoming' : 'directCallOutgoing')}
             </Text>
-          )}
-          {active && snapshot.connection === 'connecting' && (
-            <Text style={styles.connection}>{t('directCallConnecting')}</Text>
           )}
           {error && (
             <TouchableOpacity
@@ -271,23 +285,32 @@ export function CallScreen({ callId }: { callId: string }) {
           <View style={[styles.controls, active && styles.activeControls]}>
             {active ? (
               <>
-                <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel={t(snapshot.microphoneEnabled ? 'voiceMute' : 'voiceUnmute')}
-                  style={styles.mic}
-                  onPress={() => void toggle()}
-                >
-                  <Text style={styles.declineText}>
-                    {t(snapshot.microphoneEnabled ? 'directCallMute' : 'directCallUnmute')}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.end}
-                  accessibilityRole="button"
-                  onPress={() => leave()}
-                >
-                  <Text style={styles.actionText}>{t('directCallEnd')}</Text>
-                </TouchableOpacity>
+                <View style={styles.controlGroup}>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={t(snapshot.microphoneEnabled ? 'voiceMute' : 'voiceUnmute')}
+                    accessibilityState={{ selected: !snapshot.microphoneEnabled }}
+                    style={styles.mic}
+                    onPress={() => void toggle()}
+                  >
+                    <Image
+                      source={snapshot.microphoneEnabled ? micIcon : micOffIcon}
+                      style={styles.micIcon}
+                    />
+                  </TouchableOpacity>
+                  <Text style={styles.controlLabel}>{t('directMicrophone')}</Text>
+                </View>
+                <View style={styles.controlGroup}>
+                  <TouchableOpacity
+                    style={styles.end}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('directCallEnd')}
+                    onPress={() => leave()}
+                  >
+                    <Text style={styles.endIcon}>×</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.controlLabel}>{t('directCallEnd')}</Text>
+                </View>
               </>
             ) : call.status === 'RINGING' && incoming ? (
               <>
@@ -364,14 +387,21 @@ const styles = StyleSheet.create({
     top: 335,
     left: 45,
     right: 45,
-    fontSize: 28,
+    fontSize: 24,
     height: 42,
-    lineHeight: 38,
+    lineHeight: 32,
     fontWeight: '700',
     textAlign: 'center',
     color: directColors.ink,
   },
-  activeName: { top: 372, height: 32, fontSize: 20, lineHeight: 28, color: '#FFFFFF' },
+  activeName: {
+    top: 372,
+    height: 30,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '400',
+    color: '#FFFFFF',
+  },
   hint: {
     position: 'absolute',
     top: 387,
@@ -383,16 +413,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: directColors.muted,
   },
-  connection: {
-    position: 'absolute',
-    top: 425,
-    left: 24,
-    right: 24,
-    fontSize: 14,
-    lineHeight: 24,
-    textAlign: 'center',
-    color: '#C9BEE5',
-  },
   controls: {
     position: 'absolute',
     bottom: 121,
@@ -401,7 +421,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 18,
   },
-  activeControls: { bottom: 122, left: 66, right: 66, justifyContent: 'space-between' },
+  activeControls: { bottom: 91, left: 68, right: 64, justifyContent: 'space-between' },
+  controlGroup: { width: 108, alignItems: 'center', gap: 7 },
+  controlLabel: {
+    marginTop: 0,
+    width: 108,
+    height: 24,
+    lineHeight: 18,
+    fontSize: 12,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  micIcon: { width: 27, height: 27, tintColor: directColors.violet },
+  endIcon: {
+    width: 72,
+    height: 42,
+    lineHeight: 40,
+    fontSize: 29,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
   decline: {
     flex: 1,
     height: 55,
@@ -433,17 +472,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   mic: {
-    width: 106,
-    minHeight: 72,
-    padding: 8,
+    width: 72,
+    height: 72,
+    alignItems: 'center',
     borderRadius: 36,
     backgroundColor: tokens.color.purpleSoft,
     justifyContent: 'center',
   },
   end: {
-    width: 106,
-    minHeight: 72,
-    padding: 8,
+    width: 72,
+    height: 72,
+    alignItems: 'center',
     borderRadius: 36,
     backgroundColor: tokens.color.coral,
     justifyContent: 'center',

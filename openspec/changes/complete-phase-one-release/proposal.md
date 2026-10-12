@@ -13,6 +13,8 @@ The owner approved completing the 2026-10-11 audit backlog before one consolidat
 - Gate schema-changing production releases on encrypted backup, compatible migrations, verification, and isolated restore evidence. Preview branches must never migrate production.
 - Add CI coverage and reconcile stale delivery documents and completed OpenSpec changes.
 
+- Incorporate the owner-approved 2026-10-12 simplification of partner, recent-message, chat and direct-call layouts, with a matching V2 high-fidelity design.
+
 ## Impacted delivery stages
 
 - Architecture

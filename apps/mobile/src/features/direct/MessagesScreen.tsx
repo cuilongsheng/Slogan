@@ -15,7 +15,6 @@ import { AppText as Text } from '../../components/ui/AppText';
 import { t, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
-import { SocialApi, type FriendPage } from '../social';
 import { DirectApi, directError, type Conversation } from './api';
 import { DirectHeading, PeerRow, directColors } from './components';
 import { useFocusedPolling } from './useFocusedPolling';
@@ -23,11 +22,8 @@ export function MessagesScreen() {
   useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
-  const api = useMemo(() => new DirectApi(authorized), [authorized]),
-    social = useMemo(() => new SocialApi(authorized), [authorized]);
-  const [mode, setMode] = useState<'recent' | 'friends'>('recent'),
-    [items, setItems] = useState<Conversation[]>([]),
-    [friends, setFriends] = useState<FriendPage['items']>([]),
+  const api = useMemo(() => new DirectApi(authorized), [authorized]);
+  const [items, setItems] = useState<Conversation[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState<MessageKey | null>(null),
@@ -36,7 +32,6 @@ export function MessagesScreen() {
   const epoch = useRef(0),
     requestIds = useRef(new Map<string, string>()),
     paging = useRef(false),
-    opening = useRef(false),
     refreshing = useRef(false),
     loadedPages = useRef(1);
   const load = useCallback(
@@ -46,32 +41,19 @@ export function MessagesScreen() {
       const generation = ++epoch.current;
       try {
         const conversations: Conversation[] = [];
-        const friendItems: FriendPage['items'] = [];
         let next: string | null = null;
         for (let pageIndex = 0; pageIndex < loadedPages.current; pageIndex++) {
-          if (mode === 'recent') {
-            const page = await api.conversations(next ?? undefined);
-            if (!current() || generation !== epoch.current) return;
-            conversations.push(
-              ...page.items.filter(
-                (item) => !conversations.some((existing) => existing.id === item.id),
-              ),
-            );
-            next = page.nextCursor;
-          } else {
-            const page = await social.friends(next ?? undefined);
-            if (!current() || generation !== epoch.current) return;
-            friendItems.push(
-              ...page.items.filter(
-                (item) => !friendItems.some((existing) => existing.id === item.id),
-              ),
-            );
-            next = page.nextCursor;
-          }
+          const page = await api.conversations(next ?? undefined);
+          if (!current() || generation !== epoch.current) return;
+          conversations.push(
+            ...page.items.filter(
+              (item) => !conversations.some((existing) => existing.id === item.id),
+            ),
+          );
+          next = page.nextCursor;
           if (!next) break;
         }
-        if (mode === 'recent') setItems(conversations);
-        else setFriends(friendItems);
+        setItems(conversations);
         setCursor(next);
         setError(null);
       } catch {
@@ -81,7 +63,7 @@ export function MessagesScreen() {
         if (current() && generation === epoch.current) setLoading(false);
       }
     },
-    [api, social, mode],
+    [api],
   );
   useFocusedPolling(load, 15000);
   const more = async () => {
@@ -89,41 +71,18 @@ export function MessagesScreen() {
     paging.current = true;
     const generation = epoch.current;
     try {
-      if (mode === 'recent') {
-        const page = await api.conversations(cursor);
-        if (generation !== epoch.current) return;
-        setItems((old) => [
-          ...old,
-          ...page.items.filter((item) => !old.some((x) => x.id === item.id)),
-        ]);
-        setCursor(page.nextCursor);
-        loadedPages.current++;
-      } else {
-        const page = await social.friends(cursor);
-        if (generation !== epoch.current) return;
-        setFriends((old) => [
-          ...old,
-          ...page.items.filter((item) => !old.some((x) => x.id === item.id)),
-        ]);
-        setCursor(page.nextCursor);
-        loadedPages.current++;
-      }
+      const page = await api.conversations(cursor);
+      if (generation !== epoch.current) return;
+      setItems((old) => [
+        ...old,
+        ...page.items.filter((item) => !old.some((x) => x.id === item.id)),
+      ]);
+      setCursor(page.nextCursor);
+      loadedPages.current++;
     } catch {
       setError('socialMoreFailed');
     } finally {
       paging.current = false;
-    }
-  };
-  const openFriend = async (userId: string) => {
-    if (opening.current) return;
-    opening.current = true;
-    try {
-      const item = await api.open(userId);
-      router.push(`/messages/${item.id}`);
-    } catch (e) {
-      setError(directError(e));
-    } finally {
-      opening.current = false;
     }
   };
   const hide = async () => {
@@ -144,37 +103,15 @@ export function MessagesScreen() {
   };
   return (
     <RoomPage direct hidePreviewIndicator>
-      <DirectHeading title={t('navMessages')} subtitle={t('messagesSubtitle')} />
-      {!(error && items.length === 0 && mode === 'recent') && (
+      <DirectHeading title={t('navMessages')} />
+      {!(error && items.length === 0) && (
         <View style={styles.tabs}>
-          {(['recent', 'friends'] as const).map((value) => (
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityState={{ selected: value === mode }}
-              key={value}
-              style={[
-                styles.tab,
-                { width: value === 'recent' ? 104 : 82 },
-                value === mode && styles.active,
-              ]}
-              onPress={() => {
-                if (value === mode) return;
-                epoch.current++;
-                loadedPages.current = 1;
-                setCursor(null);
-                setError(null);
-                setLoading(true);
-                setMode(value);
-              }}
-            >
-              <Text style={[styles.tabText, value === mode && styles.activeText]}>
-                {t(value === 'recent' ? 'directRecent' : 'directFriends')}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <View style={[styles.tab, styles.active]}>
+            <Text style={styles.activeText}>{t('directRecent')}</Text>
+          </View>
         </View>
       )}
-      {error && items.length === 0 && mode === 'recent' ? (
+      {error && items.length === 0 ? (
         <View style={{ flex: 1 }}>
           <View style={styles.failure}>
             <Text style={styles.failureText}>{t('directListFailed')}</Text>
@@ -189,7 +126,7 @@ export function MessagesScreen() {
         </View>
       ) : loading ? (
         <ActivityIndicator style={{ flex: 1 }} color={directColors.violet} />
-      ) : mode === 'recent' ? (
+      ) : (
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
@@ -207,10 +144,7 @@ export function MessagesScreen() {
                   ? t('directVoiceAction')
                   : (item.lastMessage?.text ?? t('directNew'))
               }
-              time={new Date(item.lastActivityAt).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              action={t('directViewAction')}
               unread={item.unreadCount}
               onPress={() => router.push(`/messages/${item.id}`)}
               onLongPress={() => setSelected(item)}
@@ -225,32 +159,8 @@ export function MessagesScreen() {
             ) : null
           }
         />
-      ) : (
-        <FlatList
-          data={friends}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          refreshing={loading}
-          onRefresh={() => void load()}
-          onEndReached={() => void more()}
-          renderItem={({ item }) => (
-            <PeerRow
-              name={item.friend.displayName}
-              avatar={item.friend.avatarUrl}
-              detail={item.friend.cefrLevel.replaceAll('_', '–') + ' · ' + t('directFriend')}
-              action={t('directChatAction')}
-              onPress={() => void openFriend(item.friend.userId)}
-            />
-          )}
-          ListEmptyComponent={<Text style={styles.empty}>{t(error ?? 'socialEmpty')}</Text>}
-          ListFooterComponent={
-            <TouchableOpacity onPress={() => router.push('/me/social')}>
-              <Text style={styles.manage}>{t('directManageFriends')}</Text>
-            </TouchableOpacity>
-          }
-        />
       )}
-      {error && !(items.length === 0 && mode === 'recent') && (
+      {error && !(items.length === 0) && (
         <TouchableOpacity onPress={() => void load()}>
           <Text accessibilityRole="alert" style={styles.error}>
             {t(error)} · {t('retry')}
@@ -293,8 +203,9 @@ const styles = StyleSheet.create({
     backgroundColor: directColors.violet,
     justifyContent: 'center',
   },
-  tabs: { height: 63, paddingTop: 6, paddingHorizontal: 16, flexDirection: 'row', gap: 9 },
+  tabs: { height: 42, paddingTop: 0, paddingHorizontal: 16, flexDirection: 'row', gap: 9 },
   tab: {
+    width: 104,
     height: 32,
     borderRadius: 16,
     paddingHorizontal: 0,

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-const evidence = 'docs/acceptance/phase-one-completion/runtime';
+const evidence = 'docs/acceptance/simplified-direct-pages/runtime';
 const now = new Date('2026-10-11T02:42:00Z');
 const peers = ['Luna', 'Mika', 'Ravi'].map((displayName, index) => ({
   userId: `peer-${index}`,
@@ -128,7 +128,7 @@ for (const [name, status, incoming, extra] of [
     await fixtures(page, { status, incoming });
     await page.goto(`/?screen=call&language=en${extra}`);
     if (!['ended', 'expired'].includes(name))
-      await expect(page.getByText('Luna', { exact: true })).toBeVisible();
+      await expect(page.getByText(/Luna/).first()).toBeVisible();
     if (name === 'device') await expect(page.getByRole('alert')).toBeVisible();
     await capture(page, name);
     expect(errors).toEqual([]);
@@ -138,7 +138,9 @@ for (const [name, status, incoming, extra] of [
       expect(await page.evaluate(() => Reflect.get(globalThis, '__mediaStopped'))).toBe(true);
     }
   });
-test('empty, error and friend tabs remain actionable', async ({ page }) => {
+test('empty/error recovery preserves recent conversations without a Friends tab', async ({
+  page,
+}) => {
   await fixtures(page, { empty: true, error: true });
   await page.goto('/?screen=partners&language=en');
   await expect(page.getByText('No available partners right now.')).toBeVisible();
@@ -150,25 +152,25 @@ test('empty, error and friend tabs remain actionable', async ({ page }) => {
     route.fulfill({ json: { items: [conversation()], nextCursor: null } }),
   );
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
-  await page.getByRole('button', { name: 'Friends', exact: true }).click();
-  await expect(page.getByText('Ravi', { exact: true })).toBeVisible();
-  await capture(page, 'friends');
+  await expect(page.getByText('Luna', { exact: true })).toBeVisible();
+  await expect(page.getByText('Friends', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Recent conversations and friends')).toHaveCount(0);
 });
 test('chat action dialogs match design and cancel locally', async ({ page }) => {
   await fixtures(page);
   await page.goto('/?screen=chat&language=en');
   await expect(page.getByText('What movie did you watch?')).toBeVisible();
-  await page.getByText('Delete my history', { exact: true }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await capture(page, 'delete');
-  await page.getByText('Cancel', { exact: true }).click();
-  await expect(page.getByRole('dialog')).toBeHidden();
   await page.getByText('Block', { exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await capture(page, 'block');
   await page.getByText('Cancel', { exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
-  await page.getByText('What movie did you watch?').click({ delay: 600 });
+  await page.getByRole('button', { name: '⋯ Report message' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.getByRole('alert')).toHaveText('Select a received message to report.');
+  await page
+    .getByRole('button', { name: 'Report this message: What movie did you watch?' })
+    .click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('textbox').last().fill('Repeated unwanted messages.');
   await page.getByText('Report message', { exact: true }).click();
@@ -207,4 +209,47 @@ test('failed send retries the same id and preserves a single delivered message',
   await expect(page.getByTestId('direct-message-input')).toHaveValue('');
   expect(requests).toHaveLength(2);
   expect(requests[0]).toEqual(requests[1]);
+});
+
+test('report toolbar submits only the explicitly selected received message', async ({ page }) => {
+  await fixtures(page);
+  const reported: unknown[] = [];
+  await page.route('**/v1/conversations/conversation-luna/messages/*/report', async (route) => {
+    reported.push({ url: route.request().url(), body: route.request().postDataJSON() });
+    await route.fulfill({ status: 201, json: {} });
+  });
+  await page.goto('/?screen=chat&language=en');
+  await expect(page.getByText('What movie did you watch?')).toBeVisible();
+  await page.getByRole('button', { name: '⋯ Report message' }).click();
+  await page.getByText('I watched The Secret Life of Walter Mitty.', { exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  expect(reported).toHaveLength(0);
+  await page
+    .getByRole('button', { name: 'Report this message: What movie did you watch?' })
+    .click();
+  await page.getByRole('textbox').last().fill('Repeated harassment');
+  await page.getByText('Confirm', { exact: true }).click();
+  await expect(page.getByText('Report submitted', { exact: true })).toBeVisible();
+  expect(reported).toHaveLength(1);
+  expect(reported[0]).toEqual(
+    expect.objectContaining({
+      url: expect.stringContaining('/messages/message-1/report'),
+      body: expect.objectContaining({ description: 'Repeated harassment' }),
+    }),
+  );
+});
+
+test('recent View action preserves unread semantics and personal history deletion', async ({
+  page,
+}) => {
+  await fixtures(page);
+  await page.goto('/?screen=messages&language=en');
+  const row = page.getByRole('button', { name: 'Luna, 2 unread messages', exact: true });
+  await expect(row.getByText('View', { exact: true })).toBeVisible();
+  await row.click({ delay: 600 });
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await capture(page, 'delete');
+  await page.getByText('Cancel', { exact: true }).click();
+  await row.click();
+  await expect(page).toHaveURL('/messages/conversation-luna');
 });
