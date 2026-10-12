@@ -9,7 +9,7 @@ export type ReportCategory = (typeof REPORT_CATEGORIES)[number];
 export interface ReportInput {
   roomId: string;
   reporterUserId: string;
-  targetUserId: string;
+  targetUserId: string | null;
   clientRequestId: string;
   category: ReportCategory;
   description: string;

@@ -316,8 +316,10 @@ function MemberSeat({
   onPress,
   onRemove,
   columnIndex,
+  isSelf,
 }: {
   columnIndex: number;
+  isSelf: boolean;
   member: RoomMember;
   snapshot: VoiceSessionSnapshot;
   onPress: () => void;
@@ -334,6 +336,8 @@ function MemberSeat({
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={member.displayName}
+        disabled={isSelf}
+        accessibilityState={{ disabled: isSelf }}
         onPress={onPress}
         style={styles.seatPress}
       >
@@ -430,6 +434,9 @@ function VoiceRoomBody({
   const [controlsOpen, setControlsOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<RoomMember | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [reportRoomOpen, setReportRoomOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<RoomMember | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
   const [assistanceOpen, setAssistanceOpen] = useState(false);
@@ -493,9 +500,9 @@ function VoiceRoomBody({
         }
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel={t('roomShareAction')}
+          accessibilityLabel={t('roomMoreActions')}
           style={styles.moreHit}
-          onPress={() => setShareOpen(true)}
+          onPress={() => setMoreOpen(true)}
         >
           <View style={styles.moreDots}>
             {[0, 1, 2].map((dot) => (
@@ -597,9 +604,21 @@ function VoiceRoomBody({
                       {member ? (
                         <MemberSeat
                           member={member}
+                          isSelf={
+                            member.participantIdentity === snapshot.media.localIdentity ||
+                            member.membershipId === room.currentMembership?.id
+                          }
                           columnIndex={index}
                           snapshot={snapshot}
-                          onPress={() => setControlsOpen(true)}
+                          onPress={() => {
+                            if (
+                              member.participantIdentity === snapshot.media.localIdentity ||
+                              member.membershipId === room.currentMembership?.id
+                            )
+                              return;
+                            setReportTarget(member);
+                            setControlsOpen(true);
+                          }}
                           onRemove={
                             snapshot.role === 'HOST' && member.role !== 'HOST'
                               ? () => {
@@ -838,6 +857,66 @@ function VoiceRoomBody({
           </View>
         </View>
       )}
+      {moreOpen && (
+        <View style={styles.overlay}>
+          <View style={[styles.confirmSheet, styles.moreSheet]}>
+            <Text style={styles.moreTitle}>{t('roomMoreActions')}</Text>
+            <View pointerEvents="none" style={styles.moreBrandDots}>
+              <View style={[styles.handoffDot, { backgroundColor: '#FF6F70' }]} />
+              <View style={[styles.handoffDot, { backgroundColor: '#FFD65A', marginTop: 3 }]} />
+              <View style={[styles.handoffDot, { backgroundColor: '#23C8BE' }]} />
+            </View>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('roomCloseSheet')}
+              style={styles.moreClose}
+              onPress={() => setMoreOpen(false)}
+            >
+              <Text style={styles.moreCloseText}>×</Text>
+            </TouchableOpacity>
+            <View style={styles.moreActions}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.moreAction}
+                onPress={() => {
+                  setMoreOpen(false);
+                  setReportRoomOpen(true);
+                  setControlsOpen(true);
+                }}
+              >
+                <Text style={styles.moreActionText}>{t('roomReportRoom')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.moreAction}
+                onPress={() => {
+                  setMoreOpen(false);
+                  if (
+                    snapshot.role === 'HOST' &&
+                    members.some(
+                      (member) => member.role !== 'HOST' && member.presence === 'CONNECTED',
+                    )
+                  )
+                    setLeaveConfirm(true);
+                  else void session.leave();
+                }}
+              >
+                <Text style={styles.moreActionText}>{t('voiceLeave')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={styles.moreAction}
+                onPress={() => {
+                  setMoreOpen(false);
+                  setShareOpen(true);
+                }}
+              >
+                <Text style={styles.moreActionText}>{t('roomShareAction')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
       {shareOpen && (
         <View style={styles.overlay}>
           <View style={styles.confirmSheet}>
@@ -893,12 +972,21 @@ function VoiceRoomBody({
           isHost={snapshot.role === 'HOST'}
           api={api}
           refresh={() => session.refresh()}
-          {...(inviteOpen ? { initialMode: 'invite' as const } : {})}
+          roomTopic={room.topic}
+          {...(inviteOpen
+            ? { initialMode: 'invite' as const }
+            : reportRoomOpen
+              ? { initialMode: 'reportRoom' as const }
+              : reportTarget
+                ? { initialMode: 'report' as const, initialReportTarget: reportTarget }
+                : {})}
           {...(removeTarget ? { initialRemoveTarget: removeTarget } : {})}
           onClose={() => {
             setControlsOpen(false);
             setInviteOpen(false);
             setRemoveTarget(null);
+            setReportTarget(null);
+            setReportRoomOpen(false);
           }}
         />
       )}
@@ -1042,6 +1130,36 @@ export function VoiceRoomScreen({
 }
 
 const styles = StyleSheet.create({
+  moreSheet: {
+    height: 300,
+    minHeight: 0,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    backgroundColor: '#34274F',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+  moreTitle: { color: '#fff', fontSize: 20, lineHeight: 31, fontWeight: '500' },
+  moreBrandDots: { position: 'absolute', top: 24, right: 81, flexDirection: 'row', gap: 5 },
+  moreClose: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+  },
+  moreCloseText: { fontSize: 28, lineHeight: 36, color: '#CBC2DD' },
+  moreActions: { marginTop: 27, gap: 14 },
+  moreAction: {
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: '#49395F',
+  },
+  moreActionText: { color: '#E4DDF4', fontSize: 14, lineHeight: 22 },
   assistanceButton: {
     width: 38,
     height: 38,

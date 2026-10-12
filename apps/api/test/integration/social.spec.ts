@@ -296,10 +296,15 @@ describe('friends, blocking, availability and room invitations', () => {
     expect((await social.listAvailable(alice, {}, now)).items.map((item) => item.userId)).toContain(
       bob,
     );
-    await rooms.create(bob, { topic: 'Busy room', cefrLevel: 'B1', capacity: 2 }, now);
+    const busy = await rooms.create(bob, { topic: 'Busy room', cefrLevel: 'B1', capacity: 2 }, now);
     expect(
       (await social.listAvailable(alice, {}, now)).items.map((item) => item.userId),
     ).not.toContain(bob);
+    // Retained membership on a terminal room cannot hide an otherwise idle user.
+    await prisma.room.update({ where: { id: busy.room.id }, data: { status: 'ENDED' } });
+    expect((await social.listAvailable(alice, {}, now)).items.map((item) => item.userId)).toContain(
+      bob,
+    );
   });
 
   it('creates, lists and atomically consumes a password-protected invitation', async () => {

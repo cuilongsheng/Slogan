@@ -44,6 +44,7 @@ export class ReportsController {
   ): Promise<ReportReceiptDto> {
     const saved = await this.reports.submit({
       ...input,
+      targetUserId: input.targetUserId ?? null,
       roomId: params.roomId,
       reporterUserId: identity.userId,
     });

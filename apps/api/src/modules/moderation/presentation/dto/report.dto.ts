@@ -1,8 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
 import { REPORT_CATEGORIES, type ReportCategory } from '../../domain/entities/report.js';
 export class SubmitReportDto {
-  @ApiProperty({ format: 'uuid' }) @IsUUID() targetUserId!: string;
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    format: 'uuid',
+    description: 'Omit for a room report. A supplied identifier reports that joined member.',
+  })
+  @IsOptional()
+  @IsUUID()
+  targetUserId?: string | null;
   @ApiProperty({
     format: 'uuid',
     description:

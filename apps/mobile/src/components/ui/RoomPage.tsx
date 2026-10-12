@@ -163,8 +163,13 @@ export const roomPageStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: tokens.color.surface, overflow: 'hidden' },
-  webCanvas: { flex: 1, alignItems: 'center', backgroundColor: '#EFF4FC' },
-  webFrame: { width: '100%', maxWidth: 390 },
+  webCanvas: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF4FC',
+  },
+  webFrame: { width: '100%', maxWidth: 390, maxHeight: 844 },
   previewStatus: {
     height: 49,
     paddingHorizontal: 24,

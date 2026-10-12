@@ -4,7 +4,7 @@ model Report {
   id              String         @id @default(uuid()) @db.Uuid
   roomId          String?        @db.Uuid
   reporterUserId  String         @db.Uuid
-  targetUserId    String         @db.Uuid
+  targetUserId    String?        @db.Uuid
   clientRequestId String         @db.Uuid
   category        ReportCategory
   description     String         @db.Text

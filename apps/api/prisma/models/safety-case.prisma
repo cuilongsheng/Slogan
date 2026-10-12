@@ -2,7 +2,7 @@ model SafetyCase {
   id               String                          @id @default(uuid()) @db.Uuid
   reportId         String                          @unique @db.Uuid
   roomId           String?                         @db.Uuid
-  targetUserId     String                          @db.Uuid
+  targetUserId     String?                         @db.Uuid
   status           SafetyCaseStatus                @default(OPEN)
   assigneeUserId   String?                         @db.Uuid
   assignedAt       DateTime?                       @db.Timestamptz(3)
@@ -16,7 +16,7 @@ model SafetyCase {
   updatedAt        DateTime                        @updatedAt @db.Timestamptz(3)
   report           Report                          @relation(fields: [reportId], references: [id], onDelete: Restrict)
   room             Room?                           @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  target           User                            @relation("SafetyCaseTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+  target           User?                           @relation("SafetyCaseTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
   assignee         User?                           @relation("SafetyCaseAssignee", fields: [assigneeUserId], references: [id], onDelete: Restrict)
   participants     SafetyCaseParticipantSnapshot[]
   activities       SafetyCaseActivity[]

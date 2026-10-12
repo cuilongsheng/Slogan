@@ -142,20 +142,35 @@ export class SocialService {
   ) {
     await this.social.assertActorEligible(userId, now);
     const limit = query.limit ?? 20;
-    const page = await this.social.listAvailableCandidates({
-      userId,
-      cursor: decodeSocialCursor('available', query.cursor),
-      limit,
-      now,
-    });
-    const online = await this.presence.online(page.items.map((item) => item.userId));
-    return {
-      items: page.items
-        .filter((item) => online.has(item.userId))
-        .slice(0, limit)
-        .map(({ createdAt: _createdAt, ...profile }) => ({ ...profile, isAvailable: true })),
-      nextCursor: page.nextCursor ? encodeSocialCursor('available', page.nextCursor) : null,
-    };
+    let cursor = decodeSocialCursor('available', query.cursor);
+    const items: Array<
+      Omit<
+        Awaited<ReturnType<SocialRepository['listAvailableCandidates']>>['items'][number],
+        'createdAt'
+      > & { isAvailable: true }
+    > = [];
+    // Candidate scans are bounded. Continue past offline pages; never skip online
+    // candidates after the returned limit within a larger scanned page.
+    for (let scan = 0; scan < 5; scan++) {
+      const page = await this.social.listAvailableCandidates({ userId, cursor, limit, now });
+      const online = await this.presence.online(page.items.map((item) => item.userId));
+      for (const [index, item] of page.items.entries()) {
+        if (!online.has(item.userId)) continue;
+        const { createdAt, ...profile } = item;
+        items.push({ ...profile, isAvailable: true });
+        if (items.length === limit)
+          return {
+            items,
+            nextCursor:
+              index < page.items.length - 1 || page.nextCursor
+                ? encodeSocialCursor('available', { createdAt, id: item.userId })
+                : null,
+          };
+      }
+      cursor = page.nextCursor;
+      if (!cursor) break;
+    }
+    return { items, nextCursor: cursor ? encodeSocialCursor('available', cursor) : null };
   }
 
   async canInvite(actorUserId: string, targetUserId: string, now = new Date()): Promise<boolean> {

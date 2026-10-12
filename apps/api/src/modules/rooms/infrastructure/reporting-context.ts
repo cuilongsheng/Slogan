@@ -6,14 +6,17 @@ export async function readReportingContext(
   tx: Prisma.TransactionClient,
   roomId: string,
   reporterUserId: string,
-  targetUserId: string,
+  targetUserId: string | null,
 ) {
   const rooms = await tx.$queryRaw<Array<{ id: string }>>(
     Prisma.sql`SELECT "id" FROM "Room" WHERE "id" = ${roomId}::uuid FOR UPDATE`,
   );
   if (!rooms.length) return null;
   const members = await tx.roomMembership.findMany({
-    where: { roomId, userId: { in: [reporterUserId, targetUserId] } },
+    where: {
+      roomId,
+      userId: { in: targetUserId ? [reporterUserId, targetUserId] : [reporterUserId] },
+    },
     select: { userId: true, joinedAt: true },
   });
   return {

@@ -30,7 +30,6 @@ export function BottomNavigation({ active }: { active: 0 | 1 | 2 | 3 }) {
           }}
           style={styles.item}
         >
-          {active === index && <View style={styles.halo} />}
           <Image
             source={icons[index]}
             style={styles.icon}
@@ -55,14 +54,6 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.panel,
   },
   item: { flex: 1, minWidth: 0, height: 62, marginTop: 5, alignItems: 'center' },
-  halo: {
-    position: 'absolute',
-    top: -2,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: tokens.color.purpleSoft,
-  },
   icon: { width: 24, height: 24, marginTop: 5 },
   label: {
     marginTop: 9,

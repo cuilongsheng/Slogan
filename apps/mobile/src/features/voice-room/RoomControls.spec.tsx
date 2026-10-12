@@ -146,3 +146,33 @@ describe('room controls', () => {
     expect(page.queryByText('Invite to room')).toBeNull();
   });
 });
+
+test('a room report opens directly and sends no accused user identifier', async () => {
+  const report = jest.fn(async () => ({ id: 'report-room', caseId: 'case-room' }));
+  const page = await render(
+    <RoomControls
+      roomId="room-1"
+      members={members}
+      ownMembershipId="own"
+      isHost
+      initialMode="reportRoom"
+      roomTopic="Travel room"
+      api={{ report } as never}
+      refresh={jest.fn()}
+      onClose={jest.fn()}
+    />,
+  );
+  expect(page.getByText('Report room')).toBeTruthy();
+  expect(page.getByText('Travel room')).toBeTruthy();
+  await fireEvent.press(page.getByRole('button', { name: 'Harassment or abuse' }));
+  await fireEvent.changeText(page.getByLabelText('Details'), 'Room behavior');
+  await fireEvent.press(page.getByRole('button', { name: 'Submit report' }));
+  await waitFor(() => expect(report).toHaveBeenCalledTimes(1));
+  expect(report).toHaveBeenCalledWith(
+    'room-1',
+    expect.objectContaining({ description: 'Room behavior', category: 'HARASSMENT_ABUSE' }),
+  );
+  expect((report.mock.calls[0] as unknown as [string, object])[1]).not.toHaveProperty(
+    'targetUserId',
+  );
+});

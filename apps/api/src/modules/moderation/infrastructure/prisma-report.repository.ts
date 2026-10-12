@@ -51,7 +51,7 @@ export class PrismaReportRepository implements ReportRepository {
           type: 'report_submitted',
           source: 'http',
           actorId: input.reporterUserId,
-          targetId: input.targetUserId,
+          targetId: input.targetUserId ?? input.roomId,
           reason: input.category,
           result: 'SUBMITTED',
           occurredAt: report.submittedAt,

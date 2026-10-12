@@ -107,6 +107,44 @@ test('level and LIVE are single-line nonshrinking labels, without a redundant in
   expect(mockSession.refresh).not.toHaveBeenCalled();
 });
 
+test('pressing another occupied avatar opens that member report directly', async () => {
+  mockSnapshot.members = [
+    {
+      membershipId: 'other-membership',
+      userId: 'other-user',
+      participantIdentity: 'other',
+      displayName: 'Mika',
+      avatarUrl: null,
+      nationalityCode: 'JP',
+      cefrLevel: 'B1',
+      credentialVersion: 1,
+      hostReconnectDeadline: null,
+      position: 1,
+      role: 'MEMBER',
+      lifecycle: 'ACTIVE',
+      presence: 'CONNECTED',
+      joinedAt: '2026-10-07T00:00:00Z',
+    } as VoiceSessionSnapshot['members'][number],
+  ];
+  const page = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(page.getByRole('button', { name: 'Mika' }));
+  expect(page.getByText('Report a member')).toBeTruthy();
+  expect(page.getAllByText('Mika')).toHaveLength(2);
+  expect(page.queryByText('Manage members')).toBeNull();
+});
+
+test('the room overflow has report, leave and share actions and opens room reporting directly', async () => {
+  const page = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(page.getByRole('button', { name: 'Room actions' }));
+  expect(page.getByRole('button', { name: 'Report room' })).toBeTruthy();
+  expect(page.getByRole('button', { name: 'Share room link' })).toBeTruthy();
+  await fireEvent.press(page.getByRole('button', { name: 'Report room' }));
+  expect(page.getByText('Choose a reason and describe what happened in this room.')).toBeTruthy();
+  expect(page.getAllByText('Travel')).toHaveLength(2);
+  await fireEvent.press(page.getAllByRole('button', { name: 'Close' }).at(-1)!);
+  expect(mockReplace).not.toHaveBeenCalled();
+});
+
 test('the actual composer sends room text and renders the result without calling expression assistance', async () => {
   const screen = await render(<VoiceRoomScreen roomId="room" />);
   await fireEvent.changeText(screen.getByLabelText('Say something…'), 'Hello room');

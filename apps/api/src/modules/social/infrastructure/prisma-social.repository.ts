@@ -369,7 +369,9 @@ export class PrismaSocialRepository implements SocialRepository {
         id: { not: input.userId },
         status: 'ACTIVE',
         profile: { isNot: null },
-        roomMemberships: { none: { lifecycle: 'ACTIVE' } },
+        roomMemberships: {
+          none: { lifecycle: 'ACTIVE', room: { status: { in: ['OPEN', 'ENDING'] } } },
+        },
         directCallOccupancy: { is: null },
         safetyRestrictions: {
           none: {

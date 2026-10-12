@@ -91,6 +91,81 @@ describe('safety cases, restrictions and appeals on PostgreSQL', () => {
     return { ...receipt, roomId, reporterUserId, targetUserId };
   }
 
+  it('keeps room evidence scoped and rejects personal sanctions for a room report', async () => {
+    const admin = await seedAdult(prisma, 'Room officer');
+    await backoffice.bootstrap(admin.id);
+    const owner = await seedAdult(prisma, 'Room owner');
+    const room = await rooms.create(owner.id, {
+      topic: 'Reported room',
+      capacity: 4,
+      cefrLevel: 'B1',
+    });
+    const submit = () =>
+      reports.submit({
+        roomId: room.room.id,
+        reporterUserId: owner.id,
+        targetUserId: null,
+        clientRequestId: randomUUID(),
+        category: 'OTHER',
+        description: 'Report the room itself',
+      });
+    const primary = await submit();
+    const related = await submit();
+    const otherOwner = await seedAdult(prisma, 'Other owner');
+    const otherRoom = await rooms.create(otherOwner.id, {
+      topic: 'Other room',
+      capacity: 2,
+      cefrLevel: 'B1',
+    });
+    const unrelated = await reports.submit({
+      roomId: otherRoom.room.id,
+      reporterUserId: otherOwner.id,
+      targetUserId: null,
+      clientRequestId: randomUUID(),
+      category: 'OTHER',
+      description: 'Different room',
+    });
+    const evidence = (await safety.evidence(actor(admin.id), primary.caseId)) as {
+      relatedReports: { items: { id: string }[] };
+      relatedCases: { items: { id: string }[] };
+      restrictions: { items: unknown[] };
+    };
+    expect(evidence.relatedReports.items.map((item) => item.id)).toContain(related.id);
+    expect(evidence.relatedCases.items.map((item) => item.id)).not.toContain(unrelated.caseId);
+    expect(evidence.restrictions.items).toEqual([]);
+    await safety.start(actor(admin.id), primary.caseId, randomUUID());
+    for (const resolution of ['TEMPORARY_RESTRICTION', 'PERMANENT_DISABLE'] as const) {
+      await expect(
+        safety.resolve({
+          actor: actor(admin.id),
+          caseId: primary.caseId,
+          clientRequestId: randomUUID(),
+          resolution,
+          severity: 'GENERAL',
+          reason: 'No personal target',
+        }),
+      ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    }
+    expect(await prisma.safetyRestriction.count()).toBe(0);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })).status).toBe(
+      'ACTIVE',
+    );
+    const resolved = (await safety.resolve({
+      actor: actor(admin.id),
+      caseId: primary.caseId,
+      clientRequestId: randomUUID(),
+      resolution: 'NO_ACTION',
+      reason: 'Room reviewed',
+    })) as ResolveView;
+    expect(resolved.case.status).toBe('RESOLVED');
+    expect(resolved.restriction).toBeNull();
+    // Purged room references must never broaden related evidence to all purged rooms.
+    await prisma.safetyCase.updateMany({ where: { targetUserId: null }, data: { roomId: null } });
+    const retained = (await safety.evidence(actor(admin.id), primary.caseId)) as typeof evidence;
+    expect(retained.relatedReports.items).toEqual([]);
+    expect(retained.relatedCases.items).toEqual([]);
+  });
+
   it('balances new cases, preserves unassigned cases and recovers invalid assignees', async () => {
     const admin = await seedAdult(prisma, 'Admin officer');
     const second = await seedAdult(prisma, 'Second officer');

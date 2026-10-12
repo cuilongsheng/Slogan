@@ -47,6 +47,26 @@ describe('reports PostgreSQL atomicity and history', () => {
     prisma.roomMembership.findUniqueOrThrow({
       where: { roomId_userId: { roomId, userId: memberId } },
     });
+  it('creates one untargeted room case for a host, preserves retries and rejects outsiders', async () => {
+    const request = { ...input(), reporterUserId: hostId, targetUserId: null };
+    const one = await reports.submit(request);
+    const two = await reports.submit(request);
+    expect(two).toEqual(one);
+    const stored = await prisma.report.findUniqueOrThrow({
+      where: { id: one.id },
+      include: { safetyCase: true },
+    });
+    expect(stored.targetUserId).toBeNull();
+    expect(stored.safetyCase?.targetUserId).toBeNull();
+    expect(stored.safetyCase?.roomId).toBe(roomId);
+    const outsider = (await seedAdult(prisma)).id;
+    await expect(
+      reports.submit({ ...request, reporterUserId: outsider, clientRequestId: randomUUID() }),
+    ).rejects.toMatchObject({ code: 'REPORT_CONTEXT_NOT_FOUND' });
+    await expect(reports.submit({ ...request, targetUserId: memberId })).rejects.toMatchObject({
+      code: 'REPORT_REQUEST_CONFLICT',
+    });
+  });
   it.each(['ACTIVE', 'LEFT', 'REMOVED', 'INVITED'] as const)(
     'accepts retained membership lifecycle %s and closed rooms',
     async (lifecycle) => {
