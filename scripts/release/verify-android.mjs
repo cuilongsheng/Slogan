@@ -35,6 +35,11 @@ const manifest = execFileSync(
 assert.match(badging, /package: name='com\.slogan\.mobile'/);
 assert.match(badging, /native-code: 'arm64-v8a'/);
 assert.doesNotMatch(badging, /application-debuggable/);
+assert.match(
+  badging,
+  /uses-permission: name='android\.permission\.RECORD_AUDIO'/,
+  'Voice APK must declare microphone permission',
+);
 const softInputMode = manifest.match(/windowSoftInputMode[^\n]*=0x([a-f0-9]+)/)?.[1];
 assert.equal(
   parseInt(softInputMode ?? '', 16) & 0xf0,

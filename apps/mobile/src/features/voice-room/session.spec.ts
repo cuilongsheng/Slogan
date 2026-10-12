@@ -57,6 +57,47 @@ function setup(active = false) {
 }
 
 describe('voice room admission and recovery', () => {
+  it('shows a connected room while member details are still pending', async () => {
+    const { api, media, session } = setup(true);
+    let resolveMembers!: (members: never[]) => void;
+    api.members.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveMembers = resolve;
+        }),
+    );
+    media.snapshot.connection = 'connected';
+    await session.start(null);
+    expect(api.members).toHaveBeenCalledTimes(1);
+    expect(session.snapshot.phase).toBe('active');
+    resolveMembers([]);
+    await Promise.resolve();
+    expect(session.snapshot.errorCode).toBeNull();
+    await session.dispose();
+  });
+
+  it('does not connect after disposal during a pending credential request', async () => {
+    const { api, media, session } = setup(true);
+    let resolveCredential!: (value: Awaited<ReturnType<typeof api.credentials>>) => void;
+    api.credentials.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCredential = resolve;
+        }),
+    );
+    const entering = session.start(null);
+    await Promise.resolve();
+    await session.dispose();
+    resolveCredential({
+      serverUrl: 'wss://example.invalid',
+      participantToken: 'short-lived',
+      credentialVersion: 3,
+      role: 'MEMBER',
+    });
+    await entering;
+    expect(media.connect).not.toHaveBeenCalled();
+  });
+
   it('does not query safety alerts for an ordinary member even in an enabled room', async () => {
     const { room, api, media, session } = setup(true);
     room.sensitiveSpeechDetectionEnabled = true;

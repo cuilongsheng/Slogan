@@ -193,6 +193,7 @@ export class VoiceRoomSession {
     this.update({ phase: 'joining', errorCode: null });
     try {
       const room = await this.rooms.detail(this.roomId);
+      if (this.disposed) return;
       this.update({ room });
       const membership = room.currentMembership;
       const active = membership?.lifecycle === 'ACTIVE';
@@ -211,6 +212,7 @@ export class VoiceRoomSession {
             ? { invitationId: draft.invitationId }
             : {}),
         });
+        if (this.disposed) return;
         if (joined.currentMembership?.lifecycle !== 'ACTIVE') {
           throw new RoomApiError(409, 'ROOM_MEMBER_NOT_ACTIVE');
         }
@@ -226,14 +228,53 @@ export class VoiceRoomSession {
       }
       this.update({ phase: 'connecting' });
       const credential = await this.api.credentials(this.roomId);
+      if (this.disposed) return;
       this.update({ credentialVersion: credential.credentialVersion, role: credential.role });
+      // Membership is confirmed before credentials are issued. Fetch display data
+      // alongside the media handshake instead of adding another network round trip.
+      const membersRequest = this.api.members(this.roomId).then(
+        (members) => ({ members, error: null }),
+        (error: unknown) => ({ members: null, error }),
+      );
       try {
         await this.media.connect(credential);
       } catch {
         throw new RoomApiError(0, 'REALTIME_CONNECT_FAILED');
       }
-      const members = await this.api.members(this.roomId);
-      this.update({ phase: 'active', members, errorCode: null });
+      if (this.disposed) return;
+      this.update({ phase: 'active', errorCode: null });
+      const generation = this.roomRefreshGeneration;
+      void membersRequest.then(async (result) => {
+        if (
+          this.disposed ||
+          this.state.phase !== 'active' ||
+          generation !== this.roomRefreshGeneration
+        )
+          return;
+        if (result.members) {
+          this.update({ members: result.members });
+        } else {
+          const code = errorCode(result.error);
+          if (
+            ['ROOM_ENDED', 'ROOM_CANCELLED', 'ROOM_MEMBER_NOT_ACTIVE', 'FORBIDDEN'].includes(
+              code,
+            ) ||
+            (result.error instanceof RoomApiError && result.error.status === 403)
+          ) {
+            this.clearSafetyAlerts();
+            await this.media.disconnect().catch(() => undefined);
+            if (
+              this.disposed ||
+              this.state.phase !== 'active' ||
+              generation !== this.roomRefreshGeneration
+            )
+              return;
+            this.update({ phase: 'ended', members: [], errorCode: code });
+          } else {
+            this.update({ errorCode: code });
+          }
+        }
+      });
       void this.refreshSafetyAlerts();
     } catch (error) {
       const code = errorCode(error);

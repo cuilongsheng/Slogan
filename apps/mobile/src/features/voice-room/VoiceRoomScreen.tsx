@@ -135,6 +135,7 @@ function SessionState({
     'POST_ROOM_KEYWORDS_CONSENT_REQUIRED',
   ].includes(snapshot.errorCode ?? '');
   const exiting = ['leaving', 'leaveUnconfirmed'].includes(snapshot.phase);
+  const reconnecting = snapshot.phase === 'active';
   const chooseSuccessor = snapshot.errorCode === 'ROOM_SUCCESSOR_INVALID';
   const busy = ['joining', 'connecting', 'leaving', 'idle'].includes(snapshot.phase);
   const title = exiting
@@ -172,18 +173,18 @@ function SessionState({
             {t(
               exiting
                 ? 'voiceLeave'
-                : snapshot.credentialVersion === null
-                  ? 'voiceJoiningTitle'
-                  : 'voiceReconnectingTitle',
+                : reconnecting
+                  ? 'voiceReconnectingTitle'
+                  : 'voiceJoiningTitle',
             )}
           </Text>
           <Text style={styles.stateSubtitle}>
             {t(
               exiting
                 ? 'voiceLocalAudioStopped'
-                : snapshot.credentialVersion === null
-                  ? 'voiceJoiningSubtitle'
-                  : 'voiceReconnectSubtitle',
+                : reconnecting
+                  ? 'voiceReconnectSubtitle'
+                  : 'voiceJoiningSubtitle',
             )}
           </Text>
         </View>
@@ -507,8 +508,12 @@ function VoiceRoomBody({
             {room.memberCount} / {room.capacity} {t('voiceOnline')} ·{' '}
             {tf('roomRemainingMinutes', { minutes: remainingMinutes(room.endsAt) })}
           </Text>
-          <Text style={styles.headerLevel}>{roomLevelLabel(room).replace('–', ' ～ ')}</Text>
-          <Text style={styles.live}>{'●  LIVE'}</Text>
+          <Text numberOfLines={1} style={styles.headerLevel}>
+            {roomLevelLabel(room).replace('–', ' ～ ')}
+          </Text>
+          <Text numberOfLines={1} style={styles.live}>
+            {'●\u00a0 LIVE'}
+          </Text>
         </View>
       </View>
       <ScrollView style={styles.memberScroll} contentContainerStyle={styles.bodyContent}>
@@ -947,8 +952,10 @@ export function VoiceRoomScreen({
     [roomId, authorized, api],
   );
   const [snapshot, setSnapshot] = useState(session.snapshot);
+  const hasEntered = useRef(false);
 
   useEffect(() => {
+    hasEntered.current = false;
     const unsubscribe = session.subscribe(setSnapshot);
     void session.start(initialDraft.current);
     return () => {
@@ -998,6 +1005,11 @@ export function VoiceRoomScreen({
     .join('|');
   useEffect(() => {
     if (snapshot.phase === 'active' && snapshot.media.connection === 'connected') {
+      // Entry already requests members. Only subsequent participant changes refresh.
+      if (!hasEntered.current) {
+        hasEntered.current = true;
+        return;
+      }
       if (AppState.currentState !== 'background' && AppState.currentState !== 'inactive')
         void session.refresh();
     }
@@ -1268,14 +1280,22 @@ const styles = StyleSheet.create({
     gap: 13,
   },
   headerMeta: { flex: 1, minWidth: 0, color: '#C8BBFF', fontSize: 12, lineHeight: 17 },
-  headerLevel: { width: 44, color: '#C8BBFF', fontSize: 11, lineHeight: 15, fontWeight: '500' },
+  headerLevel: {
+    minWidth: 44,
+    flexShrink: 0,
+    color: '#C8BBFF',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '500',
+  },
   exitHit: { position: 'absolute', right: 54, top: 0, width: 34, height: 34 },
   exitIcon: { position: 'absolute', left: 13, top: 3, width: 24, height: 24 },
   moreHit: { position: 'absolute', right: -4, top: -2, width: 34, height: 42 },
   moreDots: { position: 'absolute', left: 8, top: 12, flexDirection: 'row', gap: 3 },
   moreDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF' },
   live: {
-    width: 39,
+    minWidth: 39,
+    flexShrink: 0,
     textAlign: 'right',
     color: '#77E5C9',
     fontSize: 11,

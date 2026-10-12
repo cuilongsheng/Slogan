@@ -26,12 +26,18 @@ export function BottomNavigation({ active }: { active: 0 | 1 | 2 | 3 }) {
           accessibilityLabel={t(tab.label)}
           accessibilityState={{ selected: active === index }}
           onPress={() => {
-            if (active !== index) router.replace(tab.path);
+            if (active !== index) router.navigate(tab.path);
           }}
           style={styles.item}
         >
           {active === index && <View style={styles.halo} />}
-          <Image source={icons[index]} style={styles.icon} />
+          <Image
+            source={icons[index]}
+            style={styles.icon}
+            tintColor={
+              active === index ? tokens.discovery.color.tabAccent : tokens.discovery.color.tabMuted
+            }
+          />
           <Text style={[styles.label, active === index && styles.selected]}>{t(tab.label)}</Text>
         </TouchableOpacity>
       ))}

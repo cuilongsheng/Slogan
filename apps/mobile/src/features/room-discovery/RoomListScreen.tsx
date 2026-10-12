@@ -29,6 +29,8 @@ export function RoomListScreen() {
   const { authorized } = useAuth();
   const { beginDirect } = useJoinDraft();
   const entering = useRef(false);
+  const loaded = useRef(false);
+  const refreshPending = useRef(false);
   const pager = useMemo(() => new RoomListPager(new RoomDiscoveryApi(authorized)), [authorized]);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -40,17 +42,21 @@ export function RoomListScreen() {
 
   const refresh = useCallback(
     async (isPull = false) => {
+      if (refreshPending.current) return;
+      refreshPending.current = true;
       if (isPull) setRefreshing(true);
-      else setLoading(true);
+      else if (!loaded.current) setLoading(true);
       setError(false);
       try {
         const page = await pager.refresh();
         setRooms(page.items);
         setCursor(page.nextCursor);
         setMoreError(false);
+        loaded.current = true;
       } catch {
         setError(true);
       } finally {
+        refreshPending.current = false;
         setLoading(false);
         setRefreshing(false);
       }

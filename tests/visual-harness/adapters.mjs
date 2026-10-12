@@ -12,6 +12,7 @@ export const randomUUID = () => crypto.randomUUID();
 export const useRouter = () => ({
   replace: (url) => history.replaceState(null, '', url),
   push: (url) => history.pushState(null, '', url),
+  navigate: (url) => history.pushState(null, '', url),
   back: () => history.back(),
 });
 const auth = {

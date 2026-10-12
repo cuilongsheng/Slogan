@@ -88,6 +88,25 @@ beforeEach(() => {
   };
 });
 
+test('initial media handshake remains entry, even after credentials are issued', async () => {
+  mockSnapshot = {
+    ...mockSnapshot,
+    phase: 'connecting',
+    media: { ...mockSnapshot.media, connection: 'connecting' },
+  };
+  const screen = await render(<VoiceRoomScreen roomId="room" />);
+  expect(screen.getByText('Joining room')).toBeTruthy();
+  expect(screen.queryByText('Reconnecting')).toBeNull();
+  await screen.unmount();
+});
+
+test('level and LIVE are single-line nonshrinking labels, without a redundant initial refresh', async () => {
+  const screen = await render(<VoiceRoomScreen roomId="room" />);
+  expect(screen.getByText('B1 ～ B2').props.numberOfLines).toBe(1);
+  expect(screen.getByText('●\u00a0 LIVE').props.numberOfLines).toBe(1);
+  expect(mockSession.refresh).not.toHaveBeenCalled();
+});
+
 test('the actual composer sends room text and renders the result without calling expression assistance', async () => {
   const screen = await render(<VoiceRoomScreen roomId="room" />);
   await fireEvent.changeText(screen.getByLabelText('Say something…'), 'Hello room');
