@@ -1,6 +1,12 @@
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import { databaseFingerprint, decryptBackup, digestFile } from './postgres-backup-envelope.mjs';
+import {
+  databaseFingerprint,
+  databaseToolConnection,
+  decryptBackup,
+  digestFile,
+} from './postgres-backup-envelope.mjs';
+import { commandDiagnostic } from '../../../scripts/release/command-diagnostic.mjs';
 const sha = process.env.SLOGAN_RELEASE_COMMIT;
 if (
   process.env.GITHUB_REF !== 'refs/heads/main' ||
@@ -46,15 +52,16 @@ try {
   if (!response.ok || (await response.json()).object.sha !== sha)
     throw new Error('MIGRATION_MAIN_CHANGED');
   const child = spawn('pnpm', ['exec', 'prisma', 'migrate', 'deploy'], {
-    env: process.env,
+    env: { ...process.env, DATABASE_URL: databaseToolConnection(process.env.DATABASE_URL) },
     stdio: ['ignore', 'pipe', 'pipe'],
     timeout: 600_000,
   });
-  child.stdout.resume();
-  child.stderr.resume();
+  const diagnostic = commandDiagnostic(child);
   await new Promise((accept, reject) => {
     child.once('error', () => reject(new Error('MIGRATION_FAILED')));
-    child.once('close', (code) => (code === 0 ? accept() : reject(new Error('MIGRATION_FAILED'))));
+    child.once('close', (code) =>
+      code === 0 ? accept() : reject(new Error(`MIGRATION_FAILED: ${diagnostic()}`)),
+    );
   });
   process.stdout.write(
     JSON.stringify({ status: 'SUCCEEDED', commit: sha, backupDigest: receipt.digest }) + '\n',

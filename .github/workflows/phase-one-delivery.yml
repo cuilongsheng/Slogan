@@ -68,7 +68,7 @@ jobs:
         run: |
           pnpm test
           pnpm --filter @slogan/api test:runtime
-          node --test scripts/tests/release-delivery.test.mjs apps/api/scripts/tests/*.test.mjs
+          node --test scripts/tests/release-delivery.test.mjs scripts/tests/command-diagnostic.test.mjs apps/api/scripts/tests/*.test.mjs
       - name: Build both applications
         run: pnpm build
       - name: Browser and visual regression checks
