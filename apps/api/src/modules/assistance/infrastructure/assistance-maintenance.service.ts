@@ -28,7 +28,7 @@ export class AssistanceMaintenanceQueue
     const url = config.get('ASSISTANCE_ENABLED', { infer: true })
       ? config.get('REDIS_URL', { infer: true })
       : undefined;
-    if (!url) return;
+    if (!url || process.env.VERCEL === '1') return;
     this.producer = new Redis(url, { maxRetriesPerRequest: null });
     this.consumer = new Redis(url, { maxRetriesPerRequest: null });
     this.queue = new Queue('assistance-maintenance', { connection: this.producer });

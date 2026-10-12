@@ -1,0 +1,173 @@
+name: Phase-one delivery
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: phase-one-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    name: Phase-one verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: slogan
+          POSTGRES_PASSWORD: slogan
+          POSTGRES_DB: slogan_test
+        ports: ['54329:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['56379:6379']
+        options: >-
+          --health-cmd 'redis-cli ping' --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      CI: '1'
+      EXPO_NO_DOTENV: '1'
+      EXPO_PUBLIC_API_BASE_URL: https://slogan-preview-mobile.pages.dev
+      VITE_API_BASE_URL: https://slogan-preview-admin.pages.dev
+      DATABASE_URL: postgresql://slogan:slogan@127.0.0.1:54329/slogan_test
+      REDIS_URL: redis://127.0.0.1:56379
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare database client and schema
+        run: |
+          pnpm --filter @slogan/api db:generate
+          pnpm --filter @slogan/api db:migrate:deploy
+      - name: Check formatting, boundaries, lint, and types
+        run: |
+          pnpm format:check
+          pnpm deps:check
+          pnpm lint
+          pnpm typecheck
+      - name: Verify generated contract and clients
+        run: |
+          pnpm --filter @slogan/api openapi:check
+          pnpm --filter @slogan/api-client generate:check
+      - name: Run application and delivery tests
+        run: |
+          pnpm test
+          pnpm --filter @slogan/api test:runtime
+          node --test scripts/tests/release-delivery.test.mjs apps/api/scripts/tests/*.test.mjs
+      - name: Build both applications
+        run: pnpm build
+      - name: Browser and visual regression checks
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm test:e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: failure()
+        with:
+          name: verification-diagnostics-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+  production:
+    name: Guarded production API
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    concurrency:
+      group: production-database-release
+      cancel-in-progress: false
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: slogan
+          POSTGRES_PASSWORD: slogan
+          POSTGRES_DB: slogan_isolated_restore
+        ports: ['54329:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      SLOGAN_RELEASE_COMMIT: ${{ github.sha }}
+      GITHUB_TOKEN: ${{ github.token }}
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      PRODUCTION_DATABASE_FINGERPRINT: ${{ vars.PRODUCTION_DATABASE_FINGERPRINT }}
+      BACKUP_ENVIRONMENT_ID: production
+      BACKUP_ENCRYPTION_KEY_ID: ${{ vars.BACKUP_ENCRYPTION_KEY_ID }}
+      BACKUP_ENCRYPTION_KEY_BASE64: ${{ secrets.BACKUP_ENCRYPTION_KEY_BASE64 }}
+      BACKUP_RETENTION_COUNT: '14'
+      BACKUP_RPO_SECONDS: '86400'
+      BACKUP_RTO_SECONDS: '3600'
+      RESTORE_DATABASE_URL: postgresql://slogan:slogan@127.0.0.1:54329/slogan_isolated_restore
+      RESTORE_ISOLATED: 'true'
+      PROVIDERS_DISABLED: 'true'
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_API_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install matching PostgreSQL tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-17
+          echo '/usr/lib/postgresql/17/bin' >> "$GITHUB_PATH"
+      - name: Set private artifact paths and restore identity
+        run: |
+          echo "BACKUP_OUTPUT_PATH=$RUNNER_TEMP/slogan-production.pgenc" >> "$GITHUB_ENV"
+          echo "BACKUP_RECEIPT_PATH=$RUNNER_TEMP/slogan-backup-receipt.json" >> "$GITHUB_ENV"
+          echo "RESTORE_INPUT_PATH=$RUNNER_TEMP/slogan-production.pgenc" >> "$GITHUB_ENV"
+          node scripts/release/restore-target-env.mjs >> "$GITHUB_ENV"
+      - name: Validate the approved production target before reading it
+        run: node scripts/release/assert-production-target.mjs
+      - name: Encrypt a consistent production snapshot
+        working-directory: apps/api
+        run: node scripts/backup-postgres.mjs > "$BACKUP_RECEIPT_PATH"
+      - name: Prove isolated recovery and schema upgrade
+        working-directory: apps/api
+        run: |
+          node scripts/restore-postgres.mjs
+          DATABASE_URL="$RESTORE_DATABASE_URL" pnpm exec prisma migrate deploy
+          node scripts/check-recovery-invariants.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: encrypted-production-backup-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/slogan-production.pgenc
+          if-no-files-found: error
+          retention-days: 14
+      - name: Migrate the approved main database
+        working-directory: apps/api
+        run: node scripts/migrate-production.mjs
+      - name: Deploy API after migration
+        run: node scripts/release/deploy-api.mjs
+      - name: Verify the deployed commit
+        run: node scripts/release/api-runtime-gate.mjs
+      - name: Remove recovery artifacts
+        if: always()
+        run: rm -f "$RUNNER_TEMP/slogan-production.pgenc" "$RUNNER_TEMP/slogan-backup-receipt.json"

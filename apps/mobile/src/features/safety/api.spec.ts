@@ -14,14 +14,25 @@ const restriction = {
 test('shows appeal only during the first active window', () => {
   expect(canAppeal(restriction, new Date('2026-09-28T08:30:00.000Z').getTime())).toBe(true);
   expect(canAppeal(restriction, new Date('2026-09-28T08:30:00.001Z').getTime())).toBe(false);
-  expect(canAppeal({ ...restriction, appealStatus: 'PENDING' }, new Date('2026-09-28T08:10:00.000Z').getTime())).toBe(false);
+  expect(
+    canAppeal(
+      { ...restriction, appealStatus: 'PENDING' },
+      new Date('2026-09-28T08:10:00.000Z').getTime(),
+    ),
+  ).toBe(false);
 });
 
 test('lists and submits appeals through the authenticated generated client', async () => {
   const authorized = jest.fn(async (request) => request('access-token'));
   const client = {
-    GET: jest.fn(async () => ({ data: { items: [restriction], nextCursor: 'page-2' }, response: { status: 200 } })),
-    POST: jest.fn(async () => ({ data: { id: 'appeal-1', status: 'PENDING' }, response: { status: 200 } })),
+    GET: jest.fn(async () => ({
+      data: { items: [restriction], nextCursor: 'page-2' },
+      response: { status: 200 },
+    })),
+    POST: jest.fn(async () => ({
+      data: { id: 'appeal-1', status: 'PENDING' },
+      response: { status: 200 },
+    })),
   };
   const api = new MySafetyApi(authorized, client as never);
   expect((await api.list()).nextCursor).toBe('page-2');
@@ -30,7 +41,9 @@ test('lists and submits appeals through the authenticated generated client', asy
     headers: { Authorization: 'Bearer access-token' },
     params: { query: { limit: 20, cursor: 'page-2' } },
   });
-  expect((await api.appeal('restriction-1', '  Please review  ', 'request-1')).status).toBe('PENDING');
+  expect((await api.appeal('restriction-1', '  Please review  ', 'request-1')).status).toBe(
+    'PENDING',
+  );
   expect(client.POST).toHaveBeenCalledWith('/v1/me/safety-restrictions/{restrictionId}/appeal', {
     headers: { Authorization: 'Bearer access-token' },
     params: { path: { restrictionId: 'restriction-1' } },

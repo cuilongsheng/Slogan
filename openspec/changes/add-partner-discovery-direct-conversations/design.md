@@ -28,7 +28,7 @@ DirectCall has request, acceptance, rejection, timeout, connection, end status a
 
 ### 5. Security and interface contract
 
-Follow the current API-first path: first change the unique `openapi/openapi.yaml`, then implement NestJS/controller and client type against it, without maintaining the second handwritten contract. All write requests use the existing identity context, stable idempotent identification and unified unavailable error; stranger's first/continuous message configuration rate limit and reporting entrance. The report message reuses the existing security case boundaries and does not expose the report information in the ordinary message response. After the mask is written, both the sending and receiving paths are reviewed and blocked, and the waiting voice requests can no longer be accepted. The alternative is to first define the interface with Figma or front-end mock; there is no guarantee that the security rules and contracts are consistent.
+Follow the existing NestJS code-first generation path: transport DTOs and controllers generate the sole `openapi/openapi.yaml`; generate frontend clients from that contract and check both outputs for drift. Never hand-edit a second contract. All write requests use the existing identity context, stable idempotent identification and unified unavailable error; stranger's first/continuous message configuration rate limit and reporting entrance. The report message reuses the existing security case boundaries and does not expose the report information in the ordinary message response. After the mask is written, both the sending and receiving paths are reviewed and blocked, and the waiting voice requests can no longer be accepted. The alternative is to first define the interface with Figma or front-end mock; there is no guarantee that the security rules and contracts are consistent.
 
 ### 6. Session History and Privacy
 
@@ -46,6 +46,6 @@ Deletion is a personal visibility change, and the message cannot be withdrawn fo
 ## Migration Plan
 
 1. First confirm this proposal and the low-fidelity process, update the unique OpenAPI contract and complete the database forward compatibility migration; old clients continue to use the original room entrance capabilities.
-2. Deploy backend partners, private messages, single chat calls and security rules, close new entrances by default; test and verify with contracts, permissions, concurrency and migration.
+2. Deploy backend partners, private messages, single chat calls and security rules, release only after the guarded migration and verification gates; test and verify with contracts, permissions, concurrency and migration.
 3. Mobile routing is implemented according to the confirmed Figma low-fidelity and high-fidelity; real operation and equipment evidence acceptance such as shielding, cross-login history, unilateral deletion, voice need to be accepted, room host invitation, etc. are then gradually enabled.
 4. When a publishing problem occurs, close the new entrance and new write path, roll back the client/service version; retain the new table and existing messages, and restart after repair, without performing destructive downgrades. The database structure is otherwise migrated using a drilled forward repair.

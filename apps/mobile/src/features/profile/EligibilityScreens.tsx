@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AuthPage, PrimaryButton } from '../../components/ui/AuthPage';
-import { t } from '../../services/locale';
+import { t, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth/context';
 
 export function AgeRestrictedScreen() {
+  useLanguage();
   const { logout } = useAuth();
   return (
     <AuthPage>
@@ -33,6 +34,7 @@ export function AgeRestrictedScreen() {
 }
 
 export function EligibleScreen() {
+  useLanguage();
   const { logout } = useAuth();
   return (
     <AuthPage>

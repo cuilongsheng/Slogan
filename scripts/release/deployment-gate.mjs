@@ -9,16 +9,19 @@ export const PAGE_CHECKS = [
   'Cloudflare Pages: slogan-preview-admin',
   'Cloudflare Pages: slogan-preview-mobile',
 ];
-export function deploymentState(status, checks) {
-  const vercel = status.statuses?.find((item) => item.context === 'Vercel');
+export function deploymentState(_status, checks) {
+  const gates = ['Phase-one verification', 'Guarded production API'].map((name) =>
+    checks.check_runs?.find((item) => item.name === name),
+  );
+  for (const gate of gates)
+    if (gate?.status === 'completed' && gate.conclusion !== 'success')
+      throw new Error(`${gate.name} failed`);
   const pages = PAGE_CHECKS.map((name) => checks.check_runs?.find((item) => item.name === name));
-  if (vercel && ['failure', 'error'].includes(vercel.state))
-    throw new Error('Vercel deployment failed');
   for (const check of pages)
     if (check?.status === 'completed' && check.conclusion !== 'success')
       throw new Error(`${check.name} deployment failed`);
   return (
-    vercel?.state === 'success' &&
+    gates.every((item) => item?.status === 'completed' && item.conclusion === 'success') &&
     pages.every((item) => item?.status === 'completed' && item.conclusion === 'success')
   );
 }

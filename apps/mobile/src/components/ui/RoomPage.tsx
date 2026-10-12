@@ -21,22 +21,47 @@ export function RoomPage({
   children,
   ambient = false,
   discovery = false,
+  dark = false,
+  direct = false,
+  hidePreviewIndicator = false,
 }: {
   children: ReactNode;
   ambient?: boolean;
   discovery?: boolean;
+  dark?: boolean;
+  direct?: boolean;
+  hidePreviewIndicator?: boolean;
 }) {
   const content = (
     <SafeAreaView
       edges={['top', 'bottom']}
-      style={[styles.safe, Platform.OS === 'web' && styles.webFrame]}
+      style={[
+        styles.safe,
+        dark && { backgroundColor: '#2A2149' },
+        Platform.OS === 'web' && styles.webFrame,
+      ]}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={dark ? 'light' : 'dark'} />
       {ambient && <View pointerEvents="none" style={styles.ambient} />}
       {Platform.OS === 'web' && (
         <View style={styles.previewStatus} accessibilityElementsHidden>
-          <Text style={[styles.previewTime, discovery && styles.discoveryTime]}>9:41</Text>
-          <Text style={[styles.previewSystem, discovery && styles.discoverySystem]}>
+          <Text
+            style={[
+              styles.previewTime,
+              (discovery || direct) && styles.discoveryTime,
+              dark && { color: '#FFFFFF' },
+            ]}
+          >
+            9:41
+          </Text>
+          <Text
+            style={[
+              styles.previewSystem,
+              discovery && styles.discoverySystem,
+              direct && { marginTop: 1, lineHeight: 21 },
+              dark && { color: '#FFFFFF' },
+            ]}
+          >
             {discovery ? '●●●  100%' : '●●● 100%'}
           </Text>
         </View>
@@ -49,7 +74,15 @@ export function RoomPage({
       >
         {children}
       </KeyboardAvoidingView>
-      {Platform.OS === 'web' && <View pointerEvents="none" style={styles.homeIndicator} />}
+      {Platform.OS === 'web' && !hidePreviewIndicator && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.homeIndicator,
+            direct && dark && { backgroundColor: '#FFFFFF', width: 125 },
+          ]}
+        />
+      )}
     </SafeAreaView>
   );
   return Platform.OS === 'web' ? <View style={styles.webCanvas}>{content}</View> : content;

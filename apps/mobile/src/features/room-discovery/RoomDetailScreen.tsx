@@ -11,7 +11,7 @@ import {
 
 import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
 import { RoomShareAction } from '../../components/ui/RoomShareAction';
-import { t, tf } from '../../services/locale';
+import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useJoinDraft } from './join';
 import { remainingMinutes, roomAvailability } from './presentation';
@@ -24,6 +24,7 @@ export function RoomDetailScreen({
   roomId: string;
   invitationId?: string;
 }) {
+  useLanguage();
   const router = useRouter();
   const { room, loading, error, reload } = useRoomDetail(roomId);
   const { beginDirect } = useJoinDraft();

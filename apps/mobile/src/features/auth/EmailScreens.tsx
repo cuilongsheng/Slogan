@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { AuthPage, PrimaryButton } from '../../components/ui/AuthPage';
-import { t } from '../../services/locale';
+import { t, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import {
   confirmEmail,
@@ -116,6 +116,7 @@ function BackToLogin({ label }: { label: string }) {
 }
 
 export function RegisterScreen() {
+  useLanguage();
   const { setEnrollment } = useEmailFlow();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -201,6 +202,7 @@ function maskedEmail(value: string): string {
 }
 
 export function VerifyEmailScreen() {
+  useLanguage();
   const { enrollment, setEnrollment } = useEmailFlow();
   const linkToken = useEmailLinkToken('REGISTER');
   const [processedToken, setProcessedToken] = useState<string | null>(null);
@@ -295,6 +297,7 @@ export function VerifyEmailScreen() {
 }
 
 export function ForgotPasswordScreen() {
+  useLanguage();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [accepted, setAccepted] = useState(false);
@@ -351,6 +354,7 @@ export function ForgotPasswordScreen() {
 }
 
 export function ResetPasswordScreen() {
+  useLanguage();
   const linkToken = useEmailLinkToken('RESET_PASSWORD');
   const [processedToken, setProcessedToken] = useState<string | null>(null);
   const token = linkToken === processedToken ? null : linkToken;

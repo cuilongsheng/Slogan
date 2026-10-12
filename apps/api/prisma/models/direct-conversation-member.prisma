@@ -1,0 +1,10 @@
+model DirectConversationMember {
+  conversationId String @db.Uuid
+  userId String @db.Uuid
+  hiddenThrough Int @default(0)
+  readThrough Int @default(0)
+  conversation DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@id([conversationId, userId])
+  @@index([userId, conversationId])
+}

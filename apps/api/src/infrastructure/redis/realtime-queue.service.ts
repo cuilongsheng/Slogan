@@ -62,6 +62,7 @@ export class RealtimeQueue implements OnModuleDestroy {
     // Connectivity recovery is asynchronous; durable PostgreSQL state remains the scheduling source.
   }
   async enqueue(job: RealtimeJob, runAt = new Date()) {
+    if (this.managed && process.env.VERCEL_ENV !== 'production') return;
     if (this.vercel) {
       const delaySeconds = Math.max(
         0,
@@ -88,6 +89,7 @@ export class RealtimeQueue implements OnModuleDestroy {
     });
   }
   async process(job: RealtimeJob) {
+    if (this.managed && process.env.VERCEL_ENV !== 'production') return;
     if (!this.handler) throw new Error('Realtime queue not initialized');
     if (
       !job ||

@@ -1,0 +1,220 @@
+{
+  "section": "175:1710",
+  "components": [
+    {
+      "id": "175:1695",
+      "name": "Direct / Peer row / Partner"
+    },
+    {
+      "id": "175:1702",
+      "name": "Direct / Peer row / Conversation"
+    },
+    {
+      "id": "176:2083",
+      "name": "Direct / Action / 1"
+    },
+    {
+      "id": "176:2088",
+      "name": "Direct / Action / 2"
+    },
+    {
+      "id": "176:2093",
+      "name": "Direct / Action / 3"
+    },
+    {
+      "id": "176:2097",
+      "name": "Direct / Action / 4"
+    },
+    {
+      "id": "176:2101",
+      "name": "Direct / Action / 5"
+    },
+    {
+      "id": "177:2110",
+      "name": "Direct / Action / Style 6"
+    },
+    {
+      "id": "177:2115",
+      "name": "Direct / Action / Style 7"
+    },
+    {
+      "id": "177:2120",
+      "name": "Direct / Action / Style 8"
+    },
+    {
+      "id": "177:2124",
+      "name": "Direct / Action / Style 9"
+    },
+    {
+      "id": "177:2131",
+      "name": "Direct / Action / Style 10"
+    },
+    {
+      "id": "177:2135",
+      "name": "Direct / Action / Style 11"
+    },
+    {
+      "id": "177:2140",
+      "name": "Direct / Action / Style 12"
+    },
+    {
+      "id": "177:2144",
+      "name": "Direct / Action / Style 13"
+    },
+    {
+      "id": "177:2150",
+      "name": "Direct / Action / Style 14"
+    },
+    {
+      "id": "177:2163",
+      "name": "Direct / Action / Style 15"
+    },
+    {
+      "id": "177:2167",
+      "name": "Direct / Action / Style 16"
+    },
+    {
+      "id": "177:2204",
+      "name": "Direct / Confirmation / Delete my history"
+    },
+    {
+      "id": "177:2235",
+      "name": "Direct / Confirmation / Block"
+    },
+    {
+      "id": "177:2266",
+      "name": "Direct / Confirmation / Report message"
+    },
+    {
+      "id": "177:2288",
+      "name": "Direct / Action / Confirm"
+    }
+  ],
+  "frames": [
+    {
+      "id": "175:1711",
+      "name": "02 UI / Partners / Available · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "175:1765",
+      "name": "02 UI / Messages / Recent · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "175:1814",
+      "name": "02 UI / Direct Chat / Text · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "175:1838",
+      "name": "02 UI / Direct Voice / Incoming · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "175:1852",
+      "name": "02 UI / Direct Voice / Active · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "175:1865",
+      "name": "02 UI / Partners / Empty · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "175:1896",
+      "name": "02 UI / Messages / Error · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "175:1927",
+      "name": "02 UI / Direct Voice / Ended · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "175:1937",
+      "name": "02 UI / Me / Profile and language · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "176:1982",
+      "name": "02 UI / Direct Voice / Outgoing · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "176:1998",
+      "name": "02 UI / Direct Voice / Reconnecting · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "176:2010",
+      "name": "02 UI / Direct Voice / Expired · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "176:2019",
+      "name": "02 UI / Messages / Friends · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "177:2185",
+      "name": "02 UI / Direct Chat / Delete my history · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "177:2216",
+      "name": "02 UI / Direct Chat / Block · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "177:2247",
+      "name": "02 UI / Direct Chat / Report message · V1",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "id": "178:2316",
+      "name": "02 UI / Direct Voice / Device issue · V1",
+      "x": 1394,
+      "y": 1856,
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "createdNodeIds": [
+    "175:1710",
+    "175:1711",
+    "175:1765",
+    "175:1814",
+    "175:1838",
+    "175:1852",
+    "175:1865",
+    "175:1896",
+    "175:1927",
+    "175:1937",
+    "176:1982",
+    "176:1998",
+    "176:2010",
+    "176:2019",
+    "177:2185",
+    "177:2216",
+    "177:2247",
+    "178:2316",
+    "178:2329"
+  ]
+}

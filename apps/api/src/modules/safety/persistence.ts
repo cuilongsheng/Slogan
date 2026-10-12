@@ -111,7 +111,7 @@ export async function createSafetyCaseForReport(
   tx: Prisma.TransactionClient,
   input: {
     reportId: string;
-    roomId: string;
+    roomId: string | null;
     targetUserId: string;
     submittedAt: Date;
   },
@@ -127,17 +127,20 @@ export async function createSafetyCaseForReport(
       updatedAt: input.submittedAt,
     },
   });
-  const memberships = await tx.roomMembership.findMany({
-    where: { roomId: input.roomId, joinedAt: { lte: input.submittedAt } },
-    select: {
-      userId: true,
-      role: true,
-      lifecycle: true,
-      joinedAt: true,
-      leftAt: true,
-      removedAt: true,
-    },
-  });
+  const memberships =
+    input.roomId === null
+      ? []
+      : await tx.roomMembership.findMany({
+          where: { roomId: input.roomId, joinedAt: { lte: input.submittedAt } },
+          select: {
+            userId: true,
+            role: true,
+            lifecycle: true,
+            joinedAt: true,
+            leftAt: true,
+            removedAt: true,
+          },
+        });
   if (memberships.length)
     await tx.safetyCaseParticipantSnapshot.createMany({
       data: memberships.map((member) => ({

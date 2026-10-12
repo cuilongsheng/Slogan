@@ -24,21 +24,13 @@ test('mobile instant and scheduled creation show V2 settings with processing cho
   );
   await page.goto('http://localhost:8082/rooms/create');
   await expect(page.getByText('创建房间', { exact: true })).toBeVisible();
-  await expect(page.getByText('最低等级', { exact: true })).toBeVisible();
-  await expect(page.getByText('最高等级', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'B1', exact: true })).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'A1～A2', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'B1～B2', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'C1～C2', exact: true })).toBeVisible();
   await expect(page.getByText('B1–B2', { exact: true })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
     path: 'docs/acceptance/simplify-room-and-mobile-experience/create-runtime-fixture.png',
-  });
-  await page.getByRole('checkbox', { name: /会后关键词/ }).evaluate((element) => {
-    let parent = element.parentElement;
-    while (parent && parent.scrollHeight <= parent.clientHeight) parent = parent.parentElement;
-    if (parent) parent.scrollTop = parent.scrollHeight;
-  });
-  await page.screenshot({
-    path: 'docs/acceptance/simplify-room-and-mobile-experience/create-processing-runtime-fixture.png',
   });
   await page.getByText('预约房间', { exact: true }).click();
   await expect(page.getByText('创建预约房间', { exact: true })).toBeVisible();
@@ -86,11 +78,8 @@ test('direct level boundaries are submitted for both room kinds and retained in 
   );
   await page.goto('http://localhost:8082/rooms/create');
   await page.getByRole('textbox', { name: '房间主题', exact: true }).fill('旅行英语练习');
-  await page.getByRole('button', { name: 'C1', exact: true }).first().click();
-  await expect(page.getByText('C1', { exact: true }).first()).toBeVisible();
-  await page.getByRole('button', { name: 'B1', exact: true }).first().click();
-  await page.getByRole('button', { name: 'B2', exact: true }).last().click();
-  await expect(page.getByText('B1–B2', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'C1～C2', exact: true }).click();
+  await page.getByRole('button', { name: 'B1～B2', exact: true }).click();
   await page.getByRole('button', { name: '创建并开放房间' }).click();
   await expect(page).toHaveURL(new RegExp(`/rooms/${roomId}/session`));
   expect(submissions[0]).toMatchObject({

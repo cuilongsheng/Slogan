@@ -3,7 +3,7 @@ import { PreferencesScreen } from '../../src/features/profile/ProfileScreens';
 
 export default function PreferencesRoute() {
   return (
-    <Gate allow="PROFILE_REQUIRED">
+    <Gate allow={['PROFILE_REQUIRED', 'ELIGIBLE']}>
       <PreferencesScreen />
     </Gate>
   );

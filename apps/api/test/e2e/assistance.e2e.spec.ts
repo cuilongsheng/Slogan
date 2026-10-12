@@ -169,7 +169,11 @@ describe('AI expression assistance HTTP contract', () => {
       .get('/v1/me/speech-processing-consents')
       .set(auth(member))
       .expect(200);
-    expect(initial.body.items[0]).toMatchObject({ status: 'REQUIRED', noticeVersion: null, currentNoticeVersion: '2026-09-v1' });
+    expect(initial.body.items[0]).toMatchObject({
+      status: 'REQUIRED',
+      noticeVersion: null,
+      currentNoticeVersion: '2026-09-v1',
+    });
     expect(initial.body.items[1]).toMatchObject({
       purpose: 'ROOM_SAFETY_DETECTION',
       status: 'REQUIRED',

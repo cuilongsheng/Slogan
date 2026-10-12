@@ -10,7 +10,9 @@ it('shows a copy failure while leaving the server URL selectable for manual use'
   const url = 'https://app.example.com/r/opaque-share-code';
   const page = await render(<RoomShareAction url={url} />);
   await fireEvent.press(page.getByRole('button', { name: 'Share room link' }));
-  await waitFor(() => expect(page.getByText('Could not share. You can copy the link above.')).toBeTruthy());
+  await waitFor(() =>
+    expect(page.getByText('Could not share. You can copy the link above.')).toBeTruthy(),
+  );
   expect(page.getByText(url)).toBeTruthy();
   expect(shareRoomUrl).toHaveBeenCalledWith(url);
 });

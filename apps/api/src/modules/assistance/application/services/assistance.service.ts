@@ -32,6 +32,10 @@ import { AssistancePolicy } from '../../domain/policies/assistance.policy.js';
 
 @Injectable()
 export class AssistanceService {
+  async purgeExpired() {
+    return this.repository.purgeExpired();
+  }
+
   constructor(
     @Inject(ASSISTANCE_REPOSITORY) private readonly repository: AssistanceRepository,
     @Inject(ASSISTANCE_COORDINATOR) private readonly coordinator: AssistanceCoordinator,

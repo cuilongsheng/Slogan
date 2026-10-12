@@ -134,9 +134,10 @@ test(
       servers.push(rejectedSite.server);
       const config = new ConfigService({
         NODE_ENV: 'production',
+        REDIS_URL: process.env.REDIS_URL || 'redis://127.0.0.1:56379',
         GOOGLE_OAUTH_REDIRECT_URIS: `${mobile.origin},${admin.origin}`,
         CORS_ALLOWED_ORIGINS: [mobile.origin, admin.origin],
-        AUTH_RATE_LIMIT_POINTS: 100,
+        AUTH_RATE_LIMIT_POINTS: 10000,
         AUTH_RATE_LIMIT_DURATION_SECONDS: 60,
       });
       const active = new Set();

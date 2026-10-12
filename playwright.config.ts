@@ -17,10 +17,24 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'pnpm --filter @slogan/admin dev',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: 'pnpm --filter @slogan/admin dev',
+      url: 'http://localhost:4173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      command: 'pnpm --filter @slogan/mobile exec expo start --web --port 8082',
+      env: {
+        CI: '1',
+        EXPO_NO_DOTENV: '1',
+        EXPO_PUBLIC_API_BASE_URL: 'http://127.0.0.1:3000',
+        EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 'browser-test.apps.googleusercontent.com',
+      },
+      url: 'http://localhost:8082',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });

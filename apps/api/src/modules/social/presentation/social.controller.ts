@@ -65,7 +65,13 @@ export class SocialController {
     @Query() query: FriendRequestPageQueryDto,
   ) {
     const page = await this.social.listFriendRequests(identity.userId, query);
-    return { ...page, items: page.items.map((item) => ({ ...this.request(item), peerDisplayName: item.peerDisplayName })) };
+    return {
+      ...page,
+      items: page.items.map((item) => ({
+        ...this.request(item),
+        peerDisplayName: item.peerDisplayName,
+      })),
+    };
   }
 
   @Post('friend-requests/:requestId/accept')

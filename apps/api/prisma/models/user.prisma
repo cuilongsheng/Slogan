@@ -1,4 +1,14 @@
 model User {
+  avatar ProfileAvatar?
+  directPairsLow DirectConversation[] @relation("DirectPairLow")
+  directPairsHigh DirectConversation[] @relation("DirectPairHigh")
+  directCallsMade DirectCall[] @relation("DirectCaller")
+  directCallsReceived DirectCall[] @relation("DirectCallee")
+  initiatedConversations DirectConversation[] @relation("DirectInitiator")
+  directCommands DirectCommand[]
+  directConversations DirectConversationMember[]
+  directMessages DirectMessage[]
+  directCallOccupancy DirectCallOccupancy?
   publicTrialAccount PublicTrialAccount?
   roomTextMessages RoomTextMessage[]
   emailCredential           EmailCredential?

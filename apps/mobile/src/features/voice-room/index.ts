@@ -1,0 +1,1 @@
+export { createVoiceMedia } from './media';

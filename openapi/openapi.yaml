@@ -613,6 +613,9 @@ components:
             - B2
             - C1
             - C2
+            - A1_A2
+            - B1_B2
+            - C1_C2
           type: string
         city:
           nullable: true
@@ -657,6 +660,9 @@ components:
                   - B2
                   - C1
                   - C2
+                  - A1_A2
+                  - B1_B2
+                  - C1_C2
                 type: string
               city:
                 nullable: true
@@ -692,6 +698,23 @@ components:
       required:
         - items
         - nextCursor
+      type: object
+    AvatarResponseDto:
+      properties:
+        avatarUrl:
+          format: uri
+          type: string
+      required:
+        - avatarUrl
+      type: object
+    AvatarUploadDto:
+      properties:
+        imageBase64:
+          description: Base64 PNG bytes, without a data URL prefix
+          maxLength: 349528
+          type: string
+      required:
+        - imageBase64
       type: object
     BackofficeMeDto:
       properties:
@@ -1155,6 +1178,760 @@ components:
       required:
         - expectedVersion
       type: object
+    DirectCallDto:
+      properties:
+        acceptedAt:
+          format: date-time
+          nullable: true
+          type: string
+        calleeUserId:
+          format: uuid
+          type: string
+        callerUserId:
+          format: uuid
+          type: string
+        conversationId:
+          format: uuid
+          type: string
+        endReason:
+          nullable: true
+          type: string
+        endedAt:
+          format: date-time
+          nullable: true
+          type: string
+        expiresAt:
+          format: date-time
+          type: string
+        id:
+          format: uuid
+          type: string
+        peer:
+          properties:
+            avatarUrl:
+              format: uri
+              type: string
+            cefrLevel:
+              enum:
+                - A1
+                - A2
+                - B1
+                - B2
+                - C1
+                - C2
+                - A1_A2
+                - B1_B2
+                - C1_C2
+              type: string
+            displayName:
+              type: string
+            userId:
+              format: uuid
+              type: string
+          required:
+            - userId
+            - displayName
+            - avatarUrl
+            - cefrLevel
+          type: object
+        sequence:
+          type: number
+        status:
+          enum:
+            - RINGING
+            - ACTIVE
+            - REJECTED
+            - EXPIRED
+            - ENDED
+          type: string
+      required:
+        - sequence
+        - id
+        - conversationId
+        - callerUserId
+        - calleeUserId
+        - status
+        - expiresAt
+        - acceptedAt
+        - endedAt
+        - endReason
+      type: object
+    DirectCallHistoryPageDto:
+      properties:
+        items:
+          items:
+            properties:
+              acceptedAt:
+                format: date-time
+                nullable: true
+                type: string
+              calleeUserId:
+                format: uuid
+                type: string
+              callerUserId:
+                format: uuid
+                type: string
+              conversationId:
+                format: uuid
+                type: string
+              endReason:
+                nullable: true
+                type: string
+              endedAt:
+                format: date-time
+                nullable: true
+                type: string
+              expiresAt:
+                format: date-time
+                type: string
+              id:
+                format: uuid
+                type: string
+              peer:
+                properties:
+                  avatarUrl:
+                    format: uri
+                    type: string
+                  cefrLevel:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                      - A1_A2
+                      - B1_B2
+                      - C1_C2
+                    type: string
+                  displayName:
+                    type: string
+                  userId:
+                    format: uuid
+                    type: string
+                required:
+                  - userId
+                  - displayName
+                  - avatarUrl
+                  - cefrLevel
+                type: object
+              sequence:
+                type: number
+              status:
+                enum:
+                  - RINGING
+                  - ACTIVE
+                  - REJECTED
+                  - EXPIRED
+                  - ENDED
+                type: string
+            required:
+              - sequence
+              - id
+              - conversationId
+              - callerUserId
+              - calleeUserId
+              - status
+              - expiresAt
+              - acceptedAt
+              - endedAt
+              - endReason
+            type: object
+          type: array
+        nextCursor:
+          nullable: true
+          type: string
+        visibleAfterSequence:
+          type: number
+      required:
+        - items
+        - visibleAfterSequence
+        - nextCursor
+      type: object
+    DirectCallPageDto:
+      properties:
+        items:
+          items:
+            properties:
+              acceptedAt:
+                format: date-time
+                nullable: true
+                type: string
+              calleeUserId:
+                format: uuid
+                type: string
+              callerUserId:
+                format: uuid
+                type: string
+              conversationId:
+                format: uuid
+                type: string
+              endReason:
+                nullable: true
+                type: string
+              endedAt:
+                format: date-time
+                nullable: true
+                type: string
+              expiresAt:
+                format: date-time
+                type: string
+              id:
+                format: uuid
+                type: string
+              peer:
+                properties:
+                  avatarUrl:
+                    format: uri
+                    type: string
+                  cefrLevel:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                      - A1_A2
+                      - B1_B2
+                      - C1_C2
+                    type: string
+                  displayName:
+                    type: string
+                  userId:
+                    format: uuid
+                    type: string
+                required:
+                  - userId
+                  - displayName
+                  - avatarUrl
+                  - cefrLevel
+                type: object
+              sequence:
+                type: number
+              status:
+                enum:
+                  - RINGING
+                  - ACTIVE
+                  - REJECTED
+                  - EXPIRED
+                  - ENDED
+                type: string
+            required:
+              - sequence
+              - id
+              - conversationId
+              - callerUserId
+              - calleeUserId
+              - status
+              - expiresAt
+              - acceptedAt
+              - endedAt
+              - endReason
+            type: object
+          type: array
+      required:
+        - items
+      type: object
+    DirectCommandDto:
+      properties:
+        clientRequestId:
+          format: uuid
+          type: string
+      required:
+        - clientRequestId
+      type: object
+    DirectConversationDto:
+      properties:
+        canInteract:
+          type: boolean
+        id:
+          format: uuid
+          type: string
+        lastActivityAt:
+          format: date-time
+          type: string
+        lastCall:
+          allOf:
+            - properties:
+                acceptedAt:
+                  format: date-time
+                  nullable: true
+                  type: string
+                calleeUserId:
+                  format: uuid
+                  type: string
+                callerUserId:
+                  format: uuid
+                  type: string
+                conversationId:
+                  format: uuid
+                  type: string
+                endReason:
+                  nullable: true
+                  type: string
+                endedAt:
+                  format: date-time
+                  nullable: true
+                  type: string
+                expiresAt:
+                  format: date-time
+                  type: string
+                id:
+                  format: uuid
+                  type: string
+                peer:
+                  properties:
+                    avatarUrl:
+                      format: uri
+                      type: string
+                    cefrLevel:
+                      enum:
+                        - A1
+                        - A2
+                        - B1
+                        - B2
+                        - C1
+                        - C2
+                        - A1_A2
+                        - B1_B2
+                        - C1_C2
+                      type: string
+                    displayName:
+                      type: string
+                    userId:
+                      format: uuid
+                      type: string
+                  required:
+                    - userId
+                    - displayName
+                    - avatarUrl
+                    - cefrLevel
+                  type: object
+                sequence:
+                  type: number
+                status:
+                  enum:
+                    - RINGING
+                    - ACTIVE
+                    - REJECTED
+                    - EXPIRED
+                    - ENDED
+                  type: string
+              required:
+                - sequence
+                - id
+                - conversationId
+                - callerUserId
+                - calleeUserId
+                - status
+                - expiresAt
+                - acceptedAt
+                - endedAt
+                - endReason
+              type: object
+          nullable: true
+          type: object
+        lastMessage:
+          allOf:
+            - properties:
+                clientRequestId:
+                  format: uuid
+                  type: string
+                conversationId:
+                  format: uuid
+                  type: string
+                createdAt:
+                  format: date-time
+                  type: string
+                id:
+                  format: uuid
+                  type: string
+                senderUserId:
+                  format: uuid
+                  type: string
+                sequence:
+                  type: number
+                text:
+                  type: string
+              required:
+                - id
+                - conversationId
+                - senderUserId
+                - clientRequestId
+                - sequence
+                - text
+                - createdAt
+              type: object
+          nullable: true
+          type: object
+        peer:
+          properties:
+            avatarUrl:
+              format: uri
+              type: string
+            cefrLevel:
+              enum:
+                - A1
+                - A2
+                - B1
+                - B2
+                - C1
+                - C2
+                - A1_A2
+                - B1_B2
+                - C1_C2
+              type: string
+            displayName:
+              type: string
+            userId:
+              format: uuid
+              type: string
+          required:
+            - userId
+            - displayName
+            - avatarUrl
+            - cefrLevel
+          type: object
+        unreadCount:
+          type: number
+      required:
+        - id
+        - peer
+        - lastMessage
+        - lastCall
+        - unreadCount
+        - lastActivityAt
+        - canInteract
+      type: object
+    DirectConversationPageDto:
+      properties:
+        items:
+          items:
+            properties:
+              canInteract:
+                type: boolean
+              id:
+                format: uuid
+                type: string
+              lastActivityAt:
+                format: date-time
+                type: string
+              lastCall:
+                allOf:
+                  - properties:
+                      acceptedAt:
+                        format: date-time
+                        nullable: true
+                        type: string
+                      calleeUserId:
+                        format: uuid
+                        type: string
+                      callerUserId:
+                        format: uuid
+                        type: string
+                      conversationId:
+                        format: uuid
+                        type: string
+                      endReason:
+                        nullable: true
+                        type: string
+                      endedAt:
+                        format: date-time
+                        nullable: true
+                        type: string
+                      expiresAt:
+                        format: date-time
+                        type: string
+                      id:
+                        format: uuid
+                        type: string
+                      peer:
+                        properties:
+                          avatarUrl:
+                            format: uri
+                            type: string
+                          cefrLevel:
+                            enum:
+                              - A1
+                              - A2
+                              - B1
+                              - B2
+                              - C1
+                              - C2
+                              - A1_A2
+                              - B1_B2
+                              - C1_C2
+                            type: string
+                          displayName:
+                            type: string
+                          userId:
+                            format: uuid
+                            type: string
+                        required:
+                          - userId
+                          - displayName
+                          - avatarUrl
+                          - cefrLevel
+                        type: object
+                      sequence:
+                        type: number
+                      status:
+                        enum:
+                          - RINGING
+                          - ACTIVE
+                          - REJECTED
+                          - EXPIRED
+                          - ENDED
+                        type: string
+                    required:
+                      - sequence
+                      - id
+                      - conversationId
+                      - callerUserId
+                      - calleeUserId
+                      - status
+                      - expiresAt
+                      - acceptedAt
+                      - endedAt
+                      - endReason
+                    type: object
+                nullable: true
+                type: object
+              lastMessage:
+                allOf:
+                  - properties:
+                      clientRequestId:
+                        format: uuid
+                        type: string
+                      conversationId:
+                        format: uuid
+                        type: string
+                      createdAt:
+                        format: date-time
+                        type: string
+                      id:
+                        format: uuid
+                        type: string
+                      senderUserId:
+                        format: uuid
+                        type: string
+                      sequence:
+                        type: number
+                      text:
+                        type: string
+                    required:
+                      - id
+                      - conversationId
+                      - senderUserId
+                      - clientRequestId
+                      - sequence
+                      - text
+                      - createdAt
+                    type: object
+                nullable: true
+                type: object
+              peer:
+                properties:
+                  avatarUrl:
+                    format: uri
+                    type: string
+                  cefrLevel:
+                    enum:
+                      - A1
+                      - A2
+                      - B1
+                      - B2
+                      - C1
+                      - C2
+                      - A1_A2
+                      - B1_B2
+                      - C1_C2
+                    type: string
+                  displayName:
+                    type: string
+                  userId:
+                    format: uuid
+                    type: string
+                required:
+                  - userId
+                  - displayName
+                  - avatarUrl
+                  - cefrLevel
+                type: object
+              unreadCount:
+                type: number
+            required:
+              - id
+              - peer
+              - lastMessage
+              - lastCall
+              - unreadCount
+              - lastActivityAt
+              - canInteract
+            type: object
+          type: array
+        nextCursor:
+          nullable: true
+          type: string
+      required:
+        - items
+        - nextCursor
+      type: object
+    DirectCredentialsDto:
+      properties:
+        expiresAt:
+          format: date-time
+          type: string
+        identity:
+          type: string
+        roomName:
+          type: string
+        token:
+          type: string
+        url:
+          format: uri
+          type: string
+      required:
+        - url
+        - token
+        - expiresAt
+        - identity
+        - roomName
+      type: object
+    DirectMessageDto:
+      properties:
+        clientRequestId:
+          format: uuid
+          type: string
+        conversationId:
+          format: uuid
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          format: uuid
+          type: string
+        senderUserId:
+          format: uuid
+          type: string
+        sequence:
+          type: number
+        text:
+          type: string
+      required:
+        - id
+        - conversationId
+        - senderUserId
+        - clientRequestId
+        - sequence
+        - text
+        - createdAt
+      type: object
+    DirectMessagePageDto:
+      properties:
+        items:
+          items:
+            properties:
+              clientRequestId:
+                format: uuid
+                type: string
+              conversationId:
+                format: uuid
+                type: string
+              createdAt:
+                format: date-time
+                type: string
+              id:
+                format: uuid
+                type: string
+              senderUserId:
+                format: uuid
+                type: string
+              sequence:
+                type: number
+              text:
+                type: string
+            required:
+              - id
+              - conversationId
+              - senderUserId
+              - clientRequestId
+              - sequence
+              - text
+              - createdAt
+            type: object
+          type: array
+        nextCursor:
+          nullable: true
+          type: string
+        visibleAfterSequence:
+          type: number
+      required:
+        - visibleAfterSequence
+        - items
+        - nextCursor
+      type: object
+    DirectPeerDto:
+      properties:
+        avatarUrl:
+          format: uri
+          type: string
+        cefrLevel:
+          enum:
+            - A1
+            - A2
+            - B1
+            - B2
+            - C1
+            - C2
+            - A1_A2
+            - B1_B2
+            - C1_C2
+          type: string
+        displayName:
+          type: string
+        userId:
+          format: uuid
+          type: string
+      required:
+        - userId
+        - displayName
+        - avatarUrl
+        - cefrLevel
+      type: object
+    DirectReadDto:
+      properties:
+        sequence:
+          maximum: 2147483646
+          minimum: 0
+          type: number
+      required:
+        - sequence
+      type: object
+    DirectReportDto:
+      properties:
+        category:
+          enum:
+            - HARASSMENT_ABUSE
+            - HATE_DISCRIMINATION
+            - SEXUAL_CONTENT
+            - SPAM_ADVERTISING
+            - OTHER
+          type: string
+        clientRequestId:
+          format: uuid
+          type: string
+        description:
+          maxLength: 2000
+          minLength: 1
+          type: string
+      required:
+        - clientRequestId
+        - category
+        - description
+      type: object
     DryRunDto:
       properties:
         clientRequestId:
@@ -1449,6 +2226,9 @@ components:
                 - B2
                 - C1
                 - C2
+                - A1_A2
+                - B1_B2
+                - C1_C2
               type: string
             city:
               nullable: true
@@ -1506,6 +2286,9 @@ components:
                       - B2
                       - C1
                       - C2
+                      - A1_A2
+                      - B1_B2
+                      - C1_C2
                     type: string
                   city:
                     nullable: true
@@ -2123,6 +2906,14 @@ components:
         - authorizationCode
         - redirectUri
       type: object
+    OpenConversationDto:
+      properties:
+        targetUserId:
+          format: uuid
+          type: string
+      required:
+        - targetUserId
+      type: object
     OperationsRoomCountsDto:
       properties:
         memberships:
@@ -2667,6 +3458,9 @@ components:
             - B2
             - C1
             - C2
+            - A1_A2
+            - B1_B2
+            - C1_C2
           type: string
         city:
           nullable: true
@@ -2993,6 +3787,30 @@ components:
         - id
         - caseId
         - submittedAt
+      type: object
+    ReportedDirectMessageDto:
+      properties:
+        conversationId:
+          format: uuid
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          format: uuid
+          type: string
+        senderUserId:
+          format: uuid
+          type: string
+        text:
+          description: Only the reported message; does not expose the remaining conversation
+          type: string
+      required:
+        - id
+        - conversationId
+        - senderUserId
+        - text
+        - createdAt
       type: object
     ReservationDto:
       properties:
@@ -4581,6 +5399,7 @@ components:
           type: string
         roomId:
           format: uuid
+          nullable: true
           type: string
         status:
           enum:
@@ -4664,6 +5483,7 @@ components:
                 type: string
               roomId:
                 format: uuid
+                nullable: true
                 type: string
               status:
                 enum:
@@ -4969,6 +5789,7 @@ components:
                     type: string
                   roomId:
                     format: uuid
+                    nullable: true
                     type: string
                   submittedAt:
                     format: date-time
@@ -4998,6 +5819,33 @@ components:
               type: string
             description:
               type: string
+            directMessage:
+              allOf:
+                - properties:
+                    conversationId:
+                      format: uuid
+                      type: string
+                    createdAt:
+                      format: date-time
+                      type: string
+                    id:
+                      format: uuid
+                      type: string
+                    senderUserId:
+                      format: uuid
+                      type: string
+                    text:
+                      description: Only the reported message; does not expose the remaining conversation
+                      type: string
+                  required:
+                    - id
+                    - conversationId
+                    - senderUserId
+                    - text
+                    - createdAt
+                  type: object
+              nullable: true
+              type: object
             id:
               format: uuid
               type: string
@@ -5006,6 +5854,7 @@ components:
               type: string
             roomId:
               format: uuid
+              nullable: true
               type: string
             submittedAt:
               format: date-time
@@ -5014,6 +5863,7 @@ components:
               format: uuid
               type: string
           required:
+            - directMessage
             - id
             - roomId
             - reporterUserId
@@ -5362,6 +6212,7 @@ components:
           type: string
         roomId:
           format: uuid
+          nullable: true
           type: string
         submittedAt:
           format: date-time
@@ -5384,6 +6235,7 @@ components:
                 type: string
               roomId:
                 format: uuid
+                nullable: true
                 type: string
               submittedAt:
                 format: date-time
@@ -5413,6 +6265,33 @@ components:
           type: string
         description:
           type: string
+        directMessage:
+          allOf:
+            - properties:
+                conversationId:
+                  format: uuid
+                  type: string
+                createdAt:
+                  format: date-time
+                  type: string
+                id:
+                  format: uuid
+                  type: string
+                senderUserId:
+                  format: uuid
+                  type: string
+                text:
+                  description: Only the reported message; does not expose the remaining conversation
+                  type: string
+              required:
+                - id
+                - conversationId
+                - senderUserId
+                - text
+                - createdAt
+              type: object
+          nullable: true
+          type: object
         id:
           format: uuid
           type: string
@@ -5421,6 +6300,7 @@ components:
           type: string
         roomId:
           format: uuid
+          nullable: true
           type: string
         submittedAt:
           format: date-time
@@ -5429,6 +6309,7 @@ components:
           format: uuid
           type: string
       required:
+        - directMessage
         - id
         - roomId
         - reporterUserId
@@ -5926,6 +6807,7 @@ components:
               type: string
             roomId:
               format: uuid
+              nullable: true
               type: string
             status:
               enum:
@@ -6213,6 +7095,19 @@ components:
       required:
         - content
         - expectedVersion
+      type: object
+    SendDirectMessageDto:
+      properties:
+        clientRequestId:
+          format: uuid
+          type: string
+        text:
+          maxLength: 2000
+          minLength: 1
+          type: string
+      required:
+        - clientRequestId
+        - text
       type: object
     SendRoomMessageDto:
       properties:
@@ -9584,6 +10479,39 @@ paths:
           description: ''
       tags:
         - auth
+  /v1/avatars/default:
+    get:
+      operationId: AvatarController_default
+      parameters: []
+      responses:
+        '200':
+          content:
+            image/png:
+              schema:
+                format: binary
+                type: string
+          description: ''
+      tags:
+        - profiles
+  /v1/avatars/{id}:
+    get:
+      operationId: AvatarController_image
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            image/png:
+              schema:
+                format: binary
+                type: string
+          description: ''
+      tags:
+        - profiles
   /v1/backoffice/accounts/{userId}/restricted-record:
     get:
       operationId: AccountLifecycleController_restrictedRecord
@@ -15209,6 +16137,7 @@ paths:
                           type: string
                         roomId:
                           format: uuid
+                          nullable: true
                           type: string
                         status:
                           enum:
@@ -15597,6 +16526,7 @@ paths:
                     type: string
                   roomId:
                     format: uuid
+                    nullable: true
                     type: string
                   status:
                     enum:
@@ -15834,6 +16764,7 @@ paths:
                     type: string
                   roomId:
                     format: uuid
+                    nullable: true
                     type: string
                   status:
                     enum:
@@ -16076,6 +17007,7 @@ paths:
                     type: string
                   roomId:
                     format: uuid
+                    nullable: true
                     type: string
                   status:
                     enum:
@@ -16427,6 +17359,7 @@ paths:
                               type: string
                             roomId:
                               format: uuid
+                              nullable: true
                               type: string
                             submittedAt:
                               format: date-time
@@ -16456,6 +17389,33 @@ paths:
                         type: string
                       description:
                         type: string
+                      directMessage:
+                        allOf:
+                          - properties:
+                              conversationId:
+                                format: uuid
+                                type: string
+                              createdAt:
+                                format: date-time
+                                type: string
+                              id:
+                                format: uuid
+                                type: string
+                              senderUserId:
+                                format: uuid
+                                type: string
+                              text:
+                                description: Only the reported message; does not expose the remaining conversation
+                                type: string
+                            required:
+                              - id
+                              - conversationId
+                              - senderUserId
+                              - text
+                              - createdAt
+                            type: object
+                        nullable: true
+                        type: object
                       id:
                         format: uuid
                         type: string
@@ -16464,6 +17424,7 @@ paths:
                         type: string
                       roomId:
                         format: uuid
+                        nullable: true
                         type: string
                       submittedAt:
                         format: date-time
@@ -16472,6 +17433,7 @@ paths:
                         format: uuid
                         type: string
                     required:
+                      - directMessage
                       - id
                       - roomId
                       - reporterUserId
@@ -16915,6 +17877,7 @@ paths:
                         type: string
                       roomId:
                         format: uuid
+                        nullable: true
                         type: string
                       status:
                         enum:
@@ -17234,6 +18197,7 @@ paths:
                     type: string
                   roomId:
                     format: uuid
+                    nullable: true
                     type: string
                   status:
                     enum:
@@ -18811,6 +19775,3973 @@ paths:
         - bearer: []
       tags:
         - social
+  /v1/conversations:
+    post:
+      operationId: DirectController_open
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                targetUserId:
+                  format: uuid
+                  type: string
+              required:
+                - targetUserId
+              type: object
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                properties:
+                  canInteract:
+                    type: boolean
+                  id:
+                    format: uuid
+                    type: string
+                  lastActivityAt:
+                    format: date-time
+                    type: string
+                  lastCall:
+                    allOf:
+                      - properties:
+                          acceptedAt:
+                            format: date-time
+                            nullable: true
+                            type: string
+                          calleeUserId:
+                            format: uuid
+                            type: string
+                          callerUserId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          endReason:
+                            nullable: true
+                            type: string
+                          endedAt:
+                            format: date-time
+                            nullable: true
+                            type: string
+                          expiresAt:
+                            format: date-time
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          peer:
+                            properties:
+                              avatarUrl:
+                                format: uri
+                                type: string
+                              cefrLevel:
+                                enum:
+                                  - A1
+                                  - A2
+                                  - B1
+                                  - B2
+                                  - C1
+                                  - C2
+                                  - A1_A2
+                                  - B1_B2
+                                  - C1_C2
+                                type: string
+                              displayName:
+                                type: string
+                              userId:
+                                format: uuid
+                                type: string
+                            required:
+                              - userId
+                              - displayName
+                              - avatarUrl
+                              - cefrLevel
+                            type: object
+                          sequence:
+                            type: number
+                          status:
+                            enum:
+                              - RINGING
+                              - ACTIVE
+                              - REJECTED
+                              - EXPIRED
+                              - ENDED
+                            type: string
+                        required:
+                          - sequence
+                          - id
+                          - conversationId
+                          - callerUserId
+                          - calleeUserId
+                          - status
+                          - expiresAt
+                          - acceptedAt
+                          - endedAt
+                          - endReason
+                        type: object
+                    nullable: true
+                    type: object
+                  lastMessage:
+                    allOf:
+                      - properties:
+                          clientRequestId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          createdAt:
+                            format: date-time
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          senderUserId:
+                            format: uuid
+                            type: string
+                          sequence:
+                            type: number
+                          text:
+                            type: string
+                        required:
+                          - id
+                          - conversationId
+                          - senderUserId
+                          - clientRequestId
+                          - sequence
+                          - text
+                          - createdAt
+                        type: object
+                    nullable: true
+                    type: object
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  unreadCount:
+                    type: number
+                required:
+                  - id
+                  - peer
+                  - lastMessage
+                  - lastCall
+                  - unreadCount
+                  - lastActivityAt
+                  - canInteract
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/conversations/{conversationId}:
+    delete:
+      operationId: DirectController_hide
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                clientRequestId:
+                  format: uuid
+                  type: string
+              required:
+                - clientRequestId
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  canInteract:
+                    type: boolean
+                  id:
+                    format: uuid
+                    type: string
+                  lastActivityAt:
+                    format: date-time
+                    type: string
+                  lastCall:
+                    allOf:
+                      - properties:
+                          acceptedAt:
+                            format: date-time
+                            nullable: true
+                            type: string
+                          calleeUserId:
+                            format: uuid
+                            type: string
+                          callerUserId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          endReason:
+                            nullable: true
+                            type: string
+                          endedAt:
+                            format: date-time
+                            nullable: true
+                            type: string
+                          expiresAt:
+                            format: date-time
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          peer:
+                            properties:
+                              avatarUrl:
+                                format: uri
+                                type: string
+                              cefrLevel:
+                                enum:
+                                  - A1
+                                  - A2
+                                  - B1
+                                  - B2
+                                  - C1
+                                  - C2
+                                  - A1_A2
+                                  - B1_B2
+                                  - C1_C2
+                                type: string
+                              displayName:
+                                type: string
+                              userId:
+                                format: uuid
+                                type: string
+                            required:
+                              - userId
+                              - displayName
+                              - avatarUrl
+                              - cefrLevel
+                            type: object
+                          sequence:
+                            type: number
+                          status:
+                            enum:
+                              - RINGING
+                              - ACTIVE
+                              - REJECTED
+                              - EXPIRED
+                              - ENDED
+                            type: string
+                        required:
+                          - sequence
+                          - id
+                          - conversationId
+                          - callerUserId
+                          - calleeUserId
+                          - status
+                          - expiresAt
+                          - acceptedAt
+                          - endedAt
+                          - endReason
+                        type: object
+                    nullable: true
+                    type: object
+                  lastMessage:
+                    allOf:
+                      - properties:
+                          clientRequestId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          createdAt:
+                            format: date-time
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          senderUserId:
+                            format: uuid
+                            type: string
+                          sequence:
+                            type: number
+                          text:
+                            type: string
+                        required:
+                          - id
+                          - conversationId
+                          - senderUserId
+                          - clientRequestId
+                          - sequence
+                          - text
+                          - createdAt
+                        type: object
+                    nullable: true
+                    type: object
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  unreadCount:
+                    type: number
+                required:
+                  - id
+                  - peer
+                  - lastMessage
+                  - lastCall
+                  - unreadCount
+                  - lastActivityAt
+                  - canInteract
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+    get:
+      operationId: DirectController_detail
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  canInteract:
+                    type: boolean
+                  id:
+                    format: uuid
+                    type: string
+                  lastActivityAt:
+                    format: date-time
+                    type: string
+                  lastCall:
+                    allOf:
+                      - properties:
+                          acceptedAt:
+                            format: date-time
+                            nullable: true
+                            type: string
+                          calleeUserId:
+                            format: uuid
+                            type: string
+                          callerUserId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          endReason:
+                            nullable: true
+                            type: string
+                          endedAt:
+                            format: date-time
+                            nullable: true
+                            type: string
+                          expiresAt:
+                            format: date-time
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          peer:
+                            properties:
+                              avatarUrl:
+                                format: uri
+                                type: string
+                              cefrLevel:
+                                enum:
+                                  - A1
+                                  - A2
+                                  - B1
+                                  - B2
+                                  - C1
+                                  - C2
+                                  - A1_A2
+                                  - B1_B2
+                                  - C1_C2
+                                type: string
+                              displayName:
+                                type: string
+                              userId:
+                                format: uuid
+                                type: string
+                            required:
+                              - userId
+                              - displayName
+                              - avatarUrl
+                              - cefrLevel
+                            type: object
+                          sequence:
+                            type: number
+                          status:
+                            enum:
+                              - RINGING
+                              - ACTIVE
+                              - REJECTED
+                              - EXPIRED
+                              - ENDED
+                            type: string
+                        required:
+                          - sequence
+                          - id
+                          - conversationId
+                          - callerUserId
+                          - calleeUserId
+                          - status
+                          - expiresAt
+                          - acceptedAt
+                          - endedAt
+                          - endReason
+                        type: object
+                    nullable: true
+                    type: object
+                  lastMessage:
+                    allOf:
+                      - properties:
+                          clientRequestId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          createdAt:
+                            format: date-time
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          senderUserId:
+                            format: uuid
+                            type: string
+                          sequence:
+                            type: number
+                          text:
+                            type: string
+                        required:
+                          - id
+                          - conversationId
+                          - senderUserId
+                          - clientRequestId
+                          - sequence
+                          - text
+                          - createdAt
+                        type: object
+                    nullable: true
+                    type: object
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  unreadCount:
+                    type: number
+                required:
+                  - id
+                  - peer
+                  - lastMessage
+                  - lastCall
+                  - unreadCount
+                  - lastActivityAt
+                  - canInteract
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/conversations/{conversationId}/calls:
+    get:
+      operationId: DirectController_callHistory
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            maxLength: 500
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            default: 20
+            maximum: 50
+            minimum: 1
+            type: number
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  items:
+                    items:
+                      properties:
+                        acceptedAt:
+                          format: date-time
+                          nullable: true
+                          type: string
+                        calleeUserId:
+                          format: uuid
+                          type: string
+                        callerUserId:
+                          format: uuid
+                          type: string
+                        conversationId:
+                          format: uuid
+                          type: string
+                        endReason:
+                          nullable: true
+                          type: string
+                        endedAt:
+                          format: date-time
+                          nullable: true
+                          type: string
+                        expiresAt:
+                          format: date-time
+                          type: string
+                        id:
+                          format: uuid
+                          type: string
+                        peer:
+                          properties:
+                            avatarUrl:
+                              format: uri
+                              type: string
+                            cefrLevel:
+                              enum:
+                                - A1
+                                - A2
+                                - B1
+                                - B2
+                                - C1
+                                - C2
+                                - A1_A2
+                                - B1_B2
+                                - C1_C2
+                              type: string
+                            displayName:
+                              type: string
+                            userId:
+                              format: uuid
+                              type: string
+                          required:
+                            - userId
+                            - displayName
+                            - avatarUrl
+                            - cefrLevel
+                          type: object
+                        sequence:
+                          type: number
+                        status:
+                          enum:
+                            - RINGING
+                            - ACTIVE
+                            - REJECTED
+                            - EXPIRED
+                            - ENDED
+                          type: string
+                      required:
+                        - sequence
+                        - id
+                        - conversationId
+                        - callerUserId
+                        - calleeUserId
+                        - status
+                        - expiresAt
+                        - acceptedAt
+                        - endedAt
+                        - endReason
+                      type: object
+                    type: array
+                  nextCursor:
+                    nullable: true
+                    type: string
+                  visibleAfterSequence:
+                    type: number
+                required:
+                  - items
+                  - visibleAfterSequence
+                  - nextCursor
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+    post:
+      operationId: DirectController_requestCall
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                clientRequestId:
+                  format: uuid
+                  type: string
+              required:
+                - clientRequestId
+              type: object
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                properties:
+                  acceptedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  calleeUserId:
+                    format: uuid
+                    type: string
+                  callerUserId:
+                    format: uuid
+                    type: string
+                  conversationId:
+                    format: uuid
+                    type: string
+                  endReason:
+                    nullable: true
+                    type: string
+                  endedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  expiresAt:
+                    format: date-time
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  sequence:
+                    type: number
+                  status:
+                    enum:
+                      - RINGING
+                      - ACTIVE
+                      - REJECTED
+                      - EXPIRED
+                      - ENDED
+                    type: string
+                required:
+                  - sequence
+                  - id
+                  - conversationId
+                  - callerUserId
+                  - calleeUserId
+                  - status
+                  - expiresAt
+                  - acceptedAt
+                  - endedAt
+                  - endReason
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/conversations/{conversationId}/messages:
+    get:
+      operationId: DirectController_messages
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            maxLength: 500
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            default: 20
+            maximum: 50
+            minimum: 1
+            type: number
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  items:
+                    items:
+                      properties:
+                        clientRequestId:
+                          format: uuid
+                          type: string
+                        conversationId:
+                          format: uuid
+                          type: string
+                        createdAt:
+                          format: date-time
+                          type: string
+                        id:
+                          format: uuid
+                          type: string
+                        senderUserId:
+                          format: uuid
+                          type: string
+                        sequence:
+                          type: number
+                        text:
+                          type: string
+                      required:
+                        - id
+                        - conversationId
+                        - senderUserId
+                        - clientRequestId
+                        - sequence
+                        - text
+                        - createdAt
+                      type: object
+                    type: array
+                  nextCursor:
+                    nullable: true
+                    type: string
+                  visibleAfterSequence:
+                    type: number
+                required:
+                  - visibleAfterSequence
+                  - items
+                  - nextCursor
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+    post:
+      operationId: DirectController_send
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                clientRequestId:
+                  format: uuid
+                  type: string
+                text:
+                  maxLength: 2000
+                  minLength: 1
+                  type: string
+              required:
+                - clientRequestId
+                - text
+              type: object
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                properties:
+                  clientRequestId:
+                    format: uuid
+                    type: string
+                  conversationId:
+                    format: uuid
+                    type: string
+                  createdAt:
+                    format: date-time
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  senderUserId:
+                    format: uuid
+                    type: string
+                  sequence:
+                    type: number
+                  text:
+                    type: string
+                required:
+                  - id
+                  - conversationId
+                  - senderUserId
+                  - clientRequestId
+                  - sequence
+                  - text
+                  - createdAt
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/conversations/{conversationId}/messages/{messageId}/report:
+    post:
+      operationId: DirectController_report
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                category:
+                  enum:
+                    - HARASSMENT_ABUSE
+                    - HATE_DISCRIMINATION
+                    - SEXUAL_CONTENT
+                    - SPAM_ADVERTISING
+                    - OTHER
+                  type: string
+                clientRequestId:
+                  format: uuid
+                  type: string
+                description:
+                  maxLength: 2000
+                  minLength: 1
+                  type: string
+              required:
+                - clientRequestId
+                - category
+                - description
+              type: object
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                properties:
+                  caseId:
+                    format: uuid
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  submittedAt:
+                    description: First submission server time, retained on retries.
+                    format: date-time
+                    type: string
+                required:
+                  - id
+                  - caseId
+                  - submittedAt
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/conversations/{conversationId}/read:
+    post:
+      operationId: DirectController_read
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                sequence:
+                  maximum: 2147483646
+                  minimum: 0
+                  type: number
+              required:
+                - sequence
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  canInteract:
+                    type: boolean
+                  id:
+                    format: uuid
+                    type: string
+                  lastActivityAt:
+                    format: date-time
+                    type: string
+                  lastCall:
+                    allOf:
+                      - properties:
+                          acceptedAt:
+                            format: date-time
+                            nullable: true
+                            type: string
+                          calleeUserId:
+                            format: uuid
+                            type: string
+                          callerUserId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          endReason:
+                            nullable: true
+                            type: string
+                          endedAt:
+                            format: date-time
+                            nullable: true
+                            type: string
+                          expiresAt:
+                            format: date-time
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          peer:
+                            properties:
+                              avatarUrl:
+                                format: uri
+                                type: string
+                              cefrLevel:
+                                enum:
+                                  - A1
+                                  - A2
+                                  - B1
+                                  - B2
+                                  - C1
+                                  - C2
+                                  - A1_A2
+                                  - B1_B2
+                                  - C1_C2
+                                type: string
+                              displayName:
+                                type: string
+                              userId:
+                                format: uuid
+                                type: string
+                            required:
+                              - userId
+                              - displayName
+                              - avatarUrl
+                              - cefrLevel
+                            type: object
+                          sequence:
+                            type: number
+                          status:
+                            enum:
+                              - RINGING
+                              - ACTIVE
+                              - REJECTED
+                              - EXPIRED
+                              - ENDED
+                            type: string
+                        required:
+                          - sequence
+                          - id
+                          - conversationId
+                          - callerUserId
+                          - calleeUserId
+                          - status
+                          - expiresAt
+                          - acceptedAt
+                          - endedAt
+                          - endReason
+                        type: object
+                    nullable: true
+                    type: object
+                  lastMessage:
+                    allOf:
+                      - properties:
+                          clientRequestId:
+                            format: uuid
+                            type: string
+                          conversationId:
+                            format: uuid
+                            type: string
+                          createdAt:
+                            format: date-time
+                            type: string
+                          id:
+                            format: uuid
+                            type: string
+                          senderUserId:
+                            format: uuid
+                            type: string
+                          sequence:
+                            type: number
+                          text:
+                            type: string
+                        required:
+                          - id
+                          - conversationId
+                          - senderUserId
+                          - clientRequestId
+                          - sequence
+                          - text
+                          - createdAt
+                        type: object
+                    nullable: true
+                    type: object
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  unreadCount:
+                    type: number
+                required:
+                  - id
+                  - peer
+                  - lastMessage
+                  - lastCall
+                  - unreadCount
+                  - lastActivityAt
+                  - canInteract
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/direct-calls/{callId}:
+    get:
+      operationId: DirectController_call
+      parameters:
+        - in: path
+          name: callId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  acceptedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  calleeUserId:
+                    format: uuid
+                    type: string
+                  callerUserId:
+                    format: uuid
+                    type: string
+                  conversationId:
+                    format: uuid
+                    type: string
+                  endReason:
+                    nullable: true
+                    type: string
+                  endedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  expiresAt:
+                    format: date-time
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  sequence:
+                    type: number
+                  status:
+                    enum:
+                      - RINGING
+                      - ACTIVE
+                      - REJECTED
+                      - EXPIRED
+                      - ENDED
+                    type: string
+                required:
+                  - sequence
+                  - id
+                  - conversationId
+                  - callerUserId
+                  - calleeUserId
+                  - status
+                  - expiresAt
+                  - acceptedAt
+                  - endedAt
+                  - endReason
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/direct-calls/{callId}/accept:
+    post:
+      operationId: DirectController_accept
+      parameters:
+        - in: path
+          name: callId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                clientRequestId:
+                  format: uuid
+                  type: string
+              required:
+                - clientRequestId
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  acceptedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  calleeUserId:
+                    format: uuid
+                    type: string
+                  callerUserId:
+                    format: uuid
+                    type: string
+                  conversationId:
+                    format: uuid
+                    type: string
+                  endReason:
+                    nullable: true
+                    type: string
+                  endedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  expiresAt:
+                    format: date-time
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  sequence:
+                    type: number
+                  status:
+                    enum:
+                      - RINGING
+                      - ACTIVE
+                      - REJECTED
+                      - EXPIRED
+                      - ENDED
+                    type: string
+                required:
+                  - sequence
+                  - id
+                  - conversationId
+                  - callerUserId
+                  - calleeUserId
+                  - status
+                  - expiresAt
+                  - acceptedAt
+                  - endedAt
+                  - endReason
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/direct-calls/{callId}/credentials:
+    post:
+      operationId: DirectController_credentials
+      parameters:
+        - in: path
+          name: callId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  expiresAt:
+                    format: date-time
+                    type: string
+                  identity:
+                    type: string
+                  roomName:
+                    type: string
+                  token:
+                    type: string
+                  url:
+                    format: uri
+                    type: string
+                required:
+                  - url
+                  - token
+                  - expiresAt
+                  - identity
+                  - roomName
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/direct-calls/{callId}/end:
+    post:
+      operationId: DirectController_end
+      parameters:
+        - in: path
+          name: callId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                clientRequestId:
+                  format: uuid
+                  type: string
+              required:
+                - clientRequestId
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  acceptedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  calleeUserId:
+                    format: uuid
+                    type: string
+                  callerUserId:
+                    format: uuid
+                    type: string
+                  conversationId:
+                    format: uuid
+                    type: string
+                  endReason:
+                    nullable: true
+                    type: string
+                  endedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  expiresAt:
+                    format: date-time
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  sequence:
+                    type: number
+                  status:
+                    enum:
+                      - RINGING
+                      - ACTIVE
+                      - REJECTED
+                      - EXPIRED
+                      - ENDED
+                    type: string
+                required:
+                  - sequence
+                  - id
+                  - conversationId
+                  - callerUserId
+                  - calleeUserId
+                  - status
+                  - expiresAt
+                  - acceptedAt
+                  - endedAt
+                  - endReason
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/direct-calls/{callId}/heartbeat:
+    post:
+      operationId: DirectController_heartbeat
+      parameters:
+        - in: path
+          name: callId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  acceptedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  calleeUserId:
+                    format: uuid
+                    type: string
+                  callerUserId:
+                    format: uuid
+                    type: string
+                  conversationId:
+                    format: uuid
+                    type: string
+                  endReason:
+                    nullable: true
+                    type: string
+                  endedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  expiresAt:
+                    format: date-time
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  sequence:
+                    type: number
+                  status:
+                    enum:
+                      - RINGING
+                      - ACTIVE
+                      - REJECTED
+                      - EXPIRED
+                      - ENDED
+                    type: string
+                required:
+                  - sequence
+                  - id
+                  - conversationId
+                  - callerUserId
+                  - calleeUserId
+                  - status
+                  - expiresAt
+                  - acceptedAt
+                  - endedAt
+                  - endReason
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/direct-calls/{callId}/reject:
+    post:
+      operationId: DirectController_reject
+      parameters:
+        - in: path
+          name: callId
+          required: true
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                clientRequestId:
+                  format: uuid
+                  type: string
+              required:
+                - clientRequestId
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  acceptedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  calleeUserId:
+                    format: uuid
+                    type: string
+                  callerUserId:
+                    format: uuid
+                    type: string
+                  conversationId:
+                    format: uuid
+                    type: string
+                  endReason:
+                    nullable: true
+                    type: string
+                  endedAt:
+                    format: date-time
+                    nullable: true
+                    type: string
+                  expiresAt:
+                    format: date-time
+                    type: string
+                  id:
+                    format: uuid
+                    type: string
+                  peer:
+                    properties:
+                      avatarUrl:
+                        format: uri
+                        type: string
+                      cefrLevel:
+                        enum:
+                          - A1
+                          - A2
+                          - B1
+                          - B2
+                          - C1
+                          - C2
+                          - A1_A2
+                          - B1_B2
+                          - C1_C2
+                        type: string
+                      displayName:
+                        type: string
+                      userId:
+                        format: uuid
+                        type: string
+                    required:
+                      - userId
+                      - displayName
+                      - avatarUrl
+                      - cefrLevel
+                    type: object
+                  sequence:
+                    type: number
+                  status:
+                    enum:
+                      - RINGING
+                      - ACTIVE
+                      - REJECTED
+                      - EXPIRED
+                      - ENDED
+                    type: string
+                required:
+                  - sequence
+                  - id
+                  - conversationId
+                  - callerUserId
+                  - calleeUserId
+                  - status
+                  - expiresAt
+                  - acceptedAt
+                  - endedAt
+                  - endReason
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
   /v1/friend-requests:
     get:
       operationId: SocialController_requests
@@ -20276,6 +25207,717 @@ paths:
         - bearer: []
       tags:
         - me
+  /v1/me/avatar:
+    post:
+      operationId: AvatarController_upload
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                imageBase64:
+                  description: Base64 PNG bytes, without a data URL prefix
+                  maxLength: 349528
+                  type: string
+              required:
+                - imageBase64
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  avatarUrl:
+                    format: uri
+                    type: string
+                required:
+                  - avatarUrl
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - profiles
+  /v1/me/conversations:
+    get:
+      operationId: DirectController_list
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            maxLength: 500
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            default: 20
+            maximum: 50
+            minimum: 1
+            type: number
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  items:
+                    items:
+                      properties:
+                        canInteract:
+                          type: boolean
+                        id:
+                          format: uuid
+                          type: string
+                        lastActivityAt:
+                          format: date-time
+                          type: string
+                        lastCall:
+                          allOf:
+                            - properties:
+                                acceptedAt:
+                                  format: date-time
+                                  nullable: true
+                                  type: string
+                                calleeUserId:
+                                  format: uuid
+                                  type: string
+                                callerUserId:
+                                  format: uuid
+                                  type: string
+                                conversationId:
+                                  format: uuid
+                                  type: string
+                                endReason:
+                                  nullable: true
+                                  type: string
+                                endedAt:
+                                  format: date-time
+                                  nullable: true
+                                  type: string
+                                expiresAt:
+                                  format: date-time
+                                  type: string
+                                id:
+                                  format: uuid
+                                  type: string
+                                peer:
+                                  properties:
+                                    avatarUrl:
+                                      format: uri
+                                      type: string
+                                    cefrLevel:
+                                      enum:
+                                        - A1
+                                        - A2
+                                        - B1
+                                        - B2
+                                        - C1
+                                        - C2
+                                        - A1_A2
+                                        - B1_B2
+                                        - C1_C2
+                                      type: string
+                                    displayName:
+                                      type: string
+                                    userId:
+                                      format: uuid
+                                      type: string
+                                  required:
+                                    - userId
+                                    - displayName
+                                    - avatarUrl
+                                    - cefrLevel
+                                  type: object
+                                sequence:
+                                  type: number
+                                status:
+                                  enum:
+                                    - RINGING
+                                    - ACTIVE
+                                    - REJECTED
+                                    - EXPIRED
+                                    - ENDED
+                                  type: string
+                              required:
+                                - sequence
+                                - id
+                                - conversationId
+                                - callerUserId
+                                - calleeUserId
+                                - status
+                                - expiresAt
+                                - acceptedAt
+                                - endedAt
+                                - endReason
+                              type: object
+                          nullable: true
+                          type: object
+                        lastMessage:
+                          allOf:
+                            - properties:
+                                clientRequestId:
+                                  format: uuid
+                                  type: string
+                                conversationId:
+                                  format: uuid
+                                  type: string
+                                createdAt:
+                                  format: date-time
+                                  type: string
+                                id:
+                                  format: uuid
+                                  type: string
+                                senderUserId:
+                                  format: uuid
+                                  type: string
+                                sequence:
+                                  type: number
+                                text:
+                                  type: string
+                              required:
+                                - id
+                                - conversationId
+                                - senderUserId
+                                - clientRequestId
+                                - sequence
+                                - text
+                                - createdAt
+                              type: object
+                          nullable: true
+                          type: object
+                        peer:
+                          properties:
+                            avatarUrl:
+                              format: uri
+                              type: string
+                            cefrLevel:
+                              enum:
+                                - A1
+                                - A2
+                                - B1
+                                - B2
+                                - C1
+                                - C2
+                                - A1_A2
+                                - B1_B2
+                                - C1_C2
+                              type: string
+                            displayName:
+                              type: string
+                            userId:
+                              format: uuid
+                              type: string
+                          required:
+                            - userId
+                            - displayName
+                            - avatarUrl
+                            - cefrLevel
+                          type: object
+                        unreadCount:
+                          type: number
+                      required:
+                        - id
+                        - peer
+                        - lastMessage
+                        - lastCall
+                        - unreadCount
+                        - lastActivityAt
+                        - canInteract
+                      type: object
+                    type: array
+                  nextCursor:
+                    nullable: true
+                    type: string
+                required:
+                  - items
+                  - nextCursor
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
+  /v1/me/direct-calls:
+    get:
+      operationId: DirectController_calls
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  items:
+                    items:
+                      properties:
+                        acceptedAt:
+                          format: date-time
+                          nullable: true
+                          type: string
+                        calleeUserId:
+                          format: uuid
+                          type: string
+                        callerUserId:
+                          format: uuid
+                          type: string
+                        conversationId:
+                          format: uuid
+                          type: string
+                        endReason:
+                          nullable: true
+                          type: string
+                        endedAt:
+                          format: date-time
+                          nullable: true
+                          type: string
+                        expiresAt:
+                          format: date-time
+                          type: string
+                        id:
+                          format: uuid
+                          type: string
+                        peer:
+                          properties:
+                            avatarUrl:
+                              format: uri
+                              type: string
+                            cefrLevel:
+                              enum:
+                                - A1
+                                - A2
+                                - B1
+                                - B2
+                                - C1
+                                - C2
+                                - A1_A2
+                                - B1_B2
+                                - C1_C2
+                              type: string
+                            displayName:
+                              type: string
+                            userId:
+                              format: uuid
+                              type: string
+                          required:
+                            - userId
+                            - displayName
+                            - avatarUrl
+                            - cefrLevel
+                          type: object
+                        sequence:
+                          type: number
+                        status:
+                          enum:
+                            - RINGING
+                            - ACTIVE
+                            - REJECTED
+                            - EXPIRED
+                            - ENDED
+                          type: string
+                      required:
+                        - sequence
+                        - id
+                        - conversationId
+                        - callerUserId
+                        - calleeUserId
+                        - status
+                        - expiresAt
+                        - acceptedAt
+                        - endedAt
+                        - endReason
+                      type: object
+                    type: array
+                required:
+                  - items
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - direct-conversations
   /v1/me/friends:
     get:
       operationId: SocialController_friends
@@ -20319,6 +25961,9 @@ paths:
                                 - B2
                                 - C1
                                 - C2
+                                - A1_A2
+                                - B1_B2
+                                - C1_C2
                               type: string
                             city:
                               nullable: true
@@ -24283,6 +29928,9 @@ paths:
                             - B2
                             - C1
                             - C2
+                            - A1_A2
+                            - B1_B2
+                            - C1_C2
                           type: string
                         city:
                           nullable: true

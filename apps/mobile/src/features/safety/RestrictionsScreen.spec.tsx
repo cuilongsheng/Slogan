@@ -7,11 +7,14 @@ import { RestrictionsScreen } from './RestrictionsScreen';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn() }),
-  useFocusEffect: (callback: () => void) => jest.requireActual('react').useEffect(callback, [callback]),
+  useFocusEffect: (callback: () => void) =>
+    jest.requireActual('react').useEffect(callback, [callback]),
 }));
 jest.mock('../auth', () => ({ useAuth: jest.fn() }));
 jest.mock('./api', () => ({ ...jest.requireActual('./api'), MySafetyApi: jest.fn() }));
-jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => '3e20e9c3-8ca0-49fa-83ce-e7822f157091') }));
+jest.mock('expo-crypto', () => ({
+  randomUUID: jest.fn(() => '3e20e9c3-8ca0-49fa-83ce-e7822f157091'),
+}));
 
 const item = {
   id: 'restriction-1',
@@ -33,21 +36,30 @@ afterEach(() => jest.restoreAllMocks());
 
 test('keeps the same appeal request id when retrying unchanged content', async () => {
   const list = jest.fn(async () => ({ items: [item], nextCursor: null }));
-  const appeal = jest.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce({ status: 'PENDING' });
+  const appeal = jest
+    .fn()
+    .mockRejectedValueOnce(new Error('network'))
+    .mockResolvedValueOnce({ status: 'PENDING' });
   (MySafetyApi as jest.Mock).mockImplementation(() => ({ list, appeal }));
   const page = await render(<RestrictionsScreen />);
-  await waitFor(() => expect(page.getByRole('button', { name: 'Appeal this restriction' })).toBeTruthy());
+  await waitFor(() =>
+    expect(page.getByRole('button', { name: 'Appeal this restriction' })).toBeTruthy(),
+  );
   await fireEvent.press(page.getByRole('button', { name: 'Appeal this restriction' }));
   await fireEvent.changeText(page.getByLabelText('Appeal reason'), 'Please review');
   await fireEvent.press(page.getByRole('button', { name: 'Submit appeal' }));
-  await waitFor(() => expect(page.getByText('Could not submit the appeal. Try again.')).toBeTruthy());
+  await waitFor(() =>
+    expect(page.getByText('Could not submit the appeal. Try again.')).toBeTruthy(),
+  );
   await fireEvent.press(page.getByRole('button', { name: 'Submit appeal' }));
   await waitFor(() => expect(appeal).toHaveBeenCalledTimes(2));
   expect(appeal.mock.calls[1]).toEqual(appeal.mock.calls[0]);
 });
 
 test('shows an empty state without an appeal command', async () => {
-  (MySafetyApi as jest.Mock).mockImplementation(() => ({ list: jest.fn(async () => ({ items: [], nextCursor: null })) }));
+  (MySafetyApi as jest.Mock).mockImplementation(() => ({
+    list: jest.fn(async () => ({ items: [], nextCursor: null })),
+  }));
   const page = await render(<RestrictionsScreen />);
   await waitFor(() => expect(page.getByText('No restriction history')).toBeTruthy());
   expect(page.queryByRole('button', { name: 'Appeal this restriction' })).toBeNull();
@@ -55,10 +67,14 @@ test('shows an empty state without an appeal command', async () => {
 
 test('shows a closed window response and refreshes the server state', async () => {
   const list = jest.fn(async () => ({ items: [item], nextCursor: null }));
-  const appeal = jest.fn(async () => { throw new RoomApiError(409, 'SAFETY_APPEAL_CLOSED'); });
+  const appeal = jest.fn(async () => {
+    throw new RoomApiError(409, 'SAFETY_APPEAL_CLOSED');
+  });
   (MySafetyApi as jest.Mock).mockImplementation(() => ({ list, appeal }));
   const page = await render(<RestrictionsScreen />);
-  await waitFor(() => expect(page.getByRole('button', { name: 'Appeal this restriction' })).toBeTruthy());
+  await waitFor(() =>
+    expect(page.getByRole('button', { name: 'Appeal this restriction' })).toBeTruthy(),
+  );
   await fireEvent.press(page.getByRole('button', { name: 'Appeal this restriction' }));
   await fireEvent.changeText(page.getByLabelText('Appeal reason'), 'Please review');
   await fireEvent.press(page.getByRole('button', { name: 'Submit appeal' }));

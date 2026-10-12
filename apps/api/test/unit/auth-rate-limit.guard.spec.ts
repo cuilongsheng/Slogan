@@ -15,6 +15,7 @@ describe('AuthRateLimitGuard', () => {
     const request = {
       ip: '127.0.0.1',
       path: '/v1/auth/refresh',
+      headers: {},
       socket: { remoteAddress: '127.0.0.1' },
     };
     const context = {

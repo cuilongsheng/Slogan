@@ -7,20 +7,20 @@
 
 ## 2. Contract and persistence
 
-- [ ] 2.1 Define partner query, session/message, personal deletion, voice request/accept/reject/end and error response in unique `openapi/openapi.yaml`; run contract verification and check that each new demand scenario has corresponding interfaces.
-- [ ] 2.2 Adds forward-compatible Prisma migrations for sessions, messages, participant visible boundaries/read cursors, and call audit records; runs migrations and uniqueness/index validation.
-- [ ] 2.3 Implement session query, history paging, stable order and unilateral deletion boundary filtered by the current user; use dual accounts and cross-login integration testing to verify that the other party's history is not affected.
+- [x] 2.1 Define partner query, session/message, personal deletion, voice request/accept/reject/end and error response in unique `openapi/openapi.yaml`; run contract verification and check that each new demand scenario has corresponding interfaces.
+- [x] 2.2 Adds forward-compatible Prisma migrations for sessions, messages, participant visible boundaries/read cursors, and call audit records; runs migrations and uniqueness/index validation.
+- [x] 2.3 Implement session query, history paging, stable order and unilateral deletion boundary filtered by the current user; use dual accounts and cross-login integration testing to verify that the other party's history is not affected.
 
 ## 3. Social and text messaging
 
-- [ ] 3.1 Implement the availability, privacy, blocking filtering and paging of partner query; use the qualification invalidation and two-way blocking interface to test and verify.
-- [ ] 3.2 Connect to the existing room host room invitation portal and re-verify the identity and target during operation; use room host success, non-room host rejection and capacity boundary test verification.
+- [x] 3.1 Implement the availability, privacy, blocking filtering and paging of partner query; use the qualification invalidation and two-way blocking interface to test and verify.
+- [x] 3.2 Connect to the existing room host room invitation portal and re-verify the identity and target during operation; use room host success, non-room host rejection and capacity boundary test verification.
 - [ ] 3.3 Implement bilateral qualification review, idempotent, text verification, unread and reconnect completion of text sending; use concurrent retry and cross-device history test verification.
-- [ ] 3.4 implements speed limit for unfamiliar messages, message reporting and prohibition of new interactions after blocking; test and verify with server override, speed limit and security cases.
+- [x] 3.4 implements speed limit for unfamiliar messages, message reporting and prohibition of new interactions after blocking; test and verify with server override, speed limit and security cases.
 
 ## 4. Single voice chat
 
-- [ ] 4.1 Implement independent DirectCall request/accept/reject/timeout status and mutual exclusion occupancy; use concurrent requests, busy and expired to accept testing and verification.
+- [x] 4.1 Implement independent DirectCall request/accept/reject/timeout status and mutual exclusion occupancy; use concurrent requests, busy and expired to accept testing and verification.
 - [ ] 4.2 Access exclusive real-time media sessions for both parties, only issue credentials after valid acceptance, and clean up when ending/blocking/losing contact; test and verify with third-party rejection, pre-acceptance without credentials, and real media environment.
 - [ ] 4.3 implements minimal call event and disconnection recovery feedback, without writing recording or transcription; verified by session history check and disconnection device testing.
 
@@ -30,3 +30,7 @@
 - [ ] 5.2 implements message list, friend entry, text history, sent/unread, personal deletion, blocking and reporting feedback; cross-login and dual-account path verification using real devices.
 - [ ] 5.3 implements voice request, callee acceptance/rejection, call in progress, busy/timeout and end status; authenticated with dual-device real media path.
 - [ ] 5.4 Run contract, migration, permission, concurrency, mobile and end-to-end tests of the affected scope, and record visual, operational, equipment, release rollback evidence; check that all scenarios of the four delta specs have acceptance results.
+
+## Consolidated evidence (2026-10-11)
+
+API contract, migration, permission, concurrency, idempotency, private-history, call occupancy and local media lifecycle checks passed. Seventeen high-fidelity states and runtime component comparisons are linked in `docs/acceptance/phase-one-completion/README.md`; original prototype 112:1101 and foundation/component targets are recorded in `docs/design/phase-one-completion.md`. Tasks containing real-provider or dual-device acceptance remain open. Reading persisted history in two API identities is verified; it is not a claim of physical cross-device acceptance. Main specifications are synchronized, while this change remains active until remaining acceptance is complete.

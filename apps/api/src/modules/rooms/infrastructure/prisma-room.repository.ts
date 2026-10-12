@@ -91,6 +91,11 @@ export class PrismaRoomRepository implements RoomRepository {
 
   async createWithHost(input: CreateRoomRepositoryInput): Promise<RoomDetail> {
     return this.prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw(
+        Prisma.sql`SELECT "id" FROM "User" WHERE "id"=${input.hostUserId}::uuid FOR UPDATE`,
+      );
+      if (await transaction.directCallOccupancy.count({ where: { userId: input.hostUserId } }))
+        throw new RoomError('ROOM_VOICE_BUSY', 'End the current call before creating a room');
       const current = await databaseNow(transaction);
       const account = await transaction.user.findUnique({
         where: { id: input.hostUserId },
@@ -418,6 +423,9 @@ export class PrismaRoomRepository implements RoomRepository {
           Prisma.sql`SELECT "id" FROM "Room" WHERE "id" = ${roomId}::uuid FOR UPDATE`,
         );
         if (lockedRows.length === 0) return null;
+        await transaction.$queryRaw(
+          Prisma.sql`SELECT "id" FROM "User" WHERE "id"=${userId}::uuid FOR UPDATE`,
+        );
 
         const context = await loadLockedRealtimeRoom(
           transaction,
@@ -494,6 +502,8 @@ export class PrismaRoomRepository implements RoomRepository {
             });
           },
           createMembership: async (input) => {
+            if (await transaction.directCallOccupancy.count({ where: { userId: input.userId } }))
+              throw new RoomError('ROOM_VOICE_BUSY', 'End the current call before joining a room');
             const membership = await transaction.roomMembership.upsert({
               where: { roomId_userId: { roomId, userId: input.userId } },
               update: {

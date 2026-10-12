@@ -18,7 +18,7 @@ import {
 import { RoomAction, RoomHeader, RoomPage, roomPageStyles } from '../../components/ui/RoomPage';
 import { RoomShareAction } from '../../components/ui/RoomShareAction';
 import { VoicePage } from '../../components/ui/VoicePage';
-import { getLanguage, t, tf } from '../../services/locale';
+import { getLanguage, t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { RoomDiscoveryApi } from '../room-discovery/api';
@@ -928,6 +928,7 @@ export function VoiceRoomScreen({
   roomId: string;
   invitationId?: string;
 }) {
+  useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
   const { draft, clear } = useJoinDraft();

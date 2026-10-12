@@ -10,16 +10,13 @@ import {
 } from 'react-native';
 
 import { AppText as Text } from '../../components/ui/AppText';
+import { BottomNavigation } from '../../components/ui/BottomNavigation';
 import { RoomPage } from '../../components/ui/RoomPage';
 import { useAuth } from '../auth';
-import { t, tf } from '../../services/locale';
+import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import addIcon from '../../../assets/icons/room-discovery/add.png';
 import speechBurstIcon from '../../../assets/icons/room-discovery/speech-burst.png';
-import discoverIcon from '../../../assets/icons/room-discovery/discover.png';
-import partnersIcon from '../../../assets/icons/room-discovery/partners.png';
-import messagesIcon from '../../../assets/icons/room-discovery/messages.png';
-import profileIcon from '../../../assets/icons/room-discovery/profile.png';
 import { RoomDiscoveryApi, RoomListPager, type RoomSummary } from './api';
 import { RoomCard } from './RoomCard';
 import { useJoinDraft } from './join';
@@ -27,6 +24,7 @@ import { useJoinDraft } from './join';
 const colors = tokens.discovery.color;
 
 export function RoomListScreen() {
+  useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
   const { beginDirect } = useJoinDraft();
@@ -157,30 +155,7 @@ export function RoomListScreen() {
           }
         />
       )}
-      <View style={styles.nav}>
-        <View style={styles.navItem}>
-          <View style={styles.navHalo} />
-          <Image source={discoverIcon} style={styles.navIcon} />
-          <Text style={styles.navText}>{t('navDiscover')}</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Image source={partnersIcon} style={styles.navIcon} />
-          <Text style={styles.navInactive}>{t('navPartners')}</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Image source={messagesIcon} style={styles.navIcon} />
-          <Text style={styles.navInactive}>{t('navMessages')}</Text>
-        </View>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={t('navProfile')}
-          style={styles.navItem}
-          onPress={() => router.push('/me')}
-        >
-          <Image source={profileIcon} style={styles.navIcon} />
-          <Text style={styles.navInactive}>{t('navProfile')}</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNavigation active={0} />
     </RoomPage>
   );
 }

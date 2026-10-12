@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 
 import { AuthPage, FormField, PrimaryButton, StepHeader } from '../../components/ui/AuthPage';
-import { t } from '../../services/locale';
+import { selectAvatar } from './avatar';
+import { t, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth/context';
 import { onboardingRoute } from '../auth/routes';
@@ -69,8 +70,11 @@ function Choice({
 }
 
 export function BasicProfileScreen() {
+  useLanguage();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, authorized, state } = useAuth();
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const { draft, setDraft, serverErrors = {}, setServerErrors } = useProfileDraft();
   const [submitted, setSubmitted] = useState(false);
   const errors = { ...serverErrors, ...(submitted ? validateBasic(draft) : {}) };
@@ -118,10 +122,26 @@ export function BasicProfileScreen() {
         description={t('profileDescription')}
         step={1}
         onBack={() => {
-          void logout();
+          if (state.kind === 'signedIn' && state.me.profile) router.back();
+          else void logout();
         }}
       />
-      <View style={styles.avatarRow}>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={t('changeAvatar')}
+        disabled={avatarBusy}
+        style={styles.avatarRow}
+        onPress={() => {
+          setAvatarBusy(true);
+          setAvatarError(false);
+          void selectAvatar(authorized)
+            .then((url) => {
+              if (url) update('avatarUrl', url);
+            })
+            .catch(() => setAvatarError(true))
+            .finally(() => setAvatarBusy(false));
+        }}
+      >
         <View style={styles.avatar}>
           {validAvatarUrl(draft.avatarUrl) ? (
             <Image source={{ uri: draft.avatarUrl }} style={styles.avatarImage} />
@@ -132,10 +152,15 @@ export function BasicProfileScreen() {
         <View style={styles.avatarText}>
           <Text style={styles.avatarTitle}>{t('addAvatar')}</Text>
           <Text style={styles.avatarHelper}>
-            {validAvatarUrl(draft.avatarUrl) ? t('avatarUnavailable') : t('avatarHelper')}
+            {t(avatarBusy ? 'avatarUploading' : 'avatarHelper')}
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
+      {avatarError && (
+        <Text accessibilityRole="alert" style={styles.notice}>
+          {t('avatarUploadFailed')}
+        </Text>
+      )}
       {!validAvatarUrl(draft.avatarUrl) && <Text style={styles.notice}>{t('avatarMissing')}</Text>}
       <FormField
         label={`${t('displayName')} · ${t('requiredField')}`}
@@ -248,9 +273,10 @@ export function BasicProfileScreen() {
 }
 
 export function PreferencesScreen() {
+  useLanguage();
   const router = useRouter();
   const { draft, setDraft, serverErrors = {}, setServerErrors } = useProfileDraft();
-  const { putProfile } = useAuth();
+  const { putProfile, state } = useAuth();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -283,7 +309,11 @@ export function PreferencesScreen() {
     setSaving(true);
     try {
       const me = await putProfile(body);
-      router.replace(onboardingRoute(me.onboardingState));
+      router.replace(
+        state.kind === 'signedIn' && state.me.profile && me.onboardingState === 'ELIGIBLE'
+          ? '/me'
+          : onboardingRoute(me.onboardingState),
+      );
     } catch (failure) {
       const fields = failure instanceof SessionError ? profileServerErrors(failure.violations) : {};
       setServerErrors?.(fields);

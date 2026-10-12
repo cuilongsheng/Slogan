@@ -5,7 +5,13 @@ import { formatTime, shortId } from '../../utils/format';
 import { DataTable, Notice, PageHeading, StatusPill } from '../../components/PageParts';
 import { DetailDrawer } from '../../components/DetailDrawer';
 import { useCursorPage } from '../../hooks/useCursorPage';
-import { auditActionLabel, auditTargetLabel, backofficeRoleLabel, statusLabel, zhCN } from '../../i18n/zh-CN';
+import {
+  auditActionLabel,
+  auditTargetLabel,
+  backofficeRoleLabel,
+  statusLabel,
+  zhCN,
+} from '../../i18n/zh-CN';
 
 type AuditPageData =
   SloganApiPaths['/v1/backoffice/audit-events']['get']['responses'][200]['content']['application/json'];
@@ -22,7 +28,9 @@ export function AuditPage() {
         query: {
           limit: 20,
           ...(result ? { result } : {}),
-          ...(range ? { from: new Date(Date.now() - (range === '7d' ? 7 : 30) * 86400000).toISOString() } : {}),
+          ...(range
+            ? { from: new Date(Date.now() - (range === '7d' ? 7 : 30) * 86400000).toISOString() }
+            : {}),
           ...(cursor ? { cursor } : {}),
         },
       },
@@ -46,25 +54,34 @@ export function AuditPage() {
         canNext={page.canNext}
         onPrevious={page.previous}
         onNext={page.next}
-        filters={<>
-          <select
-            aria-label="审计结果"
-            value={result}
-            onChange={(event) => {
-              setResult(event.target.value as AuditResult | '');
-              page.reset();
-            }}
-          >
-            <option value="">全部结果</option>
-            <option value="SUCCEEDED">成功</option>
-            <option value="REJECTED">拒绝</option>
-          </select>
-          <select aria-label="审计时间" value={range} onChange={(event) => { setRange(event.target.value as typeof range); page.reset(); }}>
-            <option value="">全部时间</option>
-            <option value="7d">最近 7 天</option>
-            <option value="30d">最近 30 天</option>
-          </select>
-        </>}
+        filters={
+          <>
+            <select
+              aria-label="审计结果"
+              value={result}
+              onChange={(event) => {
+                setResult(event.target.value as AuditResult | '');
+                page.reset();
+              }}
+            >
+              <option value="">全部结果</option>
+              <option value="SUCCEEDED">成功</option>
+              <option value="REJECTED">拒绝</option>
+            </select>
+            <select
+              aria-label="审计时间"
+              value={range}
+              onChange={(event) => {
+                setRange(event.target.value as typeof range);
+                page.reset();
+              }}
+            >
+              <option value="">全部时间</option>
+              <option value="7d">最近 7 天</option>
+              <option value="30d">最近 30 天</option>
+            </select>
+          </>
+        }
         columns={[
           { key: 'at', label: '发生时间', render: (row) => formatTime(row.occurredAt) },
           { key: 'action', label: '动作', render: (row) => auditActionLabel(row.action) },
@@ -74,7 +91,11 @@ export function AuditPage() {
             render: (row) =>
               row.actorType === 'USER' ? shortId(row.actorUserId as string | null) : row.actorType,
           },
-          { key: 'roles', label: '角色快照', render: (row) => row.actorRoles.map(backofficeRoleLabel).join('、') || '—' },
+          {
+            key: 'roles',
+            label: '角色快照',
+            render: (row) => row.actorRoles.map(backofficeRoleLabel).join('、') || '—',
+          },
           {
             key: 'target',
             label: '目标',

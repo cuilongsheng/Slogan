@@ -13,11 +13,15 @@ const send = jest.fn(async () => ({ messageId: 'fixture-message' }));
 const { RealtimeQueue } = await import('../../src/infrastructure/redis/realtime-queue.service.js');
 
 const previous = process.env.VERCEL;
+const previousEnvironment = process.env.VERCEL_ENV;
 beforeEach(() => {
   process.env.VERCEL = '1';
+  process.env.VERCEL_ENV = 'production';
   send.mockClear();
 });
 afterAll(() => {
+  if (previousEnvironment === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = previousEnvironment;
   if (previous === undefined) delete process.env.VERCEL;
   else process.env.VERCEL = previous;
 });

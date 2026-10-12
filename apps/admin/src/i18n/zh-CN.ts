@@ -1,5 +1,10 @@
 export const zhCN = {
   app: 'Slogan',
+  privateEvidence: {
+    context: '私聊',
+    title: '被举报的私聊消息',
+    sender: '发送者',
+  },
   console: '管理后台',
   groups: { business: '业务管理', safety: '安全中心', governance: '权限与审计' },
   pages: {

@@ -310,7 +310,7 @@ export class PrismaSafetyRepository implements SafetyRepository {
       const row = await tx.safetyCase.findUnique({
         where: { id: caseId },
         include: {
-          report: true,
+          report: { include: { directMessage: true } },
           room: { select: { sensitiveSpeechDetectionEnabled: true } },
           participants: { orderBy: [{ joinedAt: 'asc' }, { userId: 'asc' }], take: 100 },
           activities: { orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }], take: 100 },
@@ -324,7 +324,7 @@ export class PrismaSafetyRepository implements SafetyRepository {
       const [events, relatedReports, relatedCases, restrictions, speechRisks, speechIncidents] =
         await Promise.all([
           tx.roomEvent.findMany({
-            where: { roomId: row.roomId },
+            where: row.roomId ? { roomId: row.roomId } : { id: { in: [] } },
             orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
             take: 101,
             select: {
@@ -372,7 +372,7 @@ export class PrismaSafetyRepository implements SafetyRepository {
           }),
           tx.roomSpeechRiskEvent.findMany({
             where: {
-              roomId: row.roomId,
+              ...(row.roomId ? { roomId: row.roomId } : { id: { in: [] } }),
               subjectUserId: row.targetUserId,
               lastOccurredAt: { gte: signalFrom, lte: signalTo },
             },
@@ -391,7 +391,7 @@ export class PrismaSafetyRepository implements SafetyRepository {
           }),
           tx.safetyCapabilityIncident.findMany({
             where: {
-              roomId: row.roomId,
+              ...(row.roomId ? { roomId: row.roomId } : { id: { in: [] } }),
               startedAt: { lte: signalTo },
               OR: [{ recoveredAt: null }, { recoveredAt: { gte: signalFrom } }],
             },
@@ -431,6 +431,15 @@ export class PrismaSafetyRepository implements SafetyRepository {
           targetUserId: row.report.targetUserId,
           category: row.report.category,
           description: row.report.description,
+          directMessage: row.report.directMessage
+            ? {
+                id: row.report.directMessage.id,
+                conversationId: row.report.directMessage.conversationId,
+                senderUserId: row.report.directMessage.senderUserId,
+                text: row.report.directMessage.text,
+                createdAt: row.report.directMessage.createdAt.toISOString(),
+              }
+            : null,
           submittedAt: row.report.submittedAt.toISOString(),
         },
         participants: row.participants.map((item) => ({
@@ -460,7 +469,7 @@ export class PrismaSafetyRepository implements SafetyRepository {
           })),
         ),
         speechSignals: {
-          availability: !row.room.sensitiveSpeechDetectionEnabled
+          availability: !row.room?.sensitiveSpeechDetectionEnabled
             ? 'NOT_ENABLED'
             : speechIncidents.length > 0
               ? 'DEGRADED'

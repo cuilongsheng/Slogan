@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 const fidelityDir = 'docs/acceptance/voice-room-four-column-fidelity';
 test.use({ deviceScaleFactor: 3 });
 
-test('real voice component sends text and renders hold/release English using explicit adapters', async ({
+test('real voice component sends text, keeps assistance disabled, and closes sheets locally', async ({
   page,
 }) => {
   await page.clock.setFixedTime(new Date('2026-09-28T09:00:00Z'));
@@ -74,24 +74,15 @@ test('real voice component sends text and renders hold/release English using exp
   await page.getByRole('button', { name: '发送消息' }).click();
   await expect(page.getByText('Hello room', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '用母语找英文表达 · 仅自己可见' }).click();
-  await expect(page.getByRole('button', { name: '按着开始说' })).toBeVisible();
-  await page.screenshot({
-    path: 'docs/acceptance/voice-room-four-column-fidelity/translation-hold-runtime-component-fixture.png',
-  });
-  const mic = page.getByRole('button', { name: '按着开始说' });
-  await mic.hover();
-  await page.mouse.down();
-  await expect(page.getByText('00:00 / 00:10')).toBeVisible();
+  await expect(page.getByRole('button', { name: '同意并继续' })).toBeDisabled();
+  await expect(page.getByText('功能开发中', { exact: true })).toBeVisible();
   expect(audioSubmitted).toBe(false);
-  await page.mouse.up();
-  await expect(
-    page.getByText('I missed the train, but the detour led me to a great café.'),
-  ).toBeVisible();
   await page.screenshot({
-    path: 'docs/acceptance/voice-room-four-column-fidelity/translation-result-runtime-component-fixture.png',
+    path: `${fidelityDir}/translation-disabled-runtime-component-fixture.png`,
   });
-  expect(audioSubmitted).toBe(true);
   await page.getByRole('button', { name: '关闭' }).click();
+  await expect(page.getByRole('button', { name: '打开麦克风' })).toBeVisible();
+  await expect(page).toHaveURL('/?role=host');
   await page.goto('/?role=host');
   await expect(page.getByText('聊聊旅行中的意外收获')).toBeVisible();
   await page.getByRole('button', { name: '退出房间', exact: true }).click();
@@ -113,8 +104,8 @@ test('real voice component sends text and renders hold/release English using exp
   await page.screenshot({
     path: 'docs/acceptance/voice-room-four-column-fidelity/translation-consent-runtime-component-fixture.png',
   });
-  await page.getByRole('button', { name: '同意并继续' }).click();
-  await expect(page.getByRole('button', { name: '按着开始说' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '同意并继续' })).toBeDisabled();
+  expect(audioSubmitted).toBe(false);
   expect(errors).toEqual([]);
 });
 

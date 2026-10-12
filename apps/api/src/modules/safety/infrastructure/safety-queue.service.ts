@@ -2,6 +2,7 @@ import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
+import { QueueClient } from '@vercel/queue';
 import type { Environment } from '../../../config/environment.js';
 import { StructuredLogger } from '../../../infrastructure/observability/structured-logger.service.js';
 
@@ -23,6 +24,7 @@ export class SafetyQueue implements OnModuleDestroy {
   ) {}
 
   async start(handler: (job: SafetyJob) => Promise<void>) {
+    if (process.env.VERCEL === '1') return;
     const url = this.config.get('REDIS_URL', { infer: true });
     if (!url) return;
     this.producer = new Redis(url, {
@@ -46,6 +48,22 @@ export class SafetyQueue implements OnModuleDestroy {
   }
 
   async enqueue(job: SafetyJob, runAt = new Date()) {
+    if (process.env.VERCEL === '1') {
+      if (process.env.VERCEL_ENV !== 'production') return;
+      await new QueueClient().send(
+        'slogan-maintenance',
+        { kind: 'maintenance' },
+        {
+          delaySeconds: Math.max(
+            0,
+            Math.min(604799, Math.ceil((runAt.getTime() - Date.now()) / 1000)),
+          ),
+          retentionSeconds: 604800,
+          idempotencyKey: `safety-${job.kind}-${job.id}-${runAt.getTime()}`,
+        },
+      );
+      return;
+    }
     if (!this.queue) return;
     const jobId = `${job.kind}-${job.id}-${runAt.getTime()}`;
     const existing = await this.queue.getJob(jobId);

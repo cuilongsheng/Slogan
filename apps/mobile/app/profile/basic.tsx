@@ -3,7 +3,7 @@ import { BasicProfileScreen } from '../../src/features/profile/ProfileScreens';
 
 export default function BasicProfileRoute() {
   return (
-    <Gate allow="PROFILE_REQUIRED">
+    <Gate allow={['PROFILE_REQUIRED', 'ELIGIBLE']}>
       <BasicProfileScreen />
     </Gate>
   );

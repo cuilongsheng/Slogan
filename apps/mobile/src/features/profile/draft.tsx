@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { defaultAvatarUrl } from './avatar';
 import { useAuth } from '../auth/context';
 import type { MessageKey } from '../../services/locale';
 import { validAvatarUrl, type ProfileInput } from '../auth/session';
@@ -48,9 +49,21 @@ export function ProfileDraftProvider({ children }: { children: React.ReactNode }
     setServerErrors({});
     setDraft({
       ...emptyDraft,
-      displayName: suggestedProfile?.displayName ?? '',
+      ...(state.kind === 'signedIn' && state.me.profile
+        ? {
+            avatarUrl: state.me.profile.avatarUrl,
+            displayName: state.me.profile.displayName,
+            genderCode: state.me.profile.genderCode ?? '',
+            city: state.me.profile.city ?? '',
+            adultConfirmed: state.me.onboardingState === 'ELIGIBLE',
+            birthYear: state.me.profile.birthYear?.toString() ?? '',
+            birthMonth: state.me.profile.birthMonth?.toString() ?? '',
+            interestCodes: state.me.profile.interestCodes,
+            cefrLevel: state.me.profile.cefrLevel,
+          }
+        : { displayName: suggestedProfile?.displayName ?? '' }),
     });
-  }, [owner, suggestedProfile]);
+  }, [owner, suggestedProfile, state]);
   const draft = useMemo(
     () => ({
       ...manualDraft,
@@ -58,7 +71,7 @@ export function ProfileDraftProvider({ children }: { children: React.ReactNode }
         ? manualDraft.avatarUrl
         : validAvatarUrl(suggestedProfile?.avatarUrl)
           ? suggestedProfile.avatarUrl
-          : '',
+          : defaultAvatarUrl(),
     }),
     [manualDraft, suggestedProfile],
   );

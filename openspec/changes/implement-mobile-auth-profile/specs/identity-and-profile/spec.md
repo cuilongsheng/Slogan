@@ -31,17 +31,22 @@ The system MUST support users to log in through WeChat or Google accounts; creat
 
 ### Requirement: First data initialization
 
-The system MUST require users who log in for the first time to fill in their avatar, name, gender, nationality or city, interests and hobbies, CEFR English level range and date of birth; they are not allowed to browse, create or join rooms without completing the information. Newly submitted data MUST support the three level ranges A1–A2, B1–B2, and C1–C2; historical single-level data MUST remain readable.
+The system MUST require first-time users to provide a valid avatar, display name, at least one interest, and a CEFR English level before browsing, creating, or joining rooms. Gender, nationality/city, and birth year/month MUST be optional. An omitted optional value MUST NOT cause a required-field error or be replaced with fabricated personal data. If birth information is supplied, both year and month MUST be supplied together and validated. New users MUST explicitly confirm that they are at least 18 years old before completing initialization; the confirmation MUST NOT be preselected.
 
 #### Scenario: Data not completed
 
-- **WHEN** The logged in user has not completed the required information.
-- **THEN** The system only allows him to continue to complete the information and does not allow him to enter the room business.
+- **WHEN** a logged-in user has not completed the required information or adult confirmation
+- **THEN** the system allows continued profile completion and does not allow room operations, with a specific explanation of the missing requirement
 
 #### Scenario: Data completed
 
-- **WHEN** All required information submitted by the user passes verification, and CEFR is a supported level range
-- **THEN** The system marks this as profile complete and allows qualifying room operations to proceed
+- **WHEN** the required information and adult confirmation are valid and all three optional details are omitted
+- **THEN** the system completes the profile without requiring gender, location, or a birth date and applies the adult access boundary
+
+#### Scenario: Optional details supplied
+
+- **WHEN** the user supplies optional personal details
+- **THEN** the system validates and saves those values without silently inventing or altering personal information
 
 #### Scenario: Historical single-level data
 

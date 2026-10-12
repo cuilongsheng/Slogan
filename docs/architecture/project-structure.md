@@ -4,7 +4,7 @@
 
 This project uses `pnpm` monorepo, front-end feature-first and NestJS modular monolith. This article defines the target directory and responsibilities; the mandatory dependency rules are still based on `AGENTS.md` and `rules/*.md`.
 
-Currently only the directory and `.gitkeep` are created. The existence of a directory does not mean that the corresponding functions, dependencies, APIs or runtimes have been implemented.
+The directory tree describes ownership. Implemented modules and their acceptance evidence are recorded separately; a directory alone does not establish runtime availability.
 
 ## Repository
 
@@ -248,7 +248,15 @@ Reliance on React, React Native, NestJS, Prisma, LiveKit, DOM, Node-only runtime
 
 ## Skeleton Rule
 
-- This time, all empty directories are reserved as `.gitkeep`, and no empty classes, placeholder components, fake APIs or package manifests are created.
+- Empty directories may use `.gitkeep`; do not create placeholder classes, components, fake production APIs, or unused package manifests.
 - Delete the corresponding `.gitkeep` after the real file enters the directory.
 - If the implementation determines that a layer has no responsibilities, it should delete the empty layer through the corresponding change and maintain the directory appearance without meaningless code.
 - Directory skeletons are not evidence of implemented capability, successful compilation, or deployability.
+
+## Phase-one completion ownership
+
+- API `modules/direct` owns participant-only conversations, idempotent messages, personal visibility and read boundaries, direct message reporting, and exclusive two-party calls. It uses public social/room/voice boundaries; PostgreSQL owns occupancy and cleanup generations.
+- API `modules/maintenance` coordinates enabled safety, operations, realtime and direct-call recovery. Managed delivery and database fencing belong in infrastructure; it does not run continuous audio providers.
+- API `modules/profiles` owns normalized bounded PNG avatar storage and replacement. Public avatar IDs never grant profile mutation rights.
+- Mobile `features/direct` owns partner discovery, recent/friend conversations, chat and call states; route files remain composition only. `BottomNavigation` connects the four destinations.
+- `scripts/release` and protected GitHub workflows own verification, encrypted recovery, controlled migrations, API promotion and matching APK publication. See the guarded release runbook for configuration and acceptance boundaries.

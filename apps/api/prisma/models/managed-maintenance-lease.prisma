@@ -1,0 +1,9 @@
+model ManagedMaintenanceLease {
+  key String @id @db.VarChar(64)
+  scanCursor String? @db.Uuid
+  generation Int @default(0)
+  leaseId String? @db.Uuid
+  lockedUntil DateTime? @db.Timestamptz(3)
+  lastCompletedAt DateTime? @db.Timestamptz(3)
+  lastSucceededAt DateTime? @db.Timestamptz(3)
+}

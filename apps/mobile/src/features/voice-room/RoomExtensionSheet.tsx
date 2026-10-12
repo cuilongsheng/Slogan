@@ -67,8 +67,17 @@ export function RoomExtensionSheet({
             </TouchableOpacity>
           ))}
         </View>
-        {error && <Text accessibilityRole="alert" style={styles.error}>{t('roomExtendFailed')}</Text>}
-        <TouchableOpacity accessibilityRole="button" disabled={busy} style={styles.primary} onPress={() => void submit()}>
+        {error && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {t('roomExtendFailed')}
+          </Text>
+        )}
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={busy}
+          style={styles.primary}
+          onPress={() => void submit()}
+        >
           <Text style={styles.primaryText}>{t('roomExtendSubmit')}</Text>
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button" disabled={busy} onPress={onClose}>
@@ -80,16 +89,50 @@ export function RoomExtensionSheet({
 }
 
 const styles = StyleSheet.create({
-  overlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#0008', justifyContent: 'flex-end', zIndex: 21 },
-  sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: tokens.color.surface, paddingHorizontal: 20, paddingTop: 30, paddingBottom: 50 },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: '#0008',
+    justifyContent: 'flex-end',
+    zIndex: 21,
+  },
+  sheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    backgroundColor: tokens.color.surface,
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 50,
+  },
   title: { color: tokens.color.foreground, fontSize: 21, fontWeight: '700' },
   body: { color: tokens.color.muted, fontSize: 13, marginTop: 17, marginBottom: 24 },
   options: { gap: 8, marginBottom: 24 },
-  option: { minHeight: 43, borderRadius: 16, backgroundColor: '#EEE9F7', justifyContent: 'center', paddingHorizontal: 14 },
+  option: {
+    minHeight: 43,
+    borderRadius: 16,
+    backgroundColor: '#EEE9F7',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
   selected: { borderWidth: 2, borderColor: tokens.color.purple },
   optionText: { color: tokens.color.foreground, fontSize: 13 },
   error: { color: '#C6384A', marginBottom: 12 },
-  primary: { minHeight: 54, borderRadius: 14, backgroundColor: tokens.color.purple, alignItems: 'center', justifyContent: 'center' },
+  primary: {
+    minHeight: 54,
+    borderRadius: 14,
+    backgroundColor: tokens.color.purple,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   primaryText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  cancel: { color: tokens.color.purple, fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 22 },
+  cancel: {
+    color: tokens.color.purple,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 22,
+  },
 });

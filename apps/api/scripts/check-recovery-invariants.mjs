@@ -4,6 +4,26 @@ if (!process.env.RESTORE_DATABASE_URL) throw new Error('RESTORE_DATABASE_URL_REQ
 const pool = new Pool({ connectionString: process.env.RESTORE_DATABASE_URL, max: 1 });
 const checks = [
   [
+    'failed_migrations',
+    `SELECT COUNT(*)::int AS count FROM "_prisma_migrations" WHERE "finished_at" IS NULL AND "rolled_back_at" IS NULL`,
+  ],
+  [
+    'direct_ownership',
+    `SELECT COUNT(*)::int AS count FROM (
+    SELECT m.id FROM "DirectMessage" m LEFT JOIN "DirectConversation" c ON c.id=m."conversationId" WHERE c.id IS NULL OR m."senderUserId" NOT IN (c."userLowId",c."userHighId")
+    UNION ALL SELECT c.id FROM "DirectCall" c JOIN "DirectConversation" p ON p.id=c."conversationId" WHERE c."callerUserId"=c."calleeUserId" OR c."callerUserId" NOT IN (p."userLowId",p."userHighId") OR c."calleeUserId" NOT IN (p."userLowId",p."userHighId")
+    UNION ALL SELECT p."conversationId" FROM "DirectConversationMember" p JOIN "DirectConversation" c ON c.id=p."conversationId" WHERE p."userId" NOT IN (c."userLowId",c."userHighId") OR p."hiddenThrough">p."readThrough" OR p."readThrough">=c."nextSequence"
+  ) invalid`,
+  ],
+  [
+    'voice_occupancy',
+    `SELECT COUNT(*)::int AS count FROM (
+    SELECT o."callId" FROM "DirectCallOccupancy" o JOIN "DirectCall" c ON c.id=o."callId" WHERE c.status NOT IN ('RINGING','ACTIVE') OR o."userId" NOT IN (c."callerUserId",c."calleeUserId")
+    UNION ALL SELECT c.id FROM "DirectCall" c WHERE c.status IN ('RINGING','ACTIVE') AND (SELECT COUNT(*) FROM "DirectCallOccupancy" o WHERE o."callId"=c.id)<>2
+    UNION ALL SELECT o."callId" FROM "DirectCallOccupancy" o JOIN "RoomMembership" m ON m."userId"=o."userId" JOIN "Room" r ON r.id=m."roomId" WHERE m.lifecycle='ACTIVE' AND r.status IN ('OPEN','ENDING')
+  ) invalid`,
+  ],
+  [
     'migrations',
     `SELECT COUNT(*)::int AS count FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL`,
   ],
@@ -29,7 +49,7 @@ const checks = [
   [
     'safety',
     `SELECT COUNT(*)::int AS count FROM (
-      SELECT c.id FROM "SafetyCase" c LEFT JOIN "Report" r ON r.id=c."reportId" LEFT JOIN "Room" room ON room.id=c."roomId" LEFT JOIN "User" u ON u.id=c."targetUserId" WHERE r.id IS NULL OR room.id IS NULL OR u.id IS NULL
+      SELECT c.id FROM "SafetyCase" c LEFT JOIN "Report" r ON r.id=c."reportId" LEFT JOIN "Room" room ON room.id=c."roomId" LEFT JOIN "User" u ON u.id=c."targetUserId" WHERE r.id IS NULL OR (c."roomId" IS NOT NULL AND room.id IS NULL) OR u.id IS NULL
       UNION ALL SELECT sr.id FROM "SafetyRestriction" sr LEFT JOIN "SafetyCase" c ON c.id=sr."caseId" LEFT JOIN "User" u ON u.id=sr."userId" WHERE c.id IS NULL OR u.id IS NULL
       UNION ALL SELECT a.id FROM "SafetyAppeal" a LEFT JOIN "SafetyRestriction" sr ON sr.id=a."restrictionId" LEFT JOIN "User" u ON u.id=a."userId" WHERE sr.id IS NULL OR u.id IS NULL
     ) invalid`,

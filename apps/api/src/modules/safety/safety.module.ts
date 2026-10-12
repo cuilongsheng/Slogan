@@ -19,6 +19,6 @@ import { SafetyBackofficeController } from './presentation/safety-backoffice.con
     PrismaSafetyRepository,
     { provide: SAFETY_REPOSITORY, useExisting: PrismaSafetyRepository },
   ],
-  exports: [SafetyService],
+  exports: [SafetyService, SafetyRunner],
 })
 export class SafetyModule {}
