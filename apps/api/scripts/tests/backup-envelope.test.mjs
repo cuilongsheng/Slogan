@@ -6,10 +6,27 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   databaseFingerprint,
+  databaseToolConnection,
   decryptBackup,
   encryptedBackup,
   isolatedRestore,
 } from '../postgres-backup-envelope.mjs';
+test('Neon tools retain the approved endpoint identity, credentials and TLS options', () => {
+  const source =
+    'postgresql://test:p%40ss@ep-fixture-pooler.us-east-1.aws.neon.tech/db?sslmode=require&channel_binding=require';
+  const tool = new URL(databaseToolConnection(source));
+  const original = new URL(source);
+  assert.equal(tool.hostname, 'ep-fixture.us-east-1.aws.neon.tech');
+  for (const property of ['username', 'password', 'pathname', 'search', 'port'])
+    assert.equal(tool[property], original[property]);
+  assert.equal(databaseToolConnection(tool.toString()), tool.toString());
+  for (const value of [
+    'postgresql://test:test@localhost:5432/isolated_restore',
+    'postgresql://test:test@ep-fixture-pooler.example.com/db',
+    'postgresql://test:test@ep-fixture-pooler.neon.tech.example.com/db',
+  ])
+    assert.equal(databaseToolConnection(value), value);
+});
 test('encrypted archives authenticate before any database mutation and enforce isolated targets', async () => {
   const saved = { ...process.env },
     directory = await mkdtemp(join(tmpdir(), 'slogan-envelope-test-'));

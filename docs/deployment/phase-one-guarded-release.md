@@ -27,6 +27,10 @@ Configure these only in the protected `production` environment. PR verification 
 
 Retain the encryption key in owner-controlled recovery storage independently of Actions. Losing the key makes backups unrecoverable. Never print the connection string or key when calculating configuration. No production secret belongs in a PR artifact, frontend bundle, or repository file.
 
+For a Neon pooled URL, backup and migration tools use the same endpoint's documented direct hostname (remove the endpoint's `-pooler` suffix). Approval and encrypted backup identity remain bound to the original configured URL; credentials, database and TLS options are preserved. API traffic continues using its configured pool. Other providers and isolated local targets are unchanged. This avoids session-lock reuse through a transaction pooler.
+
+The pinned Vercel CLI runs through `pnpm dlx --allow-build=esbuild vercel@63.1.2`. pnpm 12 requires explicit approval inside the isolated dlx cache; workspace build approvals do not approve this separate installation. Only the CLI's required esbuild script is allowed. Migration and deployment failures expose recognized pnpm, Prisma or Vercel error codes while retaining provider output privately in bounded memory.
+
 ## Backup and restore
 
 `database-recovery.yml` runs daily and can be dispatched manually. It snapshots production, encrypts locally before upload, authenticates the encrypted envelope, restores to an isolated PostgreSQL service with providers disabled, applies compatible migrations, and checks invariants. It cannot deploy the API or migrate production. The shared production concurrency group serializes it with release migration.

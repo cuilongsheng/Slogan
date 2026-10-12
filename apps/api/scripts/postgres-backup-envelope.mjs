@@ -15,9 +15,19 @@ export function databaseIdentity(value) {
 export function databaseFingerprint(value) {
   return createHash('sha256').update(databaseIdentity(value)).digest('hex');
 }
-function connectionEnvironment(value) {
+/** Database tools need session continuity; Neon uses the same endpoint without -pooler. */
+export function databaseToolConnection(value) {
   databaseIdentity(value);
   const url = new URL(value);
+  if (/^ep-[a-z0-9-]+-pooler\.[a-z0-9.-]+\.neon\.tech$/.test(url.hostname)) {
+    url.hostname = url.hostname.replace('-pooler.', '.');
+    return url.toString();
+  }
+  return value;
+}
+function connectionEnvironment(value) {
+  databaseIdentity(value);
+  const url = new URL(databaseToolConnection(value));
   // libpq receives credentials through its environment, never process arguments.
   return {
     ...process.env,

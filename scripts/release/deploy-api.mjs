@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { assertMain } from './deployment-gate.mjs';
+import { commandDiagnostic } from './command-diagnostic.mjs';
 const sha = process.env.SLOGAN_RELEASE_COMMIT;
 if (
   process.env.GITHUB_REF !== 'refs/heads/main' ||
@@ -14,6 +15,7 @@ const child = spawn(
   'pnpm',
   [
     'dlx',
+    '--allow-build=esbuild',
     'vercel@63.1.2',
     'deploy',
     '--prod',
@@ -29,11 +31,12 @@ const child = spawn(
   ],
   { env: process.env, stdio: ['ignore', 'pipe', 'pipe'], timeout: 1_800_000 },
 );
-// Keep provider output out of CI logs; failures are investigated in the provider deployment log.
-child.stdout.resume();
-child.stderr.resume();
+// Preserve recognized failure codes without emitting credentials or provider output.
+const diagnostic = commandDiagnostic(child);
 await new Promise((accept, reject) => {
   child.once('error', () => reject(new Error('API_DEPLOY_FAILED')));
-  child.once('close', (code) => (code === 0 ? accept() : reject(new Error('API_DEPLOY_FAILED'))));
+  child.once('close', (code) =>
+    code === 0 ? accept() : reject(new Error(`API_DEPLOY_FAILED: ${diagnostic()}`)),
+  );
 });
 process.stdout.write(JSON.stringify({ status: 'SUCCEEDED', commit: sha }) + '\n');
