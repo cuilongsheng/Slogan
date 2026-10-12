@@ -105,3 +105,59 @@ describe('Vercel request recovery seed', () => {
     expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('private-token');
   });
 });
+
+it('tracks durable exit cleanup after HTTP completion without waiting for queue delivery', async () => {
+  const contextKey = Symbol.for('@vercel/request-context');
+  const registry = globalThis as unknown as Record<symbol, unknown>;
+  const old = registry[contextKey];
+  const pending: Promise<unknown>[] = [];
+  const requestContext = new AsyncLocalStorage<{
+    waitUntil: (promise: Promise<unknown>) => void;
+    marker: string;
+  }>();
+  registry[contextKey] = { get: () => requestContext.getStore() };
+  let release!: () => void;
+  const slowSend = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const queue = {
+    managed: true,
+    seedRecoveryFromRequest: async () => {},
+    enqueue: jest.fn(() => slowSend),
+  };
+  const rooms = { pendingCommands: jest.fn(async () => ['command-a']) };
+  const logger = { warn: jest.fn() };
+  const server = express();
+  server.use((_req, _res, next) =>
+    requestContext.run(
+      { marker: 'exit-request', waitUntil: (promise) => pending.push(promise) },
+      next,
+    ),
+  );
+  configureManagedRecovery({
+    get: (token: unknown) =>
+      token === RealtimeQueue
+        ? queue
+        : token === MaintenanceService
+          ? { seed: async () => {} }
+          : token === StructuredLogger
+            ? logger
+            : rooms,
+    use: (handler: express.RequestHandler) => server.use(handler),
+  } as unknown as INestApplication);
+  server.post('/v1/rooms/:roomId/end', (_req, res) => res.json({ roomStatus: 'ENDING' }));
+  try {
+    await request(server)
+      .post('/v1/rooms/8f296d17-4c82-47bb-8b29-e131079234de/end')
+      .expect(200, { roomStatus: 'ENDING' });
+    expect(rooms.pendingCommands).toHaveBeenCalledWith('8f296d17-4c82-47bb-8b29-e131079234de');
+    expect(queue.enqueue).toHaveBeenCalledWith({ kind: 'command', id: 'command-a' });
+    expect(pending).toHaveLength(2);
+    expect(logger.warn).not.toHaveBeenCalled();
+  } finally {
+    release();
+    await Promise.all(pending);
+    if (old === undefined) delete registry[contextKey];
+    else registry[contextKey] = old;
+  }
+});

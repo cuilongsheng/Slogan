@@ -31,22 +31,22 @@ The system MUST allow removed members to rejoin the same room only when the room
 
 ### Requirement: Room host transfers permissions when exiting actively
 
-The system MUST provide the current online member selector before the room host actively exits; when the room host specifies a member, it is handed over to the member; when the room host is not specified, it is handed over to the second member in the current joining sequence; when there is no successor member, the room is closed.
+The system MUST support a validated designated online successor through the host exit operation. Normal one-action exit MUST NOT require a member-selector confirmation. When no successor is designated, the system MUST atomically transfer host authority to the first eligible connected member in joining order; when none remains, it MUST close the room. An invalid designated successor MUST be rejected rather than silently accepted.
 
 #### Scenario: Designated successor member
 
-- **WHEN** Room host actively logs out and selects an online member
-- **THEN** The system first transfers the room host permission to the member, and then completes the exit of the original room host.
+- **WHEN** the host specifies an eligible connected successor
+- **THEN** authority transfers atomically and the former host leaves
 
 #### Scenario: No successor designated
 
-- **WHEN** Room host actively exited but did not select members and there are other online members
-- **THEN** The system transfers the authority to the current second microphone
+- **WHEN** the host exits without selecting a successor and another eligible connected member remains
+- **THEN** authority transfers to the first such member in joining order without another frontend confirmation
 
 #### Scenario: No successor members
 
-- **WHEN** Room host actively exited and there are no other online members in the room
-- **THEN** The system closes the room
+- **WHEN** the host exits and no eligible connected successor remains
+- **THEN** the room closes and durable provider cleanup follows
 
 ### Requirement: Wheat position sequence
 

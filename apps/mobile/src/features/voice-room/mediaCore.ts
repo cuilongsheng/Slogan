@@ -1,4 +1,4 @@
-import { Room, RoomEvent, Track, type RemoteTrack } from 'livekit-client';
+import { DisconnectReason, Room, RoomEvent, Track, type RemoteTrack } from 'livekit-client';
 
 import type { RealtimeCredential } from './api';
 import { isRoomSafetyAlertSignal } from './safetySignal';
@@ -11,6 +11,13 @@ export interface MediaParticipant {
   microphoneEnabled: boolean;
 }
 export interface MediaSnapshot {
+  disconnectReason?: 'ended' | 'removed' | 'network' | undefined;
+  timings?: {
+    connectedMs?: number;
+    playbackReadyMs?: number;
+    firstRemoteSubscribedMs?: number;
+    microphonePublishedMs?: number;
+  };
   connection: MediaConnection;
   localIdentity: string | null;
   microphoneEnabled: boolean;
@@ -30,11 +37,14 @@ export interface MediaPlatform {
 }
 
 export class LiveKitVoiceMedia {
+  private connectStartedAt = 0;
+  private timings: NonNullable<MediaSnapshot['timings']> = {};
   private room: Room | null = null;
   private listeners = new Set<(snapshot: MediaSnapshot) => void>();
   private safetySignalListeners = new Set<() => void>();
   private connection: MediaConnection = 'disconnected';
   private platformStarted = false;
+  private disconnectReason: MediaSnapshot['disconnectReason'];
   private deviceCheck: MediaSnapshot['deviceCheck'];
   private checkingDevices: Promise<void> | null = null;
   private deviceAbort: AbortController | null = null;
@@ -46,6 +56,8 @@ export class LiveKitVoiceMedia {
     const room = this.room;
     return {
       connection: this.connection,
+      disconnectReason: this.disconnectReason,
+      timings: { ...this.timings },
       localIdentity: room?.localParticipant.identity ?? null,
       microphoneEnabled: room?.localParticipant.isMicrophoneEnabled ?? false,
       audioPlaybackAllowed: room?.canPlaybackAudio ?? true,
@@ -82,9 +94,18 @@ export class LiveKitVoiceMedia {
     const generation = this.connectionGeneration + 1;
     await this.disconnect();
     if (generation !== this.connectionGeneration) return;
+    this.connectStartedAt = performance.now();
+    this.timings = {};
+    this.disconnectReason = undefined;
     this.connection = 'connecting';
     this.emit();
     try {
+      const room = new Room({ stopLocalTrackOnUnpublish: true });
+      this.room = room;
+      // Best effort DNS/TLS warmup overlaps native audio setup on the same SDK Room.
+      // Token-based Cloud region prefetch is intentionally not awaited on the join path.
+      if (typeof room.prepareConnection === 'function')
+        void room.prepareConnection(credential.serverUrl).catch(() => undefined);
       try {
         await this.platform.start();
         this.platformStarted = true;
@@ -99,8 +120,6 @@ export class LiveKitVoiceMedia {
         }
         return;
       }
-      const room = new Room({ stopLocalTrackOnUnpublish: true });
-      this.room = room;
       const refresh = () => {
         if (this.room === room) this.emit();
       };
@@ -125,14 +144,28 @@ export class LiveKitVoiceMedia {
         this.connection = 'connected';
         this.emit();
       });
-      room.on(RoomEvent.Disconnected, () => {
+      room.on(RoomEvent.Disconnected, (reason) => {
         if (this.room !== room) return;
+        this.disconnectReason =
+          reason === DisconnectReason.ROOM_DELETED
+            ? 'ended'
+            : [DisconnectReason.PARTICIPANT_REMOVED, DisconnectReason.DUPLICATE_IDENTITY].includes(
+                  reason!,
+                )
+              ? 'removed'
+              : 'network';
         this.connection = 'disconnected';
         this.emit();
       });
       room.on(RoomEvent.TrackSubscribed, (track) => {
         if (this.room !== room) return;
-        if (track.kind === Track.Kind.Audio) this.platform.attachRemoteAudio(track);
+        if (track.kind === Track.Kind.Audio) {
+          this.platform.attachRemoteAudio(track);
+          this.timings.firstRemoteSubscribedMs ??= Math.max(
+            0,
+            performance.now() - this.connectStartedAt,
+          );
+        }
         this.emit();
       });
       room.on(RoomEvent.TrackUnsubscribed, (track) => {
@@ -150,6 +183,7 @@ export class LiveKitVoiceMedia {
         await room.localParticipant.setMicrophoneEnabled(false);
       }
       this.connection = 'connected';
+      this.timings.connectedMs = Math.max(0, performance.now() - this.connectStartedAt);
       this.emit();
       void this.checkDevices();
     } catch (error) {
@@ -169,6 +203,8 @@ export class LiveKitVoiceMedia {
     if (this.room !== room || this.connection !== 'connected') return;
     await room.localParticipant.setMicrophoneEnabled(enabled);
     if (this.room !== room || this.connection !== 'connected') return;
+    if (enabled && room.localParticipant.isMicrophoneEnabled)
+      this.timings.microphonePublishedMs ??= Math.max(0, performance.now() - this.connectStartedAt);
     if (enabled && this.deviceCheck)
       this.deviceCheck = { ...this.deviceCheck, microphone: 'ready' };
     this.emit();
@@ -177,6 +213,8 @@ export class LiveKitVoiceMedia {
   async startAudio(): Promise<void> {
     if (!this.room) return;
     await this.room.startAudio();
+    if (this.platformStarted && (this.room.canPlaybackAudio ?? true))
+      this.timings.playbackReadyMs ??= Math.max(0, performance.now() - this.connectStartedAt);
     this.emit();
   }
 
@@ -207,7 +245,10 @@ export class LiveKitVoiceMedia {
           }
           this.platformStarted = true;
         }
-        return ((await this.platform.checkAudioOutput?.()) ?? false) ? 'ready' : 'unavailable';
+        const ready = (await this.platform.checkAudioOutput?.()) ?? false;
+        if (ready && !abort.signal.aborted && this.room === room && (room.canPlaybackAudio ?? true))
+          this.timings.playbackReadyMs ??= Math.max(0, performance.now() - this.connectStartedAt);
+        return ready ? 'ready' : 'unavailable';
       } catch {
         return 'unavailable';
       }

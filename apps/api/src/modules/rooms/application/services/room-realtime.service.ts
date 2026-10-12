@@ -29,6 +29,8 @@ export interface CredentialReservation {
   credentialVersion: number;
   stateVersion: number;
   capacity: number;
+  endsAt: Date;
+  extensionCount: number;
   issueUntil: Date;
 }
 
@@ -77,6 +79,8 @@ export class RoomRealtimeService {
         credentialVersion: member.credentialVersion,
         stateVersion: ctx.room.stateVersion,
         capacity: ctx.room.capacity,
+        endsAt: ctx.room.endsAt,
+        extensionCount: ctx.room.extensionCount,
         issueUntil,
       };
     });
@@ -104,6 +108,11 @@ export class RoomRealtimeService {
           m.accountActive &&
           m.lifecycle === 'ACTIVE',
       );
+      if (
+        ctx.room.stateVersion !== reservation.stateVersion &&
+        ctx.room.providerRoomSid === roomSid
+      )
+        await ctx.enqueue('SYNC_ROOM_TIME');
       if (
         !member ||
         member.participantIdentity !== reservation.identity ||

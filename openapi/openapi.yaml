@@ -31358,27 +31358,6 @@ paths:
                   - message
                 type: object
           description: ROOM_OPERATION_CONFLICT, ROOM_ENDED, ROOM_FULL or ROOM_HOST_RECONNECTING (details.retryAt)
-        '503':
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    example: VALIDATION_FAILED
-                    type: string
-                  details:
-                    type: object
-                  message:
-                    example: Request validation failed
-                    type: string
-                  requestId:
-                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
-                    type: string
-                required:
-                  - code
-                  - message
-                type: object
-          description: REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back.
       security:
         - bearer: []
       tags:

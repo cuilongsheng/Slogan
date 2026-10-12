@@ -30,6 +30,7 @@ function setup(onlineIds: string[]) {
     }),
   };
   const presence = {
+    refresh: fn(async (_id: string) => ({ expiresAt: now, refreshAfterSeconds: 45 })),
     online: fn(async (ids: string[]) => new Set(ids.filter((id) => onlineIds.includes(id)))),
   };
   return {
@@ -43,6 +44,18 @@ function setup(onlineIds: string[]) {
 }
 
 describe('available people pagination', () => {
+  it('renews only the querying actor and reports refresh failure instead of false offline peers', async () => {
+    const { service, presence } = setup([]);
+    await service.listAvailable('actor', {}, now);
+    expect(presence.refresh).toHaveBeenCalledWith('actor');
+    expect(presence.refresh).toHaveBeenCalledTimes(1);
+    presence.refresh.mockRejectedValue(
+      Object.assign(new Error('Unavailable'), { code: 'SOCIAL_PRESENCE_UNAVAILABLE' }),
+    );
+    await expect(service.listAvailable('actor', {}, now)).rejects.toMatchObject({
+      code: 'SOCIAL_PRESENCE_UNAVAILABLE',
+    });
+  });
   it('preserves all online candidates across scanned-page boundaries', async () => {
     const { service } = setup(candidates.map((item) => item.userId));
     let cursor: string | undefined;

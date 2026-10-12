@@ -19,7 +19,11 @@ const auth = {
   authorized: (request) => request('visual-fixture'),
   state: {
     kind: 'signedIn',
-    me: { userId: 'visual-profile', onboardingState: 'ELIGIBLE', profile: {displayName: 'Luna', avatarUrl: ''} },
+    me: {
+      userId: 'visual-profile',
+      onboardingState: 'ELIGIBLE',
+      profile: { displayName: 'Luna', avatarUrl: '' },
+    },
   },
   suggestedProfile: {
     displayName: '',
@@ -39,12 +43,28 @@ export const createVoiceMedia = () => {
   const query = new URL(location.href).searchParams;
   const listeners = new Set();
   const fixture = {
-    snapshot: { connection: query.get('connection') ?? 'connected', microphoneEnabled: true, audioPlaybackAllowed: true, participants: [], deviceCheck: {microphone: query.has('device') ? 'blocked' : 'ready', playback: 'ready'} },
-    subscribe(listener) { listeners.add(listener); listener(this.snapshot); return () => listeners.delete(listener); },
-    async connect() {}, async checkDevices() {},
-    async disconnect() { globalThis.__mediaStopped = true; },
+    snapshot: {
+      connection: query.get('connection') ?? 'connected',
+      microphoneEnabled: true,
+      audioPlaybackAllowed: true,
+      participants: [],
+      deviceCheck: { microphone: query.has('device') ? 'blocked' : 'ready', playback: 'ready' },
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(this.snapshot);
+      return () => listeners.delete(listener);
+    },
+    async connect() {},
+    async checkDevices() {},
+    async disconnect() {
+      globalThis.__mediaStopped = true;
+    },
     async startAudio() {},
-    async setMicrophoneEnabled(enabled) { this.snapshot = {...this.snapshot, microphoneEnabled: enabled}; listeners.forEach(listener => listener(this.snapshot)); },
+    async setMicrophoneEnabled(enabled) {
+      this.snapshot = { ...this.snapshot, microphoneEnabled: enabled };
+      listeners.forEach((listener) => listener(this.snapshot));
+    },
   };
   return fixture;
 };
@@ -95,6 +115,7 @@ const members = ['Luna', 'Mika', 'Yuki', 'Ravi'].map((name, index) => ({
   nationalityCode: ['GB', 'JP', 'US', 'IN'][index],
 }));
 export class VoiceRoomSession {
+  recordRoomVisible() {}
   constructor() {
     const query = new URL(location.href).searchParams;
     const count = Math.min(6, Math.max(0, Number(query.get('count') ?? 4)));
@@ -122,6 +143,10 @@ export class VoiceRoomSession {
     if (new URL(location.href).searchParams.get('device') === 'blocked') {
       this.state.media.deviceCheck = { microphone: 'blocked', playback: 'ready' };
     }
+    if (query.get('connection') === 'connecting') {
+      this.state.phase = 'connecting';
+      this.state.media.connection = 'connecting';
+    }
     if (query.get('connection') === 'reconnecting') {
       this.state.media.connection = 'reconnecting';
       this.state.room.hostReconnectDeadline = new Date(Date.now() + 42_000).toISOString();
@@ -141,7 +166,7 @@ export class VoiceRoomSession {
       cefrLevel: 'B1',
       cefrLevelMin: 'B1',
       cefrLevelMax: 'B2',
-      endsAt: '2026-09-28T09:38:00Z',
+      endsAt: new Date(Date.now() + 38 * 60_000).toISOString(),
       sensitiveSpeechDetectionEnabled: false,
       currentMembership: { id: 'member-1' },
       shareUrl: 'https://example.test/share/fixture',
@@ -191,6 +216,10 @@ export class VoiceRoomSession {
     this.state = { ...this.state, media: { ...this.state.media, microphoneEnabled: enabled } };
     this.listeners.forEach((listener) => listener(this.state));
   }
+  async end() {
+    this.state = { ...this.state, phase: 'ended' };
+    this.listeners.forEach((listener) => listener(this.state));
+  }
   async leave() {
     this.state = { ...this.state, phase: 'left' };
     this.listeners.forEach((listener) => listener(this.state));
@@ -209,5 +238,5 @@ const discard = () => {};
 export const usePrivateRecorder = () => ({ start, stop, discard, elapsedSeconds: 0 });
 
 export const ImageManipulator = {};
-export const SaveFormat = {PNG:'png'};
-export const launchImageLibraryAsync = async () => ({canceled:true});
+export const SaveFormat = { PNG: 'png' };
+export const launchImageLibraryAsync = async () => ({ canceled: true });

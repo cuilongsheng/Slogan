@@ -87,10 +87,12 @@ describe('LiveKit Cloud adapter', () => {
   });
   it('checks an existing provider room capacity before issuing room access', async () => {
     const value = adapter();
-    const list = jest
-      .fn<Promise<Array<{ sid: string; maxParticipants: number; metadata: string }>>, []>()
-      .mockResolvedValue([{ sid: 'RM_1', maxParticipants: 4, metadata: '{"schemaVersion":1}' }]);
-    Object.assign(value, { client: { listRooms: list } });
+    const createRoom = jest.fn(async () => ({
+      sid: 'RM_1',
+      maxParticipants: 4,
+      metadata: '{"schemaVersion":1}',
+    }));
+    Object.assign(value, { client: { createRoom } });
     await expect(value.ensureRoom('test', 4, '{"schemaVersion":1}')).resolves.toBe('RM_1');
     await expect(value.ensureRoom('test', 6, '{"schemaVersion":1}')).rejects.toMatchObject({
       code: 'REALTIME_PROVIDER_UNAVAILABLE',
@@ -99,20 +101,18 @@ describe('LiveKit Cloud adapter', () => {
 
   it('writes metadata on create and updates an existing room only when needed', async () => {
     const value = adapter();
-    const listRooms = jest
-      .fn<Promise<Array<{ sid: string; maxParticipants: number; metadata: string }>>, []>()
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ sid: 'RM_1', maxParticipants: 4, metadata: 'old' }]);
-    const createRoom = jest.fn(async (input: { metadata?: string }) => ({
-      sid: 'RM_created',
-      metadata: input.metadata,
-    }));
+    const listRooms = jest.fn();
+    const createRoom = jest
+      .fn()
+      .mockResolvedValueOnce({ sid: 'RM_created', maxParticipants: 4, metadata: 'latest' })
+      .mockResolvedValueOnce({ sid: 'RM_1', maxParticipants: 4, metadata: 'old' });
     const updateRoomMetadata = jest.fn(async () => ({ sid: 'RM_1' }));
     Object.assign(value, { client: { listRooms, createRoom, updateRoomMetadata } });
     await expect(value.ensureRoom('test', 4, 'latest')).resolves.toBe('RM_created');
     expect(createRoom).toHaveBeenCalledWith(expect.objectContaining({ metadata: 'latest' }));
     await expect(value.ensureRoom('test', 4, 'latest')).resolves.toBe('RM_1');
     expect(updateRoomMetadata).toHaveBeenCalledWith('room-test', 'latest');
+    expect(listRooms).not.toHaveBeenCalled();
   });
 
   it('maps room metadata updates to updated, not found and unavailable', async () => {

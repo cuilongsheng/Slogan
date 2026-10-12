@@ -86,18 +86,9 @@ test('real voice component sends text, keeps assistance disabled, and closes she
   await page.goto('/?role=host');
   await expect(page.getByText('聊聊旅行中的意外收获')).toBeVisible();
   await page.getByRole('button', { name: '退出房间', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Mika', exact: true }).last()).toBeVisible();
-  await page.screenshot({
-    path: 'docs/acceptance/voice-room-four-column-fidelity/host-handoff-runtime-component-fixture.png',
-  });
-  const transfer = page.getByRole('button', { name: '移交房主并退出', exact: true });
-  await expect(transfer).toBeDisabled();
-  await page.getByRole('button', { name: 'Mika', exact: true }).last().click();
-  await expect(transfer).toBeEnabled();
-  await page.screenshot({
-    path: 'docs/acceptance/voice-room-four-column-fidelity/host-handoff-selected-runtime-component-fixture.png',
-  });
-  await page.getByRole('button', { name: '关闭' }).click();
+  await expect(page).toHaveURL('/rooms');
+  await expect(page.getByText('房间已结束', { exact: true })).toHaveCount(0);
+  await page.goto('/?role=host');
   consentStatus = 'REQUIRED';
   await page.getByRole('button', { name: '用母语找英文表达 · 仅自己可见' }).click();
   await expect(page.getByRole('button', { name: '同意并继续' })).toBeVisible();

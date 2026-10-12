@@ -61,3 +61,4 @@ export { RoomExtensionsController } from './presentation/room-extensions.control
 export { RoomInvitationsService } from './application/services/room-invitations.service.js';
 export { loadLockedRealtimeRoom } from './infrastructure/locked-realtime-room.js';
 export { roomLifecycle } from './domain/policies/room-lifecycle.js';
+export type { RoomCommandDelivery } from './application/services/host-controls.service.js';

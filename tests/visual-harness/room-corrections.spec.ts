@@ -70,3 +70,26 @@ test('only the current tab is accented, with no selection circle', async ({ page
   expect(tints.every((item) => item.background === 'rgba(0, 0, 0, 0)')).toBe(true);
   await page.screenshot({ path: `${evidence}/runtime-nav-me.png` });
 });
+
+test('admitted room stays visible while voice connects, and host end returns without a result page', async ({
+  page,
+}) => {
+  await page.route('**/v1/rooms/visual-room/messages*', (route) =>
+    route.fulfill({ json: { items: [], nextCursor: 'fixture', hasMore: false } }),
+  );
+  await page.goto('/?connection=connecting&role=host');
+  await expect(page.getByText('聊聊旅行中的意外收获', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('room-seat-row-0')).toBeVisible();
+  await expect(page.getByRole('button', { name: '打开麦克风', exact: true })).toBeDisabled();
+  await expect(page.getByText('连接中', { exact: true })).toBeVisible();
+  await expect(page.getByText('正在进入语音房…', { exact: true })).toHaveCount(0);
+  await page.screenshot({
+    path: 'docs/acceptance/room-entry-lifecycle/runtime-admitted-connecting.png',
+  });
+  await page.goto('/?role=host');
+  await page.getByRole('button', { name: '房间操作', exact: true }).click();
+  await page.getByRole('button', { name: '分享房间链接', exact: true }).click();
+  await page.getByRole('button', { name: '结束房间', exact: true }).click();
+  await expect(page).toHaveURL('/rooms');
+  await expect(page.getByText('房间已结束', { exact: true })).toHaveCount(0);
+});

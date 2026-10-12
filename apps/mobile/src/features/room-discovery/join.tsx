@@ -1,10 +1,15 @@
+import type { RoomDetail } from './api';
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 export interface JoinDraft {
   roomId: string;
+  startedAt?: number;
   password: string;
   rulesAccepted: boolean;
   invitationId?: string;
+  createdRoom?: RoomDetail;
+  createdForUserId?: string;
+  createdAt?: number;
 }
 interface JoinContextValue {
   draft: JoinDraft | null;
@@ -12,6 +17,7 @@ interface JoinContextValue {
   beginDirect(roomId: string, invitationId?: string): void;
   password(value: string): void;
   acceptRules(value: boolean): void;
+  created(room: RoomDetail, userId: string, startedAt?: number): void;
   clear(): void;
 }
 
@@ -26,7 +32,12 @@ export function beginJoin(
 ): JoinDraft {
   return previous?.roomId === roomId && previous.invitationId === invitationId
     ? previous
-    : { roomId, password: '', rulesAccepted: false, ...(invitationId ? { invitationId } : {}) };
+    : {
+        roomId,
+        password: '',
+        rulesAccepted: false,
+        ...(invitationId ? { invitationId } : {}),
+      };
 }
 
 export function updateJoinPassword(previous: JoinDraft | null, input: string): JoinDraft | null {
@@ -58,13 +69,27 @@ export function JoinProvider({ children }: { children: ReactNode }) {
         setDraft((previous) => beginJoin(previous, roomId, invitationId));
       },
       beginDirect(roomId, invitationId) {
-        setDraft((previous) => beginDirectJoin(previous, roomId, invitationId));
+        setDraft((previous) => ({
+          ...beginDirectJoin(previous, roomId, invitationId),
+          startedAt: performance.now(),
+        }));
       },
       password(input) {
         setDraft((previous) => updateJoinPassword(previous, input));
       },
       acceptRules(accepted) {
         setDraft((previous) => updateJoinRules(previous, accepted));
+      },
+      created(room, userId, startedAt) {
+        setDraft({
+          roomId: room.id,
+          password: '',
+          rulesAccepted: true,
+          createdRoom: room,
+          createdForUserId: userId,
+          createdAt: Date.now(),
+          startedAt: startedAt ?? performance.now(),
+        });
       },
       clear() {
         setDraft(null);

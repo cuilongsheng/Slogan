@@ -111,12 +111,7 @@ export class HostControlsService {
           );
           successor = action.successorMembershipId
             ? candidates.find((m) => m.id === action.successorMembershipId)
-            : undefined;
-          if (candidates.length && !action.successorMembershipId)
-            throw new RoomError(
-              'ROOM_SUCCESSOR_INVALID',
-              'Choose an online successor before leaving',
-            );
+            : candidates[0];
           if (action.successorMembershipId && !successor)
             throw new RoomError(
               'ROOM_SUCCESSOR_INVALID',

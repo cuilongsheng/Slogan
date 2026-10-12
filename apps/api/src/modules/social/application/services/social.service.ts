@@ -141,6 +141,9 @@ export class SocialService {
     now = new Date(),
   ) {
     await this.social.assertActorEligible(userId, now);
+    // An eligible foreground list request is itself authenticated online activity.
+    // Refresh only this actor; never infer presence for returned candidates.
+    await this.presence.refresh(userId);
     const limit = query.limit ?? 20;
     let cursor = decodeSocialCursor('available', query.cursor);
     const items: Array<

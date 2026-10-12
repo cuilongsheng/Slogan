@@ -2,6 +2,7 @@ import type { RoomDetail } from '../room-discovery/api';
 import { RoomApiError } from '../room-discovery/api';
 import { validRoomPassword, type JoinDraft } from '../room-discovery/join';
 import type { MediaSnapshot, LiveKitVoiceMedia } from './mediaCore';
+import type { RoomExitQueue } from './exitQueue';
 import type { RoomMember, RoomSafetyAlert, VoiceRoomApi } from './api';
 
 export type VoicePhase =
@@ -17,6 +18,7 @@ export type VoicePhase =
   | 'preparationRequired';
 
 export interface VoiceSessionSnapshot {
+  timings?: { roomVisibleMs?: number; admissionMs?: number; credentialsMs?: number };
   phase: VoicePhase;
   room: RoomDetail | null;
   members: RoomMember[];
@@ -53,6 +55,8 @@ function errorCode(error: unknown): string {
 }
 
 export class VoiceRoomSession {
+  private startedAt = performance.now();
+  private timings: NonNullable<VoiceSessionSnapshot['timings']> = {};
   private listeners = new Set<(snapshot: VoiceSessionSnapshot) => void>();
   private state: Omit<VoiceSessionSnapshot, 'media'> = {
     phase: 'idle',
@@ -74,6 +78,7 @@ export class VoiceRoomSession {
   private roomRefreshGeneration = 0;
   private refreshPending: Promise<void> | null = null;
   private disposed = false;
+  private exitRequested = false;
   private leavingSuccessor: string | undefined;
 
   constructor(
@@ -81,8 +86,19 @@ export class VoiceRoomSession {
     private readonly rooms: RoomReader,
     private readonly api: VoiceApi,
     private readonly media: Media,
+    private readonly exitQueue?: Pick<RoomExitQueue, 'enqueue'> | null,
+    private readonly actorUserId?: string,
   ) {
     this.mediaUnsubscribe = media.subscribe(() => {
+      if (
+        !this.exitRequested &&
+        ['ended', 'removed'].includes(media.snapshot.disconnectReason ?? '')
+      ) {
+        this.roomRefreshGeneration++;
+        this.clearSafetyAlerts();
+        this.update({ phase: 'ended', members: [], errorCode: 'ROOM_MEMBER_NOT_ACTIVE' });
+        return;
+      }
       if (
         media.snapshot.connection === 'reconnecting' ||
         media.snapshot.connection === 'disconnected'
@@ -97,7 +113,13 @@ export class VoiceRoomSession {
   }
 
   get snapshot(): VoiceSessionSnapshot {
-    return { ...this.state, media: this.media.snapshot };
+    return { ...this.state, media: this.media.snapshot, timings: { ...this.timings } };
+  }
+
+  recordRoomVisible() {
+    if (this.timings.roomVisibleMs === undefined) {
+      this.timings.roomVisibleMs = Math.max(0, performance.now() - this.startedAt);
+    }
   }
 
   subscribe(listener: (snapshot: VoiceSessionSnapshot) => void): () => void {
@@ -182,6 +204,7 @@ export class VoiceRoomSession {
     ) {
       return Promise.resolve();
     }
+    if (this.state.phase === 'idle' && draft?.startedAt) this.startedAt = draft.startedAt;
     const operation = this.enter(draft).finally(() => {
       if (this.pending === operation) this.pending = null;
     });
@@ -192,94 +215,103 @@ export class VoiceRoomSession {
   private async enter(draft: JoinDraft | null): Promise<void> {
     this.update({ phase: 'joining', errorCode: null });
     try {
-      const room = await this.rooms.detail(this.roomId);
-      if (this.disposed) return;
-      this.update({ room });
-      const membership = room.currentMembership;
-      const active = membership?.lifecycle === 'ACTIVE';
-      if (!active) {
-        if (
-          room.passwordProtected &&
-          !validRoomPassword(draft?.roomId === this.roomId ? draft.password : '')
-        ) {
-          this.update({ phase: 'failed', errorCode: 'ROOM_PASSWORD_REQUIRED' });
-          return;
-        }
-        const joined = await this.api.join(this.roomId, {
+      const created =
+        draft?.roomId === this.roomId &&
+        draft.createdForUserId === this.actorUserId &&
+        this.actorUserId &&
+        draft.createdAt &&
+        Date.now() - draft.createdAt >= 0 &&
+        Date.now() - draft.createdAt < 10_000
+          ? draft.createdRoom
+          : undefined;
+      let room: RoomDetail;
+      if (created?.currentMembership?.lifecycle === 'ACTIVE') {
+        room = created;
+      } else if (draft?.roomId === this.roomId && draft.rulesAccepted) {
+        // The membership endpoint already validates the room and replays active admission.
+        room = await this.api.join(this.roomId, {
           rulesAccepted: true,
-          ...(room.passwordProtected ? { password: draft?.password ?? '' } : {}),
-          ...(draft?.roomId === this.roomId && draft.invitationId
-            ? { invitationId: draft.invitationId }
-            : {}),
+          ...(draft.password ? { password: draft.password } : {}),
+          ...(draft.invitationId ? { invitationId: draft.invitationId } : {}),
         });
-        if (this.disposed) return;
-        if (joined.currentMembership?.lifecycle !== 'ACTIVE') {
-          throw new RoomApiError(409, 'ROOM_MEMBER_NOT_ACTIVE');
+      } else {
+        room = await this.rooms.detail(this.roomId);
+        if (room.currentMembership?.lifecycle !== 'ACTIVE') {
+          if (
+            room.passwordProtected &&
+            !validRoomPassword(draft?.roomId === this.roomId ? draft.password : '')
+          ) {
+            this.update({ phase: 'failed', errorCode: 'ROOM_PASSWORD_REQUIRED' });
+            return;
+          }
+          room = await this.api.join(this.roomId, {
+            rulesAccepted: true,
+            ...(room.passwordProtected ? { password: draft?.password ?? '' } : {}),
+          });
         }
-        this.update({
-          credentialVersion: joined.currentMembership.credentialVersion,
-          role: joined.currentMembership.role,
-        });
-      } else if (membership) {
-        this.update({
-          credentialVersion: membership.credentialVersion,
-          role: membership.role,
-        });
       }
+      if (this.disposed || this.exitRequested) {
+        if (this.exitRequested && room.currentMembership?.lifecycle === 'ACTIVE')
+          this.queueLeave(room.currentMembership.credentialVersion, this.leavingSuccessor);
+        return;
+      }
+      if (room.currentMembership?.lifecycle !== 'ACTIVE')
+        throw new RoomApiError(409, 'ROOM_MEMBER_NOT_ACTIVE');
+      this.timings.admissionMs = Math.max(0, performance.now() - this.startedAt);
+      this.update({
+        room,
+        credentialVersion: room.currentMembership.credentialVersion,
+        role: room.currentMembership.role,
+      });
       this.update({ phase: 'connecting' });
-      const credential = await this.api.credentials(this.roomId);
-      if (this.disposed) return;
-      this.update({ credentialVersion: credential.credentialVersion, role: credential.role });
-      // Membership is confirmed before credentials are issued. Fetch display data
-      // alongside the media handshake instead of adding another network round trip.
+      const generation = this.roomRefreshGeneration;
       const membersRequest = this.api.members(this.roomId).then(
         (members) => ({ members, error: null }),
         (error: unknown) => ({ members: null, error }),
       );
+      void membersRequest.then((result) => {
+        if (this.disposed || this.exitRequested || generation !== this.roomRefreshGeneration)
+          return;
+        if (result.members) this.update({ members: result.members });
+        else {
+          const code = errorCode(result.error);
+          if (
+            [
+              'ROOM_ENDED',
+              'ROOM_CANCELLED',
+              'ROOM_MEMBER_NOT_ACTIVE',
+              'ROOM_MEMBERSHIP_REQUIRED',
+              'FORBIDDEN',
+            ].includes(code) ||
+            (result.error instanceof RoomApiError && result.error.status === 403)
+          ) {
+            this.roomRefreshGeneration++;
+            this.clearSafetyAlerts();
+            void this.media.disconnect().catch(() => undefined);
+            this.update({ phase: 'ended', members: [], errorCode: code });
+          } else this.update({ errorCode: code });
+        }
+      });
+      const credential = await this.api.credentials(this.roomId);
+      this.timings.credentialsMs = Math.max(0, performance.now() - this.startedAt);
+      if (this.disposed || this.exitRequested || generation !== this.roomRefreshGeneration) return;
+      this.update({ credentialVersion: credential.credentialVersion, role: credential.role });
       try {
         await this.media.connect(credential);
       } catch {
         throw new RoomApiError(0, 'REALTIME_CONNECT_FAILED');
       }
-      if (this.disposed) return;
+      if (this.disposed || this.exitRequested || generation !== this.roomRefreshGeneration) return;
       this.update({ phase: 'active', errorCode: null });
-      const generation = this.roomRefreshGeneration;
-      void membersRequest.then(async (result) => {
-        if (
-          this.disposed ||
-          this.state.phase !== 'active' ||
-          generation !== this.roomRefreshGeneration
-        )
-          return;
-        if (result.members) {
-          this.update({ members: result.members });
-        } else {
-          const code = errorCode(result.error);
-          if (
-            ['ROOM_ENDED', 'ROOM_CANCELLED', 'ROOM_MEMBER_NOT_ACTIVE', 'FORBIDDEN'].includes(
-              code,
-            ) ||
-            (result.error instanceof RoomApiError && result.error.status === 403)
-          ) {
-            this.clearSafetyAlerts();
-            await this.media.disconnect().catch(() => undefined);
-            if (
-              this.disposed ||
-              this.state.phase !== 'active' ||
-              generation !== this.roomRefreshGeneration
-            )
-              return;
-            this.update({ phase: 'ended', members: [], errorCode: code });
-          } else {
-            this.update({ errorCode: code });
-          }
-        }
-      });
       void this.refreshSafetyAlerts();
     } catch (error) {
-      const code = errorCode(error);
+      if (this.disposed || this.exitRequested) return;
+      const code =
+        errorCode(error) === 'ROOM_PASSWORD_INVALID' && !draft?.password
+          ? 'ROOM_PASSWORD_REQUIRED'
+          : errorCode(error);
       if (['ROOM_ENDED', 'ROOM_CANCELLED'].includes(code)) {
-        await this.media.disconnect();
+        void this.media.disconnect().catch(() => undefined);
         this.update({ phase: 'ended', errorCode: code });
       } else {
         this.update({ phase: 'failed', errorCode: code });
@@ -299,22 +331,24 @@ export class VoiceRoomSession {
   private async refreshRoom(): Promise<void> {
     if (
       this.disposed ||
+      this.exitRequested ||
       ['left', 'ended', 'leaving', 'leaveUnconfirmed'].includes(this.state.phase)
     )
       return;
     const generation = ++this.roomRefreshGeneration;
     try {
       const room = await this.rooms.detail(this.roomId);
-      if (this.disposed || generation !== this.roomRefreshGeneration) return;
+      if (this.disposed || this.exitRequested || generation !== this.roomRefreshGeneration) return;
       if (room.currentMembership?.lifecycle !== 'ACTIVE') {
         this.clearSafetyAlerts();
-        await this.media.disconnect();
+        void this.media.disconnect().catch(() => undefined);
         this.update({ phase: 'ended', room, members: [], errorCode: 'ROOM_MEMBER_NOT_ACTIVE' });
         return;
       }
       const members = await this.api.members(this.roomId);
       if (
         this.disposed ||
+        this.exitRequested ||
         generation !== this.roomRefreshGeneration ||
         ['leaving', 'leaveUnconfirmed'].includes(this.state.phase)
       )
@@ -332,6 +366,7 @@ export class VoiceRoomSession {
     } catch (error) {
       if (
         this.disposed ||
+        this.exitRequested ||
         generation !== this.roomRefreshGeneration ||
         ['leaving', 'leaveUnconfirmed'].includes(this.state.phase)
       )
@@ -343,7 +378,7 @@ export class VoiceRoomSession {
       const code = errorCode(error);
       if (['ROOM_ENDED', 'ROOM_CANCELLED', 'ROOM_MEMBER_NOT_ACTIVE'].includes(code)) {
         this.clearSafetyAlerts();
-        await this.media.disconnect();
+        void this.media.disconnect().catch(() => undefined);
         this.update({ phase: 'ended', members: [], errorCode: code });
       } else {
         this.update({ errorCode: code });
@@ -375,6 +410,18 @@ export class VoiceRoomSession {
   }
 
   async leave(successorMembershipId?: string): Promise<void> {
+    if (this.exitQueue) {
+      if (this.exitRequested || ['left', 'ended'].includes(this.state.phase)) return;
+      this.exitRequested = true;
+      this.leavingSuccessor = successorMembershipId;
+      this.roomRefreshGeneration++;
+      this.clearSafetyAlerts();
+      void this.media.disconnect().catch(() => undefined);
+      if (this.state.credentialVersion !== null)
+        this.queueLeave(this.state.credentialVersion, successorMembershipId);
+      this.update({ phase: 'left', members: [], errorCode: null });
+      return;
+    }
     if (this.pending) return this.pending;
     if (['left', 'ended'].includes(this.state.phase)) return;
     if (successorMembershipId) this.leavingSuccessor = successorMembershipId;
@@ -383,6 +430,15 @@ export class VoiceRoomSession {
     });
     this.pending = operation;
     return operation;
+  }
+
+  private queueLeave(expectedCredentialVersion: number, successorMembershipId?: string) {
+    this.exitQueue?.enqueue({
+      roomId: this.roomId,
+      action: 'leave',
+      expectedCredentialVersion,
+      ...(successorMembershipId ? { successorMembershipId } : {}),
+    });
   }
 
   private async exit(successorMembershipId?: string): Promise<void> {
@@ -419,6 +475,20 @@ export class VoiceRoomSession {
   }
 
   end(): Promise<void> {
+    if (this.exitQueue && this.state.role === 'HOST' && !this.exitRequested) {
+      this.exitRequested = true;
+      this.roomRefreshGeneration++;
+      this.clearSafetyAlerts();
+      void this.media.setMicrophoneEnabled(false).catch(() => undefined);
+      void this.media.disconnect().catch(() => undefined);
+      this.exitQueue.enqueue({
+        roomId: this.roomId,
+        action: 'end',
+        expectedCredentialVersion: this.state.credentialVersion ?? 0,
+      });
+      this.update({ phase: 'ended', members: [], errorCode: null });
+      return Promise.resolve();
+    }
     if (this.pending) return this.pending;
     if (this.state.role !== 'HOST') return Promise.resolve();
     const operation = this.finishEnd().finally(() => {
@@ -433,8 +503,8 @@ export class VoiceRoomSession {
     this.clearSafetyAlerts();
     this.update({ phase: 'leaving', errorCode: null });
     try {
-      await this.media.setMicrophoneEnabled(false);
-      await this.media.disconnect();
+      void this.media.setMicrophoneEnabled(false).catch(() => undefined);
+      void this.media.disconnect().catch(() => undefined);
       const result = await this.api.end(this.roomId);
       if (!['ENDING', 'ENDED'].includes(result.roomStatus)) {
         throw new RoomApiError(409, 'ROOM_END_UNCONFIRMED');

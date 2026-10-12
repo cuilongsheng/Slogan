@@ -260,3 +260,5 @@ Reliance on React, React Native, NestJS, Prisma, LiveKit, DOM, Node-only runtime
 - API `modules/profiles` owns normalized bounded PNG avatar storage and replacement. Public avatar IDs never grant profile mutation rights.
 - Mobile `features/direct` owns partner discovery, recent/friend conversations, chat and call states; route files remain composition only. `BottomNavigation` connects the four destinations.
 - `scripts/release` and protected GitHub workflows own verification, encrypted recovery, controlled migrations, API promotion and matching APK publication. See the guarded release runbook for configuration and acceptance boundaries.
+
+The mobile `voice-room/exits.ts` public entry exposes root-owned exit delivery without loading the native media SDK. The `voice-room/index.ts` public entry retains media creation for room and direct-call consumers.

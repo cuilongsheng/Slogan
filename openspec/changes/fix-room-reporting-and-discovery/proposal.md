@@ -18,6 +18,7 @@ The owner reported that avatars do not open reporting, the room menu exposes the
 
 ### Modified Capabilities
 
+- `user-availability`: authenticated foreground availability requests renew only the actor presence; candidate eligibility remains unchanged.
 - `basic-safety-reporting`: Direct avatar entry to existing member reporting, without self-reporting.
 
 ## Impact

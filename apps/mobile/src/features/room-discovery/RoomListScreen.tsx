@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
   ActivityIndicator,
@@ -13,6 +13,7 @@ import { AppText as Text } from '../../components/ui/AppText';
 import { BottomNavigation } from '../../components/ui/BottomNavigation';
 import { RoomPage } from '../../components/ui/RoomPage';
 import { useAuth } from '../auth';
+import { useRoomExitDelivery } from '../voice-room/exits';
 import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import addIcon from '../../../assets/icons/room-discovery/add.png';
@@ -27,6 +28,7 @@ export function RoomListScreen() {
   useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
+  const exitDelivery = useRoomExitDelivery();
   const { beginDirect } = useJoinDraft();
   const entering = useRef(false);
   const loaded = useRef(false);
@@ -71,6 +73,12 @@ export function RoomListScreen() {
     }, [refresh]),
   );
 
+  useEffect(() => {
+    if (!exitDelivery.revision) return;
+    const refreshTimer = setTimeout(() => void refresh(), 0);
+    return () => clearTimeout(refreshTimer);
+  }, [exitDelivery.revision, refresh]);
+
   const loadMore = async () => {
     if (!cursor || moreLoading || loading) return;
     setMoreLoading(true);
@@ -86,6 +94,9 @@ export function RoomListScreen() {
     }
   };
 
+  const visibleRooms = rooms.filter(
+    (room) => !exitDelivery.queue?.pendingRoomIds.includes(room.id),
+  );
   return (
     <RoomPage discovery>
       <View style={styles.header}>
@@ -108,10 +119,20 @@ export function RoomListScreen() {
         </View>
         <Text style={styles.count}>
           {tf(cursor ? 'roomsLoadedCount' : rooms.length === 1 ? 'roomsCountOne' : 'roomsCount', {
-            count: rooms.length,
+            count: visibleRooms.length,
           })}
         </Text>
       </View>
+      {exitDelivery.failed && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => void exitDelivery.queue?.flush()}
+        >
+          <Text style={styles.errorBanner}>
+            {t('voiceExitSyncFailed')} {t('retry')}
+          </Text>
+        </TouchableOpacity>
+      )}
       {error && rooms.length > 0 && (
         <TouchableOpacity accessibilityRole="button" onPress={() => void refresh(true)}>
           <Text style={styles.errorBanner}>
@@ -130,7 +151,7 @@ export function RoomListScreen() {
         </View>
       ) : (
         <FlatList
-          data={rooms}
+          data={visibleRooms}
           keyExtractor={(room) => room.id}
           renderItem={({ item, index }) => (
             <RoomCard

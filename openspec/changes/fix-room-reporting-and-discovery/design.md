@@ -12,7 +12,7 @@ Use the existing report route with optional member target. A missing target mean
 
 Room cases show a Room report label; evidence history filters by the same room when no user target exists. User restrictions and account disabling require a non-null target in both UI and transactional server enforcement. Direct-message reports remain targeted and unchanged.
 
-Keep presence truth in Redis and eligibility/occupancy truth in PostgreSQL. Diagnose controlled independent sessions before choosing a correction; fixes MUST not include offline, in-room, restricted, underage, blocked or self users to make the list appear populated. Do not report Redis transport failure as an empty list. Keep cursor discovery complete without silent page truncation.
+Keep presence truth in Redis and eligibility/occupancy truth in PostgreSQL. Diagnose controlled independent sessions before choosing a correction; fixes MUST not include offline, in-room, restricted, underage, blocked or self users to make the list appear populated. Do not report Redis transport failure as an empty list. Keep cursor discovery complete without silent page truncation. Authenticated availability requests renew only the eligible requesting actor presence, so a foreground list interaction is not dependent on an earlier standalone heartbeat. Candidates still require their own unexpired presence.
 
 Preserve original Figma frames. Use existing reporting overlay as the member form target and reconcile room/menu variants through Desktop Bridge. Remove halos as an explicit owner override. Use the existing creation frame's 390×844 geometry; constrain tall desktop web previews while retaining small viewport scrolling, native keyboard-safe opaque actions and three level ranges.
 

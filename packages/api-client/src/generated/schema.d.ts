@@ -20775,23 +20775,6 @@ export interface operations {
                     };
                 };
             };
-            /** @description REALTIME_PROVIDER_UNAVAILABLE. details contains the committed operation with providerStatus=UNAVAILABLE; do not assume the transaction rolled back. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example VALIDATION_FAILED */
-                        code: string;
-                        details?: Record<string, never>;
-                        /** @example Request validation failed */
-                        message: string;
-                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
-                        requestId?: string;
-                    };
-                };
-            };
         };
     };
     AssistanceController_audio: {

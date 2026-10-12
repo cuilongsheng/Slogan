@@ -17,6 +17,7 @@ import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import burstIcon from '../../../assets/icons/speech-burst.png';
 import { useAuth } from '../auth';
+import { useJoinDraft } from '../room-discovery/join';
 import { CreateRoomError, RoomCreationApi } from './api';
 import {
   initialRoomForm,
@@ -83,6 +84,7 @@ export function CreateRoomScreen() {
   useLanguage();
   const router = useRouter();
   const { authorized } = useAuth();
+  const joinDraft = useJoinDraft();
   const api = useMemo(() => new RoomCreationApi(authorized), [authorized]);
   const [form, setForm] = useState<RoomForm>(initialRoomForm);
   const [busy, setBusy] = useState(false);
@@ -102,9 +104,12 @@ export function CreateRoomScreen() {
     submitting.current = true;
     setBusy(true);
     setError('');
+    const entryStartedAt = performance.now();
     try {
       if (form.mode === 'instant') {
         const room = await api.instant(instantInput(form));
+        if (room.currentMembership)
+          joinDraft.created(room, room.currentMembership.userId, entryStartedAt);
         router.replace(`/rooms/${room.id}/session`);
       } else {
         const room = await api.scheduled(scheduledInput(form));

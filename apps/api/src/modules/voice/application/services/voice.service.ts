@@ -34,12 +34,10 @@ export class VoiceService {
       if (Date.now() + 15_000 >= reservation.issueUntil.getTime())
         throw new RealtimeError('REALTIME_PROVIDER_UNAVAILABLE');
       providerStarted = true;
-      const snapshot = await this.rooms.snapshot(roomId);
-      if (!snapshot) throw new RealtimeError('REALTIME_PROVIDER_UNAVAILABLE');
       const roomSid = await this.provider.ensureRoom(
         roomId,
         reservation.capacity,
-        serializeRoomTimeMetadata(snapshot.room),
+        serializeRoomTimeMetadata(reservation),
       );
       providerCompleted = true;
       const authorization = await this.rooms.confirmCredential(reservation, userId, roomSid);
@@ -54,7 +52,7 @@ export class VoiceService {
     } finally {
       if (!providerStarted || providerCompleted) {
         await this.rooms.finishCredential(reservation.issuanceId);
-        await this.dispatchPending(roomId);
+        // Durable recovery dispatches cleanup; issuing a valid credential must not await it.
       }
     }
   }
