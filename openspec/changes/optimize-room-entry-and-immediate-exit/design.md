@@ -4,7 +4,7 @@ The owner's latest direct request approves the workflow simplification. Figma or
 
 ## Decisions
 
-Membership must still be confirmed before voice credentials. Reuse only fresh creation metadata bound to the current account; cached metadata never authorizes credentials. The membership endpoint already validates/replays admission, so a preliminary detail request is unnecessary for normal joins. Password/consent refusal stays in the same recovery surface. Member data and independent provider preparation can proceed concurrently after membership confirmation.
+Membership must still be confirmed before voice credentials. Reuse only fresh creation metadata bound to the current account; cached metadata never authorizes credentials. The membership endpoint already validates/replays admission, so a preliminary detail request is unnecessary for normal joins. Password/consent refusal stays in the same recovery surface. When consent refusal occurs before admission metadata exists, fetch processing flags only on that rejected path to render the existing explicit consent choices; a metadata failure remains retryable. Member data and independent provider preparation can proceed concurrently after membership confirmation.
 
 Provider CreateRoom is get-or-create; validate returned capacity and update metadata if needed. Credential reservations carry the exact time/version snapshot. Final authorization still checks member generation, room state/SID and issuance lease after provider work. Never parallelize final authorization ahead of provisioning.
 

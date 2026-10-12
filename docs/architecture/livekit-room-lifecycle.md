@@ -87,6 +87,8 @@ sequenceDiagram
     end
 ```
 
+A rejected admission requiring speech-processing consent fetches room processing flags only after that authoritative refusal, so the existing explicit consent panel remains available. A failed metadata request remains retryable. This exception does not add a detail query to ordinary admission.
+
 There are two sequential application requests for ordinary admission: membership, then credentials. A fresh creator uses creation, then credentials. The roster is parallel display data. Final authorization cannot safely be parallelized ahead of provisioning. Required provider calls and real network latency are not removed by hiding a loading indicator.
 
 ## Leave and end

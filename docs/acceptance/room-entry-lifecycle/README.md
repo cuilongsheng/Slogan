@@ -14,12 +14,14 @@ Recorded 2026-10-13 (Asia/Shanghai) for `optimize-room-entry-and-immediate-exit`
 
 ## Executed evidence
 
-- Mobile: 55 suites, 200 tests. Covers pending admission cancellation, creator/account/cache binding, nonblocking exit, secure persistence before delivery, retry/restart, late account authorization, native UTF-8, permissions, retained tabs and room interactions.
+- Mobile: 55 suites, 202 tests. Covers pending admission cancellation, creator/account/cache binding, nonblocking exit, secure persistence before delivery, retry/restart, late account authorization, native UTF-8, permissions, retained tabs and room interactions.
 - API: 44 unit suites / 242 tests, 41 integration suites / 211 tests, 20 HTTP suites / 107 tests. Includes admission revocation/room-SID/issuance barriers, old-generation rejection, default/designated succession, committed end with failed provider, scoped reports and durable recovery. A delayed queue send proves HTTP completion precedes post-response command scheduling completion.
-- Browser: all 34 visual-harness checks, including the admitted connecting surface, disabled microphone, immediate host end, room reports, navigation tint, compact creation, unchanged four-column seat geometry, invitation and direct chat.
+- Browser: all 25 routed browser checks pass with two workers, including ordinary/password/legacy admission and consent recovery. All 34 visual-harness checks, including the admitted connecting surface, disabled microphone, immediate host end, room reports, navigation tint, compact creation, unchanged four-column seat geometry, invitation and direct chat.
 - Admin: 3 tests. Prior room-case browser and nullable historical migration evidence remain in `../room-reporting-and-discovery/README.md`.
 - Production Pages publication waits for the exact deployed API commit, after frontend compilation. Three release-order checks cover preview bypass, old/HTML API rejection and fail-closed timeout; all 19 affected Pages/proxy/release script checks pass.
 - Workspace formatting, lint, dependency boundaries, types, generated sole OpenAPI/client consistency and Android Expo bundle export pass. A final layout-effect adjustment reran the 12 actual screen tests and connecting/end browser scenario; it avoids a transient initial/terminal paint before navigation.
+
+Direct-admission recovery now fetches processing flags only after authoritative consent refusal; tests prove ordinary admission performs no detail read, consent is not automatically granted and failed recovery metadata remains retryable.
 
 The tests caught stale fixture assumptions about mandatory handoff, auth context and the initial connection page. Fixtures were updated to the approved one-action/visible-room behavior; server authorization assertions were preserved. Existing QueueClient local-region diagnostics and React Native Web deprecation warnings remain nonfatal. No application credentials appear in these records.
 

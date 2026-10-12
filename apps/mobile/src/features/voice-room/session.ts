@@ -310,6 +310,24 @@ export class VoiceRoomSession {
         errorCode(error) === 'ROOM_PASSWORD_INVALID' && !draft?.password
           ? 'ROOM_PASSWORD_REQUIRED'
           : errorCode(error);
+      if (
+        ['ROOM_SPEECH_CONSENT_REQUIRED', 'POST_ROOM_KEYWORDS_CONSENT_REQUIRED'].includes(code) &&
+        !this.state.room
+      ) {
+        try {
+          const room = await this.rooms.detail(this.roomId);
+          if (this.disposed || this.exitRequested) return;
+          this.update({ room });
+        } catch (detailError) {
+          if (this.disposed || this.exitRequested) return;
+          const detailCode = errorCode(detailError);
+          this.update({
+            phase: ['ROOM_ENDED', 'ROOM_CANCELLED'].includes(detailCode) ? 'ended' : 'failed',
+            errorCode: detailCode,
+          });
+          return;
+        }
+      }
       if (['ROOM_ENDED', 'ROOM_CANCELLED'].includes(code)) {
         void this.media.disconnect().catch(() => undefined);
         this.update({ phase: 'ended', errorCode: code });

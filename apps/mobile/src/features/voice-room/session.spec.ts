@@ -578,3 +578,31 @@ it('revoked member display data cancels pending credential connection', async ()
   expect(rooms.detail).toHaveBeenCalledTimes(1);
   await session.dispose();
 });
+
+it('fetches room processing flags only after authoritative consent refusal, without bypassing admission', async () => {
+  const { room, rooms, api, session } = setup();
+  room.sensitiveSpeechDetectionEnabled = true;
+  api.join.mockRejectedValueOnce(new RoomApiError(403, 'ROOM_SPEECH_CONSENT_REQUIRED'));
+  await session.start({ roomId: 'room-1', password: '', rulesAccepted: true });
+  expect(rooms.detail).toHaveBeenCalledTimes(1);
+  expect(session.snapshot).toMatchObject({
+    phase: 'failed',
+    errorCode: 'ROOM_SPEECH_CONSENT_REQUIRED',
+    room: { sensitiveSpeechDetectionEnabled: true },
+  });
+  expect(api.credentials).not.toHaveBeenCalled();
+  await session.dispose();
+});
+it('metadata failure during consent recovery remains retryable rather than disabling an absent consent panel', async () => {
+  const { rooms, api, session } = setup();
+  api.join.mockRejectedValueOnce(new RoomApiError(403, 'ROOM_SPEECH_CONSENT_REQUIRED'));
+  rooms.detail.mockRejectedValueOnce(new Error('offline'));
+  await session.start({ roomId: 'room-1', password: '', rulesAccepted: true });
+  expect(session.snapshot).toMatchObject({
+    phase: 'failed',
+    errorCode: 'NETWORK_ERROR',
+    room: null,
+  });
+  expect(api.credentials).not.toHaveBeenCalled();
+  await session.dispose();
+});
