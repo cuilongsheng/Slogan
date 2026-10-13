@@ -63,11 +63,7 @@ export function SummaryScreen({ roomId }: { roomId: string }) {
 
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('summaryTitle')}
-        subtitle={t('summarySubtitle')}
-        onBack={() => router.back()}
-      />
+      <RoomHeader title={t('summaryTitle')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.scroll}>
         {loading && !summary ? <ActivityIndicator color={tokens.color.purple} /> : null}
         {loadError ? (

@@ -36,4 +36,10 @@ test('branded restoration gates entry, then the simplified login preserves recov
   await page.screenshot({ path: 'docs/acceptance/mobile-ui-v3/runtime/login-zh.png' });
   await page.getByRole('button', { name: '忘记密码？', exact: true }).click();
   await expect(page).toHaveURL(/\/email\/forgot$/);
+  await expect(
+    page.getByText('输入注册邮箱，我们会发送重设密码的链接。', { exact: true }),
+  ).toHaveCount(0);
+  await page.screenshot({
+    path: 'docs/acceptance/mobile-ui-v3/follow-up/password-recovery-zh.png',
+  });
 });

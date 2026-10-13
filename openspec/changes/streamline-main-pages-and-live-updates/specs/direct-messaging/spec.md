@@ -70,3 +70,19 @@ The client SHALL show the approved branded loading page while restoring a sessio
 
 - **WHEN** the owner changes level, capacity, password or schedule choices
 - **THEN** the revised cards invoke the same validated creation behavior and retain a usable opaque submit footer during keyboard display
+
+### Requirement: Compact page headers and Discover toolbar
+
+Mobile page headers SHALL omit introductory subtitles and collapse the space previously reserved for them. Discover SHALL display a centered title and a second row containing the All filter, current room count, source decoration and create action. The count SHALL remain derived from actual list/pagination state. Existing list refresh, creation navigation, form validation, consent and operational feedback SHALL remain functional.
+
+#### Scenario: Open an account or utility page
+
+- **WHEN** a user opens profile, authentication, history, vocabulary, restrictions or room information
+- **THEN** the page title is displayed without introductory subtitle copy or its empty reserved space
+- **AND** the page's existing actions and validation remain available
+
+#### Scenario: Updated Discover toolbar
+
+- **WHEN** the foreground room list loads or refreshes
+- **THEN** its current count is shown beside the All pill and decoration without requiring a page reload
+- **AND** the create action opens the existing creation route

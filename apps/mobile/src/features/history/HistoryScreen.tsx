@@ -80,11 +80,7 @@ export function HistoryScreen() {
 
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('historyTitle')}
-        subtitle={t('historySubtitle')}
-        onBack={() => router.back()}
-      />
+      <RoomHeader title={t('historyTitle')} onBack={() => router.back()} />
       {error && items.length > 0 ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {t('historyLoadFailed')}

@@ -119,7 +119,6 @@ export function BasicProfileScreen() {
     <AuthPage scroll scrollRef={scroll}>
       <StepHeader
         title={t(state.kind === 'signedIn' && state.me.profile ? 'editProfile' : 'profileTitle')}
-        description={t('profileDescription')}
         step={1}
         onBack={() => {
           if (state.kind === 'signedIn' && state.me.profile) router.back();
@@ -337,12 +336,7 @@ export function PreferencesScreen() {
   };
   return (
     <AuthPage scroll scrollRef={scroll}>
-      <StepHeader
-        title={t('preferencesTitle')}
-        description={t('preferencesDescription')}
-        step={2}
-        onBack={() => router.back()}
-      />
+      <StepHeader title={t('preferencesTitle')} step={2} onBack={() => router.back()} />
       <Text
         onLayout={(event) => {
           interestsY.current = event.nativeEvent.layout.y;

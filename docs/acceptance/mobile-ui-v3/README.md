@@ -1,5 +1,7 @@
 # Revised mobile shell, login and room creation
 
+The subsequent owner-requested subtitle removal and Discover toolbar revision are recorded in [follow-up/README.md](follow-up/README.md), with final captures and verification logs. The comparison viewer includes both revisions.
+
 Recorded on 2026-10-13. Branch `codex/mobile-ui-v3`, based on `248b12378ba3ce9210af2fd73077ff9651fa8720`. The six latest owner requests supersede the previous no-main-heading / 18px-back-heading decision. This batch is not published to production.
 
 ## Targets and evidence

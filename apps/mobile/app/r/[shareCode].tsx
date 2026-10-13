@@ -45,11 +45,7 @@ export default function RoomShareRoute() {
   }, [shareCode, attributionId, router]);
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('roomDetailTitle')}
-        subtitle={t('roomDetailSubtitle')}
-        onBack={() => router.replace('/rooms')}
-      />
+      <RoomHeader title={t('roomDetailTitle')} onBack={() => router.replace('/rooms')} />
       <View style={styles.center}>
         {failed ? (
           <>

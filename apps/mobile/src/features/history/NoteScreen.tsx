@@ -76,11 +76,7 @@ export function NoteScreen({ roomId }: { roomId: string }) {
 
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('noteTitle')}
-        subtitle={t('noteSubtitle')}
-        onBack={() => router.back()}
-      />
+      <RoomHeader title={t('noteTitle')} onBack={() => router.back()} />
       {loading ? (
         <ActivityIndicator style={styles.center} color={tokens.color.purple} />
       ) : !remote ? (

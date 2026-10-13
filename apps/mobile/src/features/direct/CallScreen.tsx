@@ -222,14 +222,7 @@ export function CallScreen({ callId }: { callId: string }) {
               <Text style={styles.duration}>{duration}</Text>
             </>
           ) : (
-            <DirectHeading
-              title={t(live ? 'directVoiceAction' : endedLabel)}
-              subtitle={
-                incoming && live
-                  ? undefined
-                  : t(call.status === 'ENDED' ? 'directCallStopped' : 'directCallPrivate')
-              }
-            />
+            <DirectHeading title={t(live ? 'directVoiceAction' : endedLabel)} />
           )}
           <Image
             source={call.peer?.avatarUrl ? { uri: call.peer.avatarUrl } : defaultAvatar}

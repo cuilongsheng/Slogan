@@ -10,17 +10,10 @@ export const directColors = {
   canvas: tokens.color.surface,
   muted: tokens.color.muted,
 };
-export function DirectHeading({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string | undefined;
-}) {
+export function DirectHeading({ title }: { title: string }) {
   return (
-    <View style={[styles.heading, !subtitle && styles.compactHeading]}>
+    <View style={styles.heading}>
       <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
     </View>
   );
 }
@@ -74,10 +67,8 @@ export function PeerRow({
   );
 }
 const styles = StyleSheet.create({
-  heading: { height: 86, paddingHorizontal: 20 },
-  compactHeading: { height: 58 },
+  heading: { height: 58, paddingHorizontal: 20 },
   title: { fontSize: 18, height: 42, lineHeight: 26, fontWeight: '700', color: directColors.ink },
-  subtitle: { fontSize: 14, height: 24, lineHeight: 20, color: directColors.muted, marginTop: 10 },
   row: {
     height: 88,
     borderRadius: 24,

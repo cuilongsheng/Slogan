@@ -62,6 +62,8 @@ test('mobile personal safety page renders empty and active restriction states', 
   await expect(page.getByText('我的限制与申诉')).toBeVisible();
   await page.getByRole('button', { name: /我的限制与申诉/ }).click();
   await expect(page.getByText('暂无限制记录')).toBeVisible();
+  await expect(page.getByText('查看限制原因、期限与申诉结果', { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: 'docs/acceptance/mobile-ui-v3/follow-up/restrictions-zh.png' });
   await page.screenshot({ path: 'test-results/mobile-safety-empty-390-visual-fixture.png' });
   item = {
     id: '00000000-0000-4000-8000-000000000011',

@@ -47,6 +47,7 @@ export const tokens = {
       capacityPassword: '#D9F5F1',
       capacityFull: '#FFF1E8',
       filterSelected: '#EEE8FF',
+      filterNeutral: '#F0EFF3',
       tabAccent: '#5538D8',
       tabMuted: '#96919F',
       countMuted: '#817B8C',

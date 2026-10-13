@@ -91,12 +91,10 @@ export function RoomPage({
 
 export function RoomHeader({
   title,
-  subtitle,
   onBack,
   style,
 }: {
   title: string;
-  subtitle?: string;
   onBack?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
@@ -118,7 +116,6 @@ export function RoomHeader({
             {title}
           </Text>
         </View>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
     </View>
   );
@@ -215,7 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFB48B',
     opacity: 0.16,
   },
-  header: { flexDirection: 'row', minHeight: 76, paddingHorizontal: 16 },
+  header: { flexDirection: 'row', minHeight: 56, paddingHorizontal: 16 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   backIcon: { width: 24, height: 24 },
   heading: { marginLeft: 8, flex: 1 },
@@ -223,7 +220,6 @@ const styles = StyleSheet.create({
   titleRow: { height: 40, justifyContent: 'center' },
   title: { color: tokens.color.foreground, fontSize: 16, fontWeight: '700', lineHeight: 24 },
   listTitle: { fontSize: 18, lineHeight: 26 },
-  subtitle: { color: tokens.color.muted, fontSize: 12, lineHeight: 21 },
   action: {
     height: 56,
     borderRadius: 28,

@@ -27,3 +27,5 @@ No WebSocket service, notification provider, database migration or new profile r
 ## Approved UI revision (2026-10-13)
 
 Implement the six supplied updated UI targets: branded session-restoration loading, centered main-page titles, refresh-only successful empty Partners/Messages states, 16px aligned back headers, revised room-creation cards, and simplified login layout. Retain actual refresh/authentication/create/password/scheduling behavior, localized copy, WeChat disabled state, and recoverable errors. No artificial loading delay or API/schema change.
+
+The owner additionally removes introductory page subtitles across the mobile screens and restores Discover's second-row filter/count/burst/create layout from the supplied header crop. Operational status, consent content and validation feedback retain their existing behavior.

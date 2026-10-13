@@ -113,25 +113,31 @@ export function RoomListScreen() {
         <Text accessibilityRole="header" style={styles.pageTitle}>
           {t('roomsTitle')}
         </Text>
-        <Image source={speechBurstIcon} style={styles.brand} />
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={t('createRoomTitle')}
-          onPress={() => router.push('/rooms/create')}
-          style={styles.add}
-        >
-          <Image source={addIcon} style={styles.addIcon} />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.filterRow}>
-        <View style={styles.filter}>
-          <Text style={styles.filterText}>{t('roomsAll')}</Text>
+        <View style={styles.toolbar}>
+          <View style={styles.toolbarContent}>
+            <View style={styles.filter} testID="rooms-all-filter">
+              <Text style={styles.filterText}>{t('roomsAll')}</Text>
+            </View>
+            <Text style={styles.count} testID="rooms-count" numberOfLines={1}>
+              {tf(
+                cursor ? 'roomsLoadedCount' : rooms.length === 1 ? 'roomsCountOne' : 'roomsCount',
+                {
+                  count: visibleRooms.length,
+                },
+              )}
+              {'  ›'}
+            </Text>
+            <Image source={speechBurstIcon} style={styles.brand} testID="rooms-speech-burst" />
+          </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t('createRoomTitle')}
+            onPress={() => router.push('/rooms/create')}
+            style={styles.add}
+          >
+            <Image source={addIcon} style={styles.addIcon} />
+          </TouchableOpacity>
         </View>
-        <Text style={styles.count}>
-          {tf(cursor ? 'roomsLoadedCount' : rooms.length === 1 ? 'roomsCountOne' : 'roomsCount', {
-            count: visibleRooms.length,
-          })}
-        </Text>
       </View>
       {exitDelivery.failed && (
         <TouchableOpacity
@@ -198,14 +204,7 @@ export function RoomListScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    marginLeft: 16,
-    marginRight: 20,
-    height: 46,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-end',
-  },
+  header: { height: 93 },
   pageTitle: {
     position: 'absolute',
     top: -10,
@@ -217,9 +216,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: tokens.color.foreground,
   },
-  brand: { position: 'absolute', right: 56, top: 4, width: 32, height: 32 },
+  toolbar: {
+    marginTop: 21,
+    paddingLeft: 16,
+    paddingRight: 28,
+    height: 42,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  toolbarContent: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'flex-start' },
+  brand: { marginTop: 9, marginLeft: 18, width: 32, height: 32 },
   add: {
-    marginTop: 4,
+    flexShrink: 0,
     width: 42,
     height: 42,
     borderRadius: 21,
@@ -228,25 +237,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addIcon: { width: 24, height: 24 },
-  filterRow: {
-    height: 47,
-    marginLeft: 15,
-    marginRight: 17,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
   filter: {
+    marginTop: 9,
     height: 32,
     width: 57,
+    flexShrink: 0,
     borderRadius: 16,
-    backgroundColor: colors.filterSelected,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.filterNeutral,
   },
-  filterText: { fontSize: 12, fontWeight: '500', lineHeight: 23, color: colors.tabAccent },
+  filterText: {
+    position: 'absolute',
+    left: -4,
+    top: 6,
+    width: 57,
+    height: 23,
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+    color: colors.countMuted,
+  },
   count: {
-    marginTop: 13,
+    marginTop: 14,
+    marginLeft: 20,
+    minWidth: 62,
+    flexShrink: 1,
     color: colors.countMuted,
     fontSize: 12,
     fontWeight: '500',

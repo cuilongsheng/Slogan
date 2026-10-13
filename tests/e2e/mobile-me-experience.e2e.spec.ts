@@ -89,6 +89,10 @@ test('Edit profile loads saved values, cancels without saving and preserves opti
   await page.goto('http://localhost:8082/me');
   await page.getByRole('button', { name: '修改资料', exact: true }).click();
   await expect(page.getByTestId('profile-name')).toHaveValue('Saved name');
+  await expect(page.getByText('这些资料帮助你找到合适的聊天伙伴。', { exact: true })).toHaveCount(
+    0,
+  );
+  await page.screenshot({ path: 'docs/acceptance/mobile-ui-v3/follow-up/profile-zh.png' });
   await page.getByTestId('profile-name').fill('Discard this edit');
   await page.getByRole('button', { name: '返回', exact: true }).click();
   await expect(page).toHaveURL(/\/me$/);

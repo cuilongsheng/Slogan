@@ -29,3 +29,9 @@ The latest instruction supersedes the earlier 18px/no-main-title override. Main 
 Render one reusable brand loading component for initial session restoration on index, Gate and sign-in. No delay or new network request. Place the same source logo, wordmark and two sparkle decorations on the loading page. Login omits the old promotional card. Empty successful lists show the soft Refresh action only; failures still expose a localized error and retry. Main headers do not alter polling or tabs. Create retains dynamic validation, password expansion, instant start/end time, and scheduled inputs with an opaque keyboard-aware footer. No backend, provider, role, consent or permission logic changes.
 
 The owner explicitly retained password recovery at the right side of the password label on 2026-10-13. This is the authorized login-source difference.
+
+## Header follow-up
+
+Remove introductory copy beneath page titles from RoomHeader, profile StepHeader, authentication FlowHeader and call headings, including "Reasons, dates, and appeal results". Remove their reserved vertical space and retain 16px back-title alignment. Form labels, validation errors, restriction records, permission/reconnection feedback and consent/privacy body content remain functional.
+
+Discover source 115:1197 now matches the supplied header crop: centered title on its own line; filter at (16,79), count at (93,84), speech burst at (173,79), create action at (320,70), at 390x844. Use one responsive second row, a gray All pill, an actual dynamic count with the source chevron, the existing exported burst asset and the existing create action. Preserve card start y=142 and the list's polling/pagination/navigation behavior. Longer localized count text may expand its slot; smaller viewports remain bounded. The owner's explicit centered main-heading instruction supersedes the source title's slightly left-shifted text box.

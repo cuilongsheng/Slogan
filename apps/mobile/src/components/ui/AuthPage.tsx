@@ -150,12 +150,10 @@ export function FormField({
 
 export function StepHeader({
   title,
-  description,
   step,
   onBack,
 }: {
   title: string;
-  description: string;
   step: 1 | 2;
   onBack?: () => void;
 }) {
@@ -174,7 +172,6 @@ export function StepHeader({
           {title}
         </Text>
       </View>
-      <Text style={styles.description}>{description}</Text>
       <Text style={styles.step}>{step === 1 ? t('stepOne') : t('stepTwo')}</Text>
       <View style={styles.track}>
         <View style={[styles.progress, { width: step === 1 ? '50%' : '100%' }]} />
@@ -240,13 +237,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '700',
     flex: 1,
-  },
-  description: {
-    marginTop: 12,
-    minHeight: 42,
-    color: tokens.color.muted,
-    fontSize: 12,
-    lineHeight: 22,
   },
   step: { color: tokens.color.purple, fontSize: 12, lineHeight: 24, fontWeight: '600' },
   track: { marginTop: 7, height: 4, borderRadius: 2, backgroundColor: tokens.color.border },

@@ -271,11 +271,7 @@ export function VocabularyScreen() {
 
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('vocabularyTitle')}
-        subtitle={t('vocabularySubtitle')}
-        onBack={() => router.back()}
-      />
+      <RoomHeader title={t('vocabularyTitle')} onBack={() => router.back()} />
       <View style={styles.filters}>
         {(['ALL', 'KEYWORD', 'EXPRESSION'] as const).map((option) => (
           <TouchableOpacity

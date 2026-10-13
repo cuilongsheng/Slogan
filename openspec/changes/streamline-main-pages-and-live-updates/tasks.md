@@ -17,3 +17,9 @@ The follow-up icon actions and invitation-picker updates are included. The owner
 - [x] 10. Restore centered main headings and refresh-only empty states, preserving error/polling behavior.
 - [x] 11. Align all back headers at 16px and update compact creation cards and instant timing.
 - [x] 12. Verify relevant static, functional and original-to-runtime web visual evidence for the final revision; record native-device and publication boundaries separately.
+
+## Header follow-up
+
+- [x] 13. Remove introductory page subtitles and their reserved space across mobile headers.
+- [x] 14. Restore Discover's filter/count/burst/create toolbar to the latest original header layout.
+- [x] 15. Verify affected page/refresh/navigation flows and save final source/runtime evidence.
