@@ -13,16 +13,16 @@ test('missing speech purposes are explicitly accepted in the direct entry state'
   await expect(page.getByText('房间语音处理同意')).toBeVisible();
   expect(consentCommands).toEqual([]);
   expect(detailReads).toEqual([entryRoomId]);
-  await expect(page.getByRole('button', { name: '重试', exact: true })).toBeDisabled();
+  await expect(page.getByTestId('voice-entry-retry')).toBeDisabled();
   await page.getByRole('button', { name: '阅读并同意此目的' }).first().click();
   await expect.poll(() => consentCommands.length).toBe(1);
-  await expect(page.getByRole('button', { name: '重试', exact: true })).toBeDisabled();
+  await expect(page.getByTestId('voice-entry-retry')).toBeDisabled();
   await page.getByRole('button', { name: '阅读并同意此目的' }).click();
-  await expect(page.getByRole('button', { name: '重试', exact: true })).toBeEnabled();
+  await expect(page.getByTestId('voice-entry-retry')).toBeEnabled();
   await page.screenshot({
     path: 'docs/acceptance/simplify-direct-room-entry/consents-runtime-web-fixture.png',
   });
-  await page.getByRole('button', { name: '重试', exact: true }).click();
+  await page.getByTestId('voice-entry-retry').click();
   await expect.poll(() => joins.length).toBe(2);
   expect(consentCommands).toHaveLength(2);
   await expect(page.getByRole('checkbox')).toHaveCount(0);

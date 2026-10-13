@@ -1,0 +1,66 @@
+$ jest --runInBand
+PASS src/features/voice-room/VoiceRoomScreen.spec.tsx
+PASS src/components/ui/MainTabs.spec.tsx
+PASS src/features/profile/ProfileScreens.spec.tsx
+PASS src/features/auth/LoginScreen.spec.tsx
+PASS src/features/voice-room/ExpressionAssistSheet.spec.tsx
+PASS src/features/safety/RestrictionsScreen.spec.tsx
+PASS src/features/room-discovery/RoomListScreen.spec.tsx
+PASS src/features/auth/EmailScreens.spec.tsx
+PASS src/features/room-discovery/RoomDetailScreen.spec.tsx
+PASS src/features/voice-room/RoomControls.spec.tsx
+PASS src/features/social/SocialScreen.spec.tsx
+PASS src/features/learning/VocabularyScreen.spec.tsx
+PASS src/features/learning/SummaryScreen.spec.tsx
+PASS src/features/room-discovery/RoomPasswordDialog.spec.tsx
+PASS src/features/history/NoteScreen.spec.tsx
+PASS src/features/history/HistoryScreen.spec.tsx
+PASS src/features/room-processing-consents/RoomConsentPanel.spec.tsx
+PASS src/features/room-discovery/RoomCard.spec.tsx
+PASS src/features/voice-room/RoomExtensionSheet.spec.tsx
+PASS src/features/voice-room/RoomSafetyAlertsSheet.spec.tsx
+PASS src/features/voice-room/RoomDeviceNotice.spec.tsx
+PASS src/features/voice-room/useRoomMessages.spec.tsx
+PASS src/features/auth/Gate.spec.tsx
+PASS src/components/ui/RoomShareAction.spec.tsx
+PASS src/features/profile/draft.spec.ts
+PASS src/features/room-discovery/RoomEntryRoutes.spec.tsx
+PASS src/features/social/PresenceHeartbeat.spec.tsx
+PASS src/features/voice-room/RoomExitProvider.spec.tsx
+PASS src/features/voice-room/session.spec.ts
+PASS src/api/boundedFetch.spec.ts
+PASS src/services/googleSignIn.spec.ts
+PASS src/features/voice-room/media.native.spec.ts
+PASS src/features/auth/session.spec.ts
+PASS src/features/voice-room/media.web.spec.ts
+PASS src/features/voice-room/assistanceApi.spec.ts
+PASS src/features/voice-room/mediaCore.spec.ts
+PASS src/features/learning/api.spec.ts
+PASS src/features/room-discovery/api.spec.ts
+PASS src/services/microphoneProbeCache.spec.ts
+PASS src/services/voiceDeviceCheck.spec.ts
+PASS src/features/room-creation/api.spec.ts
+PASS src/features/voice-room/holdToTalk.spec.ts
+PASS src/features/voice-room/exitQueue.spec.ts
+PASS src/features/room-creation/form.spec.ts
+PASS src/features/auth/routes.spec.ts
+PASS src/services/googleSignIn.web.spec.ts
+PASS src/api/client.spec.ts
+PASS src/features/voice-room/safetySignal.spec.ts
+PASS src/features/auth/session.web.spec.ts
+PASS src/features/room-discovery/microphone.spec.ts
+PASS src/features/social/api.spec.ts
+PASS src/features/voice-room/api.spec.ts
+PASS src/services/foregroundPolling.spec.ts
+PASS src/features/room-processing-consents/api.spec.ts
+PASS src/features/history/api.spec.ts
+PASS src/features/room-discovery/join.spec.ts
+PASS src/features/safety/api.spec.ts
+PASS src/services/latestRequestQueue.spec.ts
+PASS src/features/room-discovery/presentation.spec.ts
+
+Test Suites: 59 passed, 59 total
+Tests:       217 passed, 217 total
+Snapshots:   0 total
+Time:        7.188 s, estimated 8 s
+Ran all test suites.

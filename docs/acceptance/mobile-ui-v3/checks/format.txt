@@ -1,0 +1,3 @@
+$ prettier --check "apps/**/*.{ts,tsx,js,cjs,json,css,html,yml,yaml}" "packages/**/*.{ts,tsx,js,json}" "tests/**/*.{ts,tsx}" "scripts/**/*.mjs" "package.json" "*.config.{mjs,cjs,ts}" "pnpm-workspace.yaml" "tsconfig.base.json" "docs/architecture/toolchain.md" "docs/development.md" "docs/acceptance/*.md" "rules/{admin,mobile,backend}.md"
+Checking formatting...
+All matched files use Prettier code style!

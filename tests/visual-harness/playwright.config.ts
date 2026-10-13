@@ -3,6 +3,7 @@ export default defineConfig({
   testDir: '.',
   outputDir: '../../test-results/visual',
   testMatch: [
+    'mobile-shell.spec.ts',
     'voice.spec.ts',
     'rooms.spec.ts',
     'reconnecting.spec.ts',

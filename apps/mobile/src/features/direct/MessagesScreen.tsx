@@ -1,3 +1,5 @@
+import { MainListEmpty } from '../../components/ui/MainListEmpty';
+import { MainPageTitle } from '../../components/ui/MainPageTitle';
 import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
@@ -108,6 +110,7 @@ export function MessagesScreen() {
   };
   return (
     <RoomPage direct hidePreviewIndicator>
+      <MainPageTitle title={t('navMessages')} />
       {error && items.length === 0 ? (
         <View style={{ flex: 1 }}>
           <View style={styles.failure}>
@@ -123,6 +126,8 @@ export function MessagesScreen() {
         </View>
       ) : loading ? (
         <ActivityIndicator style={{ flex: 1 }} color={directColors.violet} />
+      ) : items.length === 0 ? (
+        <MainListEmpty onRefresh={() => void load()} />
       ) : (
         <FlatList
           data={items}

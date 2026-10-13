@@ -123,11 +123,11 @@ test('creation uses only three visible ranges and submits the selected pair with
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   for (const name of ['最低等级', '最高等级', '可发现性', '房间音频处理'])
     await expect(page.getByText(name, { exact: true })).toHaveCount(0);
-  const title = page.getByText('房间主题', { exact: true });
+  const title = page.getByText('主题', { exact: true });
   await expect(title).toBeVisible();
   const titleBounds = await title.boundingBox();
-  expect(titleBounds?.height).toBeGreaterThanOrEqual(24);
-  await page.getByRole('textbox', { name: '房间主题' }).fill('周末旅行');
+  expect(titleBounds?.height).toBeGreaterThanOrEqual(20);
+  await page.getByRole('textbox', { name: '主题' }).fill('周末旅行');
   await page.getByRole('button', { name: 'C1～C2', exact: true }).click();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({

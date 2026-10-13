@@ -302,11 +302,7 @@ export function SocialScreen() {
 
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('socialTitle')}
-        subtitle={t('socialSubtitle')}
-        onBack={() => router.back()}
-      />
+      <RoomHeader title={t('socialTitle')} onBack={() => router.back()} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

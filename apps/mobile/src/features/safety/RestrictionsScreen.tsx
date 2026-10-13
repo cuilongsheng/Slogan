@@ -160,11 +160,7 @@ export function RestrictionsScreen() {
 
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('safetyTitle')}
-        subtitle={t('safetySubtitle')}
-        onBack={() => router.back()}
-      />
+      <RoomHeader title={t('safetyTitle')} onBack={() => router.back()} />
       {submitMessage ? (
         <Text accessibilityRole="alert" style={styles.message}>
           {submitMessage}

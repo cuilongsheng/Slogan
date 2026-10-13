@@ -22,15 +22,7 @@ const usernameValid = (value: string) => /^[A-Za-z0-9_]{3,20}$/.test(value.trim(
 const emailValid = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 const passwordValid = (value: string) => [...value].length >= 8 && [...value].length <= 128;
 
-function FlowHeader({
-  title,
-  description,
-  step,
-}: {
-  title: string;
-  description: string;
-  step?: 1 | 2;
-}) {
+function FlowHeader({ title, step }: { title: string; step?: 1 | 2 }) {
   return (
     <>
       <View style={styles.header}>
@@ -45,7 +37,6 @@ function FlowHeader({
           {title}
         </Text>
       </View>
-      <Text style={styles.description}>{description}</Text>
       {step && (
         <View style={styles.progressBlock}>
           <Text style={styles.step}>{step === 1 ? t('accountStepOne') : t('accountStepTwo')}</Text>
@@ -154,7 +145,7 @@ export function RegisterScreen() {
 
   return (
     <AuthPage scroll>
-      <FlowHeader title={t('createAccount')} description={t('createAccountDescription')} step={1} />
+      <FlowHeader title={t('createAccount')} step={1} />
       <View style={styles.registrationFields}>
         <Input
           label={t('username')}
@@ -252,11 +243,7 @@ export function VerifyEmailScreen() {
 
   return (
     <AuthPage scroll>
-      <FlowHeader
-        title={t('verifyEmailTitle')}
-        description={t('verifyEmailDescription')}
-        step={2}
-      />
+      <FlowHeader title={t('verifyEmailTitle')} step={2} />
       <View style={styles.mailIllustration}>
         <Image source={mailIcon} style={styles.mailIcon} />
       </View>
@@ -321,7 +308,7 @@ export function ForgotPasswordScreen() {
   };
   return (
     <AuthPage scroll>
-      <FlowHeader title={t('forgotPasswordTitle')} description={t('forgotPasswordDescription')} />
+      <FlowHeader title={t('forgotPasswordTitle')} />
       <View style={styles.guide}>
         <Text style={styles.guideTitle}>{t('protectAccount')}</Text>
         <Text style={styles.guideCopy}>{t('resetLinkWarning')}</Text>
@@ -389,7 +376,7 @@ export function ResetPasswordScreen() {
   };
   return (
     <AuthPage scroll>
-      <FlowHeader title={t('resetPasswordTitle')} description={t('resetPasswordDescription')} />
+      <FlowHeader title={t('resetPasswordTitle')} />
       {done ? (
         <Text style={styles.accepted}>{t('passwordUpdated')}</Text>
       ) : (
@@ -429,14 +416,7 @@ export function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', height: 40 },
   back: { width: 24, height: 24, marginRight: 14 },
-  title: { fontSize: 18, fontWeight: '700', color: tokens.color.foreground },
-  description: {
-    marginTop: 8,
-    minHeight: 42,
-    color: tokens.color.muted,
-    fontSize: 12,
-    lineHeight: 22,
-  },
+  title: { fontSize: 16, lineHeight: 24, fontWeight: '700', color: tokens.color.foreground },
   progressBlock: { marginTop: 8 },
   step: { color: tokens.color.purple, fontSize: 12, lineHeight: 24 },
   track: { marginTop: 7, height: 4, borderRadius: 2, backgroundColor: tokens.color.border },

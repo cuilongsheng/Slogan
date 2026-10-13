@@ -1,5 +1,7 @@
+import { AppText as Text } from '../../components/ui/AppText';
+import { BrandLoading } from '../../components/ui/BrandLoading';
 import { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 
 import { AuthPage, PrimaryButton } from '../../components/ui/AuthPage';
@@ -14,7 +16,7 @@ import { tokens } from '../../styles/tokens';
 import { useAuth } from './context';
 import { SessionError } from './session';
 import { emailAuthMessage } from './emailApi';
-import sloganLogo from '../../../../../assets/brand/slogan-logo.png';
+import sloganLogo from '../../../assets/icons/slogan-mark-v3.png';
 import googleIcon from '../../../assets/icons/google.png';
 import wechatIcon from '../../../assets/icons/wechat.png';
 
@@ -80,12 +82,7 @@ export function LoginScreen() {
   };
 
   if (state.kind === 'signedIn') return <Redirect href="/" />;
-  if (state.kind === 'loading')
-    return (
-      <AuthPage>
-        <Text style={styles.status}>{t('signingIn')}</Text>
-      </AuthPage>
-    );
+  if (state.kind === 'loading') return <BrandLoading />;
   if (state.kind === 'error')
     return (
       <AuthPage>
@@ -105,13 +102,8 @@ export function LoginScreen() {
         <Image source={sloganLogo} style={styles.logo} resizeMode="contain" />
         <Text style={styles.wordmark}>{t('appName')}</Text>
       </View>
-      <View style={styles.hero}>
-        <Text style={styles.eyebrow}>{t('eyebrow')}</Text>
-        <View style={styles.heroSparkle}>
-          <Text style={styles.heroSparkleText}>✦</Text>
-        </View>
-        <Text style={styles.heroTitle}>{t('heroTitle')}</Text>
-        <Text style={styles.heroDescription}>{t('heroDescription')}</Text>
+      <View pointerEvents="none" style={styles.heroSparkle}>
+        <Text style={styles.heroSparkleText}>✦</Text>
       </View>
       <View style={styles.credentials}>
         <Text style={styles.label}>{t('username')}</Text>
@@ -127,7 +119,12 @@ export function LoginScreen() {
           style={styles.input}
           testID="login-username"
         />
-        <Text style={[styles.label, styles.passwordLabel]}>{t('password')}</Text>
+        <View style={styles.passwordRow}>
+          <Text style={styles.label}>{t('password')}</Text>
+          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/email/forgot')}>
+            <Text style={styles.recoveryText}>{t('forgotPasswordAction')}</Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
           accessibilityLabel={t('password')}
           autoCapitalize="none"
@@ -147,9 +144,6 @@ export function LoginScreen() {
           >
             <Text style={styles.actionText}>{t('createAccountAction')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/email/forgot')}>
-            <Text style={styles.actionText}>{t('forgotPasswordAction')}</Text>
-          </TouchableOpacity>
         </View>
       </View>
       <PrimaryButton
@@ -159,6 +153,7 @@ export function LoginScreen() {
           void signInPassword();
         }}
         testID="password-sign-in"
+        labelStyle={{ fontSize: 15, lineHeight: 25 }}
       />
       {message ? (
         <Text accessibilityRole="alert" style={styles.message}>
@@ -166,9 +161,9 @@ export function LoginScreen() {
         </Text>
       ) : (
         <View style={styles.divider}>
-          <View style={styles.dividerLine} />
+          <View style={[styles.dividerLine, styles.dividerLeft]} />
           <Text style={styles.dividerText}>{t('otherSignInMethods')}</Text>
-          <View style={styles.dividerLine} />
+          <View style={[styles.dividerLine, styles.dividerRight]} />
         </View>
       )}
       {state.message && (
@@ -208,24 +203,18 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   logoArea: { alignItems: 'center', marginTop: 25 },
   logo: { width: 112, height: 112 },
-  wordmark: { marginTop: 2, fontSize: 24, fontWeight: '700', color: tokens.color.foreground },
-  hero: {
-    marginTop: 30,
-    marginHorizontal: -8,
-    minHeight: 132,
-    borderRadius: 24,
-    backgroundColor: tokens.color.peach,
-    borderWidth: 1,
-    borderColor: tokens.color.peachBorder,
-    padding: 16,
-    paddingTop: 22,
-    justifyContent: 'flex-start',
+  wordmark: {
+    marginTop: 2,
+    fontSize: 24,
+    lineHeight: 28,
+    height: 36,
+    fontWeight: '700',
+    color: tokens.color.brandInk,
   },
-  eyebrow: { color: tokens.color.purple, fontSize: 11, fontWeight: '700' },
   heroSparkle: {
     position: 'absolute',
-    top: 16,
-    right: 20,
+    top: 213,
+    right: 36,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -233,24 +222,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroSparkleText: { color: tokens.color.coral, fontSize: 22, lineHeight: 26 },
-  heroTitle: {
-    marginTop: 4,
-    color: tokens.color.foreground,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  heroDescription: { marginTop: 16, color: tokens.color.muted, fontSize: 12, textAlign: 'center' },
-  credentials: { marginTop: 26, marginBottom: 31 },
+  heroSparkleText: { color: tokens.color.coral, fontSize: 18, lineHeight: 30 },
+  credentials: { marginTop: 78, marginBottom: 28 },
   label: {
-    color: tokens.color.foreground,
+    color: tokens.color.authInk,
     fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 24,
-    marginBottom: 8,
+    fontWeight: '500',
+    lineHeight: 18,
+    height: 24,
+    marginBottom: 3,
   },
-  passwordLabel: { marginTop: 10 },
+  passwordRow: {
+    marginTop: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  recoveryText: {
+    fontSize: 12,
+    lineHeight: 18,
+    height: 24,
+    marginBottom: 3,
+    color: tokens.color.purple,
+  },
   input: {
     height: 54,
     borderWidth: 1,
@@ -259,11 +253,19 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.panel,
     paddingHorizontal: 16,
     color: tokens.color.foreground,
-    fontSize: 16,
+    fontSize: 14,
+    paddingVertical: 0,
+    lineHeight: 26,
   },
-  actions: { marginTop: 6, flexDirection: 'row', justifyContent: 'space-between' },
-  actionText: { color: tokens.color.purple, fontSize: 13, fontWeight: '600', lineHeight: 19 },
-  socialRow: { flexDirection: 'row', gap: 12, marginTop: 18, marginBottom: 20 },
+  actions: { marginTop: 8, flexDirection: 'row', justifyContent: 'space-between' },
+  actionText: {
+    color: tokens.color.purple,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 17,
+    height: 20,
+  },
+  socialRow: { flexDirection: 'row', gap: 12, marginTop: 13, marginBottom: 20 },
   socialOption: {
     flex: 1,
     height: 52,
@@ -280,10 +282,12 @@ const styles = StyleSheet.create({
   googleGlyph: { transform: [{ translateX: -3 }] },
   busyOption: { opacity: 0.48 },
   socialIcon: { width: 24, height: 24 },
-  socialText: { color: tokens.color.foreground, fontSize: 14, fontWeight: '600' },
+  socialText: { color: tokens.color.authInk, fontSize: 14, fontWeight: '500' },
   message: { color: tokens.color.error, marginTop: 12, textAlign: 'center', fontSize: 14 },
-  divider: { flexDirection: 'row', alignItems: 'center', marginTop: 22, gap: 8 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: tokens.color.border },
-  dividerText: { color: tokens.color.muted, fontSize: 12 },
+  divider: { flexDirection: 'row', height: 22, alignItems: 'center', marginTop: 24 },
+  dividerLine: { height: 1, backgroundColor: tokens.color.border },
+  dividerLeft: { flex: 1, marginRight: 13 },
+  dividerRight: { flex: 114 / 127, marginLeft: 16 },
+  dividerText: { color: tokens.color.authHintInk, fontSize: 12, lineHeight: 16, height: 22 },
   status: { color: tokens.color.foreground, marginTop: 100, textAlign: 'center', fontSize: 16 },
 });

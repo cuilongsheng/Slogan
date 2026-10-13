@@ -1,3 +1,4 @@
+import type { StyleProp, TextStyle } from 'react-native';
 import { type ReactNode, type Ref } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -7,14 +8,16 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 
+import { AppText as Text } from './AppText';
+import { phonePreview } from './phonePreview';
 import { t } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
+import backIcon from '../../../assets/icons/auth-back.png';
 import statusBarPreview from '../../../assets/icons/statusbar-v2.png';
 
 export function AuthPage({
@@ -28,7 +31,11 @@ export function AuthPage({
 }) {
   const page = (
     <SafeAreaView
-      style={[styles.safe, Platform.OS === 'web' && styles.webPage]}
+      style={[
+        styles.safe,
+        Platform.OS === 'web' && phonePreview.frame,
+        Platform.OS === 'web' && styles.webPage,
+      ]}
       edges={['top', 'bottom']}
     >
       <StatusBar style="dark" />
@@ -72,11 +79,13 @@ export function PrimaryButton({
   onPress,
   disabled = false,
   testID,
+  labelStyle,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   testID?: string;
+  labelStyle?: StyleProp<TextStyle>;
 }) {
   return (
     <TouchableOpacity
@@ -86,7 +95,7 @@ export function PrimaryButton({
       onPress={onPress}
       style={[styles.button, disabled && styles.disabled]}
     >
-      <Text style={styles.buttonText}>{label}</Text>
+      <Text style={[styles.buttonText, labelStyle]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -141,12 +150,10 @@ export function FormField({
 
 export function StepHeader({
   title,
-  description,
   step,
   onBack,
 }: {
   title: string;
-  description: string;
   step: 1 | 2;
   onBack?: () => void;
 }) {
@@ -159,13 +166,12 @@ export function StepHeader({
           onPress={onBack}
           style={styles.back}
         >
-          <Text style={styles.backText}>‹</Text>
+          <Image source={backIcon} style={styles.backIcon} />
         </TouchableOpacity>
         <Text accessibilityRole="header" style={styles.headerTitle}>
           {title}
         </Text>
       </View>
-      <Text style={styles.description}>{description}</Text>
       <Text style={styles.step}>{step === 1 ? t('stepOne') : t('stepTwo')}</Text>
       <View style={styles.track}>
         <View style={[styles.progress, { width: step === 1 ? '50%' : '100%' }]} />
@@ -176,8 +182,8 @@ export function StepHeader({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: tokens.color.surface },
-  webCanvas: { flex: 1, alignItems: 'center', backgroundColor: '#EFF4FC' },
-  webPage: { flex: 1, width: '100%', maxWidth: 390, paddingTop: 48 },
+  webCanvas: phonePreview.canvas,
+  webPage: { paddingTop: 48 },
   ambient: {
     position: 'absolute',
     top: -52,
@@ -223,15 +229,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   header: { flexDirection: 'row', alignItems: 'center', height: 42 },
-  back: { width: 38, height: 38, justifyContent: 'center' },
-  backText: { color: tokens.color.foreground, fontSize: 34, lineHeight: 36 },
-  headerTitle: { color: tokens.color.foreground, fontSize: 18, fontWeight: '700' },
-  description: {
-    marginTop: 12,
-    minHeight: 42,
-    color: tokens.color.muted,
-    fontSize: 12,
-    lineHeight: 22,
+  back: { width: 40, height: 40, justifyContent: 'center' },
+  backIcon: { width: 24, height: 24 },
+  headerTitle: {
+    color: tokens.color.foreground,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '700',
+    flex: 1,
   },
   step: { color: tokens.color.purple, fontSize: 12, lineHeight: 24, fontWeight: '600' },
   track: { marginTop: 7, height: 4, borderRadius: 2, backgroundColor: tokens.color.border },

@@ -1,0 +1,85 @@
+[WebServer] (node:61487) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] $ vite
+[WebServer] (node:61507) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61513) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:61520) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 26 tests using 5 workers
+
+(node:61670) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61669) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61672) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61673) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61671) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   4 [chromium] › tests/e2e/admin-workspace.e2e.spec.ts:3:1 › guest is redirected to an actionable admin sign-in page (2.8s)
+  ✓   3 [chromium] › tests/e2e/admin-workspace.e2e.spec.ts:10:1 › auditor can read audit but cannot open role management (2.8s)
+  ✓   7 [chromium] › tests/e2e/admin-workspace.e2e.spec.ts:90:1 › room cases are labeled and cannot select personal sanctions (1.6s)
+  ✓   6 [chromium] › tests/e2e/admin-workspace.e2e.spec.ts:39:1 › role revocation requires explicit confirmation (1.7s)
+  ✓   5 [chromium] › tests/e2e/admin-visual.e2e.spec.ts:131:1 › case and appeal statistics use server totals beside real list rows (4.6s)
+  ✓   1 [chromium] › tests/e2e/admin-visual.e2e.spec.ts:272:1 › incident, role and audit desktop layouts render contract records (5.4s)
+  ✓   8 [chromium] › tests/e2e/mobile-create-visual.e2e.spec.ts:4:1 › mobile instant and scheduled creation show V2 settings with processing choices disabled by default (4.5s)
+  ✓  10 [chromium] › tests/e2e/mobile-direct-entry.e2e.spec.ts:6:1 › a room card directly invokes admission without rules or device pages (4.4s)
+  ✓  11 [chromium] › tests/e2e/mobile-direct-entry.e2e.spec.ts:26:1 › password entry proceeds straight to admission (3.7s)
+  ✓  14 [chromium] › tests/e2e/mobile-direct-entry.e2e.spec.ts:41:3 › legacy /device URL enters directly and keeps invitation (2.0s)
+  ✓  13 [chromium] › tests/e2e/mobile-direct-entry.e2e.spec.ts:41:3 › legacy /rules URL enters directly and keeps invitation (2.6s)
+  ✓  12 [chromium] › tests/e2e/mobile-direct-entry.e2e.spec.ts:41:3 › legacy detail URL enters directly and keeps invitation (2.7s)
+  ✓  15 [chromium] › tests/e2e/mobile-direct-entry.e2e.spec.ts:41:3 › legacy /password URL enters directly and keeps invitation (1.5s)
+  ✓  17 [chromium] › tests/e2e/mobile-direct-entry.e2e.spec.ts:74:1 › a shared instant room opens the same direct session (1.7s)
+  ✓  16 [chromium] › tests/e2e/mobile-direct-entry.e2e.spec.ts:56:1 › wrong password is corrected in the same dialog, without a preparation page (1.9s)
+  ✓  18 [chromium] › tests/e2e/mobile-history-visual.e2e.spec.ts:5:1 › personal history distinguishes reservation, opens an eligible private note, and saves a version (1.9s)
+  ✓  20 [chromium] › tests/e2e/mobile-login-visual.e2e.spec.ts:5:1 › branded restoration gates entry, then the simplified login preserves recovery and social actions (1.8s)
+  ✓  19 [chromium] › tests/e2e/mobile-learning-visual.e2e.spec.ts:5:1 › post-room summary and private vocabulary work in the mobile web viewport (3.1s)
+  ✓   2 [chromium] › tests/e2e/admin-visual.e2e.spec.ts:5:1 › approved room layout at desktop viewport with deterministic visual data (17.0s)
+  ✓  22 [chromium] › tests/e2e/mobile-me-experience.e2e.spec.ts:55:1 › Edit profile loads saved values, cancels without saving and preserves optional fields on a later save (2.1s)
+  ✓  23 [chromium] › tests/e2e/mobile-room-consents-visual.e2e.spec.ts:6:1 › missing speech purposes are explicitly accepted in the direct entry state (2.6s)
+  ✓  21 [chromium] › tests/e2e/mobile-me-experience.e2e.spec.ts:4:1 › My has profile editing and working account entries, and logs out before returning to login (4.7s)
+  ✓  24 [chromium] › tests/e2e/mobile-room-consents-visual.e2e.spec.ts:31:1 › privacy page revokes one future purpose without changing the other (2.6s)
+  ✓  25 [chromium] › tests/e2e/mobile-safety-visual.e2e.spec.ts:26:1 › mobile personal safety page renders empty and active restriction states (3.2s)
+  ✓  26 [chromium] › tests/e2e/mobile-social-visual.e2e.spec.ts:5:1 › friends, available people and received room invitation are reachable (1.8s)
+  ✘   9 [chromium] › tests/e2e/mobile-create-visual.e2e.spec.ts:45:1 › direct level boundaries are submitted for both room kinds and retained in appointment detail (31.2s)
+
+
+  1) [chromium] › tests/e2e/mobile-create-visual.e2e.spec.ts:45:1 › direct level boundaries are submitted for both room kinds and retained in appointment detail
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('textbox', { name: '主题', exact: true })
+
+
+      94 |   });
+      95 |   await page.goto('http://localhost:8082/rooms/create');
+    > 96 |   await page.getByRole('textbox', { name: '主题', exact: true }).fill('预约旅行练习');
+         |                                                                ^
+      97 |   await page.getByText('预约房间', { exact: true }).click();
+      98 |   const tomorrow = new Date(Date.now() + 86400000);
+      99 |   const date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+        at /Users/cls/.codex/worktrees/room-experience-release/Slogan/tests/e2e/mobile-create-visual.e2e.spec.ts:96:64
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e/mobile-create-visual.e2e-d-b365b-ained-in-appointment-detail-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e/mobile-create-visual.e2e-d-b365b-ained-in-appointment-detail-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e/mobile-create-visual.e2e-d-b365b-ained-in-appointment-detail-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/e2e/mobile-create-visual.e2e-d-b365b-ained-in-appointment-detail-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests/e2e/mobile-create-visual.e2e.spec.ts:45:1 › direct level boundaries are submitted for both room kinds and retained in appointment detail
+  25 passed (44.2s)

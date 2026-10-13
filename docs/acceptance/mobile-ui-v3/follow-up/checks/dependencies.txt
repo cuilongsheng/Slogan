@@ -1,0 +1,4 @@
+$ node scripts/audit-workspaces.mjs && depcruise apps packages --config dependency-cruiser.config.cjs
+Workspace dependency audit passed.
+
+✔ no dependency violations found (824 modules, 3164 dependencies cruised)

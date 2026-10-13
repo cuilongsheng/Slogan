@@ -73,11 +73,7 @@ export function AppointmentDetailScreen({ roomId }: { roomId: string }) {
   }
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('createRoomScheduled')}
-        subtitle={t('roomDetailSubtitle')}
-        onBack={() => router.replace('/rooms')}
-      />
+      <RoomHeader title={t('createRoomScheduled')} onBack={() => router.replace('/rooms')} />
       {loading && !room ? (
         <ActivityIndicator style={styles.center} color={tokens.color.purple} />
       ) : error || !room ? (

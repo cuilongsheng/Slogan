@@ -42,11 +42,7 @@ export function RoomDetailScreen({
             : null;
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('roomDetailTitle')}
-        subtitle={t('roomDetailSubtitle')}
-        onBack={() => router.back()}
-      />
+      <RoomHeader title={t('roomDetailTitle')} onBack={() => router.back()} />
       {loading && !room ? (
         <ActivityIndicator style={styles.center} color={tokens.color.purple} />
       ) : error || !room ? (

@@ -7,6 +7,7 @@ import bold from '../../../assets/fonts/NotoSansSC-700.ttf';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 
+import { BrandLoading } from '../src/components/ui/BrandLoading';
 import { AuthProvider } from '../src/features/auth/context';
 import { EmailFlowProvider } from '../src/features/auth/emailFlow';
 import { ProfileDraftProvider } from '../src/features/profile/draft';
@@ -28,7 +29,7 @@ export default function RootLayout() {
     NotoSansSCBold: bold,
   });
   if (error) throw error;
-  if (!loaded || !localeReady) return null;
+  if (!loaded || !localeReady) return <BrandLoading />;
   return (
     <AuthProvider>
       <MessageUnreadProvider>

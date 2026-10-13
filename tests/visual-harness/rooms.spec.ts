@@ -36,8 +36,8 @@ test('real room list matches measured geometry and preserves direct entry', asyn
     return route.fulfill({ json: { items: rooms, nextCursor: null } });
   });
   await page.goto('/?screen=rooms');
-  await expect(page.getByText('开启畅聊', { exact: true })).toHaveCount(0);
-  await expect(page.getByText('4 个房间', { exact: true })).toBeVisible();
+  await expect(page.getByText('开启畅聊', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('rooms-count')).toHaveText('4 个房间 ›');
   await expect(page.getByText('Nora · 房主', { exact: true })).toBeVisible();
   await page.evaluate(async () => {
     await document.fonts.ready;
@@ -94,4 +94,45 @@ test('Discover shows another actor new room on the next foreground refresh witho
   await page.clock.fastForward(5000);
   await expect(page.getByTestId('room-card-room-1')).toBeVisible();
   await expect(page.getByTestId('room-card-room-0')).toBeVisible();
+});
+
+test.describe('revised Discover toolbar', () => {
+  test.use({ deviceScaleFactor: 1 });
+  test('source toolbar stays bounded in both languages and preserves the actual count and creation action', async ({
+    page,
+  }) => {
+    await page.clock.setFixedTime(now);
+    const allRooms = Array.from({ length: 12 }, (_, index) => ({
+      ...rooms[index % rooms.length],
+      id: `room-${index}`,
+    }));
+    await page.route('**/v1/rooms?*', (route) =>
+      route.fulfill({ json: { items: allRooms, nextCursor: null } }),
+    );
+    await page.goto('/?screen=rooms');
+    await expect(page.getByTestId('rooms-count')).toHaveText('12 个房间 ›');
+    await page.evaluate(() => document.fonts.ready);
+    const filter = page.getByTestId('rooms-all-filter');
+    const count = page.getByTestId('rooms-count');
+    const burst = page.getByTestId('rooms-speech-burst');
+    const create = page.getByRole('button', { name: '创建房间', exact: true });
+    expect(await filter.boundingBox()).toEqual({ x: 16, y: 79, width: 57, height: 32 });
+    expect(await count.boundingBox()).toEqual({ x: 93, y: 84, width: 62, height: 17 });
+    expect(await burst.boundingBox()).toEqual({ x: 173, y: 79, width: 32, height: 32 });
+    expect(await create.boundingBox()).toEqual({ x: 320, y: 70, width: 42, height: 42 });
+    await page.screenshot({ path: 'docs/acceptance/mobile-ui-v3/follow-up/discover-zh.png' });
+    await create.click();
+    await expect(page).toHaveURL('/rooms/create');
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/?screen=rooms&language=en');
+    await expect(page.getByTestId('rooms-count')).toContainText('12 rooms');
+    const englishCount = await page.getByTestId('rooms-count').boundingBox();
+    const englishBurst = await page.getByTestId('rooms-speech-burst').boundingBox();
+    const englishCreate = await page
+      .getByRole('button', { name: 'Create a room', exact: true })
+      .boundingBox();
+    expect(englishCount!.x + englishCount!.width).toBeLessThanOrEqual(englishBurst!.x);
+    expect(englishBurst!.x + englishBurst!.width).toBeLessThan(englishCreate!.x);
+    await page.screenshot({ path: 'docs/acceptance/mobile-ui-v3/follow-up/discover-en-320.png' });
+  });
 });

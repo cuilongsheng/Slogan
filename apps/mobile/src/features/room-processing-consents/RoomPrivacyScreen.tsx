@@ -11,11 +11,7 @@ export function RoomPrivacyScreen() {
   const router = useRouter();
   return (
     <RoomPage ambient>
-      <RoomHeader
-        title={t('roomPrivacyTitle')}
-        subtitle={t('roomPrivacySubtitle')}
-        onBack={() => router.back()}
-      />
+      <RoomHeader title={t('roomPrivacyTitle')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <RoomConsentPanel safety keywords allowRevoke />
         <Text style={styles.note}>{t('roomPrivacyHistoryNote')}</Text>

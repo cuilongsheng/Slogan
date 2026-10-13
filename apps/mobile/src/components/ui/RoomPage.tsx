@@ -1,3 +1,4 @@
+import type { StyleProp, TextStyle } from 'react-native';
 import { AppText as Text } from './AppText';
 import { useEffect, type ReactNode } from 'react';
 import { phonePreview } from './phonePreview';
@@ -10,7 +11,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +37,7 @@ export function RoomPage({
   useEffect(() => installRoomAudioGestures(), []);
   const content = (
     <SafeAreaView
+      testID="room-page"
       edges={['top', 'bottom']}
       style={[
         styles.safe,
@@ -90,12 +91,10 @@ export function RoomPage({
 
 export function RoomHeader({
   title,
-  subtitle,
   onBack,
   style,
 }: {
   title: string;
-  subtitle?: string;
   onBack?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
@@ -112,10 +111,11 @@ export function RoomHeader({
         </TouchableOpacity>
       )}
       <View style={[styles.heading, !onBack && styles.headingFull]}>
-        <Text accessibilityRole="header" style={[styles.title, !onBack && styles.listTitle]}>
-          {title}
-        </Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <View style={styles.titleRow}>
+          <Text accessibilityRole="header" style={[styles.title, !onBack && styles.listTitle]}>
+            {title}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -126,11 +126,13 @@ export function RoomAction({
   onPress,
   disabled = false,
   testID,
+  labelStyle,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   testID?: string;
+  labelStyle?: StyleProp<TextStyle>;
 }) {
   return (
     <TouchableOpacity
@@ -141,7 +143,7 @@ export function RoomAction({
       testID={testID}
       style={[styles.action, disabled && styles.actionDisabled]}
     >
-      <Text style={styles.actionText}>{label}</Text>
+      <Text style={[styles.actionText, labelStyle]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -210,14 +212,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFB48B',
     opacity: 0.16,
   },
-  header: { flexDirection: 'row', minHeight: 76, paddingHorizontal: 16 },
+  header: { flexDirection: 'row', minHeight: 56, paddingHorizontal: 16 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   backIcon: { width: 24, height: 24 },
   heading: { marginLeft: 8, flex: 1 },
   headingFull: { marginLeft: 4 },
-  title: { color: tokens.color.foreground, fontSize: 18, fontWeight: '700', lineHeight: 26 },
+  titleRow: { height: 40, justifyContent: 'center' },
+  title: { color: tokens.color.foreground, fontSize: 16, fontWeight: '700', lineHeight: 24 },
   listTitle: { fontSize: 18, lineHeight: 26 },
-  subtitle: { color: tokens.color.muted, fontSize: 12, lineHeight: 21 },
   action: {
     height: 56,
     borderRadius: 28,

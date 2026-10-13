@@ -4,7 +4,7 @@
 
 Desktop Bridge file 56nIowZmvBhb0QJvOlDQdU / 02 UI, section 186:2347: Partners 186:2348, Messages 186:2369, Chat 186:2389, Incoming 186:2407, Active 186:2418, all 390×844. Me source 152:1473. Native safe areas and the previously authorized 402×874 web maximum remain.
 
-The owner explicitly overrides original page heading sizes to 18px and removes headings from Discover, Partners, Messages and Me. The owner subsequently replaces Partners Chat and Messages View text buttons with 34px circular chat-icon actions. Keep their functional controls and content; eliminate the vacant title space. Chat has 34px content-sized bubbles with 14px/20px text, 10px side margins and about 14px vertical gaps. Composer retains a 50px base, adequate internal line space and grows to 120px. Incoming/active calls follow original source geometry; titles use 18px. The replacement receiver is an editable 24px rounded SVG exported through Desktop Bridge. Preserve original unrelated frames.
+The earlier approved batch used 18px headings and removed main-tab headings. The latest shell revision below supersedes those heading decisions. The owner subsequently replaced Partners Chat and Messages View text buttons with 34px circular chat-icon actions. Keep their functional controls and content. Chat has 34px content-sized bubbles with 14px/20px text, 10px side margins and about 14px vertical gaps. Composer retains a 50px base, adequate internal line space and grows to 120px. Incoming/active calls follow original source geometry; titles use 18px. The replacement receiver is an editable 24px rounded SVG exported through Desktop Bridge. Preserve original unrelated frames.
 
 ## Updates
 
@@ -20,4 +20,18 @@ The existing basic/preferences routes already permit eligible users. Add an expl
 
 ## Risk and rollback
 
-No schema migration; unread aggregation uses current message/member indexes. Polling is foreground-only and bounded; it is eventual synchronization within the polling interval plus network time, not a claim of server push or instant delivery. Server TTL still owns offline presence. Backend failures preserve known UI data and remain retryable. Revert scheduler or observer independently if resource use regresses. Remove the optional unread endpoint/client polling to revert notification aggregation; no data rollback is required. Device/visual acceptance remains pending until the owner requests the final batch.
+No schema migration; unread aggregation uses current message/member indexes. Polling is foreground-only and bounded; it is eventual synchronization within the polling interval plus network time, not a claim of server push or instant delivery. Server TTL still owns offline presence. Backend failures preserve known UI data and remain retryable. Revert scheduler or observer independently if resource use regresses. Remove the optional unread endpoint/client polling to revert notification aggregation; no data rollback is required. Web verification is recorded with each batch; physical-device acceptance remains pending.
+
+## Latest owner-approved shell revision
+
+The latest instruction supersedes the earlier 18px/no-main-title override. Main tabs display centered titles; back-page headings use 16px and a shared 40px aligned row. Desktop Bridge targets: loading 206:2879, login 118:2970, create 190:2659 plus the original detached capacity/privacy card 206:3129, empty Partners 206:3032; 390x844. Preserve their original nodes. The main empty-title text extends outside its source bounds; owner-requested centering controls runtime alignment. Capacity node 206:3129 is outside the create frame but its measured content and the supplied complete screenshot own the intended layout. Ignore Figma editor annotations.
+
+Render one reusable brand loading component for initial session restoration on index, Gate and sign-in. No delay or new network request. Place the same source logo, wordmark and two sparkle decorations on the loading page. Login omits the old promotional card. Empty successful lists show the soft Refresh action only; failures still expose a localized error and retry. Main headers do not alter polling or tabs. Create retains dynamic validation, password expansion, instant start/end time, and scheduled inputs with an opaque keyboard-aware footer. No backend, provider, role, consent or permission logic changes.
+
+The owner explicitly retained password recovery at the right side of the password label on 2026-10-13. This is the authorized login-source difference.
+
+## Header follow-up
+
+Remove introductory copy beneath page titles from RoomHeader, profile StepHeader, authentication FlowHeader and call headings, including "Reasons, dates, and appeal results". Remove their reserved vertical space and retain 16px back-title alignment. Form labels, validation errors, restriction records, permission/reconnection feedback and consent/privacy body content remain functional.
+
+Discover source 115:1197 now matches the supplied header crop: centered title on its own line; filter at (16,79), count at (93,84), speech burst at (173,79), create action at (320,70), at 390x844. Use one responsive second row, a gray All pill, an actual dynamic count with the source chevron, the existing exported burst asset and the existing create action. Preserve card start y=142 and the list's polling/pagination/navigation behavior. Longer localized count text may expand its slot; smaller viewports remain bounded. The owner's explicit centered main-heading instruction supersedes the source title's slightly left-shifted text box.

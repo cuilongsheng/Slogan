@@ -2,7 +2,7 @@
 
 ### Requirement: Compact direct communication and live main-page updates
 
-The mobile client MUST implement the approved compact chat/call/list layouts, display input placeholders without clipping, use content-sized text bubbles, use 18px page headings, omit headings on the four main tabs, and provide an explicit profile-edit action above Logout.
+The mobile client MUST implement the approved compact chat/call/list layouts, display input placeholders without clipping, use content-sized text bubbles, use aligned 16px back-page headings and centered headings on the four main tabs, and provide an explicit profile-edit action above Logout.
 
 #### Scenario: Short text and composer
 
@@ -48,3 +48,41 @@ An open host invitation picker SHALL refresh authenticated online idle candidate
 - **WHEN** an eligible peer becomes online and idle while the host invitation picker is open
 - **THEN** the peer is included by a subsequent foreground refresh without closing and reopening the picker
 - **AND** background or closed pickers do not continue candidate requests
+
+### Requirement: Branded restoration and revised mobile layouts
+
+The client SHALL show the approved branded loading page while restoring a session, without adding a minimum delay or additional network requests. Login and room creation SHALL follow the latest approved layouts while retaining their existing validation and API operations. Successful empty Partners and Messages lists SHALL show a centered soft Refresh control; failed requests SHALL retain actionable error feedback.
+
+#### Scenario: Restore session
+
+- **WHEN** authentication is restoring on the index, sign-in or guarded route
+- **THEN** the branded loading page is visible until the existing session result determines navigation
+
+#### Scenario: Empty and failed lists
+
+- **WHEN** a main list successfully returns no rows
+- **THEN** its centered heading and Refresh action remain visible
+- **AND** refresh executes the existing authenticated list request
+- **WHEN** that request fails
+- **THEN** a localized actionable error remains visible
+
+#### Scenario: Revised room settings
+
+- **WHEN** the owner changes level, capacity, password or schedule choices
+- **THEN** the revised cards invoke the same validated creation behavior and retain a usable opaque submit footer during keyboard display
+
+### Requirement: Compact page headers and Discover toolbar
+
+Mobile page headers SHALL omit introductory subtitles and collapse the space previously reserved for them. Discover SHALL display a centered title and a second row containing the All filter, current room count, source decoration and create action. The count SHALL remain derived from actual list/pagination state. Existing list refresh, creation navigation, form validation, consent and operational feedback SHALL remain functional.
+
+#### Scenario: Open an account or utility page
+
+- **WHEN** a user opens profile, authentication, history, vocabulary, restrictions or room information
+- **THEN** the page title is displayed without introductory subtitle copy or its empty reserved space
+- **AND** the page's existing actions and validation remain available
+
+#### Scenario: Updated Discover toolbar
+
+- **WHEN** the foreground room list loads or refreshes
+- **THEN** its current count is shown beside the All pill and decoration without requiring a page reload
+- **AND** the create action opens the existing creation route
