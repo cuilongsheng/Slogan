@@ -144,7 +144,8 @@ test('empty/error recovery preserves recent conversations without a Friends tab'
 }) => {
   await fixtures(page, { empty: true, error: true });
   await page.goto('/?screen=partners&language=en');
-  await expect(page.getByText('No available partners right now.')).toBeVisible();
+  await expect(page.getByTestId('empty-list-refresh')).toBeVisible();
+  await expect(page.getByText('No available partners right now.')).toHaveCount(0);
   await capture(page, 'partners-empty');
   await page.goto('/?screen=messages&language=en');
   await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
@@ -290,15 +291,15 @@ test('compact bubbles and input preserve legible text while a call event cannot 
   ).toHaveCount(0);
 });
 
-test('main tab headings are absent and incoming messages show a navigation badge', async ({
+test('main tab headings are centered and incoming messages show a navigation badge', async ({
   page,
 }) => {
   await fixtures(page);
   await page.goto('/?screen=partners&language=en');
   await expect(page.getByText('Luna', { exact: true })).toBeVisible();
-  await expect(page.getByText('Partners', { exact: true })).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: 'Partners', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Messages, 4 unread', exact: true })).toBeVisible();
   await page.goto('/?screen=me&language=en');
   await expect(page.getByRole('button', { name: 'Edit profile', exact: true })).toBeVisible();
-  await expect(page.getByText('Me', { exact: true })).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: 'Me', exact: true })).toBeVisible();
 });

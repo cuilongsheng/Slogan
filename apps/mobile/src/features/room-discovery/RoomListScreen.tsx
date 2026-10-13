@@ -110,6 +110,9 @@ export function RoomListScreen() {
   return (
     <RoomPage discovery>
       <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.pageTitle}>
+          {t('roomsTitle')}
+        </Text>
         <Image source={speechBurstIcon} style={styles.brand} />
         <TouchableOpacity
           accessibilityRole="button"
@@ -202,6 +205,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'flex-end',
+  },
+  pageTitle: {
+    position: 'absolute',
+    top: -10,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 16,
+    lineHeight: 32,
+    fontWeight: '700',
+    color: tokens.color.foreground,
   },
   brand: { position: 'absolute', right: 56, top: 4, width: 32, height: 32 },
   add: {

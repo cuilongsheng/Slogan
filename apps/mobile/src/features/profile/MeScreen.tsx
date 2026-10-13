@@ -1,3 +1,4 @@
+import { MainPageTitle } from '../../components/ui/MainPageTitle';
 import defaultAvatar from '../../../assets/profile/default-avatar.png';
 import { AppText as Text } from '../../components/ui/AppText';
 import { useState } from 'react';
@@ -25,6 +26,7 @@ export function MeScreen() {
   const [busy, setBusy] = useState(false);
   return (
     <RoomPage direct hidePreviewIndicator>
+      <MainPageTitle title={t('meTitle')} size={18} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.settings}>
           <TouchableOpacity

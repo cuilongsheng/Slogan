@@ -90,7 +90,9 @@ function VoiceButton({
   disabled,
   style,
   textStyle,
+  testID,
 }: {
+  testID?: string;
   label: string;
   onPress: () => void;
   disabled?: boolean;
@@ -99,6 +101,7 @@ function VoiceButton({
 }) {
   return (
     <TouchableOpacity
+      testID={testID}
       accessibilityRole="button"
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
@@ -246,6 +249,7 @@ function SessionState({
                       (member) => member.role !== 'HOST' && member.presence === 'CONNECTED',
                     ))
                 }
+                testID="voice-entry-retry"
                 label={t('retry')}
                 onPress={() =>
                   exiting ? void session.leave(successor ?? undefined) : void session.start(draft)
@@ -1229,10 +1233,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#30204E',
     borderRadius: 12,
   },
-  backHit: { position: 'absolute', left: -6, top: -2, width: 36, height: 38 },
-  backIcon: { position: 'absolute', left: 3, top: 5, width: 24, height: 24 },
-  headerMiddle: { position: 'absolute', left: 36, right: 90, top: 3 },
-  headerTopic: { color: '#fff', fontSize: 18, lineHeight: 25, fontWeight: '700', height: 31 },
+  backHit: {
+    position: 'absolute',
+    left: -6,
+    top: 0,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: { width: 24, height: 24 },
+  headerMiddle: {
+    position: 'absolute',
+    left: 36,
+    right: 90,
+    top: 0,
+    height: 40,
+    justifyContent: 'center',
+  },
+  headerTopic: { color: '#fff', fontSize: 16, lineHeight: 24, fontWeight: '700' },
   headerStatus: {
     position: 'absolute',
     left: 0,

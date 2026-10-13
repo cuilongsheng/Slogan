@@ -36,7 +36,7 @@ test('real room list matches measured geometry and preserves direct entry', asyn
     return route.fulfill({ json: { items: rooms, nextCursor: null } });
   });
   await page.goto('/?screen=rooms');
-  await expect(page.getByText('开启畅聊', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('开启畅聊', { exact: true })).toBeVisible();
   await expect(page.getByText('4 个房间', { exact: true })).toBeVisible();
   await expect(page.getByText('Nora · 房主', { exact: true })).toBeVisible();
   await page.evaluate(async () => {

@@ -429,7 +429,7 @@ export function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', height: 40 },
   back: { width: 24, height: 24, marginRight: 14 },
-  title: { fontSize: 18, fontWeight: '700', color: tokens.color.foreground },
+  title: { fontSize: 16, lineHeight: 24, fontWeight: '700', color: tokens.color.foreground },
   description: {
     marginTop: 8,
     minHeight: 42,

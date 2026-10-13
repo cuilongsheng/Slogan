@@ -1,4 +1,5 @@
 import React from 'react';
+import { BrandLoading } from '../../apps/mobile/src/components/ui/BrandLoading';
 import { createRoot } from 'react-dom/client';
 import { VoiceRoomScreen } from '../../apps/mobile/src/features/voice-room/VoiceRoomScreen';
 import './fonts.css';
@@ -10,7 +11,9 @@ import { MessageUnreadProvider } from '../../apps/mobile/src/features/direct/Mes
 import { MeScreen } from '../../apps/mobile/src/features/profile/MeScreen';
 const screen = new URL(location.href).searchParams.get('screen');
 const directScreen =
-  screen === 'partners' ? (
+  screen === 'loading' ? (
+    <BrandLoading />
+  ) : screen === 'partners' ? (
     <PartnersScreen />
   ) : screen === 'messages' ? (
     <MessagesScreen />

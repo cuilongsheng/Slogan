@@ -27,15 +27,18 @@ test('mobile instant and scheduled creation show V2 settings with processing cho
   await expect(page.getByRole('button', { name: 'A1～A2', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'B1～B2', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'C1～C2', exact: true })).toBeVisible();
-  await expect(page.getByText('B1–B2', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'B1～B2', exact: true })).toHaveCSS(
+    'background-color',
+    'rgb(101, 70, 236)',
+  );
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
-    path: 'docs/acceptance/simplify-room-and-mobile-experience/create-runtime-fixture.png',
+    path: 'docs/acceptance/mobile-ui-v3/runtime/create-runtime-fixture.png',
   });
   await page.getByText('预约房间', { exact: true }).click();
   await expect(page.getByText('创建预约房间', { exact: true })).toBeVisible();
   await page.screenshot({
-    path: 'docs/acceptance/simplify-room-and-mobile-experience/create-scheduled-runtime-fixture.png',
+    path: 'docs/acceptance/mobile-ui-v3/runtime/create-scheduled-runtime-fixture.png',
   });
 });
 
@@ -77,7 +80,7 @@ test('direct level boundaries are submitted for both room kinds and retained in 
     route.fulfill({ json: appointment }),
   );
   await page.goto('http://localhost:8082/rooms/create');
-  await page.getByRole('textbox', { name: '房间主题', exact: true }).fill('旅行英语练习');
+  await page.getByRole('textbox', { name: '主题', exact: true }).fill('旅行英语练习');
   await page.getByRole('button', { name: 'C1～C2', exact: true }).click();
   await page.getByRole('button', { name: 'B1～B2', exact: true }).click();
   await page.getByRole('button', { name: '创建并开放房间' }).click();
@@ -90,7 +93,7 @@ test('direct level boundaries are submitted for both room kinds and retained in 
     postRoomKeywordsEnabled: false,
   });
   await page.goto('http://localhost:8082/rooms/create');
-  await page.getByRole('textbox', { name: '房间主题', exact: true }).fill('预约旅行练习');
+  await page.getByRole('textbox', { name: '主题', exact: true }).fill('预约旅行练习');
   await page.getByText('预约房间', { exact: true }).click();
   const tomorrow = new Date(Date.now() + 86400000);
   const date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;

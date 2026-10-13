@@ -1,5 +1,5 @@
 import { AppText as Text } from '../../components/ui/AppText';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   Image,
@@ -72,7 +72,16 @@ function Chip({
       onPress={onPress}
     >
       <Text
-        style={[styles.chipText, soft && styles.levelChipText, selected && styles.chipTextSelected]}
+        style={[
+          styles.chipText,
+          soft && styles.levelChipText,
+          selected && styles.chipTextSelected,
+          compact && {
+            fontSize: selected ? 11 : 12,
+            lineHeight: 16,
+            fontWeight: selected ? '700' : '500',
+          },
+        ]}
       >
         {label}
       </Text>
@@ -81,7 +90,16 @@ function Chip({
 }
 
 export function CreateRoomScreen() {
-  useLanguage();
+  const language = useLanguage();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const instantEnd = new Date(now + 2 * 60 * 60_000).toLocaleTimeString(
+    language === 'zh' ? 'zh-CN' : 'en-GB',
+    { hour: '2-digit', minute: '2-digit', hour12: false },
+  );
   const router = useRouter();
   const { authorized } = useAuth();
   const joinDraft = useJoinDraft();
@@ -138,7 +156,7 @@ export function CreateRoomScreen() {
     <RoomPage ambient>
       <RoomHeader
         title={t('createRoomTitle')}
-        style={{ minHeight: 54 }}
+        style={{ minHeight: 40 }}
         onBack={() => router.back()}
       />
       <ScrollView
@@ -162,12 +180,7 @@ export function CreateRoomScreen() {
             style={styles.topicInput}
           />
           <View style={styles.levelRow}>
-            <Text style={styles.helper}>{t('createRoomLevel')}</Text>
-            <Text style={styles.levelValue}>
-              {form.cefrLevelMin === form.cefrLevelMax
-                ? form.cefrLevelMin
-                : `${form.cefrLevelMin}–${form.cefrLevelMax}`}
-            </Text>
+            <Text style={[styles.label, styles.levelLabel]}>{t('createRoomLevel')}</Text>
           </View>
           <View style={styles.levelChoices}>
             {roomLevelRanges.map((range) => (
@@ -198,18 +211,20 @@ export function CreateRoomScreen() {
           </View>
           <View style={styles.accessRow}>
             <Text style={[styles.label, styles.accessLabel]}>{t('createRoomAccess')}</Text>
-            <Chip
-              style={[styles.accessChip, styles.openChip]}
-              label={t('createRoomOpen')}
-              selected={!form.passwordEnabled}
-              onPress={() => update({ passwordEnabled: false, password: '' })}
-            />
-            <Chip
-              style={[styles.accessChip, styles.passwordChip]}
-              label={t('createRoomPassword')}
-              selected={form.passwordEnabled}
-              onPress={() => update({ passwordEnabled: true })}
-            />
+            <View style={styles.accessChoices}>
+              <Chip
+                style={[styles.accessChip, { width: language === 'zh' ? 83 : 110 }]}
+                label={t('createRoomOpen')}
+                selected={!form.passwordEnabled}
+                onPress={() => update({ passwordEnabled: false, password: '' })}
+              />
+              <Chip
+                style={[styles.accessChip, { width: language === 'zh' ? 89 : 133 }]}
+                label={t('createRoomPassword')}
+                selected={form.passwordEnabled}
+                onPress={() => update({ passwordEnabled: true })}
+              />
+            </View>
           </View>
           {form.passwordEnabled && (
             <TextInput
@@ -243,7 +258,12 @@ export function CreateRoomScreen() {
             />
           </View>
           {form.mode === 'instant' ? (
-            <Text style={styles.helper}>{t('createRoomInstantHint')}</Text>
+            <View style={styles.instantDetails}>
+              <Text style={styles.helper}>{t('createRoomInstantHint')}</Text>
+              <Text style={styles.instantTime}>
+                {tf('createRoomInstantTiming', { time: instantEnd })}
+              </Text>
+            </View>
           ) : (
             <>
               <View style={styles.dateRow}>
@@ -284,6 +304,7 @@ export function CreateRoomScreen() {
       </ScrollView>
       <View style={styles.footer}>
         <RoomAction
+          labelStyle={{ fontWeight: '500' }}
           label={
             busy
               ? t('submitting')
@@ -302,7 +323,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginHorizontal: 20,
     marginTop: 13,
-    marginBottom: 14,
+    marginBottom: 11,
     lineHeight: 26,
     color: tokens.color.foreground,
     fontSize: 17,
@@ -316,9 +337,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     minHeight: 223,
   },
-  cardTop: { flexDirection: 'row', gap: 6, alignItems: 'center', minHeight: 28 },
+  cardTop: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', minHeight: 28 },
   burst: { width: 25, height: 25, position: 'absolute', right: 39, top: -4 },
-  label: { fontSize: 14, lineHeight: 24, fontWeight: '700', color: tokens.color.foreground },
+  label: { fontSize: 14, lineHeight: 20, fontWeight: '700', color: tokens.color.foreground },
   topicInput: {
     height: 56,
     marginTop: 10,
@@ -328,40 +349,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 13,
     paddingHorizontal: 14,
-    fontSize: 12,
+    fontSize: 14,
+    paddingVertical: 0,
+    lineHeight: 20,
     color: tokens.color.foreground,
   },
   levelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 15,
-    paddingHorizontal: 1,
+    marginTop: 16,
   },
-  helper: { color: tokens.color.muted, fontSize: 12, lineHeight: 22 },
-  levelChip: { flex: 1, minHeight: 44, backgroundColor: '#EEE8FF', borderColor: '#EEE8FF' },
-  levelChipText: { color: tokens.color.purple },
-  levelValue: {
-    width: 64,
-    color: tokens.color.purple,
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 22,
+  helper: { color: tokens.color.muted, fontSize: 12, lineHeight: 18 },
+  levelChip: {
+    flex: 1,
+    minHeight: 44,
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+    borderRadius: 16,
   },
-  levelChoices: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  levelChipText: { color: tokens.color.purple, fontWeight: '700' },
+  levelLabel: { lineHeight: 20 },
+  levelChoices: { flexDirection: 'row', gap: 8, marginTop: 16 },
   accessCard: {
-    marginHorizontal: 16,
-    marginTop: 13,
+    marginLeft: 13,
+    marginRight: 14,
+    marginTop: 18,
     backgroundColor: tokens.color.blueSoft,
     borderRadius: 24,
     padding: 14,
-    minHeight: 173,
+    minHeight: 224,
   },
-  capacityLabel: { marginTop: 4, marginLeft: 2, lineHeight: 25 },
-  chipRow: { flexDirection: 'row', gap: 9, width: '100%', maxWidth: 326, marginTop: 15 },
+  capacityLabel: { marginTop: 4, marginLeft: 2, lineHeight: 20 },
+  chipRow: { flexDirection: 'row', gap: 9, width: '100%', maxWidth: 326, marginTop: 20 },
   capacityChip: { flex: 1, minWidth: 0, minHeight: 36, paddingHorizontal: 0 },
   accessChip: { minHeight: 32, minWidth: 0, flexShrink: 1, paddingHorizontal: 6 },
-  openChip: { width: 100 },
-  passwordChip: { width: 115 },
   accessLabel: { width: 96, flexShrink: 1, lineHeight: 20 },
   chip: {
     minWidth: 48,
@@ -374,17 +395,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  compactChip: { minHeight: 27 },
+  compactChip: { minHeight: 24, borderRadius: 8, paddingHorizontal: 8 },
   chipSelected: { backgroundColor: tokens.color.purple, borderColor: tokens.color.purple },
   chipText: { color: tokens.color.muted, fontSize: 12 },
   chipTextSelected: { color: '#fff', fontWeight: '700' },
-  accessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 6,
-    marginTop: 15,
-  },
+  accessRow: { alignItems: 'flex-start', gap: 24, marginTop: 22 },
+  accessChoices: { flexDirection: 'row', gap: 11 },
   passwordInput: {
     height: 39,
     backgroundColor: '#fff',
@@ -396,14 +412,16 @@ const styles = StyleSheet.create({
   },
   scheduleCard: {
     marginHorizontal: 16,
-    marginTop: 13,
-    paddingHorizontal: 14,
-    paddingTop: 11,
+    marginTop: 9,
+    paddingHorizontal: 16,
+    paddingTop: 15,
     paddingBottom: 12,
     borderRadius: 24,
     backgroundColor: tokens.color.peach,
-    minHeight: 80,
+    minHeight: 111,
   },
+  instantDetails: { marginTop: 16 },
+  instantTime: { fontSize: 11, lineHeight: 16, marginTop: 6, color: tokens.color.muted },
   modeRow: { flexDirection: 'row', gap: 8, marginBottom: 0 },
   dateRow: {
     height: 43,
@@ -422,11 +440,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 20,
+    paddingLeft: 16,
+    paddingRight: 24,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'web' ? 24 : 16,
-    borderTopWidth: 1,
-    borderTopColor: tokens.color.border,
+    paddingBottom: Platform.OS === 'web' ? 37 : 16,
     backgroundColor: tokens.color.surface,
   },
   dateInput: { flex: 1, textAlign: 'right', color: tokens.color.foreground, fontSize: 13 },

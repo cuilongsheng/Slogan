@@ -1,3 +1,5 @@
+import { MainListEmpty } from '../../components/ui/MainListEmpty';
+import { MainPageTitle } from '../../components/ui/MainPageTitle';
 import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -100,6 +102,7 @@ export function PartnersScreen() {
   };
   return (
     <RoomPage direct hidePreviewIndicator>
+      <MainPageTitle title={t('navPartners')} />
       {(loading || items.length > 0) && (
         <View style={styles.summary}>
           <Text style={styles.heading}>{t('partnersAvailable')}</Text>
@@ -108,21 +111,11 @@ export function PartnersScreen() {
       {loading ? (
         <ActivityIndicator style={styles.center} color={directColors.violet} />
       ) : items.length === 0 ? (
-        <View style={styles.center}>
-          <View style={styles.emptyPanel}>
-            <Text style={styles.emptyText}>{t(error ?? 'partnersEmpty')}</Text>
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={() => void (cursor ? moreItems() : refresh())}
-              disabled={more}
-              style={styles.emptyRefresh}
-            >
-              <Text style={styles.emptyRefreshText}>
-                {t(cursor ? 'socialLoadMore' : 'refreshAction')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <MainListEmpty
+          onRefresh={() => void refresh()}
+          disabled={more}
+          error={error ? t(error) : undefined}
+        />
       ) : (
         <FlatList
           data={items}

@@ -2,7 +2,7 @@
 
 ## Why
 
-The owner revised direct-chat, call and list layouts, observed clipped input placeholders and oversized bubbles, and requested visible unread notifications, faster partner discovery, automatic Discover updates, a clear profile-edit action, 18px page headings and no headings on the four main tabs.
+The owner revised direct-chat, call and list layouts, observed clipped input placeholders and oversized bubbles, and requested visible unread notifications, faster partner discovery, automatic Discover updates, a clear profile-edit action, compact headings, followed by the owner-approved centered main titles and 16px back-header revision.
 
 ## What changes
 
@@ -22,4 +22,8 @@ Use foreground-aware, non-overlapping 5-second main-list updates with immediate 
 
 ## Boundaries
 
-No WebSocket service, notification provider, database migration or new profile requirement. Preserve existing authorization, hidden/read boundaries, pagination, blocking, reports and explicit voice-call acceptance. Tests, push, deployment and APK publication remain deferred by the owner until the final combined batch.
+No WebSocket service, notification provider, database migration or new profile requirement. Preserve existing authorization, hidden/read boundaries, pagination, blocking, reports and explicit voice-call acceptance. The owner initially deferred verification and release until a combined batch, then authorized both. The earlier batch shipped through PR #23; the latest UI revision below is verified separately and has not been deployed.
+
+## Approved UI revision (2026-10-13)
+
+Implement the six supplied updated UI targets: branded session-restoration loading, centered main-page titles, refresh-only successful empty Partners/Messages states, 16px aligned back headers, revised room-creation cards, and simplified login layout. Retain actual refresh/authentication/create/password/scheduling behavior, localized copy, WeChat disabled state, and recoverable errors. No artificial loading delay or API/schema change.

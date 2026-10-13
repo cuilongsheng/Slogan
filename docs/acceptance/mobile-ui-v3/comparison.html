@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Slogan UI revision — original/runtime comparison</title>
+  <style>
+    body {
+      margin: 24px;
+      font:
+        15px/1.6 system-ui,
+        sans-serif;
+      color: #26233b;
+      background: #eff4fc;
+    }
+    h1 {
+      font-size: 24px;
+    }
+    h2 {
+      font-size: 18px;
+    }
+    p {
+      max-width: 850px;
+    }
+    a {
+      color: #6546ec;
+    }
+    section {
+      margin: 32px 0;
+    }
+    .pair {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    figure {
+      margin: 0;
+    }
+    figcaption {
+      padding: 8px 0;
+      font-weight: 600;
+    }
+    .screen {
+      width: 390px;
+      height: 844px;
+      max-width: none;
+      display: block;
+    }
+    .overlay {
+      position: relative;
+      width: 390px;
+      height: 844px;
+    }
+    .overlay img {
+      position: absolute;
+      inset: 0;
+    }
+    .overlay img:last-child {
+      opacity: 0.5;
+    }
+    details {
+      margin-top: 16px;
+    }
+    summary {
+      cursor: pointer;
+    }
+    .card {
+      width: 363px;
+      height: 224px;
+    }
+  </style>
+  <h1>Original Figma and running frontend</h1>
+  <p>
+    390×844 logical pixels. Originals came directly from the Figma Desktop Bridge; runtime images
+    came from Chromium with loaded product fonts. Images are unchanged. Read
+    <a href="README.md">the acceptance report</a> for routes, fixture limits, measured regions and
+    authorized differences.
+  </p>
+  <section>
+    <h2>Branded restoration</h2>
+    <div class="pair">
+      <figure>
+        <figcaption>Original · 206:2879</figcaption>
+        <img class="screen" src="figma/loading.png" alt="Original branded loading" />
+      </figure>
+      <figure>
+        <figcaption>Runtime · pending refresh</figcaption>
+        <img class="screen" src="runtime/loading.png" alt="Running branded loading" />
+      </figure>
+    </div>
+    <details>
+      <summary>50% original/runtime overlay</summary>
+      <div class="overlay">
+        <img class="screen" src="figma/loading.png" alt="Original" /><img
+          class="screen"
+          src="runtime/loading.png"
+          alt="Runtime overlay"
+        />
+      </div>
+    </details>
+  </section>
+  <section>
+    <h2>Login · recovery retained and WeChat disabled</h2>
+    <div class="pair">
+      <figure>
+        <figcaption>Original · 118:2970</figcaption>
+        <img class="screen" src="figma/login.png" alt="Original login" />
+      </figure>
+      <figure>
+        <figcaption>Runtime · signed out, Chinese</figcaption>
+        <img class="screen" src="runtime/login-zh.png" alt="Running login" />
+      </figure>
+    </div>
+    <details>
+      <summary>50% original/runtime overlay</summary>
+      <div class="overlay">
+        <img class="screen" src="figma/login.png" alt="Original" /><img
+          class="screen"
+          src="runtime/login-zh.png"
+          alt="Runtime overlay"
+        />
+      </div>
+    </details>
+  </section>
+  <section>
+    <h2>Creation · original capacity card is outside its frame</h2>
+    <p>
+      The blue card was exported separately from node 206:3129. Its measured placement is (13,380),
+      363×224. The source frame was preserved, rather than rebuilt for comparison. The 16px back
+      title follows the owner's explicit override.
+    </p>
+    <div class="pair">
+      <figure>
+        <figcaption>Original · 190:2659</figcaption>
+        <img
+          class="screen"
+          src="figma/create.png"
+          alt="Original creation frame with detached card"
+        />
+      </figure>
+      <figure>
+        <figcaption>Runtime · instant/public</figcaption>
+        <img class="screen" src="runtime/create-zh.png" alt="Running instant room creation" />
+      </figure>
+      <figure>
+        <figcaption>Original detached card · 206:3129</figcaption>
+        <img class="card" src="figma/create-capacity.png" alt="Original capacity card" />
+      </figure>
+    </div>
+    <details>
+      <summary>50% frame/runtime overlay (card source shown separately)</summary>
+      <div class="overlay">
+        <img class="screen" src="figma/create.png" alt="Original" /><img
+          class="screen"
+          src="runtime/create-zh.png"
+          alt="Runtime overlay"
+        />
+      </div>
+    </details>
+    <details>
+      <summary>Expanded schedule/password state</summary>
+      <img
+        class="screen"
+        src="runtime/create-scheduled-password.png"
+        alt="Running scheduled password-protected creation"
+      />
+    </details>
+  </section>
+  <section>
+    <h2>Empty main lists</h2>
+    <div class="pair">
+      <figure>
+        <figcaption>Original · 206:3032</figcaption>
+        <img class="screen" src="figma/empty-partners.png" alt="Original empty Partners" />
+      </figure>
+      <figure>
+        <figcaption>Runtime · Partners</figcaption>
+        <img class="screen" src="runtime/partners-empty-en.png" alt="Running empty Partners" />
+      </figure>
+      <figure>
+        <figcaption>Runtime · Messages, shared pattern</figcaption>
+        <img class="screen" src="runtime/messages-empty-en.png" alt="Running empty Messages" />
+      </figure>
+    </div>
+    <details>
+      <summary>50% Partners original/runtime overlay</summary>
+      <div class="overlay">
+        <img class="screen" src="figma/empty-partners.png" alt="Original" /><img
+          class="screen"
+          src="runtime/partners-empty-en.png"
+          alt="Runtime overlay"
+        />
+      </div>
+    </details>
+  </section>
+  <section>
+    <h2>Other main / back headings · scope is title placement</h2>
+    <p>
+      Dynamic content differs. Me retains the existing profile/account controls; only its main
+      heading is centered. The room back title uses 16px by owner instruction.
+    </p>
+    <div class="pair">
+      <figure>
+        <figcaption>Runtime · Discover</figcaption>
+        <img class="screen" src="runtime/discover-zh.png" alt="Running Discover" />
+      </figure>
+      <figure>
+        <figcaption>Runtime · Me</figcaption>
+        <img class="screen" src="runtime/me-en.png" alt="Running Me" />
+      </figure>
+      <figure>
+        <figcaption>Runtime · aligned room title</figcaption>
+        <img class="screen" src="runtime/room-header.png" alt="Running room header" />
+      </figure>
+    </div>
+  </section>
+</html>

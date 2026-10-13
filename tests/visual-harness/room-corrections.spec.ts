@@ -45,11 +45,13 @@ test('creation stays compact on tall web previews and remains usable at a reduce
   await page.goto('/?screen=create&language=en');
   const action = page.getByRole('button', { name: 'Create and open room', exact: true });
   expect((await action.boundingBox())?.height).toBe(56);
-  expect((await action.boundingBox())?.y).toBe(986);
+  const frame = await page.getByTestId('room-page').boundingBox();
+  const button = await action.boundingBox();
+  expect(frame!.y + frame!.height - button!.y - button!.height).toBe(37);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: `${evidence}/runtime-create-en.png` });
   await page.setViewportSize({ width: 360, height: 540 });
-  await page.getByRole('textbox', { name: 'Room topic', exact: true }).fill('Travel practice');
+  await page.getByRole('textbox', { name: 'Topic', exact: true }).fill('Travel practice');
   await expect(action).toBeVisible();
   await page.screenshot({ path: `${evidence}/runtime-create-small-focused.png` });
 });
