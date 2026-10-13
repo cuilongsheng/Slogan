@@ -1,3 +1,4 @@
+import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
 import { useRouter } from 'expo-router';
@@ -16,11 +17,14 @@ import { t, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { DirectApi, directError, type Conversation } from './api';
-import { DirectHeading, PeerRow, directColors } from './components';
+import { PeerRow, directColors } from './components';
+import { useMessageUnread } from './MessageUnreadProvider';
 import { useFocusedPolling } from './useFocusedPolling';
 export function MessagesScreen() {
   useLanguage();
   const router = useRouter();
+  const refreshQueue = useRef(new LatestRequestQueue());
+  const unread = useMessageUnread();
   const { authorized } = useAuth();
   const api = useMemo(() => new DirectApi(authorized), [authorized]);
   const [items, setItems] = useState<Conversation[]>([]),
@@ -35,37 +39,38 @@ export function MessagesScreen() {
     refreshing = useRef(false),
     loadedPages = useRef(1);
   const load = useCallback(
-    async (current: () => boolean = () => true) => {
-      if (refreshing.current || paging.current) return;
-      refreshing.current = true;
-      const generation = ++epoch.current;
-      try {
-        const conversations: Conversation[] = [];
-        let next: string | null = null;
-        for (let pageIndex = 0; pageIndex < loadedPages.current; pageIndex++) {
-          const page = await api.conversations(next ?? undefined);
-          if (!current() || generation !== epoch.current) return;
-          conversations.push(
-            ...page.items.filter(
-              (item) => !conversations.some((existing) => existing.id === item.id),
-            ),
-          );
-          next = page.nextCursor;
-          if (!next) break;
+    (current: () => boolean = () => true) =>
+      refreshQueue.current.enqueue(async () => {
+        if (!current() || paging.current) return;
+        refreshing.current = true;
+        const generation = ++epoch.current;
+        try {
+          const conversations: Conversation[] = [];
+          let next: string | null = null;
+          for (let pageIndex = 0; pageIndex < loadedPages.current; pageIndex++) {
+            const page = await api.conversations(next ?? undefined);
+            if (!current() || generation !== epoch.current) return;
+            conversations.push(
+              ...page.items.filter(
+                (item) => !conversations.some((existing) => existing.id === item.id),
+              ),
+            );
+            next = page.nextCursor;
+            if (!next) break;
+          }
+          setItems(conversations);
+          setCursor(next);
+          setError(null);
+        } catch {
+          if (current() && generation === epoch.current) setError('directLoadFailed');
+        } finally {
+          refreshing.current = false;
+          if (current() && generation === epoch.current) setLoading(false);
         }
-        setItems(conversations);
-        setCursor(next);
-        setError(null);
-      } catch {
-        if (current() && generation === epoch.current) setError('directLoadFailed');
-      } finally {
-        refreshing.current = false;
-        if (current() && generation === epoch.current) setLoading(false);
-      }
-    },
+      }),
     [api],
   );
-  useFocusedPolling(load, 15000);
+  useFocusedPolling(load, 5000);
   const more = async () => {
     if (!cursor || paging.current || refreshing.current) return;
     paging.current = true;
@@ -103,14 +108,6 @@ export function MessagesScreen() {
   };
   return (
     <RoomPage direct hidePreviewIndicator>
-      <DirectHeading title={t('navMessages')} />
-      {!(error && items.length === 0) && (
-        <View style={styles.tabs}>
-          <View style={[styles.tab, styles.active]}>
-            <Text style={styles.activeText}>{t('directRecent')}</Text>
-          </View>
-        </View>
-      )}
       {error && items.length === 0 ? (
         <View style={{ flex: 1 }}>
           <View style={styles.failure}>
@@ -167,7 +164,7 @@ export function MessagesScreen() {
           </Text>
         </TouchableOpacity>
       )}
-      <BottomNavigation active={2} />
+      <BottomNavigation active={2} unreadMessages={unread.count} />
       <Modal transparent visible={!!selected} onRequestClose={() => setSelected(null)}>
         <View style={styles.overlay}>
           <View style={styles.dialog}>
@@ -203,24 +200,6 @@ const styles = StyleSheet.create({
     backgroundColor: directColors.violet,
     justifyContent: 'center',
   },
-  tabs: { height: 42, paddingTop: 0, paddingHorizontal: 16, flexDirection: 'row', gap: 9 },
-  tab: {
-    width: 104,
-    height: 32,
-    borderRadius: 16,
-    paddingHorizontal: 0,
-    backgroundColor: tokens.color.purpleSoft,
-    justifyContent: 'center',
-  },
-  active: { backgroundColor: directColors.violet },
-  tabText: {
-    fontSize: 14,
-    lineHeight: 20,
-    height: 22,
-    textAlign: 'center',
-    color: directColors.violet,
-    fontWeight: '500',
-  },
   activeText: {
     fontSize: 14,
     lineHeight: 20,
@@ -229,7 +208,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  list: { flexGrow: 1, paddingBottom: 16 },
+  list: { flexGrow: 1, paddingTop: 28, paddingBottom: 16 },
   empty: {
     fontSize: 14,
     lineHeight: 24,
@@ -260,7 +239,7 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 18,
   },
-  dialogTitle: { fontSize: 20, lineHeight: 30, fontWeight: '700', color: directColors.ink },
+  dialogTitle: { fontSize: 18, lineHeight: 26, fontWeight: '700', color: directColors.ink },
   note: { fontSize: 14, lineHeight: 24, color: directColors.muted },
   confirm: {
     height: 48,

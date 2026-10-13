@@ -6,6 +6,7 @@ import { PartnersScreen } from '../../apps/mobile/src/features/direct/PartnersSc
 import { MessagesScreen } from '../../apps/mobile/src/features/direct/MessagesScreen';
 import { ChatScreen } from '../../apps/mobile/src/features/direct/ChatScreen';
 import { CallScreen } from '../../apps/mobile/src/features/direct/CallScreen';
+import { MessageUnreadProvider } from '../../apps/mobile/src/features/direct/MessageUnreadProvider';
 import { MeScreen } from '../../apps/mobile/src/features/profile/MeScreen';
 const screen = new URL(location.href).searchParams.get('screen');
 const directScreen =
@@ -18,7 +19,9 @@ const directScreen =
   ) : screen === 'call' ? (
     <CallScreen callId="call-luna" />
   ) : screen === 'me' ? (
-    <MeScreen />
+    <ProfileDraftProvider>
+      <MeScreen />
+    </ProfileDraftProvider>
   ) : null;
 import {
   BasicProfileScreen,
@@ -32,24 +35,26 @@ import { CreateRoomScreen } from '../../apps/mobile/src/features/room-creation/C
 // Test-only harness: the real component runs with explicit session/recorder adapters.
 // No fixture entry or adapter is imported by the production application.
 createRoot(document.getElementById('root')!).render(
-  <JoinProvider>
-    {directScreen ??
-      (['profile', 'preferences'].includes(
-        new URL(location.href).searchParams.get('screen') ?? '',
-      ) ? (
-        <ProfileDraftProvider>
-          {new URL(location.href).searchParams.get('screen') === 'profile' ? (
-            <BasicProfileScreen />
-          ) : (
-            <PreferencesScreen />
-          )}
-        </ProfileDraftProvider>
-      ) : new URL(location.href).searchParams.get('screen') === 'create' ? (
-        <CreateRoomScreen />
-      ) : new URL(location.href).searchParams.get('screen') === 'rooms' ? (
-        <RoomListScreen />
-      ) : (
-        <VoiceRoomScreen roomId="visual-room" />
-      ))}
-  </JoinProvider>,
+  <MessageUnreadProvider>
+    <JoinProvider>
+      {directScreen ??
+        (['profile', 'preferences'].includes(
+          new URL(location.href).searchParams.get('screen') ?? '',
+        ) ? (
+          <ProfileDraftProvider>
+            {new URL(location.href).searchParams.get('screen') === 'profile' ? (
+              <BasicProfileScreen />
+            ) : (
+              <PreferencesScreen />
+            )}
+          </ProfileDraftProvider>
+        ) : new URL(location.href).searchParams.get('screen') === 'create' ? (
+          <CreateRoomScreen />
+        ) : new URL(location.href).searchParams.get('screen') === 'rooms' ? (
+          <RoomListScreen />
+        ) : (
+          <VoiceRoomScreen roomId="visual-room" />
+        ))}
+    </JoinProvider>
+  </MessageUnreadProvider>,
 );

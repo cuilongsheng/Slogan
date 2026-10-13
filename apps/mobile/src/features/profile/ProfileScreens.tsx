@@ -118,7 +118,7 @@ export function BasicProfileScreen() {
   return (
     <AuthPage scroll scrollRef={scroll}>
       <StepHeader
-        title={t('profileTitle')}
+        title={t(state.kind === 'signedIn' && state.me.profile ? 'editProfile' : 'profileTitle')}
         description={t('profileDescription')}
         step={1}
         onBack={() => {
@@ -309,11 +309,11 @@ export function PreferencesScreen() {
     setSaving(true);
     try {
       const me = await putProfile(body);
-      router.replace(
-        state.kind === 'signedIn' && state.me.profile && me.onboardingState === 'ELIGIBLE'
-          ? '/me'
-          : onboardingRoute(me.onboardingState),
-      );
+      if (state.kind === 'signedIn' && state.me.profile && me.onboardingState === 'ELIGIBLE') {
+        router.dismissTo('/me');
+      } else {
+        router.replace(onboardingRoute(me.onboardingState));
+      }
     } catch (failure) {
       const fields = failure instanceof SessionError ? profileServerErrors(failure.violations) : {};
       setServerErrors?.(fields);
@@ -410,7 +410,13 @@ export function PreferencesScreen() {
       )}
       <View style={styles.action}>
         <PrimaryButton
-          label={saving ? t('saving') : t('finish')}
+          label={t(
+            saving
+              ? 'saving'
+              : state.kind === 'signedIn' && state.me.profile
+                ? 'saveProfile'
+                : 'finish',
+          )}
           disabled={saving || !validAvatarUrl(draft.avatarUrl)}
           onPress={() => {
             void save();

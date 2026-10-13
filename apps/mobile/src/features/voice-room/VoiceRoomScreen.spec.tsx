@@ -1,6 +1,7 @@
+import type * as ReactTypes from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { AppState, type AppStateStatus } from 'react-native';
 import { VoiceRoomScreen } from './VoiceRoomScreen';
+import { copyRoomUrl } from '../../services/shareRoom';
 import type { VoiceSessionSnapshot } from './session';
 
 const mockReplace = jest.fn();
@@ -39,7 +40,14 @@ const mockSession = {
     mockListener(mockSnapshot);
   }),
 };
-jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) }));
+jest.mock('../../services/shareRoom', () => ({ copyRoomUrl: jest.fn(async () => {}) }));
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ replace: mockReplace }),
+  useFocusEffect: (effect: () => void | (() => void)) => {
+    const React = jest.requireActual('react') as typeof ReactTypes;
+    React.useEffect(effect, [effect]);
+  },
+}));
 jest.mock('../auth', () => ({
   useAuth: () => ({
     authorized: mockAuthorized,
@@ -178,6 +186,7 @@ test('ordinary exit returns to discovery directly, with no handoff or rejoin', a
 test('host exit returns immediately and delegates default succession to the server', async () => {
   mockSnapshot.role = 'HOST';
   const alone = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(alone.getByRole('button', { name: 'Room actions' }));
   await fireEvent.press(alone.getByRole('button', { name: 'Leave room' }));
   await waitFor(() => expect(mockSession.leave).toHaveBeenCalledTimes(1));
   await alone.unmount();
@@ -195,6 +204,7 @@ test('host exit returns immediately and delegates default succession to the serv
   ] as VoiceSessionSnapshot['members'];
   mockSession.leave.mockClear();
   const host = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(host.getByRole('button', { name: 'Room actions' }));
   await fireEvent.press(host.getByRole('button', { name: 'Leave room' }));
   expect(mockSession.leave).toHaveBeenCalledWith();
   await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/rooms'));
@@ -237,66 +247,47 @@ test('an empty seat opens in-app people selection and sends a room invitation', 
   );
 });
 
-test.each(['reconnecting-back', 'reconnecting-leave'])(
+test.each(['Back', 'Leave room'])(
   'automatic reconnect exposes %s as a real session exit',
   async (control) => {
     mockSnapshot.media.connection = 'reconnecting';
     const screen = await render(<VoiceRoomScreen roomId="room" />);
     expect(screen.getByText('Reconnecting')).toBeTruthy();
-    expect(screen.queryByLabelText('Say something…')).toBeNull();
-    await fireEvent.press(screen.getByTestId(control));
+    expect(screen.getByLabelText('Say something…')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: control }));
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/rooms'));
     expect(mockSession.leave).toHaveBeenCalledTimes(1);
   },
 );
 
-test('reconnect countdown uses the host deadline, stops in background and cleans up on recovery', async () => {
-  jest.useFakeTimers();
-  jest.setSystemTime(new Date('2026-10-10T00:00:00Z'));
-  AppState.currentState = 'active';
-  const changes = new Set<(state: AppStateStatus) => void>();
-  const remove = jest.fn();
-  const listener = jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, handler) => {
-    changes.add(handler);
-    return {
-      remove: () => {
-        changes.delete(handler);
-        remove();
-      },
-    };
+test('transient recovery keeps the composer mounted and preserves an unsent message', async () => {
+  mockSnapshot.media.connection = 'reconnecting';
+  const screen = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.changeText(screen.getByLabelText('Say something…'), 'Keep this draft');
+  expect(screen.queryByTestId('reconnecting-panel')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Mute microphone' })).toBeDisabled();
+  await act(async () => {
+    mockSnapshot = { ...mockSnapshot, media: { ...mockSnapshot.media, connection: 'connected' } };
+    mockListener(mockSnapshot);
   });
-  try {
-    mockSnapshot.role = 'HOST';
-    mockSnapshot.media.connection = 'reconnecting';
-    mockSnapshot.room!.hostReconnectDeadline = '2026-10-10T00:00:42Z';
-    const screen = await render(<VoiceRoomScreen roomId="room" />);
-    expect(screen.getByText('00:42')).toBeTruthy();
-    await act(async () => {
-      jest.advanceTimersByTime(2_000);
-    });
-    expect(screen.getByText('00:40')).toBeTruthy();
-    await act(async () => {
-      AppState.currentState = 'background';
-      changes.forEach((change) => change('background'));
-      jest.advanceTimersByTime(50_000);
-    });
-    expect(screen.getByText('00:40')).toBeTruthy();
-    await act(async () => {
-      AppState.currentState = 'active';
-      changes.forEach((change) => change('active'));
-    });
-    expect(screen.getByText('00:00')).toBeTruthy();
-    expect(mockSession.leave).not.toHaveBeenCalled();
-    await act(async () => {
-      mockSnapshot = { ...mockSnapshot, media: { ...mockSnapshot.media, connection: 'connected' } };
-      mockListener(mockSnapshot);
-    });
-    expect(screen.queryByTestId('reconnecting-panel')).toBeNull();
-    expect(remove).toHaveBeenCalledTimes(1);
-    await screen.unmount();
-  } finally {
-    listener.mockRestore();
-    AppState.currentState = 'active';
-    jest.useRealTimers();
-  }
+  expect(screen.getByLabelText('Say something…').props.value).toBe('Keep this draft');
+  expect(mockSession.start).toHaveBeenCalledTimes(1);
+});
+
+test('sharing copies the admitted link directly and reports success without opening another sheet', async () => {
+  mockSnapshot.room!.shareUrl = 'https://app.example/r/opaque';
+  const screen = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Room actions' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Share room link' }));
+  expect(copyRoomUrl).toHaveBeenCalledWith('https://app.example/r/opaque');
+  await waitFor(() => expect(screen.getByText('Link copied')).toBeTruthy());
+  expect(screen.queryByText('https://app.example/r/opaque')).toBeNull();
+  expect(mockSession.leave).not.toHaveBeenCalled();
+});
+test('ordinary members receive an invitation explanation instead of an inert control', async () => {
+  const screen = await render(<VoiceRoomScreen roomId="room" />);
+  await fireEvent.press(screen.getByTestId('room-empty-seat-0'));
+  expect(
+    screen.getByText('Only the host can invite partners. You can copy the room link to share it.'),
+  ).toBeTruthy();
 });

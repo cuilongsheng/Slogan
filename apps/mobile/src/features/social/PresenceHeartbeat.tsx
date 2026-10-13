@@ -1,54 +1,29 @@
-import { useEffect, useMemo } from 'react';
-import { AppState } from 'react-native';
-
+import { useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../auth';
+import { useForegroundPolling } from '../../hooks/useForegroundPolling';
 import { SocialApi } from './api';
 
-/** One authenticated foreground heartbeat for the entire app, independent of route. */
+/** One foreground heartbeat across all routes, following server renewal advice. */
 export function PresenceHeartbeat() {
   const { state, authorized } = useAuth();
   const api = useMemo(() => new SocialApi(authorized), [authorized]);
   const userId =
     state.kind === 'signedIn' && state.me.onboardingState === 'ELIGIBLE' ? state.me.userId : null;
-
-  useEffect(() => {
-    if (!userId) return;
-    let disposed = false;
-    let inFlight = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const clearTimer = () => {
-      if (timer) clearTimeout(timer);
-      timer = undefined;
-    };
-    const beat = async () => {
-      if (disposed || inFlight || AppState.currentState !== 'active') return;
-      clearTimer();
-      inFlight = true;
-      let seconds = 30;
+  const period = useRef(30_000);
+  const beat = useCallback(
+    async (current: () => boolean) => {
+      if (!userId) return;
       try {
         const result = await api.heartbeat();
-        seconds = Math.max(5, Math.min(result.refreshAfterSeconds, 300));
+        if (current())
+          period.current = Math.max(5, Math.min(result.refreshAfterSeconds, 300)) * 1000;
       } catch {
-        // Presence failure must never interrupt joining, listening or leaving.
-      } finally {
-        inFlight = false;
-        if (!disposed && AppState.currentState === 'active') {
-          timer = setTimeout(() => {
-            void beat();
-          }, seconds * 1000);
-        }
+        /* Existing voice sessions remain usable when presence is unavailable. */
       }
-    };
-    const subscription = AppState.addEventListener('change', (next) => {
-      clearTimer();
-      if (next === 'active') void beat();
-    });
-    void beat();
-    return () => {
-      disposed = true;
-      clearTimer();
-      subscription.remove();
-    };
-  }, [api, userId]);
+    },
+    [api, userId],
+  );
+  const interval = useCallback(() => period.current, []);
+  useForegroundPolling(beat, interval, !!userId);
   return null;
 }

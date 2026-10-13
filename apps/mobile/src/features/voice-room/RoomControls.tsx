@@ -1,5 +1,5 @@
 import { AppText as Text } from '../../components/ui/AppText';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
 import {
   ActivityIndicator,
@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 
+import { useFocusedPolling } from '../../hooks/useFocusedPolling';
+import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { t, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import type { AvailablePerson, RemovedMember, ReportInput, RoomMember, VoiceRoomApi } from './api';
@@ -72,66 +74,65 @@ export function RoomControls({
   const [peopleLoading, setPeopleLoading] = useState(isHost && initialMode === 'invite');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [peopleError, setPeopleError] = useState(false);
   const [sentTo, setSentTo] = useState<string[]>([]);
   const invitationIds = useRef(new Map<string, string>());
 
-  const loadingPeople = useRef(false);
+  const peopleQueue = useRef(new LatestRequestQueue());
+  const loadedPeople = useRef(false);
+  const peopleFence = useRef<() => boolean>(() => false);
+  const loadedPeoplePages = useRef(1);
+  const [peopleFetching, setPeopleFetching] = useState(false);
   const loadPeople = useCallback(
-    async (cursor?: string) => {
-      if (loadingPeople.current) return;
-      loadingPeople.current = true;
-      setPeopleLoading(true);
-      setError('');
-      try {
-        // Available people already combines authenticated presence, room occupancy,
-        // account eligibility and bilateral blocking on the server.
-        const page = await api.availablePeople(cursor);
-        const candidates = page.items.filter((person) => person.isAvailable);
-        setPeople((current) =>
-          cursor
-            ? [
-                ...current,
-                ...candidates.filter(
-                  (person) => !current.some((item) => item.userId === person.userId),
-                ),
-              ]
-            : candidates,
-        );
-        setNextCursor(page.nextCursor);
-      } catch {
-        setError(t('roomControlsFailed'));
-      } finally {
-        loadingPeople.current = false;
-        setPeopleLoading(false);
-      }
-    },
+    (cursor?: string, current: () => boolean = peopleFence.current) =>
+      peopleQueue.current.enqueue(async () => {
+        if (!current()) return;
+        setPeopleFetching(true);
+        if (cursor || !loadedPeople.current) setPeopleLoading(true);
+        setPeopleError(false);
+        try {
+          // Use the same server-owned online/idle eligibility as Partners, never the friends list.
+          const collected: AvailablePerson[] = [];
+          let next = cursor ?? undefined;
+          let pageCount = 0;
+          do {
+            const page = await api.availablePeople(next);
+            if (!current()) return;
+            for (const person of page.items) {
+              if (person.isAvailable && !collected.some((x) => x.userId === person.userId))
+                collected.push(person);
+            }
+            next = page.nextCursor ?? undefined;
+            pageCount++;
+          } while (!cursor && next && pageCount < loadedPeoplePages.current);
+          setPeople((old) =>
+            cursor
+              ? [
+                  ...old,
+                  ...collected.filter((person) => !old.some((x) => x.userId === person.userId)),
+                ]
+              : collected,
+          );
+          loadedPeoplePages.current = cursor ? loadedPeoplePages.current + 1 : pageCount;
+          setNextCursor(next ?? null);
+          loadedPeople.current = true;
+        } catch {
+          if (current()) setPeopleError(true);
+        } finally {
+          setPeopleFetching(false);
+          if (current()) setPeopleLoading(false);
+        }
+      }),
     [api],
   );
-
-  useEffect(() => {
-    if (!isHost || initialMode !== 'invite') return;
-    let disposed = false;
-    loadingPeople.current = true;
-    void api
-      .availablePeople()
-      .then((page) => {
-        if (disposed) return;
-        setPeople(page.items.filter((person) => person.isAvailable));
-        setNextCursor(page.nextCursor);
-      })
-      .catch(() => {
-        if (!disposed) setError(t('roomControlsFailed'));
-      })
-      .finally(() => {
-        if (!disposed) {
-          loadingPeople.current = false;
-          setPeopleLoading(false);
-        }
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [initialMode, isHost, api]);
+  const pollPeople = useCallback(
+    (current: () => boolean) => {
+      peopleFence.current = current;
+      return loadPeople(undefined, current);
+    },
+    [loadPeople],
+  );
+  useFocusedPolling(pollPeople, 5000, isHost && mode === 'invite');
 
   async function loadRemoved() {
     setPeopleLoading(true);
@@ -296,9 +297,9 @@ export function RoomControls({
             <View style={[styles.brandDot, { backgroundColor: '#23C8BE' }]} />
           </View>
         )}
-        {error ? (
+        {error || (mode === 'invite' && peopleError) ? (
           <Text accessibilityRole="alert" style={styles.error}>
-            {error}
+            {error || t('roomControlsFailed')}
           </Text>
         ) : null}
         {mode === 'members' && (
@@ -362,7 +363,6 @@ export function RoomControls({
                   onPress={() => {
                     setError('');
                     setMode('invite');
-                    void loadPeople();
                   }}
                 >
                   <Text style={styles.primaryText}>{t('roomInvitePeople')}</Text>
@@ -469,11 +469,19 @@ export function RoomControls({
                 </View>
               ))}
               {visiblePeople.length === 0 && !peopleLoading && (
-                <Text style={styles.body}>{t('roomInviteEmpty')}</Text>
+                <View>
+                  <Text style={styles.body}>
+                    {t(peopleError ? 'roomControlsFailed' : 'roomInviteEmpty')}
+                  </Text>
+                  <TouchableOpacity accessibilityRole="button" onPress={() => void loadPeople()}>
+                    <Text style={styles.loadMore}>{t('refreshAction')}</Text>
+                  </TouchableOpacity>
+                </View>
               )}
               {nextCursor && (
                 <TouchableOpacity
                   accessibilityRole="button"
+                  disabled={peopleLoading || peopleFetching}
                   onPress={() => void loadPeople(nextCursor)}
                 >
                   <Text style={styles.loadMore}>{t('roomLoadMorePeople')}</Text>
@@ -591,7 +599,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingBottom: 24,
   },
-  inviteTitle: { fontSize: 20, lineHeight: 30, fontWeight: '500' },
+  inviteTitle: { fontSize: 18, lineHeight: 26, fontWeight: '500' },
   inviteClose: {
     fontSize: 22,
     lineHeight: 28,
@@ -656,7 +664,7 @@ const styles = StyleSheet.create({
   brandDot: { width: 7, height: 7, borderRadius: 4 },
   membersSheet: { backgroundColor: '#FFF9F6', minHeight: '65%' },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  title: { color: '#fff', fontSize: 18, fontWeight: '700' },
   darkTitle: { color: tokens.color.foreground },
   close: { color: '#C8BDE0', fontSize: 30, lineHeight: 30 },
   error: { color: '#FF8B98', marginTop: 14, lineHeight: 20 },
@@ -671,7 +679,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#34274F',
   },
   reportSubmit: { height: 48, minHeight: 48, marginTop: 31, borderRadius: 24 },
-  reportTitle: { fontSize: 20, lineHeight: 31, fontWeight: '500' },
+  reportTitle: { fontSize: 18, lineHeight: 26, fontWeight: '500' },
   reportBody: { marginTop: 0, minHeight: 40, fontSize: 12, lineHeight: 20 },
   reportScroll: { flex: 1, minHeight: 0, marginTop: 13 },
   targetLabel: { marginTop: 10 },

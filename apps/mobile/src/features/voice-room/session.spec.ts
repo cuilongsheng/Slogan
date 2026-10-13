@@ -411,6 +411,7 @@ test('participant events and the fallback timer share one in-flight room refresh
   const second = session.refresh();
   expect(first).toBe(second);
   expect(rooms.detail).toHaveBeenCalledTimes(1);
+  expect(api.members).toHaveBeenCalledTimes(1); // Starts before detail resolves.
   finish(room);
   await Promise.all([first, second]);
   expect(api.members).toHaveBeenCalledTimes(1);

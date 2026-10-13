@@ -1,4 +1,11 @@
-import { DisconnectReason, Room, RoomEvent, Track, type RemoteTrack } from 'livekit-client';
+import {
+  DisconnectReason,
+  Room,
+  RoomEvent,
+  Track,
+  type RemoteTrack,
+  type RoomOptions,
+} from 'livekit-client';
 
 import type { RealtimeCredential } from './api';
 import { isRoomSafetyAlertSignal } from './safetySignal';
@@ -22,17 +29,24 @@ export interface MediaSnapshot {
   localIdentity: string | null;
   microphoneEnabled: boolean;
   audioPlaybackAllowed: boolean;
+  playbackRequiresGesture?: boolean;
   deviceCheck?: { microphone: MicrophoneCheck; playback: PlaybackCheck } | undefined;
   participants: MediaParticipant[];
 }
 
 export interface MediaPlatform {
+  browserPlaybackPolicy?: boolean;
+  subscribeDeviceChanges?(changed: () => void): () => void;
+  roomOptions?(): Partial<RoomOptions>;
+  bindAudioPlayback?(resume: () => Promise<void>, changed: () => void): () => void;
+  invalidateDeviceCheck?(): void;
+  audioPlaybackAllowed?(): boolean;
   start(): Promise<void>;
   stop(): Promise<void>;
   attachRemoteAudio(track: RemoteTrack): void;
   detachRemoteAudio(track: RemoteTrack): void;
   requestMicrophone?(): Promise<void>;
-  checkMicrophone?(signal: AbortSignal): Promise<MicrophoneCheck>;
+  checkMicrophone?(signal: AbortSignal, force?: boolean): Promise<MicrophoneCheck>;
   checkAudioOutput?(): Promise<boolean>;
 }
 
@@ -49,18 +63,28 @@ export class LiveKitVoiceMedia {
   private checkingDevices: Promise<void> | null = null;
   private deviceAbort: AbortController | null = null;
   private connectionGeneration = 0;
+  private audioPending: Promise<void> | null = null;
+  private unbindDevices: (() => void) | undefined;
+  private unbindAudio: (() => void) | undefined;
 
   constructor(private readonly platform: MediaPlatform) {}
 
   get snapshot(): MediaSnapshot {
     const room = this.room;
+    const audioPlaybackAllowed =
+      !room ||
+      (this.platform.browserPlaybackPolicy === false
+        ? this.platformStarted && this.deviceCheck?.playback !== 'unavailable'
+        : (room.canPlaybackAudio ?? true) && (this.platform.audioPlaybackAllowed?.() ?? true));
     return {
       connection: this.connection,
       disconnectReason: this.disconnectReason,
       timings: { ...this.timings },
       localIdentity: room?.localParticipant.identity ?? null,
       microphoneEnabled: room?.localParticipant.isMicrophoneEnabled ?? false,
-      audioPlaybackAllowed: room?.canPlaybackAudio ?? true,
+      audioPlaybackAllowed,
+      playbackRequiresGesture:
+        !!room && this.platform.browserPlaybackPolicy !== false && !audioPlaybackAllowed,
       deviceCheck: this.deviceCheck,
       participants: room
         ? [room.localParticipant, ...room.remoteParticipants.values()].map((participant) => ({
@@ -100,8 +124,16 @@ export class LiveKitVoiceMedia {
     this.connection = 'connecting';
     this.emit();
     try {
-      const room = new Room({ stopLocalTrackOnUnpublish: true });
+      const room = new Room({ stopLocalTrackOnUnpublish: true, ...this.platform.roomOptions?.() });
       this.room = room;
+      this.unbindDevices = this.platform.subscribeDeviceChanges?.(() => {
+        this.platform.invalidateDeviceCheck?.();
+        void this.checkDevices(false);
+      });
+      this.unbindAudio = this.platform.bindAudioPlayback?.(
+        () => (this.snapshot.audioPlaybackAllowed ? Promise.resolve() : this.startAudio()),
+        () => this.emit(),
+      );
       // Best effort DNS/TLS warmup overlaps native audio setup on the same SDK Room.
       // Token-based Cloud region prefetch is intentionally not awaited on the join path.
       if (typeof room.prepareConnection === 'function')
@@ -185,7 +217,8 @@ export class LiveKitVoiceMedia {
       this.connection = 'connected';
       this.timings.connectedMs = Math.max(0, performance.now() - this.connectStartedAt);
       this.emit();
-      void this.checkDevices();
+      void this.checkDevices(false);
+      if (this.platform.bindAudioPlayback) void this.startAudio().catch(() => undefined);
     } catch (error) {
       if (generation !== this.connectionGeneration) return;
       await this.disconnect();
@@ -199,9 +232,21 @@ export class LiveKitVoiceMedia {
     // The unpublished probe must release its track before room/private capture.
     await this.checkingDevices;
     if (this.room !== room || this.connection !== 'connected') return;
-    if (enabled) await this.platform.requestMicrophone?.();
-    if (this.room !== room || this.connection !== 'connected') return;
-    await room.localParticipant.setMicrophoneEnabled(enabled);
+    try {
+      if (enabled) await this.platform.requestMicrophone?.();
+      if (this.room !== room || this.connection !== 'connected') return;
+      await room.localParticipant.setMicrophoneEnabled(enabled);
+    } catch (error) {
+      if (this.room === room) {
+        this.platform.invalidateDeviceCheck?.();
+        this.deviceCheck = {
+          microphone: 'unavailable',
+          playback: this.deviceCheck?.playback ?? 'ready',
+        };
+        this.emit();
+      }
+      throw error;
+    }
     if (this.room !== room || this.connection !== 'connected') return;
     if (enabled && room.localParticipant.isMicrophoneEnabled)
       this.timings.microphonePublishedMs ??= Math.max(0, performance.now() - this.connectStartedAt);
@@ -210,15 +255,27 @@ export class LiveKitVoiceMedia {
     this.emit();
   }
 
-  async startAudio(): Promise<void> {
-    if (!this.room) return;
-    await this.room.startAudio();
-    if (this.platformStarted && (this.room.canPlaybackAudio ?? true))
-      this.timings.playbackReadyMs ??= Math.max(0, performance.now() - this.connectStartedAt);
-    this.emit();
+  startAudio(): Promise<void> {
+    const room = this.room;
+    if (!room) return Promise.resolve();
+    if (this.audioPending) return this.audioPending;
+    // Start synchronously in the gesture; subsequent handlers share that attempt.
+    const pending = room
+      .startAudio()
+      .then(() => {
+        if (this.room !== room) return;
+        if (this.platformStarted && this.snapshot.audioPlaybackAllowed)
+          this.timings.playbackReadyMs ??= Math.max(0, performance.now() - this.connectStartedAt);
+        this.emit();
+      })
+      .finally(() => {
+        if (this.audioPending === pending) this.audioPending = null;
+      });
+    this.audioPending = pending;
+    return pending;
   }
 
-  checkDevices(): Promise<void> {
+  checkDevices(force = true): Promise<void> {
     if (this.checkingDevices) return this.checkingDevices;
     const room = this.room;
     if (!room || this.connection !== 'connected') return Promise.resolve();
@@ -230,7 +287,7 @@ export class LiveKitVoiceMedia {
       // Do not open a second stream if the user already explicitly published one.
       if (room.localParticipant.isMicrophoneEnabled) return 'ready';
       try {
-        return (await this.platform.checkMicrophone?.(abort.signal)) ?? 'unavailable';
+        return (await this.platform.checkMicrophone?.(abort.signal, force)) ?? 'unavailable';
       } catch {
         return 'unavailable';
       }
@@ -246,7 +303,12 @@ export class LiveKitVoiceMedia {
           this.platformStarted = true;
         }
         const ready = (await this.platform.checkAudioOutput?.()) ?? false;
-        if (ready && !abort.signal.aborted && this.room === room && (room.canPlaybackAudio ?? true))
+        if (
+          ready &&
+          !abort.signal.aborted &&
+          this.room === room &&
+          this.snapshot.audioPlaybackAllowed
+        )
           this.timings.playbackReadyMs ??= Math.max(0, performance.now() - this.connectStartedAt);
         return ready ? 'ready' : 'unavailable';
       } catch {
@@ -267,7 +329,12 @@ export class LiveKitVoiceMedia {
   }
 
   async disconnect(): Promise<void> {
+    this.unbindDevices?.();
+    this.unbindDevices = undefined;
+    this.unbindAudio?.();
+    this.unbindAudio = undefined;
     this.connectionGeneration++;
+    this.audioPending = null;
     this.deviceAbort?.abort();
     this.deviceAbort = null;
     this.checkingDevices = null;

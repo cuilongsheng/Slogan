@@ -76,6 +76,20 @@ describe('room list pagination', () => {
     expect(list).toHaveBeenCalledTimes(3);
   });
 
+  it('refreshes new rooms without truncating already loaded pages or retaining ended rooms', async () => {
+    const list = jest
+      .fn()
+      .mockResolvedValueOnce({ items: [room('ended')], nextCursor: 'old-next' })
+      .mockResolvedValueOnce({ items: [room('older')], nextCursor: 'old-tail' })
+      .mockResolvedValueOnce({ items: [room('new')], nextCursor: 'fresh-next' })
+      .mockResolvedValueOnce({ items: [room('older')], nextCursor: 'fresh-tail' });
+    const pager = new RoomListPager({ list });
+    await pager.refresh();
+    await pager.loadMore();
+    expect((await pager.refresh()).items.map((x) => x.id)).toEqual(['new', 'older']);
+    expect(pager.snapshot.nextCursor).toBe('fresh-tail');
+    expect(list).toHaveBeenLastCalledWith('fresh-next');
+  });
   it('ignores a stale next page after refresh', async () => {
     let releaseNext!: (value: { items: RoomSummary[]; nextCursor: null }) => void;
     const list = jest

@@ -16,6 +16,9 @@ export class DirectService {
     @Inject(REALTIME_PROVIDER) private readonly media: RealtimeProvider,
     private readonly config: ConfigService<Environment, true>,
   ) {}
+  unreadCount(actor: string) {
+    return this.repository.unreadCount(actor);
+  }
   open(actor: string, target: string) {
     return this.repository.open(actor, target);
   }

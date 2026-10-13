@@ -30,13 +30,30 @@ function Harness({ initial, basic = false }: { initial: ProfileDraft; basic?: bo
 }
 
 describe('first profile screens', () => {
-  const router = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
+  const router = { push: jest.fn(), replace: jest.fn(), back: jest.fn(), dismissTo: jest.fn() };
   const putProfile = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(router);
     (useAuth as jest.Mock).mockReturnValue({ putProfile, state: { kind: 'signedOut' } });
+  });
+
+  it('returns to the existing Me route after saving an eligible profile edit', async () => {
+    (useAuth as jest.Mock).mockReturnValue({
+      putProfile,
+      state: {
+        kind: 'signedIn',
+        me: { profile: { ...valid, cefrLevel: 'B1_B2' }, onboardingState: 'ELIGIBLE' },
+      },
+    });
+    putProfile.mockResolvedValue({ onboardingState: 'ELIGIBLE' });
+    const screen = await render(
+      <Harness basic={false} initial={{ ...valid, cefrLevel: 'B1_B2' }} />,
+    );
+    await fireEvent.press(screen.getByTestId('profile-submit'));
+    await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/me'));
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
   it('keeps basic step on invalid fields', async () => {

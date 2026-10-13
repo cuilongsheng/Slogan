@@ -17,16 +17,16 @@ Reviewed 2026-10-13 (Asia/Shanghai). Candidate `26a51a80a077a98c44adc1e94746ed9b
 
 ## Evidence ledger
 
-| Demonstration path | Established evidence | Remaining boundary |
-| --- | --- | --- |
-| Provisioned login and profile | PR CI, API tests and browser flows; optional details/adult confirmation retained | Live Google Cloud Android package/signature registration matches the controlled APK certificate; real authorization/onboarding is not proved by this configuration check |
-| Discover and create | Routed browser and actual component captures; three ranges and four-column constraints | Native keyboard/footer and narrow-device typography require device capture |
-| Partners | Shared Redis integration, caller-only presence renewal, terminal-room occupancy and pagination tests | New build must be checked on independent foreground devices; old independent HTTP sessions do not prove the old device exclusion was reproduced |
-| Join and voice | Admission, credential authorization/race tests; same official SDK Room, muted device probe and connection states | Actual microphone publication, peer audibility and click-to-voice time require two devices |
-| Leave/end | Deferred-promise and persisted outbox tests; server commit before cleanup, post-response queue scheduling | New production worker cleanup reached terminal state; immediate native audio cessation remains a device check |
-| Private chat/calls | Existing participant, idempotency, unread/blocking, mutual-exclusion tests; browser fixtures | Historical cloud HTTP success is not new-build two-party audible call evidence |
-| Administration | Room-only report target migration/security tests; read-only trial forbids private management | Production nullable-target migration and read-only trial RBAC smoke pass |
-| Delivery/recovery | Main-only encrypted backup, isolated restore/invariants, migration gates; Pages/API and APK source gates | All main release gates pass; published APK 0.0.67 bytes/source/signature/permission verified |
+| Demonstration path            | Established evidence                                                                                             | Remaining boundary                                                                                                                                                       |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Provisioned login and profile | PR CI, API tests and browser flows; optional details/adult confirmation retained                                 | Live Google Cloud Android package/signature registration matches the controlled APK certificate; real authorization/onboarding is not proved by this configuration check |
+| Discover and create           | Routed browser and actual component captures; three ranges and four-column constraints                           | Native keyboard/footer and narrow-device typography require device capture                                                                                               |
+| Partners                      | Shared Redis integration, caller-only presence renewal, terminal-room occupancy and pagination tests             | New build must be checked on independent foreground devices; old independent HTTP sessions do not prove the old device exclusion was reproduced                          |
+| Join and voice                | Admission, credential authorization/race tests; same official SDK Room, muted device probe and connection states | Actual microphone publication, peer audibility and click-to-voice time require two devices                                                                               |
+| Leave/end                     | Deferred-promise and persisted outbox tests; server commit before cleanup, post-response queue scheduling        | New production worker cleanup reached terminal state; immediate native audio cessation remains a device check                                                            |
+| Private chat/calls            | Existing participant, idempotency, unread/blocking, mutual-exclusion tests; browser fixtures                     | Historical cloud HTTP success is not new-build two-party audible call evidence                                                                                           |
+| Administration                | Room-only report target migration/security tests; read-only trial forbids private management                     | Production nullable-target migration and read-only trial RBAC smoke pass                                                                                                 |
+| Delivery/recovery             | Main-only encrypted backup, isolated restore/invariants, migration gates; Pages/API and APK source gates         | All main release gates pass; published APK 0.0.67 bytes/source/signature/permission verified                                                                             |
 
 ## Findings and scope
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { AvatarImage } from '../domain/ports/avatar.repository.js';
-import { defaultAvatar } from './default-avatar.js';
+import { defaultAvatar, femaleAvatar } from './default-avatar.js';
 import { PNG } from 'pngjs';
 import { AppError } from '../../../common/errors/app-error.js';
 
@@ -38,7 +38,7 @@ export class PngAvatarImage implements AvatarImage {
   normalize(base64: string) {
     return normalizeAvatar(base64);
   }
-  defaultImage() {
-    return defaultAvatar;
+  defaultImage(variant?: 'male' | 'female') {
+    return variant === 'female' ? femaleAvatar : defaultAvatar;
   }
 }

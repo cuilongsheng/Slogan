@@ -13,6 +13,7 @@ import { ProfileDraftProvider } from '../src/features/profile/draft';
 import { JoinProvider } from '../src/features/room-discovery/join';
 import { DirectCallObserver } from '../src/features/direct/DirectCallObserver';
 import { RoomExitProvider } from '../src/features/voice-room/exits';
+import { MessageUnreadProvider } from '../src/features/direct';
 import { PresenceHeartbeat } from '../src/features/social/PresenceHeartbeat';
 
 export default function RootLayout() {
@@ -30,17 +31,19 @@ export default function RootLayout() {
   if (!loaded || !localeReady) return null;
   return (
     <AuthProvider>
-      <PresenceHeartbeat />
-      <DirectCallObserver />
-      <RoomExitProvider>
-        <EmailFlowProvider>
-          <ProfileDraftProvider>
-            <JoinProvider>
-              <Stack screenOptions={{ headerShown: false }} />
-            </JoinProvider>
-          </ProfileDraftProvider>
-        </EmailFlowProvider>
-      </RoomExitProvider>
+      <MessageUnreadProvider>
+        <PresenceHeartbeat />
+        <DirectCallObserver />
+        <RoomExitProvider>
+          <EmailFlowProvider>
+            <ProfileDraftProvider>
+              <JoinProvider>
+                <Stack screenOptions={{ headerShown: false }} />
+              </JoinProvider>
+            </ProfileDraftProvider>
+          </EmailFlowProvider>
+        </RoomExitProvider>
+      </MessageUnreadProvider>
     </AuthProvider>
   );
 }

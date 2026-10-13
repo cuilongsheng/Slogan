@@ -62,7 +62,7 @@ export function RoomPasswordDialog({
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: '#0008', justifyContent: 'center', paddingHorizontal: 24 },
   dialog: { padding: 24, borderRadius: 24, backgroundColor: tokens.color.surface, gap: 12 },
-  title: { fontSize: 20, fontWeight: '700', color: tokens.color.foreground },
+  title: { fontSize: 18, fontWeight: '700', color: tokens.color.foreground },
   helper: { fontSize: 14, color: tokens.color.muted },
   input: {
     height: 56,

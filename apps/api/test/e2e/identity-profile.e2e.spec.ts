@@ -48,6 +48,20 @@ describe('identity-and-profile HTTP API', () => {
 
   afterAll(async () => app.close());
 
+  it('serves distinct public cartoon defaults and rejects unsupported variants', async () => {
+    const male = await request(app.getHttpServer())
+      .get('/v1/avatars/default?variant=male')
+      .expect(200);
+    const female = await request(app.getHttpServer())
+      .get('/v1/avatars/default?variant=female')
+      .expect(200);
+    expect(male.headers['content-type']).toContain('image/png');
+    expect(female.headers['content-type']).toContain('image/png');
+    expect(Buffer.isBuffer(male.body)).toBe(true);
+    expect(male.body.equals(female.body)).toBe(false);
+    await request(app.getHttpServer()).get('/v1/avatars/default?variant=unsupported').expect(400);
+  });
+
   async function login(code: string): Promise<LoginBody> {
     const response = await request(app.getHttpServer())
       .post('/v1/auth/oauth/google/exchange')

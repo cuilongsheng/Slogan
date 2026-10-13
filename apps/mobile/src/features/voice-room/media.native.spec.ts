@@ -1,6 +1,6 @@
 import { AudioSession } from '@livekit/react-native';
 import { mediaDevices } from '@livekit/react-native-webrtc';
-import { requestRecordingPermissionsAsync } from 'expo-audio';
+import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from 'expo-audio';
 import { createVoiceMedia } from './media';
 
 const mockTrackStop = jest.fn();
@@ -15,6 +15,8 @@ jest.mock('@livekit/react-native', () => ({
 }));
 jest.mock('@livekit/react-native-webrtc', () => ({
   mediaDevices: {
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
     getUserMedia: jest.fn(async () => ({
       getAudioTracks: () => [{ readyState: 'live', stop: mockTrackStop }],
       getTracks: () => [{ readyState: 'live', stop: mockTrackStop }],
@@ -23,6 +25,7 @@ jest.mock('@livekit/react-native-webrtc', () => ({
   },
 }));
 jest.mock('expo-audio', () => ({
+  getRecordingPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),
   requestRecordingPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),
 }));
 jest.mock('livekit-client', () => ({
@@ -33,6 +36,7 @@ jest.mock('livekit-client', () => ({
       isSpeaking: false,
       isMicrophoneEnabled: false,
     },
+    canPlaybackAudio: false,
     remoteParticipants: new Map(),
     on: jest.fn(),
     connect: jest.fn(async () => {}),
@@ -44,6 +48,9 @@ jest.mock('livekit-client', () => ({
 const credential = { serverUrl: 'wss://fixture.invalid', participantToken: 'fixture' } as never;
 beforeEach(() => {
   jest.clearAllMocks();
+  jest
+    .mocked(getRecordingPermissionsAsync)
+    .mockResolvedValue({ granted: true, canAskAgain: true } as never);
   jest
     .mocked(requestRecordingPermissionsAsync)
     .mockResolvedValue({ granted: true, canAskAgain: true } as never);
@@ -60,11 +67,15 @@ test('native admission probes a real adapter input, releases its stream, and rem
   expect(mockStreamRelease).toHaveBeenCalledTimes(1);
   expect(media.snapshot).toMatchObject({
     microphoneEnabled: false,
+    audioPlaybackAllowed: true,
     deviceCheck: { microphone: 'ready', playback: 'ready' },
   });
   await media.disconnect();
 });
 test('permanent permission denial skips capture and a missing output is reported separately', async () => {
+  jest
+    .mocked(getRecordingPermissionsAsync)
+    .mockResolvedValue({ granted: false, canAskAgain: false } as never);
   jest
     .mocked(requestRecordingPermissionsAsync)
     .mockResolvedValue({ granted: false, canAskAgain: false } as never);
@@ -103,5 +114,21 @@ test('audio session startup failure leaves muted/text admission available and re
     microphoneEnabled: false,
     deviceCheck: { playback: 'unavailable' },
   });
+  await media.disconnect();
+});
+
+test('an existing denial is reported without requesting again until an explicit retry', async () => {
+  jest
+    .mocked(getRecordingPermissionsAsync)
+    .mockResolvedValue({ granted: false, canAskAgain: true, status: 'denied' } as never);
+  const media = createVoiceMedia();
+  await media.connect(credential);
+  await media.checkDevices(false);
+  expect(media.snapshot.deviceCheck?.microphone).toBe('denied');
+  expect(requestRecordingPermissionsAsync).not.toHaveBeenCalled();
+  expect(mediaDevices.getUserMedia).not.toHaveBeenCalled();
+  await media.checkDevices(true);
+  expect(requestRecordingPermissionsAsync).toHaveBeenCalledTimes(1);
+  expect(media.snapshot.deviceCheck?.microphone).toBe('ready');
   await media.disconnect();
 });

@@ -47,6 +47,7 @@ export interface DirectPageQuery {
 }
 export const DIRECT_REPOSITORY = Symbol('DIRECT_REPOSITORY');
 export interface DirectRepository {
+  unreadCount(actor: string): Promise<number>;
   open(actor: string, target: string): Promise<DirectConversationRecord>;
   conversations(
     actor: string,

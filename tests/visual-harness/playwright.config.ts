@@ -1,12 +1,14 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: '.',
+  outputDir: '../../test-results/visual',
   testMatch: [
     'voice.spec.ts',
     'rooms.spec.ts',
     'reconnecting.spec.ts',
     'direct.spec.ts',
     'room-corrections.spec.ts',
+    'room-usability.spec.ts',
   ],
   use: {
     baseURL: 'http://localhost:8094',

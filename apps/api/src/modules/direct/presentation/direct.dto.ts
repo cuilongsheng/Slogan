@@ -98,6 +98,9 @@ export class DirectConversationDto {
   @ApiProperty({ format: 'date-time' }) lastActivityAt!: string;
   @ApiProperty() canInteract!: boolean;
 }
+export class DirectUnreadDto {
+  @ApiProperty({ minimum: 0, type: 'integer' }) unreadCount!: number;
+}
 export class DirectConversationPageDto {
   @ApiProperty({ type: [DirectConversationDto] }) items!: DirectConversationDto[];
   @ApiProperty({ type: String, nullable: true }) nextCursor!: string | null;

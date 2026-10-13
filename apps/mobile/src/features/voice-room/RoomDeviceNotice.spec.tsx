@@ -50,3 +50,41 @@ test('permanent denial offers system settings and audio blockage offers enable s
   expect(enableAudio).toHaveBeenCalledTimes(1);
   settings.mockRestore();
 });
+
+test('native output failure offers retry without a browser autoplay action', async () => {
+  const screen = await render(
+    <RoomDeviceNotice
+      media={{
+        ...media,
+        audioPlaybackAllowed: false,
+        playbackRequiresGesture: false,
+        deviceCheck: { microphone: 'ready', playback: 'unavailable' },
+      }}
+      errorCode={null}
+      onRetry={async () => {}}
+      onEnableAudio={async () => {}}
+    />,
+  );
+  expect(
+    screen.getByText('Audio playback unavailable. Check your headphones or speaker and retry.'),
+  ).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Tap to enable room audio' })).toBeNull();
+});
+
+test('a browser autoplay restriction offers sound activation without a redundant device probe', async () => {
+  const screen = await render(
+    <RoomDeviceNotice
+      media={{
+        ...media,
+        audioPlaybackAllowed: false,
+        playbackRequiresGesture: true,
+        deviceCheck: { microphone: 'ready', playback: 'ready' },
+      }}
+      errorCode={null}
+      onRetry={async () => {}}
+      onEnableAudio={async () => {}}
+    />,
+  );
+  expect(screen.getByRole('button', { name: 'Tap to enable room audio' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Check devices again' })).toBeNull();
+});

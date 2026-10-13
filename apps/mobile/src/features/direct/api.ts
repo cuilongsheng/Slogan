@@ -51,6 +51,13 @@ export class DirectApi {
       }),
     );
   }
+  unread() {
+    return this.invoke((token) =>
+      this.client.GET('/v1/me/conversations/unread', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    );
+  }
   conversations(cursor?: string) {
     return this.invoke((token) =>
       this.client.GET('/v1/me/conversations', {

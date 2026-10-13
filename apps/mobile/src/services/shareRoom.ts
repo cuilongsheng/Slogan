@@ -1,11 +1,10 @@
-import { Platform, Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 
-export async function shareRoomUrl(url: string): Promise<'copied' | 'shared' | 'cancelled'> {
-  if (Platform.OS === 'web') {
-    if (!globalThis.navigator?.clipboard?.writeText) throw new Error('CLIPBOARD_UNAVAILABLE');
-    await globalThis.navigator.clipboard.writeText(url);
-    return 'copied';
-  }
-  const result = await Share.share({ message: url, url });
-  return result.action === Share.dismissedAction ? 'cancelled' : 'shared';
+export async function copyRoomUrl(url: string): Promise<void> {
+  if (!(await Clipboard.setStringAsync(url))) throw new Error('CLIPBOARD_UNAVAILABLE');
+}
+
+export async function shareRoomUrl(url: string): Promise<'copied'> {
+  await copyRoomUrl(url);
+  return 'copied';
 }

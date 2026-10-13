@@ -72,9 +72,9 @@ const styles = StyleSheet.create({
     marginTop: 45,
     textAlign: 'center',
     color: tokens.color.foreground,
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
-    lineHeight: 43,
+    lineHeight: 26,
   },
   ageExplanation: {
     marginTop: 14,

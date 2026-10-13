@@ -36,6 +36,7 @@ import {
   DirectReportDto,
   DirectConversationDto,
   DirectConversationPageDto,
+  DirectUnreadDto,
   DirectMessageDto,
   DirectMessagePageDto,
   DirectCallDto,
@@ -80,6 +81,11 @@ export class DirectController {
   @ApiCreatedResponse({ type: DirectConversationDto })
   async open(@CurrentIdentity() who: CurrentAccessIdentity, @Body() body: OpenConversationDto) {
     return conversation(await this.direct.open(who.userId, body.targetUserId));
+  }
+  @Get('me/conversations/unread')
+  @ApiOkResponse({ type: DirectUnreadDto })
+  async unread(@CurrentIdentity() who: CurrentAccessIdentity) {
+    return { unreadCount: await this.direct.unreadCount(who.userId) };
   }
   @Get('me/conversations')
   @ApiOkResponse({ type: DirectConversationPageDto })

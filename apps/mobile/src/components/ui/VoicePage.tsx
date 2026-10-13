@@ -1,5 +1,7 @@
 import { AppText as Text } from './AppText';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { phonePreview } from './phonePreview';
+import { installRoomAudioGestures } from '../../services/roomAudioGesture';
 import { StatusBar } from 'expo-status-bar';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,11 +13,12 @@ export function VoicePage({
   children: ReactNode;
   connection?: boolean;
 }) {
+  useEffect(() => installRoomAudioGestures(), []);
   const page = (
     <SafeAreaView
       testID="voice-room-direct-entry-v2"
       edges={['top', 'bottom']}
-      style={[styles.safe, Platform.OS === 'web' && styles.webFrame]}
+      style={[styles.safe, Platform.OS === 'web' && phonePreview.frame]}
     >
       <StatusBar style="light" />
       {Platform.OS === 'web' && (
@@ -46,13 +49,11 @@ export function VoicePage({
       {Platform.OS === 'web' && <View pointerEvents="none" style={styles.homeIndicator} />}
     </SafeAreaView>
   );
-  return Platform.OS === 'web' ? <View style={styles.canvas}>{page}</View> : page;
+  return Platform.OS === 'web' ? <View style={phonePreview.canvas}>{page}</View> : page;
 }
 
 const styles = StyleSheet.create({
-  canvas: { flex: 1, alignItems: 'center', backgroundColor: '#EFF4FC' },
   safe: { flex: 1, backgroundColor: '#2A2149', overflow: 'hidden' },
-  webFrame: { width: '100%', maxWidth: 390 },
   previewStatus: {
     height: 44,
     paddingHorizontal: 24,

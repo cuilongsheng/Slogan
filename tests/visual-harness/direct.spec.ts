@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-const evidence = 'docs/acceptance/simplified-direct-pages/runtime';
+const evidence = 'docs/acceptance/main-pages-live-updates/runtime';
 const now = new Date('2026-10-11T02:42:00Z');
 const peers = ['Luna', 'Mika', 'Ravi'].map((displayName, index) => ({
   userId: `peer-${index}`,
@@ -37,6 +37,7 @@ async function fixtures(
     let body: unknown = {};
     if (path === '/v1/people/available')
       body = { items: options.empty ? [] : peers, nextCursor: null };
+    else if (path === '/v1/me/conversations/unread') body = { unreadCount: 4 };
     else if (path === '/v1/me/friends')
       body = {
         items: [peers[0], peers[2]].map((friend, index) => ({ id: `friend-${index}`, friend })),
@@ -160,12 +161,14 @@ test('chat action dialogs match design and cancel locally', async ({ page }) => 
   await fixtures(page);
   await page.goto('/?screen=chat&language=en');
   await expect(page.getByText('What movie did you watch?')).toBeVisible();
+  await page.getByRole('button', { name: 'Chat actions', exact: true }).click();
   await page.getByText('Block', { exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await capture(page, 'block');
   await page.getByText('Cancel', { exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
-  await page.getByRole('button', { name: '⋯ Report message' }).click();
+  await page.getByRole('button', { name: 'Chat actions', exact: true }).click();
+  await page.getByText('Report message', { exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   await expect(page.getByRole('alert')).toHaveText('Select a received message to report.');
   await page
@@ -220,7 +223,8 @@ test('report toolbar submits only the explicitly selected received message', asy
   });
   await page.goto('/?screen=chat&language=en');
   await expect(page.getByText('What movie did you watch?')).toBeVisible();
-  await page.getByRole('button', { name: '⋯ Report message' }).click();
+  await page.getByRole('button', { name: 'Chat actions', exact: true }).click();
+  await page.getByText('Report message', { exact: true }).click();
   await page.getByText('I watched The Secret Life of Walter Mitty.', { exact: true }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   expect(reported).toHaveLength(0);
@@ -245,11 +249,56 @@ test('recent View action preserves unread semantics and personal history deletio
   await fixtures(page);
   await page.goto('/?screen=messages&language=en');
   const row = page.getByRole('button', { name: 'Luna, 2 unread messages', exact: true });
-  await expect(row.getByText('View', { exact: true })).toBeVisible();
+  await expect(row.getByText('View', { exact: true })).toHaveCount(0);
+  await expect(row.getByRole('img', { name: 'View', exact: true })).toBeVisible();
   await row.click({ delay: 600 });
   await expect(page.getByRole('dialog')).toBeVisible();
   await capture(page, 'delete');
   await page.getByText('Cancel', { exact: true }).click();
   await row.click();
   await expect(page).toHaveURL('/messages/conversation-luna');
+});
+
+test('compact bubbles and input preserve legible text while a call event cannot acknowledge unseen text', async ({
+  page,
+}) => {
+  await fixtures(page);
+  const reads: number[] = [];
+  await page.route('**/v1/conversations/conversation-luna/read', (route) => {
+    reads.push(route.request().postDataJSON().sequence);
+    return route.fulfill({ json: conversation() });
+  });
+  await page.route('**/v1/conversations/conversation-luna/calls*', (route) =>
+    route.fulfill({
+      json: {
+        items: [{ id: 'past-call', sequence: 900, status: 'ENDED' }],
+        nextCursor: null,
+        visibleAfterSequence: 0,
+      },
+    }),
+  );
+  await page.goto('/?screen=chat&language=en');
+  const input = page.getByTestId('direct-message-input');
+  await expect(input).toHaveAttribute('placeholder', 'Say something…');
+  await expect(page.getByText('What movie did you watch?', { exact: true })).toBeVisible();
+  await expect.poll(() => reads.length).toBeGreaterThan(0);
+  expect(reads.every((sequence) => sequence === 2)).toBe(true);
+  const box = await input.boundingBox();
+  expect(box!.height).toBeGreaterThanOrEqual(50);
+  await expect(
+    page.getByText('Voice calls connect only after the other person accepts.'),
+  ).toHaveCount(0);
+});
+
+test('main tab headings are absent and incoming messages show a navigation badge', async ({
+  page,
+}) => {
+  await fixtures(page);
+  await page.goto('/?screen=partners&language=en');
+  await expect(page.getByText('Luna', { exact: true })).toBeVisible();
+  await expect(page.getByText('Partners', { exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Messages, 4 unread', exact: true })).toBeVisible();
+  await page.goto('/?screen=me&language=en');
+  await expect(page.getByRole('button', { name: 'Edit profile', exact: true })).toBeVisible();
+  await expect(page.getByText('Me', { exact: true })).toHaveCount(1);
 });

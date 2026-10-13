@@ -1461,6 +1461,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/conversations/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DirectController_unread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/direct-calls": {
         parameters: {
             query?: never;
@@ -2867,6 +2883,9 @@ export interface components {
             /** Format: uuid */
             clientRequestId: string;
             description: string;
+        };
+        DirectUnreadDto: {
+            unreadCount: number;
         };
         DryRunDto: {
             /** Format: uuid */
@@ -7034,7 +7053,9 @@ export interface operations {
     };
     AvatarController_default: {
         parameters: {
-            query?: never;
+            query?: {
+                variant?: "male" | "female";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7047,6 +7068,22 @@ export interface operations {
                 };
                 content: {
                     "image/png": string;
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
                 };
             };
         };
@@ -16927,6 +16964,139 @@ export interface operations {
                             unreadCount: number;
                         }[];
                         nextCursor: string | null;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    DirectController_unread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unreadCount: number;
                     };
                 };
             };

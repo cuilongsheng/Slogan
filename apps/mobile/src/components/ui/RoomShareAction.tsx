@@ -13,7 +13,7 @@ export function RoomShareAction({ url, dark = false }: { url: string; dark?: boo
     setBusy(true);
     try {
       const outcome = await shareRoomUrl(url);
-      setResult(outcome === 'cancelled' ? null : outcome);
+      setResult(outcome);
     } catch {
       setResult('failed');
     } finally {

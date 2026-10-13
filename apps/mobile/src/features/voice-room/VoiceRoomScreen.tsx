@@ -15,7 +15,8 @@ import {
   View,
 } from 'react-native';
 
-import { RoomShareAction } from '../../components/ui/RoomShareAction';
+import { copyRoomUrl } from '../../services/shareRoom';
+import { MemberAvatar } from './MemberAvatar';
 import { VoicePage } from '../../components/ui/VoicePage';
 import { getLanguage, t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
@@ -33,10 +34,8 @@ import { RoomExtensionSheet } from './RoomExtensionSheet';
 import { RoomSafetyAlertsSheet } from './RoomSafetyAlertsSheet';
 import { useRoomExitDelivery } from './RoomExitProvider';
 import { createVoiceMedia } from './media';
-import { ReconnectingScreen } from './ReconnectingScreen';
 import { RoomDeviceNotice } from './RoomDeviceNotice';
 import { VoiceRoomSession, type VoiceSessionSnapshot } from './session';
-import profileIcon from '../../../assets/icons/profile.png';
 import micIcon from '../../../assets/icons/mic.png';
 import backIcon from '../../../assets/icons/voice-back.png';
 import exitIcon from '../../../assets/icons/voice-exit.png';
@@ -152,9 +151,6 @@ function SessionState({
     ['ROOM_PASSWORD_INVALID', 'ROOM_PASSWORD_REQUIRED', 'ROOM_RULES_NOT_ACCEPTED'].includes(
       snapshot.errorCode ?? '',
     );
-  if (snapshot.phase === 'active' && snapshot.media.connection === 'reconnecting') {
-    return <ReconnectingScreen snapshot={snapshot} onLeave={() => void session.leave()} />;
-  }
   if (needsPassword)
     return (
       <VoicePage>
@@ -319,10 +315,7 @@ function MemberSeat({
               media?.speaking && styles.avatarSpeaking,
             ]}
           />
-          <Image
-            source={member.avatarUrl ? { uri: member.avatarUrl } : profileIcon}
-            style={styles.avatarPhoto}
-          />
+          <MemberAvatar url={member.avatarUrl} style={styles.avatarPhoto} />
           {member.nationalityCode && countryFlags[member.nationalityCode] && (
             <View style={styles.flagBadge}>
               <Image source={countryFlags[member.nationalityCode]} style={styles.countryFlag} />
@@ -407,7 +400,13 @@ function VoiceRoomBody({
   const [moreOpen, setMoreOpen] = useState(false);
   const [reportRoomOpen, setReportRoomOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState<RoomMember | null>(null);
-  const [shareOpen, setShareOpen] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [copying, setCopying] = useState(false);
+  useEffect(() => {
+    if (!actionNotice) return;
+    const timer = setTimeout(() => setActionNotice(null), 5000);
+    return () => clearTimeout(timer);
+  }, [actionNotice]);
   const [extendOpen, setExtendOpen] = useState(false);
   const [assistanceOpen, setAssistanceOpen] = useState(false);
   const [safetyAlertsOpen, setSafetyAlertsOpen] = useState(false);
@@ -448,10 +447,10 @@ function VoiceRoomBody({
         {
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel={t('voiceLeave')}
+            accessibilityLabel={t(snapshot.role === 'HOST' ? 'voiceEndRoom' : 'voiceLeave')}
             style={styles.exitHit}
             onPress={() => {
-              void session.leave();
+              void (snapshot.role === 'HOST' ? session.end() : session.leave());
             }}
           >
             <Image source={exitIcon} style={styles.exitIcon} />
@@ -470,15 +469,29 @@ function VoiceRoomBody({
           </View>
         </TouchableOpacity>
         <View testID="room-header-status" style={styles.headerStatus}>
-          <Text numberOfLines={1} style={styles.headerMeta}>
-            {room.memberCount} / {room.capacity} {t('voiceOnline')} ·{' '}
-            {tf('roomRemainingMinutes', { minutes: remainingMinutes(room.endsAt) })}
-          </Text>
+          <TouchableOpacity
+            disabled={snapshot.role !== 'HOST'}
+            accessibilityRole={snapshot.role === 'HOST' ? 'button' : undefined}
+            accessibilityLabel={snapshot.role === 'HOST' ? t('roomExtendAction') : undefined}
+            style={{ flex: 1, minWidth: 0 }}
+            onPress={() => setExtendOpen(true)}
+          >
+            <Text numberOfLines={1} style={styles.headerMeta}>
+              {room.memberCount} / {room.capacity} {t('voiceOnline')} ·{' '}
+              {tf('roomRemainingMinutes', { minutes: remainingMinutes(room.endsAt) })}
+            </Text>
+          </TouchableOpacity>
           <Text numberOfLines={1} style={styles.headerLevel}>
             {roomLevelLabel(room).replace('–', ' ～ ')}
           </Text>
           <Text numberOfLines={1} style={styles.live}>
-            {snapshot.media.connection === 'connected' ? '●\u00a0 LIVE' : t('voiceAudioConnecting')}
+            {snapshot.media.connection === 'connected'
+              ? '●\u00a0 LIVE'
+              : t(
+                  snapshot.media.connection === 'reconnecting'
+                    ? 'voiceReconnectingTitle'
+                    : 'voiceAudioConnecting',
+                )}
           </Text>
         </View>
       </View>
@@ -488,10 +501,9 @@ function VoiceRoomBody({
             <Image source={rulesIcon} style={styles.rulesImage} />
           </View>
           <View style={styles.rulesText}>
-            <Text style={[styles.rulesTitle, getLanguage() === 'en' && styles.englishRulesTitle]}>
-              {t('voiceRoomRules')}
-            </Text>
             <Text style={[styles.rulesPreview, getLanguage() === 'en' && styles.englishRules]}>
+              {t('voiceRoomRules')}
+              {getLanguage() === 'en' ? ': ' : '：'}
               {t('voiceRulesBody')}
             </Text>
           </View>
@@ -592,8 +604,10 @@ function VoiceRoomBody({
                           testID={`room-empty-seat-${rowIndex * 4 + index}`}
                           accessibilityRole="button"
                           accessibilityLabel={t('voiceEmptySeat')}
-                          disabled={snapshot.role !== 'HOST'}
-                          onPress={() => setInviteOpen(true)}
+                          onPress={() => {
+                            if (snapshot.role === 'HOST') setInviteOpen(true);
+                            else setActionNotice(t('roomInviteHostOnly'));
+                          }}
                           style={[styles.seat, styles.inviteSeat]}
                         >
                           <View style={styles.emptySeat}>
@@ -649,10 +663,35 @@ function VoiceRoomBody({
         </View>
       </View>
       <View style={styles.composer}>
+        {actionNotice && (
+          <Text
+            accessibilityRole="text"
+            accessibilityLiveRegion="polite"
+            style={styles.actionNotice}
+          >
+            {actionNotice}
+          </Text>
+        )}
         {(chat.error || chat.tooLong) && (
           <Text accessibilityRole="alert" style={styles.messageError}>
             {t(chat.tooLong ? 'roomMessageTooLong' : 'roomMessageFailed')}
           </Text>
+        )}
+        {snapshot.phase === 'active' && snapshot.media.connection !== 'connected' && (
+          <View style={styles.recoveryNotice}>
+            <Text style={styles.actionNotice}>
+              {t(
+                snapshot.media.connection === 'reconnecting'
+                  ? 'voiceReconnectSubtitle'
+                  : 'voiceProviderUnavailable',
+              )}
+            </Text>
+            {snapshot.media.connection === 'disconnected' && (
+              <TouchableOpacity accessibilityRole="button" onPress={() => void session.start(null)}>
+                <Text style={styles.actionNotice}>{t('retry')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
         <RoomDeviceNotice
           media={snapshot.media}
@@ -721,6 +760,11 @@ function VoiceRoomBody({
             >
               <Text style={styles.moreCloseText}>×</Text>
             </TouchableOpacity>
+            {actionNotice && (
+              <Text accessibilityLiveRegion="polite" style={styles.actionNotice}>
+                {actionNotice}
+              </Text>
+            )}
             <View style={styles.moreActions}>
               <TouchableOpacity
                 accessibilityRole="button"
@@ -746,49 +790,25 @@ function VoiceRoomBody({
               <TouchableOpacity
                 accessibilityRole="button"
                 style={styles.moreAction}
+                disabled={copying}
                 onPress={() => {
-                  setMoreOpen(false);
-                  setShareOpen(true);
+                  if (copying) return;
+                  setCopying(true);
+                  // Clipboard access starts in the original gesture, before any await.
+                  void copyRoomUrl(room.shareUrl)
+                    .then(
+                      () => {
+                        setActionNotice(t('roomShareCopied'));
+                        setMoreOpen(false);
+                      },
+                      () => setActionNotice(t('roomShareFailed')),
+                    )
+                    .finally(() => setCopying(false));
                 }}
               >
                 <Text style={styles.moreActionText}>{t('roomShareAction')}</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      )}
-      {shareOpen && (
-        <View style={styles.overlay}>
-          <View style={styles.confirmSheet}>
-            <Text style={styles.confirmTitle}>{t('roomShareAction')}</Text>
-            <View style={styles.shareContent}>
-              <RoomShareAction url={room.shareUrl} />
-              {snapshot.role === 'HOST' && (
-                <>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    onPress={() => {
-                      setShareOpen(false);
-                      setExtendOpen(true);
-                    }}
-                  >
-                    <Text style={styles.cancel}>{t('roomExtendAction')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    onPress={() => {
-                      setShareOpen(false);
-                      void session.end();
-                    }}
-                  >
-                    <Text style={styles.cancel}>{t('voiceEndRoom')}</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-            <TouchableOpacity accessibilityRole="button" onPress={() => setShareOpen(false)}>
-              <Text style={styles.cancel}>{t('roomCloseSheet')}</Text>
-            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -925,10 +945,11 @@ export function VoiceRoomScreen({
         if (
           check &&
           (check.microphone === 'blocked' ||
+            check.microphone === 'denied' ||
             check.microphone === 'unavailable' ||
             check.playback === 'unavailable')
         )
-          void session.recheckDevices();
+          void session.recheckDevices(false);
       }
     });
     return () => {
@@ -957,7 +978,8 @@ export function VoiceRoomScreen({
   if (
     snapshot.room &&
     (snapshot.phase === 'connecting' ||
-      (snapshot.phase === 'active' && snapshot.media.connection === 'connected'))
+      snapshot.phase === 'active' ||
+      (snapshot.phase === 'joining' && snapshot.room.currentMembership?.lifecycle === 'ACTIVE'))
   ) {
     return (
       <VoiceRoomBody
@@ -994,7 +1016,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
   },
-  moreTitle: { color: '#fff', fontSize: 20, lineHeight: 31, fontWeight: '500' },
+  moreTitle: { color: '#fff', fontSize: 18, lineHeight: 26, fontWeight: '500' },
   moreBrandDots: { position: 'absolute', top: 24, right: 81, flexDirection: 'row', gap: 5 },
   moreClose: {
     position: 'absolute',
@@ -1172,7 +1194,7 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
   secondaryAction: { backgroundColor: '#EDE6FF', marginTop: 12 },
   stateHeader: { marginHorizontal: 24, marginTop: 10 },
-  stateTitle: { color: '#fff', fontSize: 27, fontWeight: '700' },
+  stateTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
   stateSubtitle: { color: '#BEB4D3', fontSize: 12, marginTop: 8 },
   stateCard: {
     marginHorizontal: 16,
@@ -1220,7 +1242,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 13,
   },
-  headerMeta: { flex: 1, minWidth: 0, color: '#C8BBFF', fontSize: 12, lineHeight: 17 },
+  headerMeta: { minWidth: 0, color: '#C8BBFF', fontSize: 12, lineHeight: 17 },
   headerLevel: {
     minWidth: 44,
     flexShrink: 0,
@@ -1243,6 +1265,13 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     fontWeight: '500',
   },
+  recoveryNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  actionNotice: { color: '#77E5C9', fontSize: 12, lineHeight: 20, marginBottom: 5 },
   bodyContent: { paddingBottom: 0 },
   rulesBanner: {
     marginHorizontal: 16,
@@ -1251,10 +1280,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#150F29',
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 9,
-    gap: 10,
+    gap: 9,
   },
   rulesIcon: {
     alignSelf: 'center',
@@ -1282,16 +1311,7 @@ const styles = StyleSheet.create({
   safetyAlertsTitle: { color: '#fff', fontSize: 12, fontWeight: '700' },
   safetyAlertsHint: { color: '#C7B8E4', fontSize: 10, marginTop: 5 },
   safetyAlertsCount: { color: '#77E5D4', fontSize: 14, fontWeight: '700' },
-  rulesTitle: { color: '#FFFFFF', fontSize: 11, lineHeight: 16, fontWeight: '500' },
   rulesPreview: { color: '#FFFFFF', fontSize: 11, lineHeight: 17 },
-  englishRulesTitle: {
-    fontFamily:
-      Platform.OS === 'web' ? 'system-ui' : Platform.OS === 'ios' ? 'System' : 'sans-serif',
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '600',
-    marginBottom: 3,
-  },
   englishRules: {
     fontFamily:
       Platform.OS === 'web' ? 'system-ui' : Platform.OS === 'ios' ? 'System' : 'sans-serif',
@@ -1423,7 +1443,7 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 50,
   },
-  confirmTitle: { color: tokens.color.foreground, fontSize: 21, fontWeight: '700' },
+  confirmTitle: { color: tokens.color.foreground, fontSize: 18, fontWeight: '700' },
   handoffDot: { width: 7, height: 7, borderRadius: 4 },
   extensionNotice: {
     marginHorizontal: 16,
@@ -1433,7 +1453,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#493965',
   },
   extensionNoticeText: { color: '#E7DFFA', fontSize: 12, lineHeight: 18 },
-  shareContent: { marginTop: 22 },
   successorOption: {
     minHeight: 40,
     borderRadius: 16,

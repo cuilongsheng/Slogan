@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 50,
   },
-  title: { color: tokens.color.foreground, fontSize: 21, fontWeight: '700' },
+  title: { color: tokens.color.foreground, fontSize: 18, fontWeight: '700' },
   body: { color: tokens.color.muted, fontSize: 13, marginTop: 17, marginBottom: 24 },
   options: { gap: 8, marginBottom: 24 },
   option: {

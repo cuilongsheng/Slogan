@@ -26,8 +26,8 @@ export class AvatarService {
     await this.repository.replace(userId, id, image, sha256, avatarUrl);
     return { avatarUrl };
   }
-  defaultImage() {
-    return this.images.defaultImage();
+  defaultImage(variant?: 'male' | 'female') {
+    return this.images.defaultImage(variant);
   }
   find(id: string) {
     return this.repository.find(id);

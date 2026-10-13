@@ -1,3 +1,4 @@
+import { defaultAvatarVariant } from '../../profiles/index.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { appendRoomEvent } from '../../audit/persistence.js';
 import type { LockedRealtimeRoom } from '../domain/ports/room-realtime.repository.js';
@@ -45,7 +46,10 @@ export async function loadLockedRealtimeRoom(
       removalReason: m.removalReason,
       joinOrder: m.joinOrder,
       displayName: m.user.profile?.displayName ?? '',
-      avatarUrl: m.user.profile?.avatarUrl ?? null,
+      avatarUrl: defaultAvatarVariant(
+        m.user.profile?.avatarUrl ?? null,
+        m.user.profile?.genderCode,
+      ),
       nationalityCode: m.user.profile?.nationalityCode ?? null,
       cefrLevel: m.user.profile?.cefrLevel ?? '',
       accountActive: m.user.status === 'ACTIVE',

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const evidence = 'docs/acceptance/room-list-fidelity';
+const evidence = 'docs/acceptance/main-pages-live-updates/runtime';
 test.use({ deviceScaleFactor: 3 });
 const now = new Date('2026-10-10T09:00:00Z');
 const rooms = [
@@ -36,7 +36,7 @@ test('real room list matches measured geometry and preserves direct entry', asyn
     return route.fulfill({ json: { items: rooms, nextCursor: null } });
   });
   await page.goto('/?screen=rooms');
-  await expect(page.getByText('开启畅聊', { exact: true })).toBeVisible();
+  await expect(page.getByText('开启畅聊', { exact: true })).toHaveCount(0);
   await expect(page.getByText('4 个房间', { exact: true })).toBeVisible();
   await expect(page.getByText('Nora · 房主', { exact: true })).toBeVisible();
   await page.evaluate(async () => {
@@ -78,4 +78,20 @@ test('list errors stay retryable and profile/create navigation works', async ({ 
   await expect(page.getByText('聊聊旅行中的意外收获', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '我的', exact: true }).click();
   await expect(page).toHaveURL('/me');
+});
+
+test('Discover shows another actor new room on the next foreground refresh without reloading', async ({
+  page,
+}) => {
+  await page.clock.install({ time: now });
+  let visible = [rooms[0]];
+  await page.route('**/v1/rooms?*', (route) =>
+    route.fulfill({ json: { items: visible, nextCursor: null } }),
+  );
+  await page.goto('/?screen=rooms');
+  await expect(page.getByTestId('room-card-room-0')).toBeVisible();
+  visible = [rooms[1], rooms[0]];
+  await page.clock.fastForward(5000);
+  await expect(page.getByTestId('room-card-room-1')).toBeVisible();
+  await expect(page.getByTestId('room-card-room-0')).toBeVisible();
 });
