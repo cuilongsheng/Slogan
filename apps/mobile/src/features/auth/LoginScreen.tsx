@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     marginTop: 4,
     color: tokens.color.foreground,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
   },

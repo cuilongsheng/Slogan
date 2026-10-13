@@ -69,6 +69,7 @@ export class RoomListPager {
   private items: RoomSummary[] = [];
   private nextCursor: string | null = null;
   private generation = 0;
+  private loadedPages = 1;
   private nextInFlight: Promise<RoomList> | null = null;
 
   constructor(private readonly api: Pick<RoomDiscoveryApi, 'list'>) {}
@@ -80,10 +81,26 @@ export class RoomListPager {
   async refresh(): Promise<RoomList> {
     const generation = ++this.generation;
     this.nextInFlight = null;
-    const page = await this.api.list();
+    const items: RoomSummary[] = [];
+    const seen = new Set<string>();
+    let cursor: string | null = null;
+    let pages = 0;
+    do {
+      const page = await this.api.list(cursor ?? undefined);
+      if (generation !== this.generation) return this.snapshot;
+      for (const room of page.items) {
+        if (!seen.has(room.id)) {
+          seen.add(room.id);
+          items.push(room);
+        }
+      }
+      cursor = page.nextCursor;
+      pages++;
+    } while (cursor && pages < this.loadedPages);
     if (generation === this.generation) {
-      this.items = page.items;
-      this.nextCursor = page.nextCursor;
+      this.items = items;
+      this.nextCursor = cursor;
+      this.loadedPages = pages;
     }
     return this.snapshot;
   }
@@ -100,6 +117,7 @@ export class RoomListPager {
           const seen = new Set(this.items.map((room) => room.id));
           this.items = [...this.items, ...page.items.filter((room) => !seen.has(room.id))];
           this.nextCursor = page.nextCursor;
+          this.loadedPages++;
         }
         return this.snapshot;
       })

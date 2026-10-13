@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 10,
   },
-  topic: { color: tokens.color.foreground, fontSize: 21, fontWeight: '700', marginTop: 12 },
+  topic: { color: tokens.color.foreground, fontSize: 18, fontWeight: '700', marginTop: 12 },
   section: {
     marginHorizontal: 20,
     marginTop: 20,

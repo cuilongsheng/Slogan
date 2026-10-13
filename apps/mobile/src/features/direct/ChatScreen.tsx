@@ -1,8 +1,8 @@
 import backIcon from '../../../assets/icons/back.png';
 import phoneIcon from '../../../assets/icons/direct-phone.png';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,6 +19,9 @@ import { RoomPage } from '../../components/ui/RoomPage';
 import { AppText as Text } from '../../components/ui/AppText';
 import { t, tf, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
+import { LatestRequestQueue } from '../../services/latestRequestQueue';
+import { isAppForeground } from '../../services/foregroundPolling';
+import { useMessageUnread } from './MessageUnreadProvider';
 import { useAuth } from '../auth';
 import { SocialApi } from '../social';
 import {
@@ -38,6 +41,8 @@ type Timeline =
 export function ChatScreen({ conversationId }: { conversationId: string }) {
   useLanguage();
   const router = useRouter();
+  const refreshQueue = useRef(new LatestRequestQueue());
+  const { refresh: refreshUnread } = useMessageUnread();
   const { authorized, state } = useAuth();
   const userId = state.kind === 'signedIn' ? state.me.userId : '';
   const api = useMemo(() => new DirectApi(authorized), [authorized]),
@@ -47,6 +52,8 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     [calls, setCalls] = useState<DirectCall[]>([]),
     [pending, setPending] = useState<Pending[]>([]),
     [draft, setDraft] = useState(''),
+    [inputHeight, setInputHeight] = useState(50),
+    [menuOpen, setMenuOpen] = useState(false),
     [error, setError] = useState<MessageKey | null>(null),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false);
@@ -62,66 +69,101 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     sending = useRef(new Set<string>()),
     commandIds = useRef(new Map<string, string>()),
     list = useRef<FlatList<Timeline>>(null);
-  const hasConversation = conversation !== null;
+  const conversationRef = useRef<Conversation | null>(null);
   const nearBottom = useRef(true);
+  const focused = useRef(false);
+  const readCandidate = useRef(0);
+  const readPending = useRef<Promise<void> | null>(null);
+  const acknowledge = useCallback(() => {
+    if (readPending.current || !focused.current || !nearBottom.current || !isAppForeground())
+      return;
+    const sequence = readCandidate.current;
+    if (sequence <= lastRead.current) return;
+    const request = api
+      .read(conversationId, sequence)
+      .then(() => {
+        lastRead.current = Math.max(lastRead.current, sequence);
+        void refreshUnread();
+      })
+      .catch(() => {
+        // Keep the badge unread; a subsequent visible refresh retries the acknowledgement.
+      })
+      .finally(() => {
+        if (readPending.current === request) readPending.current = null;
+      });
+    readPending.current = request;
+  }, [api, conversationId, refreshUnread]);
+  useFocusEffect(
+    useCallback(() => {
+      focused.current = true;
+      return () => {
+        focused.current = false;
+      };
+    }, []),
+  );
   const load = useCallback(
-    async (current: () => boolean = () => true) => {
-      try {
-        if (!hasConversation || Date.now() - lastDetail.current > 15000) {
-          const detail = await api.detail(conversationId);
-          if (!current()) return;
-          setConversation(detail);
-          lastDetail.current = Date.now();
-        }
-        const [page, history] = await Promise.all([
-          api.messages(conversationId, cursor.current),
-          api.callHistory(conversationId, callCursor.current),
-        ]);
+    (current: () => boolean = () => true) =>
+      refreshQueue.current.enqueue(async () => {
         if (!current()) return;
-        cursor.current = page.nextCursor ?? undefined;
-        callCursor.current = history.nextCursor ?? undefined;
-        setMessages((old) =>
-          [
-            ...old.filter(
-              (item) =>
-                item.sequence > page.visibleAfterSequence &&
-                !page.items.some((next) => next.id === item.id),
+        try {
+          const needsDetail = !conversationRef.current || Date.now() - lastDetail.current > 15000;
+          const [detail, page, history] = await Promise.all([
+            needsDetail ? api.detail(conversationId) : Promise.resolve(null),
+            api.messages(conversationId, cursor.current),
+            api.callHistory(conversationId, callCursor.current),
+          ]);
+          if (!current()) return;
+          if (detail) {
+            conversationRef.current = detail;
+            setConversation(detail);
+            lastDetail.current = Date.now();
+          }
+          cursor.current = page.nextCursor ?? undefined;
+          callCursor.current = history.nextCursor ?? undefined;
+          setMessages((old) =>
+            [
+              ...old.filter(
+                (item) =>
+                  item.sequence > page.visibleAfterSequence &&
+                  !page.items.some((next) => next.id === item.id),
+              ),
+              ...page.items,
+            ].sort((a, b) => a.sequence - b.sequence),
+          );
+          setCalls((old) =>
+            [
+              ...old.filter(
+                (item) =>
+                  item.sequence > history.visibleAfterSequence &&
+                  !history.items.some((next) => next.id === item.id),
+              ),
+              ...history.items,
+            ].sort((a, b) => a.sequence - b.sequence),
+          );
+          setPending((old) =>
+            old.filter(
+              (item) => !page.items.some((message) => message.clientRequestId === item.id),
             ),
-            ...page.items,
-          ].sort((a, b) => a.sequence - b.sequence),
-        );
-        setCalls((old) =>
-          [
-            ...old.filter(
-              (item) =>
-                item.sequence > history.visibleAfterSequence &&
-                !history.items.some((next) => next.id === item.id),
-            ),
-            ...history.items,
-          ].sort((a, b) => a.sequence - b.sequence),
-        );
-        setPending((old) =>
-          old.filter((item) => !page.items.some((message) => message.clientRequestId === item.id)),
-        );
-        const sequence = Math.max(
-          ...page.items.map((item) => item.sequence),
-          ...history.items.map((item) => item.sequence),
-          0,
-        );
-        if (sequence > lastRead.current) {
-          await api.read(conversationId, sequence);
-          if (current()) lastRead.current = sequence;
+          );
+          // Call history has a separate cursor: it cannot acknowledge text we have not loaded.
+          readCandidate.current = Math.max(
+            readCandidate.current,
+            ...page.items.map((item) => item.sequence),
+            0,
+          );
+          setError(null);
+        } catch (e) {
+          if (current()) setError(directError(e));
+        } finally {
+          if (current()) setLoading(false);
         }
-        setError(null);
-      } catch (e) {
-        if (current()) setError(directError(e));
-      } finally {
-        if (current()) setLoading(false);
-      }
-    },
-    [api, conversationId, hasConversation],
+      }),
+    [api, conversationId],
   );
   useFocusedPolling(load, 3000);
+  useEffect(() => {
+    if (!loading) acknowledge();
+  }, [messages, loading, acknowledge]);
   const send = async (item: Pending) => {
     if (sending.current.has(item.id)) return;
     sending.current.add(item.id);
@@ -191,10 +233,13 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
         callCursor.current = undefined;
         setMessages([]);
         setCalls([]);
+        readCandidate.current = 0;
+        void refreshUnread();
         setPending([]);
       } else if (dialog === 'block') {
         await social.block(conversation.peer.userId, id);
-        setConversation((old) => (old ? { ...old, canInteract: false } : old));
+        conversationRef.current = { ...conversation, canInteract: false };
+        setConversation(conversationRef.current);
       } else if (reportMessage) {
         await api.report(conversationId, reportMessage.id, reason.trim(), id);
         setNotice('directReported');
@@ -216,7 +261,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
   ].sort((a, b) => a.value.sequence - b.value.sequence);
   timeline.push(...pending.map((value) => ({ kind: 'pending' as const, value })));
   return (
-    <RoomPage direct hidePreviewIndicator>
+    <RoomPage direct>
       <View style={styles.header}>
         <TouchableOpacity
           accessibilityRole="button"
@@ -231,6 +276,14 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityLabel={t('directChatActions')}
+          style={styles.more}
+          onPress={() => setMenuOpen(true)}
+        >
+          <Text style={styles.moreText}>⋯</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
           accessibilityLabel={t('directVoiceAction')}
           disabled={busy || !conversation?.canInteract}
           style={styles.voice}
@@ -238,9 +291,6 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
         >
           <Image source={phoneIcon} style={styles.icon} />
         </TouchableOpacity>
-      </View>
-      <View style={styles.privacy}>
-        <Text style={styles.privacyText}>{t('directCallConsentNotice')}</Text>
       </View>
       {loading ? (
         <ActivityIndicator style={{ flex: 1 }} color={directColors.violet} />
@@ -255,10 +305,14 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
             nearBottom.current =
               value.contentSize.height - value.layoutMeasurement.height - value.contentOffset.y <
               64;
+            if (nearBottom.current) acknowledge();
           }}
           scrollEventThrottle={100}
           onContentSizeChange={() => {
-            if (nearBottom.current) list.current?.scrollToEnd({ animated: false });
+            if (nearBottom.current) {
+              list.current?.scrollToEnd({ animated: false });
+              acknowledge();
+            }
           }}
           renderItem={({ item }) => {
             if (item.kind === 'call')
@@ -363,7 +417,11 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
           placeholder={t('directPlaceholder')}
           maxLength={2000}
           multiline
-          style={styles.input}
+          onContentSizeChange={(event) =>
+            setInputHeight(Math.min(120, Math.max(50, event.nativeEvent.contentSize.height)))
+          }
+          scrollEnabled={inputHeight >= 120}
+          style={[styles.input, { height: inputHeight }]}
           placeholderTextColor={directColors.muted}
         />
         <TouchableOpacity
@@ -377,25 +435,36 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
           <Text style={styles.sendText}>↑</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.tools}>
-        <TouchableOpacity
-          accessibilityRole="button"
-          disabled={!messages.some((message) => message.senderUserId !== userId)}
-          onPress={() => setSelectingReport(true)}
-          style={styles.toolAction}
-        >
-          <Text style={styles.toolText}>⋯ {t('directReport')}</Text>
-        </TouchableOpacity>
-        <Text style={[styles.toolText, styles.toolDivider]}> · </Text>
-        <TouchableOpacity
-          accessibilityRole="button"
-          disabled={!conversation}
-          onPress={() => setDialog('block')}
-          style={styles.toolAction}
-        >
-          <Text style={styles.toolText}>{t('socialBlock')}</Text>
-        </TouchableOpacity>
-      </View>
+      <Modal visible={menuOpen} transparent onRequestClose={() => setMenuOpen(false)}>
+        <View style={styles.overlay}>
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>{t('directChatActions')}</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              disabled={!messages.some((message) => message.senderUserId !== userId)}
+              onPress={() => {
+                setMenuOpen(false);
+                setSelectingReport(true);
+              }}
+            >
+              <Text style={styles.menuAction}>{t('directReport')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              disabled={!conversation}
+              onPress={() => {
+                setMenuOpen(false);
+                setDialog('block');
+              }}
+            >
+              <Text style={styles.menuAction}>{t('socialBlock')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setMenuOpen(false)}>
+              <Text style={styles.cancel}>{t('cancelAction')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <Modal visible={dialog !== null} transparent onRequestClose={() => setDialog(null)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -447,9 +516,9 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
   );
 }
 const styles = StyleSheet.create({
-  header: { height: 73, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  header: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   back: {
-    width: 48,
+    width: 43,
     height: 44,
     paddingLeft: 4,
     alignSelf: 'flex-start',
@@ -459,11 +528,12 @@ const styles = StyleSheet.create({
   icon: { width: 24, height: 24 },
   title: {
     alignSelf: 'flex-start',
-    height: 42,
+    height: 32,
+    marginTop: 6,
     flex: 1,
     minWidth: 0,
-    fontSize: 24,
-    lineHeight: 32,
+    fontSize: 18,
+    lineHeight: 26,
     fontWeight: '700',
     color: directColors.ink,
   },
@@ -476,41 +546,29 @@ const styles = StyleSheet.create({
     marginTop: 4,
     transform: [{ translateX: -1 }],
   },
-  privacy: {
-    height: 51,
-    marginHorizontal: 16,
-    backgroundColor: tokens.color.purpleSoft,
-    borderRadius: 18,
-    paddingHorizontal: 14,
+  more: {
+    width: 32,
+    height: 44,
+    alignSelf: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  privacyText: { minHeight: 34, fontSize: 12, lineHeight: 18, color: directColors.muted },
-  tools: {
-    height: 82,
-    paddingTop: 15,
-    paddingHorizontal: 22,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: tokens.color.surface,
-  },
-  toolAction: { minHeight: 36, justifyContent: 'center' },
-  toolDivider: { marginTop: 7 },
+  moreText: { fontSize: 24, lineHeight: 32, color: directColors.muted },
+  menuAction: { fontSize: 14, lineHeight: 24, paddingVertical: 8, color: directColors.violet },
   selection: { paddingHorizontal: 16, paddingVertical: 6, flexDirection: 'row', gap: 12 },
   selectionText: { flex: 1, fontSize: 12, lineHeight: 20, color: directColors.violet },
   toolText: { height: 22, fontSize: 12, lineHeight: 18, color: directColors.muted },
-  timeline: { paddingHorizontal: 16, paddingBottom: 16, gap: 23, paddingTop: 52 },
+  timeline: { paddingHorizontal: 10, paddingBottom: 16, gap: 14 },
   bubble: {
-    width: 264,
-    maxWidth: '74%',
-    minHeight: 58,
+    maxWidth: '94%',
+    minHeight: 34,
     paddingHorizontal: 16,
-    paddingVertical: 5,
+    paddingVertical: 6,
     justifyContent: 'center',
     borderRadius: 20,
   },
   incoming: {
-    width: 262,
-    paddingBottom: 9,
+    paddingHorizontal: 14,
     alignSelf: 'flex-start',
     backgroundColor: tokens.color.mint,
   },
@@ -520,15 +578,15 @@ const styles = StyleSheet.create({
   pendingText: { fontSize: 11, lineHeight: 20, color: directColors.violet },
   callEvent: {
     fontSize: 12,
-    lineHeight: 24,
+    lineHeight: 20,
     textAlign: 'center',
     color: directColors.muted,
-    padding: 10,
+    paddingVertical: 4,
   },
   composer: {
-    minHeight: 82,
+    minHeight: 79,
     paddingTop: 12,
-    paddingBottom: 20,
+    paddingBottom: 17,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -544,9 +602,11 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.panel,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 10,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
     fontSize: 14,
-    lineHeight: 24,
+    lineHeight: 20,
     fontFamily: 'NotoSansSC',
     color: directColors.ink,
   },
@@ -582,7 +642,7 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
   },
-  dialogTitle: { lineHeight: 30, fontSize: 20, fontWeight: '700', color: directColors.ink },
+  dialogTitle: { lineHeight: 26, fontSize: 18, fontWeight: '700', color: directColors.ink },
   description: { fontSize: 14, lineHeight: 24, color: directColors.muted },
   reportInput: {
     minHeight: 88,

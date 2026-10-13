@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { defaultAvatarUrl } from './avatar';
 import { useAuth } from '../auth/context';
@@ -10,6 +18,7 @@ export interface ProfileDraft {
   displayName: string;
   genderCode: ProfileInput['genderCode'] | '';
   city: string;
+  nationalityCode?: string;
   adultConfirmed?: boolean;
   birthYear: string;
   birthMonth: string;
@@ -31,6 +40,7 @@ const emptyDraft: ProfileDraft = {
 
 interface DraftContextValue {
   draft: ProfileDraft;
+  resetFromProfile?: () => void;
   setDraft: React.Dispatch<React.SetStateAction<ProfileDraft>>;
   serverErrors?: ProfileErrors;
   setServerErrors?: React.Dispatch<React.SetStateAction<ProfileErrors>>;
@@ -43,9 +53,7 @@ export function ProfileDraftProvider({ children }: { children: React.ReactNode }
   const [serverErrors, setServerErrors] = useState<ProfileErrors>({});
   const owner = state.kind === 'signedIn' ? state.me.userId : null;
   const previousOwner = useRef<string | null>(null);
-  useEffect(() => {
-    if (previousOwner.current === owner) return;
-    previousOwner.current = owner;
+  const resetFromProfile = useCallback(() => {
     setServerErrors({});
     setDraft({
       ...emptyDraft,
@@ -54,6 +62,7 @@ export function ProfileDraftProvider({ children }: { children: React.ReactNode }
             avatarUrl: state.me.profile.avatarUrl,
             displayName: state.me.profile.displayName,
             genderCode: state.me.profile.genderCode ?? '',
+            nationalityCode: state.me.profile.nationalityCode ?? '',
             city: state.me.profile.city ?? '',
             adultConfirmed: state.me.onboardingState === 'ELIGIBLE',
             birthYear: state.me.profile.birthYear?.toString() ?? '',
@@ -63,7 +72,12 @@ export function ProfileDraftProvider({ children }: { children: React.ReactNode }
           }
         : { displayName: suggestedProfile?.displayName ?? '' }),
     });
-  }, [owner, suggestedProfile, state]);
+  }, [state, suggestedProfile]);
+  useEffect(() => {
+    if (previousOwner.current === owner) return;
+    previousOwner.current = owner;
+    resetFromProfile();
+  }, [owner, resetFromProfile]);
   const draft = useMemo(
     () => ({
       ...manualDraft,
@@ -76,8 +90,8 @@ export function ProfileDraftProvider({ children }: { children: React.ReactNode }
     [manualDraft, suggestedProfile],
   );
   const value = useMemo(
-    () => ({ draft, setDraft, serverErrors, setServerErrors }),
-    [draft, serverErrors],
+    () => ({ draft, setDraft, serverErrors, setServerErrors, resetFromProfile }),
+    [draft, serverErrors, resetFromProfile],
   );
   return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>;
 }
@@ -165,6 +179,7 @@ export function toProfileInput(draft: ProfileDraft): ProfileInput | null {
     avatarUrl: draft.avatarUrl,
     displayName: draft.displayName.trim(),
     ...(draft.genderCode ? { genderCode: draft.genderCode } : {}),
+    ...(draft.nationalityCode ? { nationalityCode: draft.nationalityCode } : {}),
     ...(draft.city.trim() ? { city: draft.city.trim() } : {}),
     ...(draft.birthYear.trim() && draft.birthMonth.trim()
       ? { birthYear: Number(draft.birthYear), birthMonth: Number(draft.birthMonth) }

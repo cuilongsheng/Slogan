@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Query,
   ParseUUIDPipe,
   Post,
   Res,
@@ -11,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiQuery,
   ApiBody,
   ApiOkResponse,
   ApiProperty,
@@ -20,7 +22,7 @@ import {
   ApiTooManyRequestsResponse,
   ApiServiceUnavailableResponse,
 } from '@nestjs/swagger';
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsIn, IsOptional, MaxLength, MinLength } from 'class-validator';
 import type { Response } from 'express';
 import { Public } from '../../../common/decorators/public.decorator.js';
 import {
@@ -37,6 +39,11 @@ export class AvatarUploadDto {
   @MinLength(1)
   @MaxLength(349528)
   imageBase64!: string;
+}
+export class DefaultAvatarQueryDto {
+  @IsOptional()
+  @IsIn(['male', 'female'])
+  variant?: 'male' | 'female';
 }
 export class AvatarResponseDto {
   @ApiProperty({ format: 'uri' }) avatarUrl!: string;
@@ -60,15 +67,17 @@ export class AvatarController {
   }
   @Public()
   @Get('avatars/default')
+  @ApiQuery({ name: 'variant', required: false, enum: ['male', 'female'] })
+  @ApiBadRequestResponse({ type: ErrorResponseDto })
   @ApiOkResponse({ content: { 'image/png': { schema: { type: 'string', format: 'binary' } } } })
-  default(@Res() response: Response) {
+  default(@Query() query: DefaultAvatarQueryDto, @Res() response: Response) {
     response
       .set({
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=86400',
         'X-Content-Type-Options': 'nosniff',
       })
-      .send(Buffer.from(this.avatars.defaultImage()));
+      .send(Buffer.from(this.avatars.defaultImage(query.variant)));
   }
   @Public()
   @Get('avatars/:id')

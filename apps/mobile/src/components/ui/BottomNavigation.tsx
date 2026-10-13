@@ -5,7 +5,7 @@ import profileIcon from '../../../assets/icons/room-discovery/profile.png';
 import { useRouter } from 'expo-router';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText as Text } from './AppText';
-import { t, useLanguage } from '../../services/locale';
+import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 const icons = [discoverIcon, partnersIcon, messagesIcon, profileIcon];
 const tabs = [
@@ -14,7 +14,13 @@ const tabs = [
   { path: '/messages', label: 'navMessages' },
   { path: '/me', label: 'navProfile' },
 ] as const;
-export function BottomNavigation({ active }: { active: 0 | 1 | 2 | 3 }) {
+export function BottomNavigation({
+  active,
+  unreadMessages = 0,
+}: {
+  active: 0 | 1 | 2 | 3;
+  unreadMessages?: number;
+}) {
   useLanguage();
   const router = useRouter();
   return (
@@ -23,7 +29,11 @@ export function BottomNavigation({ active }: { active: 0 | 1 | 2 | 3 }) {
         <TouchableOpacity
           key={tab.path}
           accessibilityRole="button"
-          accessibilityLabel={t(tab.label)}
+          accessibilityLabel={
+            index === 2 && unreadMessages > 0
+              ? tf('navMessagesUnread', { count: unreadMessages })
+              : t(tab.label)
+          }
           accessibilityState={{ selected: active === index }}
           onPress={() => {
             if (active !== index) router.navigate(tab.path);
@@ -37,6 +47,11 @@ export function BottomNavigation({ active }: { active: 0 | 1 | 2 | 3 }) {
               active === index ? tokens.discovery.color.tabAccent : tokens.discovery.color.tabMuted
             }
           />
+          {index === 2 && unreadMessages > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadMessages > 99 ? '99+' : unreadMessages}</Text>
+            </View>
+          )}
           <Text style={[styles.label, active === index && styles.selected]}>{t(tab.label)}</Text>
         </TouchableOpacity>
       ))}
@@ -63,5 +78,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 16,
   },
+  badge: {
+    position: 'absolute',
+    top: 1,
+    left: '53%',
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: tokens.color.coral,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { fontSize: 10, lineHeight: 14, color: tokens.color.foreground, fontWeight: '700' },
   selected: { color: tokens.discovery.color.tabAccent },
 });

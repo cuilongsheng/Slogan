@@ -41,3 +41,7 @@ Source/runtime captures were inspected directly. Reporting and menu panel geomet
 ## Release boundary
 
 Production/main migration, API/Pages commit alignment and the upgraded signed APK must be verified after merge. PR/source checks alone do not prove deployment. Android 0.0.54 lacks RECORD_AUDIO; an APK upgrade is required for the first batch's microphone repair.
+
+## 2026-10-13 delivery
+
+PR #22 merged; main/API/both Pages and Android 0.0.67 align. The production nullable report/case migration, read-only public-trial RBAC and symmetric available-people checks without manual heartbeat pass. Ended-room historical memberships do not prevent subsequent mutual discovery. Downloaded APK bytes/hash/signature/RECORD_AUDIO are verified. See [release receipt](../../releases/2026-10-13-room-experience.md); native audio/fidelity acceptance remains separate.

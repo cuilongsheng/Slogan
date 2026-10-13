@@ -1,5 +1,6 @@
+import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,6 +20,7 @@ import { tokens } from '../../styles/tokens';
 import addIcon from '../../../assets/icons/room-discovery/add.png';
 import speechBurstIcon from '../../../assets/icons/room-discovery/speech-burst.png';
 import { RoomDiscoveryApi, RoomListPager, type RoomSummary } from './api';
+import { useFocusedPolling, useMessageUnread } from '../direct';
 import { RoomCard } from './RoomCard';
 import { useJoinDraft } from './join';
 
@@ -27,6 +29,8 @@ const colors = tokens.discovery.color;
 export function RoomListScreen() {
   useLanguage();
   const router = useRouter();
+  const refreshQueue = useRef(new LatestRequestQueue());
+  const unread = useMessageUnread();
   const { authorized } = useAuth();
   const exitDelivery = useRoomExitDelivery();
   const { beginDirect } = useJoinDraft();
@@ -43,35 +47,41 @@ export function RoomListScreen() {
   const [moreLoading, setMoreLoading] = useState(false);
 
   const refresh = useCallback(
-    async (isPull = false) => {
-      if (refreshPending.current) return;
-      refreshPending.current = true;
-      if (isPull) setRefreshing(true);
-      else if (!loaded.current) setLoading(true);
-      setError(false);
-      try {
-        const page = await pager.refresh();
-        setRooms(page.items);
-        setCursor(page.nextCursor);
-        setMoreError(false);
-        loaded.current = true;
-      } catch {
-        setError(true);
-      } finally {
-        refreshPending.current = false;
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
+    (isPull = false, current: () => boolean = () => true) =>
+      refreshQueue.current.enqueue(async () => {
+        if (!current()) return;
+        refreshPending.current = true;
+        if (isPull) setRefreshing(true);
+        else if (!loaded.current) setLoading(true);
+        setError(false);
+        try {
+          const page = await pager.refresh();
+          if (!current()) return;
+          setRooms(page.items);
+          setCursor(page.nextCursor);
+          setMoreError(false);
+          loaded.current = true;
+        } catch {
+          if (current()) setError(true);
+        } finally {
+          refreshPending.current = false;
+          if (current()) {
+            setLoading(false);
+            setRefreshing(false);
+          }
+        }
+      }),
     [pager],
   );
 
-  useFocusEffect(
-    useCallback(() => {
+  const poll = useCallback(
+    async (current: () => boolean) => {
       entering.current = false;
-      void refresh();
-    }, [refresh]),
+      await refresh(false, current);
+    },
+    [refresh],
   );
+  useFocusedPolling(poll, 5000);
 
   useEffect(() => {
     if (!exitDelivery.revision) return;
@@ -80,7 +90,7 @@ export function RoomListScreen() {
   }, [exitDelivery.revision, refresh]);
 
   const loadMore = async () => {
-    if (!cursor || moreLoading || loading) return;
+    if (!cursor || moreLoading || loading || refreshPending.current) return;
     setMoreLoading(true);
     setMoreError(false);
     try {
@@ -100,9 +110,6 @@ export function RoomListScreen() {
   return (
     <RoomPage discovery>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>{t('roomsTitle')}</Text>
-        </View>
         <Image source={speechBurstIcon} style={styles.brand} />
         <TouchableOpacity
           accessibilityRole="button"
@@ -182,7 +189,7 @@ export function RoomListScreen() {
           }
         />
       )}
-      <BottomNavigation active={0} />
+      <BottomNavigation active={0} unreadMessages={unread.count} />
     </RoomPage>
   );
 }
@@ -194,14 +201,7 @@ const styles = StyleSheet.create({
     height: 46,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  title: {
-    marginTop: 2,
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 32,
-    color: tokens.color.foreground,
+    justifyContent: 'flex-end',
   },
   brand: { position: 'absolute', right: 56, top: 4, width: 32, height: 32 },
   add: {

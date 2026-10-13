@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', height: 42 },
   back: { width: 38, height: 38, justifyContent: 'center' },
   backText: { color: tokens.color.foreground, fontSize: 34, lineHeight: 36 },
-  headerTitle: { color: tokens.color.foreground, fontSize: 24, fontWeight: '700' },
+  headerTitle: { color: tokens.color.foreground, fontSize: 18, fontWeight: '700' },
   description: {
     marginTop: 12,
     minHeight: 42,

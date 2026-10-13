@@ -1,5 +1,7 @@
 import { AppText as Text } from './AppText';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { phonePreview } from './phonePreview';
+import { installRoomAudioGestures } from '../../services/roomAudioGesture';
 import { StatusBar } from 'expo-status-bar';
 import {
   Image,
@@ -32,13 +34,14 @@ export function RoomPage({
   direct?: boolean;
   hidePreviewIndicator?: boolean;
 }) {
+  useEffect(() => installRoomAudioGestures(), []);
   const content = (
     <SafeAreaView
       edges={['top', 'bottom']}
       style={[
         styles.safe,
         dark && { backgroundColor: '#2A2149' },
-        Platform.OS === 'web' && styles.webFrame,
+        Platform.OS === 'web' && phonePreview.frame,
       ]}
     >
       <StatusBar style={dark ? 'light' : 'dark'} />
@@ -82,7 +85,7 @@ export function RoomPage({
       )}
     </SafeAreaView>
   );
-  return Platform.OS === 'web' ? <View style={styles.webCanvas}>{content}</View> : content;
+  return Platform.OS === 'web' ? <View style={phonePreview.canvas}>{content}</View> : content;
 }
 
 export function RoomHeader({
@@ -163,13 +166,6 @@ export const roomPageStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: tokens.color.surface, overflow: 'hidden' },
-  webCanvas: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EFF4FC',
-  },
-  webFrame: { width: '100%', maxWidth: 390, maxHeight: 844 },
   previewStatus: {
     height: 49,
     paddingHorizontal: 24,
@@ -219,8 +215,8 @@ const styles = StyleSheet.create({
   backIcon: { width: 24, height: 24 },
   heading: { marginLeft: 8, flex: 1 },
   headingFull: { marginLeft: 4 },
-  title: { color: tokens.color.foreground, fontSize: 28, fontWeight: '700', lineHeight: 39 },
-  listTitle: { fontSize: 24, lineHeight: 34 },
+  title: { color: tokens.color.foreground, fontSize: 18, fontWeight: '700', lineHeight: 26 },
+  listTitle: { fontSize: 18, lineHeight: 26 },
   subtitle: { color: tokens.color.muted, fontSize: 12, lineHeight: 21 },
   action: {
     height: 56,

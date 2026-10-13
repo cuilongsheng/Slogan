@@ -1,6 +1,14 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import type * as ReactTypes from 'react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { RoomControls } from './RoomControls';
+
+jest.mock('expo-router', () => ({
+  useFocusEffect: (effect: () => void | (() => void)) => {
+    const React = jest.requireActual('react') as typeof ReactTypes;
+    React.useEffect(effect, [effect]);
+  },
+}));
 
 jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => '6f7892e8-5f39-4d4e-a5d8-1d21c532a010'),
@@ -175,4 +183,43 @@ test('a room report opens directly and sends no accused user identifier', async 
   expect((report.mock.calls[0] as unknown as [string, object])[1]).not.toHaveProperty(
     'targetUserId',
   );
+});
+
+test('an open invitation picker updates when a peer becomes idle and stops polling on close', async () => {
+  jest.useFakeTimers();
+  const availablePeople = jest
+    .fn()
+    .mockResolvedValueOnce({ items: [], nextCursor: null })
+    .mockResolvedValue({
+      items: [
+        { userId: 'new-idle', displayName: 'New idle peer', cefrLevel: 'B1', isAvailable: true },
+      ],
+      nextCursor: null,
+    });
+  const page = await render(
+    <RoomControls
+      roomId="room-1"
+      members={members}
+      ownMembershipId="own"
+      isHost
+      initialMode="invite"
+      api={{ availablePeople } as never}
+      refresh={jest.fn()}
+      onClose={jest.fn()}
+    />,
+  );
+  try {
+    await waitFor(() => expect(availablePeople).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5000);
+    });
+    expect(page.getByText('New idle peer')).toBeTruthy();
+    await page.unmount();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(10_000);
+    });
+    expect(availablePeople).toHaveBeenCalledTimes(2);
+  } finally {
+    jest.useRealTimers();
+  }
 });

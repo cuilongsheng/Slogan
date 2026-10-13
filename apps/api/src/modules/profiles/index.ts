@@ -15,3 +15,4 @@ export type {
   ProfileData,
   ProfileRecord,
 } from './domain/entities/profile.js';
+export { defaultAvatarVariant } from './domain/policies/default-avatar-url.js';

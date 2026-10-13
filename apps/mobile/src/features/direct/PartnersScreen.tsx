@@ -1,3 +1,4 @@
+import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -9,11 +10,14 @@ import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { SocialApi, type AvailablePage } from '../social';
 import { DirectApi, directError } from './api';
-import { DirectHeading, PeerRow, directColors } from './components';
+import { PeerRow, directColors } from './components';
+import { useMessageUnread } from './MessageUnreadProvider';
 import { useFocusedPolling } from './useFocusedPolling';
 export function PartnersScreen() {
   useLanguage();
   const router = useRouter();
+  const refreshQueue = useRef(new LatestRequestQueue());
+  const unread = useMessageUnread();
   const { authorized } = useAuth();
   const social = useMemo(() => new SocialApi(authorized), [authorized]),
     direct = useMemo(() => new DirectApi(authorized), [authorized]);
@@ -28,37 +32,38 @@ export function PartnersScreen() {
     refreshing = useRef(false),
     loadedPages = useRef(1);
   const refresh = useCallback(
-    async (current: () => boolean = () => true) => {
-      if (refreshing.current || paging.current) return;
-      refreshing.current = true;
-      const epoch = ++generation.current;
-      try {
-        const collected: AvailablePage['items'] = [];
-        let next: string | null = null;
-        for (let pageIndex = 0; pageIndex < loadedPages.current; pageIndex++) {
-          const page = await social.available(next ?? undefined);
-          if (!current() || epoch !== generation.current) return;
-          collected.push(
-            ...page.items.filter(
-              (item) => !collected.some((existing) => existing.userId === item.userId),
-            ),
-          );
-          next = page.nextCursor;
-          if (!next) break;
+    (current: () => boolean = () => true) =>
+      refreshQueue.current.enqueue(async () => {
+        if (!current() || paging.current) return;
+        refreshing.current = true;
+        const epoch = ++generation.current;
+        try {
+          const collected: AvailablePage['items'] = [];
+          let next: string | null = null;
+          for (let pageIndex = 0; pageIndex < loadedPages.current; pageIndex++) {
+            const page = await social.available(next ?? undefined);
+            if (!current() || epoch !== generation.current) return;
+            collected.push(
+              ...page.items.filter(
+                (item) => !collected.some((existing) => existing.userId === item.userId),
+              ),
+            );
+            next = page.nextCursor;
+            if (!next) break;
+          }
+          setItems(collected);
+          setCursor(next);
+          setError(null);
+        } catch {
+          if (current() && epoch === generation.current) setError('socialLoadFailed');
+        } finally {
+          refreshing.current = false;
+          if (current() && epoch === generation.current) setLoading(false);
         }
-        setItems(collected);
-        setCursor(next);
-        setError(null);
-      } catch {
-        if (current() && epoch === generation.current) setError('socialLoadFailed');
-      } finally {
-        refreshing.current = false;
-        if (current() && epoch === generation.current) setLoading(false);
-      }
-    },
+      }),
     [social],
   );
-  useFocusedPolling(refresh, 30000);
+  useFocusedPolling(refresh, 5000);
   const moreItems = async () => {
     if (!cursor || paging.current || refreshing.current) return;
     paging.current = true;
@@ -95,7 +100,6 @@ export function PartnersScreen() {
   };
   return (
     <RoomPage direct hidePreviewIndicator>
-      <DirectHeading title={t('navPartners')} />
       {(loading || items.length > 0) && (
         <View style={styles.summary}>
           <Text style={styles.heading}>{t('partnersAvailable')}</Text>
@@ -125,6 +129,7 @@ export function PartnersScreen() {
           keyExtractor={(item) => item.userId}
           renderItem={({ item }) => (
             <PeerRow
+              variant="partner"
               name={item.displayName}
               avatar={item.avatarUrl}
               detail={item.cefrLevel.replaceAll('_', '–') + ' · ' + t('directAvailable')}
@@ -153,13 +158,13 @@ export function PartnersScreen() {
           {t(error)}
         </Text>
       )}
-      <BottomNavigation active={1} />
+      <BottomNavigation active={1} unreadMessages={unread.count} />
     </RoomPage>
   );
 }
 const styles = StyleSheet.create({
   summary: {
-    height: 35,
+    height: 30,
     paddingHorizontal: 20,
     paddingTop: 2,
     flexDirection: 'row',

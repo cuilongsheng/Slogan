@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-const evidence = 'docs/acceptance/room-reporting-and-discovery';
+const evidence = 'docs/acceptance/room-usability/regression';
 test('occupied avatars and the three-action menu report the exact target without leaving', async ({
   page,
 }) => {
@@ -29,7 +29,7 @@ test('occupied avatars and the three-action menu report the exact target without
   await page.screenshot({ path: `${evidence}/runtime-room-actions.png` });
   await page.getByRole('button', { name: '举报房间', exact: true }).click();
   const input = await page.getByRole('textbox', { name: '详细说明' }).boundingBox();
-  expect(input).toMatchObject({ x: 24, y: 605, width: 342, height: 95 });
+  expect(input).toMatchObject({ x: 24, y: 604, width: 342, height: 95 });
   await page.screenshot({ path: `${evidence}/runtime-room-report.png` });
   await page.getByRole('button', { name: '其他', exact: true }).click();
   await page.getByRole('textbox', { name: '详细说明' }).fill('Room report details');
@@ -45,7 +45,7 @@ test('creation stays compact on tall web previews and remains usable at a reduce
   await page.goto('/?screen=create&language=en');
   const action = page.getByRole('button', { name: 'Create and open room', exact: true });
   expect((await action.boundingBox())?.height).toBe(56);
-  expect((await action.boundingBox())?.y).toBe(971);
+  expect((await action.boundingBox())?.y).toBe(986);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: `${evidence}/runtime-create-en.png` });
   await page.setViewportSize({ width: 360, height: 540 });
@@ -87,8 +87,6 @@ test('admitted room stays visible while voice connects, and host end returns wit
     path: 'docs/acceptance/room-entry-lifecycle/runtime-admitted-connecting.png',
   });
   await page.goto('/?role=host');
-  await page.getByRole('button', { name: '房间操作', exact: true }).click();
-  await page.getByRole('button', { name: '分享房间链接', exact: true }).click();
   await page.getByRole('button', { name: '结束房间', exact: true }).click();
   await expect(page).toHaveURL('/rooms');
   await expect(page.getByText('房间已结束', { exact: true })).toHaveCount(0);

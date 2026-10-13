@@ -15,11 +15,12 @@ export function RoomDeviceNotice({
   onEnableAudio(): Promise<void>;
 }) {
   const microphone = media.deviceCheck?.microphone;
-  const checking = microphone === 'checking' || media.deviceCheck?.playback === 'checking';
   const inputProblem = microphone && !['checking', 'ready'].includes(microphone);
   const playbackProblem = media.deviceCheck?.playback === 'unavailable';
-  const blockedPlayback = !media.audioPlaybackAllowed || errorCode === 'AUDIO_PLAYBACK_BLOCKED';
-  if (checking) return <AppText style={styles.text}>{t('voiceDevicesChecking')}</AppText>;
+  const blockedPlayback =
+    media.connection === 'connected' &&
+    ((media.playbackRequiresGesture ?? !media.audioPlaybackAllowed) ||
+      errorCode === 'AUDIO_PLAYBACK_BLOCKED');
   if (
     !inputProblem &&
     !playbackProblem &&
@@ -48,9 +49,11 @@ export function RoomDeviceNotice({
             <AppText style={styles.action}>{t('voiceOpenDeviceSettings')}</AppText>
           </TouchableOpacity>
         )}
-        <TouchableOpacity accessibilityRole="button" onPress={() => void onRetry()}>
-          <AppText style={styles.action}>{t('voiceRetryDeviceCheck')}</AppText>
-        </TouchableOpacity>
+        {(inputProblem || playbackProblem || errorCode === 'MICROPHONE_UNAVAILABLE') && (
+          <TouchableOpacity accessibilityRole="button" onPress={() => void onRetry()}>
+            <AppText style={styles.action}>{t('voiceRetryDeviceCheck')}</AppText>
+          </TouchableOpacity>
+        )}
         {blockedPlayback && (
           <TouchableOpacity accessibilityRole="button" onPress={() => void onEnableAudio()}>
             <AppText style={styles.action}>{t('voiceEnableSound')}</AppText>

@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     maxHeight: '78%',
   },
   heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: tokens.color.foreground, fontSize: 21, fontWeight: '700' },
+  title: { color: tokens.color.foreground, fontSize: 18, fontWeight: '700' },
   close: { color: tokens.color.muted, fontSize: 30, paddingHorizontal: 8 },
   explanation: { color: tokens.color.muted, fontSize: 12, lineHeight: 18, marginTop: 8 },
   list: { marginTop: 20 },

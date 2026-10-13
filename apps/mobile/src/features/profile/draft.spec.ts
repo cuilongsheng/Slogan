@@ -17,6 +17,11 @@ const draft: ProfileDraft = {
 };
 
 describe('profile draft', () => {
+  it('preserves an existing nationality when editing other fields', () => {
+    expect(toProfileInput({ ...draft, nationalityCode: 'CN', displayName: 'Grace' })).toMatchObject(
+      { nationalityCode: 'CN', displayName: 'Grace' },
+    );
+  });
   it('omits optional details without inventing personal data', () => {
     expect(
       toProfileInput({ ...draft, genderCode: '', city: '', birthYear: '', birthMonth: '' }),

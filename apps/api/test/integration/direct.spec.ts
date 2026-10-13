@@ -96,6 +96,28 @@ describe('private conversations and exclusive two-party voice', () => {
     ]);
     expect((await direct.conversations(bob, {})).items).toHaveLength(1);
   });
+  it('counts only the actor incoming unread text across conversations, respecting read and hide boundaries', async () => {
+    const first = await direct.send(alice, conversationId, 'First', randomUUID());
+    const second = await direct.send(alice, conversationId, 'Second', randomUUID());
+    expect(await direct.unreadCount(alice)).toBe(0);
+    expect(await direct.unreadCount(bob)).toBe(2);
+    expect(await direct.unreadCount(outsider)).toBe(0);
+    await direct.read(bob, conversationId, first.sequence);
+    expect(await direct.unreadCount(bob)).toBe(1);
+    const other = await direct.open(outsider, bob);
+    await direct.send(outsider, other.id, 'Another conversation', randomUUID());
+    expect(await direct.unreadCount(bob)).toBe(2);
+    await direct.hide(bob, conversationId, randomUUID());
+    expect(await direct.unreadCount(bob)).toBe(1);
+    expect(await direct.unreadCount(alice)).toBe(0);
+    await direct.read(bob, other.id, (await direct.messages(bob, other.id, {})).items[0]!.sequence);
+    await direct.requestCall(alice, conversationId, randomUUID());
+    expect(await direct.unreadCount(bob)).toBe(0);
+    await expect(direct.unreadCount(randomUUID())).rejects.toMatchObject({
+      code: 'DIRECT_TARGET_UNAVAILABLE',
+    });
+    expect(second.sequence).toBeGreaterThan(first.sequence);
+  });
   it('limits unsolicited consecutive text and stops both directions after blocking', async () => {
     for (let index = 0; index < 3; index++)
       await direct.send(alice, conversationId, `Message ${index}`, randomUUID());

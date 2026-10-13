@@ -355,7 +355,10 @@ export class VoiceRoomSession {
       return;
     const generation = ++this.roomRefreshGeneration;
     try {
-      const room = await this.rooms.detail(this.roomId);
+      const [room, members] = await Promise.all([
+        this.rooms.detail(this.roomId),
+        this.api.members(this.roomId),
+      ]);
       if (this.disposed || this.exitRequested || generation !== this.roomRefreshGeneration) return;
       if (room.currentMembership?.lifecycle !== 'ACTIVE') {
         this.clearSafetyAlerts();
@@ -363,7 +366,6 @@ export class VoiceRoomSession {
         this.update({ phase: 'ended', room, members: [], errorCode: 'ROOM_MEMBER_NOT_ACTIVE' });
         return;
       }
-      const members = await this.api.members(this.roomId);
       if (
         this.disposed ||
         this.exitRequested ||
@@ -394,7 +396,14 @@ export class VoiceRoomSession {
         this.update({ safetyAlertsDenied: true });
       }
       const code = errorCode(error);
-      if (['ROOM_ENDED', 'ROOM_CANCELLED', 'ROOM_MEMBER_NOT_ACTIVE'].includes(code)) {
+      if (
+        [
+          'ROOM_ENDED',
+          'ROOM_CANCELLED',
+          'ROOM_MEMBER_NOT_ACTIVE',
+          'ROOM_MEMBERSHIP_REQUIRED',
+        ].includes(code)
+      ) {
         this.clearSafetyAlerts();
         void this.media.disconnect().catch(() => undefined);
         this.update({ phase: 'ended', members: [], errorCode: code });
@@ -414,8 +423,8 @@ export class VoiceRoomSession {
     }
   }
 
-  async recheckDevices(): Promise<void> {
-    if (this.state.phase === 'active') await this.media.checkDevices?.();
+  async recheckDevices(force = true): Promise<void> {
+    if (this.state.phase === 'active') await this.media.checkDevices?.(force);
   }
 
   async enableAudioPlayback(): Promise<void> {

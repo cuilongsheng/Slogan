@@ -216,6 +216,18 @@ export class PrismaDirectRepository implements DirectRepository {
       return this.project(tx, actor, row, member);
     });
   }
+  async unreadCount(actor: string): Promise<number> {
+    return this.prisma.$transaction(async (tx) => {
+      if (!(await readSocialUserEligible(tx, actor, new Date()))) throw unavailable();
+      const totals = await tx.$queryRaw<Array<{ total: bigint }>>(
+        Prisma.sql`SELECT COUNT(*) AS total FROM "DirectMessage" d
+          JOIN "DirectConversationMember" m ON m."conversationId" = d."conversationId"
+          WHERE m."userId" = ${actor}::uuid AND d."senderUserId" <> ${actor}::uuid
+          AND d.sequence > GREATEST(m."hiddenThrough", m."readThrough")`,
+      );
+      return Math.min(Number(totals[0]?.total ?? 0), Number.MAX_SAFE_INTEGER);
+    });
+  }
   async conversations(actor: string, query: DirectPageQuery) {
     const scope = `conversations:${actor}`;
     const cursor = this.cursor(scope, query.cursor);

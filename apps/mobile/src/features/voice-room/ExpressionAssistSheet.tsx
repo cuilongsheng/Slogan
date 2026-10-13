@@ -36,7 +36,7 @@ export function ExpressionAssistSheet(props: ExpressionAssistSheetProps) {
   if (props.available) return <AvailableExpressionAssistSheet {...props} />;
   return (
     <View style={styles.overlay}>
-      <View style={styles.sheet}>
+      <View testID="expression-assistance-sheet" style={styles.sheet}>
         <View style={styles.grabber} />
         <View style={styles.headingRow}>
           <Text style={styles.title}>{t('assistanceTitle')}</Text>
@@ -152,7 +152,7 @@ function AvailableExpressionAssistSheet({
   );
   return (
     <View style={styles.overlay}>
-      <View style={styles.sheet}>
+      <View testID="expression-assistance-sheet" style={styles.sheet}>
         <View style={styles.grabber} />
         <View style={styles.headingRow}>
           <Text style={styles.title}>
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     maxHeight: '82%',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    backgroundColor: tokens.color.surface,
+    backgroundColor: '#34274F',
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 3,
     alignSelf: 'center',
-    backgroundColor: '#D7D1E5',
+    backgroundColor: '#66557F',
     marginBottom: 13,
   },
   headingRow: {
@@ -300,15 +300,15 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     paddingRight: 48,
-    color: tokens.color.foreground,
-    fontSize: 21,
-    lineHeight: 29,
+    color: '#FFFFFF',
+    fontSize: 18,
+    lineHeight: 26,
     fontWeight: '700',
   },
   burst: { position: 'absolute', right: 52, top: 4, width: 27, height: 27 },
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  close: { width: 26, color: tokens.color.muted, fontSize: 26, lineHeight: 30 },
-  private: { color: tokens.color.muted, fontSize: 13, lineHeight: 18, marginTop: 5 },
+  close: { width: 26, color: '#C8BCE0', fontSize: 26, lineHeight: 30 },
+  private: { color: '#C8BCE0', fontSize: 13, lineHeight: 18, marginTop: 5 },
   content: { minHeight: 245, paddingBottom: 12 },
   micCircle: {
     width: 80,
@@ -331,14 +331,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   hint: {
-    color: tokens.color.muted,
+    color: '#C8BCE0',
     textAlign: 'center',
     fontSize: 13,
     lineHeight: 18,
     marginTop: 14,
   },
   explanation: {
-    color: tokens.color.muted,
+    color: '#C8BCE0',
     fontSize: 13,
     lineHeight: 21,
     marginTop: 25,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  disabled: { opacity: 0.4 },
+  disabled: { backgroundColor: '#514267' },
   resultCard: {
     backgroundColor: tokens.color.mint,
     borderRadius: 20,
@@ -363,8 +363,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   resultMicrophone: { marginTop: 8 },
-  resultText: { color: tokens.color.foreground, fontSize: 19, lineHeight: 27, fontWeight: '700' },
-  status: { color: tokens.color.muted, textAlign: 'center', marginTop: 80 },
+  resultText: { color: '#FFFFFF', fontSize: 19, lineHeight: 27, fontWeight: '700' },
+  status: { color: '#C8BCE0', textAlign: 'center', marginTop: 80 },
   error: { color: tokens.color.error, fontSize: 12, textAlign: 'center', marginTop: 14 },
-  settings: { color: tokens.color.muted, fontSize: 11, textAlign: 'right' },
+  settings: { color: '#C8BCE0', fontSize: 11, textAlign: 'right' },
 });

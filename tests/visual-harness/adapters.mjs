@@ -69,7 +69,8 @@ export const createVoiceMedia = () => {
   return fixture;
 };
 export const StatusBar = () => null;
-export const SafeAreaView = ({ children, style }) => React.createElement(View, { style }, children);
+export const SafeAreaView = ({ children, style, testID }) =>
+  React.createElement(View, { style, testID }, children);
 export const LinearGradient = ({ children, style, colors }) =>
   React.createElement(
     View,
@@ -125,6 +126,9 @@ export class VoiceRoomSession {
       membershipId: `member-${index}`,
       participantIdentity: `identity-${index}`,
       position: index + 1,
+      ...(query.has('missingAvatars')
+        ? { avatarUrl: index === 0 ? null : '/missing-avatar.png?variant=female' }
+        : {}),
       ...(query.has('longNames')
         ? { displayName: `Preview member ${index} with a long name` }
         : {}),
@@ -138,7 +142,7 @@ export class VoiceRoomSession {
     if (new URL(location.href).searchParams.get('role') === 'host') {
       this.state.role = 'HOST';
       this.state.room.currentMembership.id = 'member-0';
-      this.state.media.participants[1].speaking = true;
+      if (this.state.media.participants[1]) this.state.media.participants[1].speaking = true;
     }
     if (new URL(location.href).searchParams.get('device') === 'blocked') {
       this.state.media.deviceCheck = { microphone: 'blocked', playback: 'ready' };

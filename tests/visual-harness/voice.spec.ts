@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const fidelityDir = 'docs/acceptance/voice-room-four-column-fidelity';
+const fidelityDir = 'docs/acceptance/room-usability/regression/voice-four-column';
 test.use({ deviceScaleFactor: 3 });
 
 test('real voice component sends text, keeps assistance disabled, and closes sheets locally', async ({
@@ -68,7 +68,7 @@ test('real voice component sends text, keeps assistance disabled, and closes she
   await expect(page.getByText('Mika 刚刚加入房间')).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
-    path: 'docs/acceptance/voice-room-four-column-fidelity/voice-runtime-component-fixture.png',
+    path: 'docs/acceptance/room-usability/regression/voice-four-column/voice-runtime-component-fixture.png',
   });
   await page.getByRole('textbox').fill('Hello room');
   await page.getByRole('button', { name: '发送消息' }).click();
@@ -85,7 +85,7 @@ test('real voice component sends text, keeps assistance disabled, and closes she
   await expect(page).toHaveURL('/?role=host');
   await page.goto('/?role=host');
   await expect(page.getByText('聊聊旅行中的意外收获')).toBeVisible();
-  await page.getByRole('button', { name: '退出房间', exact: true }).click();
+  await page.getByRole('button', { name: '结束房间', exact: true }).click();
   await expect(page).toHaveURL('/rooms');
   await expect(page.getByText('房间已结束', { exact: true })).toHaveCount(0);
   await page.goto('/?role=host');
@@ -93,7 +93,7 @@ test('real voice component sends text, keeps assistance disabled, and closes she
   await page.getByRole('button', { name: '用母语找英文表达 · 仅自己可见' }).click();
   await expect(page.getByRole('button', { name: '同意并继续' })).toBeVisible();
   await page.screenshot({
-    path: 'docs/acceptance/voice-room-four-column-fidelity/translation-consent-runtime-component-fixture.png',
+    path: 'docs/acceptance/room-usability/regression/voice-four-column/translation-consent-runtime-component-fixture.png',
   });
   await expect(page.getByRole('button', { name: '同意并继续' })).toBeDisabled();
   expect(audioSubmitted).toBe(false);
@@ -131,7 +131,7 @@ test('creation uses only three visible ranges and submits the selected pair with
   await page.getByRole('button', { name: 'C1～C2', exact: true }).click();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
-    path: 'docs/acceptance/voice-room-four-column-fidelity/create-three-ranges-runtime.png',
+    path: 'docs/acceptance/room-usability/regression/voice-four-column/create-three-ranges-runtime.png',
   });
   await page.getByRole('button', { name: '创建并开放房间' }).click();
   await expect(page).toHaveURL(/\/rooms\/created-room\/session$/);
@@ -151,7 +151,7 @@ test('a device warning stays inside the actual room and retry removes it', async
   await expect(page.getByRole('button', { name: '打开系统设置' })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
-    path: 'docs/acceptance/voice-room-four-column-fidelity/device-warning-runtime-fixture.png',
+    path: 'docs/acceptance/room-usability/regression/voice-four-column/device-warning-runtime-fixture.png',
   });
   await page.getByRole('button', { name: '重新检查设备' }).click();
   await expect(
@@ -181,10 +181,11 @@ for (const width of [320, 360, 390, 412]) {
       const cells = await page.getByTestId('room-seat-row-0').locator(':scope > div').all();
       expect(cells).toHaveLength(4);
       const boxes = await Promise.all(cells.map((cell) => cell.boundingBox()));
+      const frame = await page.getByTestId('voice-room-direct-entry-v2').boundingBox();
       for (const box of boxes) {
         expect(box!.y).toBe(boxes[0]!.y);
         expect(box!.x).toBeGreaterThanOrEqual(0);
-        expect(box!.x + box!.width).toBeLessThanOrEqual(Math.min(width, 390));
+        expect(box!.x + box!.width).toBeLessThanOrEqual(frame!.x + frame!.width);
       }
       await expect(page.getByTestId('room-seat-row-1')).toHaveCount(capacity > 4 ? 1 : 0);
       const header = await page.getByTestId('room-header-status').boundingBox();

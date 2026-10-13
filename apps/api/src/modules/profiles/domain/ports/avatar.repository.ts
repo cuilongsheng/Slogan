@@ -7,5 +7,5 @@ export interface AvatarRepository {
 export const AVATAR_IMAGE = Symbol('AVATAR_IMAGE');
 export interface AvatarImage {
   normalize(base64: string): Uint8Array;
-  defaultImage(): Uint8Array;
+  defaultImage(variant?: 'male' | 'female'): Uint8Array;
 }

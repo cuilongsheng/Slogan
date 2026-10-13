@@ -70,6 +70,14 @@ export default {
         )
           return mock;
         if (source.endsWith('/services/usePrivateRecorder')) return mock;
+        if (source.endsWith('/services/shareRoom'))
+          return fileURLToPath(
+            new URL('../../apps/mobile/src/services/shareRoom.web.ts', import.meta.url),
+          );
+        if (source.endsWith('/services/roomAudioGesture'))
+          return fileURLToPath(
+            new URL('../../apps/mobile/src/services/roomAudioGesture.web.ts', import.meta.url),
+          );
       },
     },
   ],
