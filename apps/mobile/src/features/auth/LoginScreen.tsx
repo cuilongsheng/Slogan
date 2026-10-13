@@ -238,7 +238,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  recoveryText: { fontSize: 12, lineHeight: 24, color: tokens.color.purple },
+  recoveryText: {
+    fontSize: 12,
+    lineHeight: 18,
+    height: 24,
+    marginBottom: 3,
+    color: tokens.color.purple,
+  },
   input: {
     height: 54,
     borderWidth: 1,

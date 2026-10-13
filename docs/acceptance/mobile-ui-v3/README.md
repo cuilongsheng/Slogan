@@ -1,6 +1,6 @@
 # Revised mobile shell, login and room creation
 
-Recorded on 2026-10-13. Branch `codex/mobile-ui-v3`, based on `248b12378ba3ce9210af2fd73077ff9651fa8720`. The six latest owner requests supersede the previous no-main-heading / 18px-back-heading decision. This batch is not deployed.
+Recorded on 2026-10-13. Branch `codex/mobile-ui-v3`, based on `248b12378ba3ce9210af2fd73077ff9651fa8720`. The six latest owner requests supersede the previous no-main-heading / 18px-back-heading decision. This batch is not published to production.
 
 ## Targets and evidence
 
@@ -59,8 +59,12 @@ Comparison viewport: Chromium web, 390×844 CSS pixels, DPR 1, loaded bundled No
 
 Browser coverage includes a pending restoration with exactly one refresh request, redirect to login, Google enabled / WeChat disabled, visible placeholders and password recovery. It also exercises profile edit/cancel/save, room settings/password/scheduling, consent gating, notifications, invitation candidates, foreground refresh and retained room controls. Harness captures render the same product components with controlled auth/API data; they do not measure LiveKit latency, real audio or production behavior.
 
+The final recovery-label baseline correction was verified with one additional routed login test and recaptured in `runtime/login-zh.png`; see `checks/login-alignment.txt`. Password label glyphs end at y=411 and recovery glyphs also end at y=411. Mobile typecheck/lint and formatting were repeated after this style-only correction.
+
 ## Delivery boundary
 
 Web implementation, functional regression and original-to-runtime comparison are complete for this revision. No API contract, database, provider configuration, room session ownership or deployment logic changed. Reverting this frontend batch restores the prior UI without data migration.
 
 Android/iOS physical-device rendering, keyboard/safe-area behavior and audio permissions remain unverified for this batch. Public API/Pages and Android 0.0.70 still represent the preceding PR #23 release until this revision is separately merged and published. Neither the fixtures nor the export establish production or native acceptance.
+
+PR #24: <https://github.com/cuilongsheng/Slogan/pull/24>. Automatic branch Pages deployment was observed for the initial revision, but a signed-out browser could not complete restoration. A no-cookie refresh with its explicit preview Origin returned 400 / `AUTH_CODE_REJECTED`; the production Origin returned the expected 401 / `REFRESH_TOKEN_INVALID`. The preview domain is not in the current browser-auth allowlist. No origin policy or provider configuration was weakened to make this branch preview work, and it is not offered as a functioning acceptance link. PR verification and Android build status are separate from the preceding production release.
