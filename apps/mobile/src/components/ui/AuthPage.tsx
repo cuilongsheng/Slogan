@@ -1,3 +1,4 @@
+import { largeAction } from './largeAction';
 import type { StyleProp, TextStyle } from 'react-native';
 import { type ReactNode, type Ref } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -208,11 +209,10 @@ const styles = StyleSheet.create({
   },
   content: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 22 },
   button: {
-    minHeight: 52,
-    borderRadius: 26,
     backgroundColor: tokens.color.purple,
     alignItems: 'center',
     justifyContent: 'center',
+    ...largeAction,
   },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   disabled: { opacity: 0.48 },

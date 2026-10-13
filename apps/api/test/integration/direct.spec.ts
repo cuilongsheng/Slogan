@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
 import { PrismaService } from '../../src/infrastructure/database/prisma.service.js';
+import { ReportsService } from '../../src/modules/moderation/index.js';
 import { DirectService } from '../../src/modules/direct/index.js';
 import {
   ACCOUNT_LIFECYCLE_REPOSITORY,
@@ -159,6 +160,18 @@ describe('private conversations and exclusive two-party voice', () => {
       where: { id: receipt.id },
       include: { directMessage: true },
     });
+    const history = await moduleRef.get(ReportsService).listOwn(bob, {});
+    expect(history.items).toHaveLength(1);
+    expect(history.items[0]).toMatchObject({
+      id: receipt.id,
+      caseId: receipt.caseId,
+      kind: 'DIRECT_MESSAGE',
+      roomTopic: null,
+      status: 'OPEN',
+    });
+    expect(JSON.stringify(history)).not.toContain('Reported example');
+    expect(JSON.stringify(history)).not.toContain('Unwanted message');
+    expect((await moduleRef.get(ReportsService).listOwn(alice, {})).items).toEqual([]);
     expect(report.roomId).toBeNull();
     expect(report.directMessage?.text).toBe('Reported example');
     expect(

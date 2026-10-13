@@ -161,6 +161,45 @@ export class PrismaRoomInvitationRepository implements RoomInvitationRepository 
     return this.byId(result.id);
   }
 
+  async listSent(input: Parameters<RoomInvitationRepository['listSent']>[0]) {
+    return this.prisma.$transaction(async (tx) => {
+      // The room lock serializes this ownership check with host handoff/end.
+      await tx.$executeRaw(
+        Prisma.sql`SELECT id FROM "Room" WHERE id=${input.roomId}::uuid FOR SHARE`,
+      );
+      const room = await tx.room.findUnique({
+        where: { id: input.roomId },
+        select: { hostUserId: true, status: true, endsAt: true },
+      });
+      if (!room) throw new RoomError('ROOM_NOT_FOUND', 'Room not found');
+      if (room.hostUserId !== input.actorUserId)
+        throw new RoomError('ROOM_HOST_REQUIRED', 'Current host permission is required');
+      if (!['SCHEDULED', 'OPEN'].includes(room.status) || room.endsAt <= input.now)
+        return { items: [], nextCursor: null };
+      const rows = await tx.roomInvitation.findMany({
+        where: { roomId: input.roomId, status: 'PENDING', ...this.after(input.cursor) },
+        select: {
+          id: true,
+          roomId: true,
+          inviterUserId: true,
+          inviteeUserId: true,
+          status: true,
+          createdAt: true,
+          resolvedAt: true,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: input.limit + 1,
+      });
+      const items = rows.slice(0, input.limit).map((row) => this.record(row));
+      const last = items.at(-1);
+      return {
+        items,
+        nextCursor:
+          rows.length > input.limit && last ? { createdAt: last.createdAt, id: last.id } : null,
+      };
+    });
+  }
+
   private async byId(id: string): Promise<RoomInvitationRecord> {
     return this.record(await this.prisma.roomInvitation.findUniqueOrThrow({ where: { id } }));
   }

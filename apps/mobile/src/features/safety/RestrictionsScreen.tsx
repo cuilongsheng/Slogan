@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -314,11 +315,11 @@ const styles = StyleSheet.create({
   date: { color: tokens.color.muted, fontSize: 12, marginTop: 6 },
   action: {
     backgroundColor: tokens.color.purple,
-    borderRadius: 24,
-    minHeight: 46,
+
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 18,
+    ...largeAction,
   },
   actionText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.5 },

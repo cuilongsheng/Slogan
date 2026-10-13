@@ -60,3 +60,8 @@ export class RoomInvitationPageDto {
   @ApiProperty({ type: [RoomInvitationViewDto] }) items!: RoomInvitationViewDto[];
   @ApiProperty({ type: String, nullable: true }) nextCursor!: string | null;
 }
+
+export class SentRoomInvitationPageDto {
+  @ApiProperty({ type: [RoomInvitationDto] }) items!: RoomInvitationDto[];
+  @ApiProperty({ type: String, nullable: true }) nextCursor!: string | null;
+}

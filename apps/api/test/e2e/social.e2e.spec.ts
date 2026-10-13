@@ -230,6 +230,48 @@ describe('social and room invitation HTTP contract', () => {
     ).toBe('CONSUMED');
   });
 
+  it('restores pending sends only for the current host and removes declined or terminal invitations', async () => {
+    presence.onlineUsers.add(bob.id);
+    const room = await request(app.getHttpServer())
+      .post('/v1/rooms')
+      .set(auth(alice))
+      .send({ topic: 'Sent invitations', cefrLevel: 'B1', capacity: 3 })
+      .expect(201);
+    const endpoint = `/v1/rooms/${room.body.id}/invitations`;
+    const sent = await request(app.getHttpServer())
+      .post(endpoint)
+      .set(auth(alice))
+      .send({ targetUserId: bob.id, clientRequestId: randomUUID() })
+      .expect(201);
+    const again = await request(app.getHttpServer())
+      .post(endpoint)
+      .set(auth(alice))
+      .send({ targetUserId: bob.id, clientRequestId: randomUUID() })
+      .expect(201);
+    expect(again.body.id).toBe(sent.body.id);
+    const pending = await request(app.getHttpServer()).get(endpoint).set(auth(alice)).expect(200);
+    expect(pending.body.items).toHaveLength(1);
+    expect(pending.body.items[0]).toMatchObject({
+      id: sent.body.id,
+      inviteeUserId: bob.id,
+      status: 'PENDING',
+    });
+    await request(app.getHttpServer()).get(endpoint).set(auth(bob)).expect(403);
+    await request(app.getHttpServer()).get(endpoint).set(auth(charlie)).expect(403);
+    await request(app.getHttpServer()).get(endpoint).expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/room-invitations/${sent.body.id}/decline`)
+      .set(auth(bob))
+      .send({ clientRequestId: randomUUID() })
+      .expect(200);
+    expect(
+      (await request(app.getHttpServer()).get(endpoint).set(auth(alice)).expect(200)).body.items,
+    ).toEqual([]);
+    await prisma.room.update({ where: { id: room.body.id }, data: { status: 'ENDED' } });
+    expect(
+      (await request(app.getHttpServer()).get(endpoint).set(auth(alice)).expect(200)).body.items,
+    ).toEqual([]);
+  });
   it('rejects non-host invitations and lets only the invitee decline', async () => {
     presence.onlineUsers.add(bob.id);
     const room = await request(app.getHttpServer())

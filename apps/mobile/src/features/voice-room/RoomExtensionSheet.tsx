@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import { useState } from 'react';
 import { randomUUID } from 'expo-crypto';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -121,11 +122,10 @@ const styles = StyleSheet.create({
   optionText: { color: tokens.color.foreground, fontSize: 13 },
   error: { color: '#C6384A', marginBottom: 12 },
   primary: {
-    minHeight: 54,
-    borderRadius: 14,
     backgroundColor: tokens.color.purple,
     alignItems: 'center',
     justifyContent: 'center',
+    ...largeAction,
   },
   primaryText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   cancel: {

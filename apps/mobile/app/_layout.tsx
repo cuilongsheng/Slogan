@@ -16,6 +16,7 @@ import { DirectCallObserver } from '../src/features/direct/DirectCallObserver';
 import { RoomExitProvider } from '../src/features/voice-room/exits';
 import { MessageUnreadProvider } from '../src/features/direct';
 import { PresenceHeartbeat } from '../src/features/social/PresenceHeartbeat';
+import { RoomInvitationObserver } from '../src/features/social/RoomInvitationObserver';
 
 export default function RootLayout() {
   const [localeReady, setLocaleReady] = useState(false);
@@ -40,6 +41,7 @@ export default function RootLayout() {
             <ProfileDraftProvider>
               <JoinProvider>
                 <Stack screenOptions={{ headerShown: false }} />
+                <RoomInvitationObserver />
               </JoinProvider>
             </ProfileDraftProvider>
           </EmailFlowProvider>

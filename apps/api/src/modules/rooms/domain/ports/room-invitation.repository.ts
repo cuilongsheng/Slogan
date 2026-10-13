@@ -17,6 +17,13 @@ export interface RoomInvitationRepository {
     limit: number;
     now: Date;
   }): Promise<SocialPage<RoomInvitationView>>;
+  listSent(input: {
+    actorUserId: string;
+    roomId: string;
+    cursor: SocialCursor | null;
+    limit: number;
+    now: Date;
+  }): Promise<SocialPage<RoomInvitationRecord>>;
   decline(input: {
     actorUserId: string;
     invitationId: string;

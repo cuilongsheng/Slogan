@@ -93,6 +93,72 @@ describe('reports HTTP on PostgreSQL', () => {
       .post(`/v1/rooms/${id}/reports`)
       .set('authorization', `Bearer ${auth}`)
       .send(input);
+  it('lists only the reporter receipts with current case progress, validated pagination and no private evidence', async () => {
+    const first = await submit().expect(201);
+    const second = await submit({ ...body(), targetUserId: undefined }).expect(201);
+    const decidedAt = new Date();
+    await prisma.safetyCase.update({
+      where: { id: first.body.caseId },
+      data: {
+        status: 'RESOLVED',
+        decidedAt,
+        decisionType: 'NO_ACTION',
+        decisionReason: 'internal-review-sentinel',
+      },
+    });
+    const list = await request(app.getHttpServer())
+      .get('/v1/me/reports?limit=1')
+      .set('authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(list.body.items).toHaveLength(1);
+    expect(list.body.nextCursor).toEqual(expect.any(String));
+    const next = await request(app.getHttpServer())
+      .get('/v1/me/reports')
+      .query({ limit: 1, cursor: list.body.nextCursor })
+      .set('authorization', `Bearer ${token}`)
+      .expect(200);
+    const all = [...list.body.items, ...next.body.items];
+    expect(all.map((x) => x.id).sort()).toEqual([first.body.id, second.body.id].sort());
+    expect(all.find((x) => x.id === first.body.id)).toMatchObject({
+      status: 'RESOLVED',
+      decidedAt: decidedAt.toISOString(),
+      kind: 'ROOM_MEMBER',
+    });
+    expect(all.find((x) => x.id === second.body.id)).toMatchObject({
+      kind: 'ROOM',
+      status: 'OPEN',
+    });
+    expect(JSON.stringify(all)).not.toContain('private-statement-sentinel');
+    for (const row of all)
+      expect(Object.keys(row).sort()).toEqual(
+        [
+          'id',
+          'caseId',
+          'kind',
+          'roomTopic',
+          'category',
+          'status',
+          'submittedAt',
+          'updatedAt',
+          'decidedAt',
+        ].sort(),
+      );
+    const other = (await sessions.issue(hostId)).accessToken;
+    const own = await request(app.getHttpServer())
+      .get('/v1/me/reports')
+      .set('authorization', `Bearer ${other}`)
+      .expect(200);
+    expect(own.body.items).toEqual([]);
+    await request(app.getHttpServer()).get('/v1/me/reports').expect(401);
+    await request(app.getHttpServer())
+      .get('/v1/me/reports?cursor=malformed')
+      .set('authorization', `Bearer ${token}`)
+      .expect(400);
+    await request(app.getHttpServer())
+      .get('/v1/me/reports?limit=51')
+      .set('authorization', `Bearer ${token}`)
+      .expect(400);
+  });
   it.each(REPORT_CATEGORIES)(
     'accepts %s and returns only the original receipt on normalized retries',
     async (category) => {

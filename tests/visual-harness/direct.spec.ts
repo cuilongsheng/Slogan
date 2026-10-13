@@ -220,7 +220,10 @@ test('report toolbar submits only the explicitly selected received message', asy
   const reported: unknown[] = [];
   await page.route('**/v1/conversations/conversation-luna/messages/*/report', async (route) => {
     reported.push({ url: route.request().url(), body: route.request().postDataJSON() });
-    await route.fulfill({ status: 201, json: {} });
+    await route.fulfill({
+      status: 201,
+      json: { id: 'report-fixture', caseId: 'case-fixture', submittedAt: now.toISOString() },
+    });
   });
   await page.goto('/?screen=chat&language=en');
   await expect(page.getByText('What movie did you watch?')).toBeVisible();
@@ -235,6 +238,11 @@ test('report toolbar submits only the explicitly selected received message', asy
   await page.getByRole('textbox').last().fill('Repeated harassment');
   await page.getByText('Confirm', { exact: true }).click();
   await expect(page.getByText('Report submitted', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('report-receipt')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'View my reports' })).toBeVisible();
+  await page.screenshot({
+    path: 'docs/acceptance/invitation-report-feedback/runtime/direct-receipt.png',
+  });
   expect(reported).toHaveLength(1);
   expect(reported[0]).toEqual(
     expect.objectContaining({

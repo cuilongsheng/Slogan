@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   header: { height: 93 },
   pageTitle: {
     position: 'absolute',
-    top: -10,
+    top: -2,
     left: 0,
     right: 0,
     textAlign: 'center',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     color: tokens.color.foreground,
   },
   toolbar: {
-    marginTop: 21,
+    marginTop: 37,
     paddingLeft: 16,
     paddingRight: 28,
     height: 42,

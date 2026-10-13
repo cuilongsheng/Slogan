@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import { AppText as Text } from '../../components/ui/AppText';
 import { roomLevelLabel } from '../room-discovery/presentation';
 import { useRoomMessages } from './useRoomMessages';
@@ -1188,11 +1189,10 @@ const styles = StyleSheet.create({
   },
   hostIcon: { width: 12, height: 12 },
   action: {
-    minHeight: 54,
-    borderRadius: 14,
     backgroundColor: tokens.color.purple,
     alignItems: 'center',
     justifyContent: 'center',
+    ...largeAction,
   },
   actionText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   disabled: { opacity: 0.45 },

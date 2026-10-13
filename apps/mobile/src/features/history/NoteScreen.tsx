@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
@@ -171,12 +172,11 @@ const styles = StyleSheet.create({
   saved: { color: tokens.color.mintInk, fontSize: 13, marginTop: 12 },
   link: { color: tokens.color.purple, fontWeight: '700', fontSize: 13, marginTop: 12 },
   primary: {
-    minHeight: 50,
-    borderRadius: 25,
     backgroundColor: tokens.color.purple,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 22,
+    ...largeAction,
   },
   primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   disabled: { opacity: 0.5 },

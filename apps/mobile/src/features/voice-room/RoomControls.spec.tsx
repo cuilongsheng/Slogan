@@ -4,6 +4,7 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { RoomControls } from './RoomControls';
 
 jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn() }),
   useFocusEffect: (effect: () => void | (() => void)) => {
     const React = jest.requireActual('react') as typeof ReactTypes;
     React.useEffect(effect, [effect]);
@@ -93,6 +94,7 @@ describe('room controls', () => {
   it('opens the invitation list directly and only offers online idle candidates', async () => {
     const inviteUser = jest.fn(async () => ({ id: 'invite-1' }));
     const api = {
+      sentInvitations: jest.fn(async () => ({ items: [], nextCursor: null })),
       availablePeople: jest.fn(async () => ({
         items: [
           { userId: 'person-1', displayName: 'Online idle', cefrLevel: 'B1', isAvailable: true },
@@ -203,7 +205,12 @@ test('an open invitation picker updates when a peer becomes idle and stops polli
       ownMembershipId="own"
       isHost
       initialMode="invite"
-      api={{ availablePeople } as never}
+      api={
+        {
+          availablePeople,
+          sentInvitations: jest.fn(async () => ({ items: [], nextCursor: null })),
+        } as never
+      }
       refresh={jest.fn()}
       onClose={jest.fn()}
     />,
@@ -220,6 +227,94 @@ test('an open invitation picker updates when a peer becomes idle and stops polli
     });
     expect(availablePeople).toHaveBeenCalledTimes(2);
   } finally {
+    jest.useRealTimers();
+  }
+});
+
+test('restores sent state from the server after reopening and blocks repeat invitations', async () => {
+  const api = {
+    sentInvitations: jest.fn(async () => ({
+      items: [{ inviteeUserId: 'person-1' }],
+      nextCursor: null,
+    })),
+    availablePeople: jest.fn(async () => ({
+      items: [
+        { userId: 'person-1', displayName: 'Invited peer', cefrLevel: 'B1', isAvailable: true },
+      ],
+      nextCursor: null,
+    })),
+    inviteUser: jest.fn(),
+  };
+  const page = await render(
+    <RoomControls
+      roomId="room-1"
+      members={members}
+      ownMembershipId="own"
+      isHost
+      initialMode="invite"
+      api={api as never}
+      refresh={jest.fn()}
+      onClose={jest.fn()}
+    />,
+  );
+  await waitFor(() => expect(page.getByText('Invitation sent')).toBeTruthy());
+  await fireEvent.press(
+    page.getByRole('button', { name: 'Invitation sent Invited peer', disabled: true }),
+  );
+  expect(api.inviteUser).not.toHaveBeenCalled();
+});
+
+test('a pending read begun before a send completes cannot erase the successful sent state', async () => {
+  jest.useFakeTimers();
+  let resolvePending!: (value: { items: never[]; nextCursor: null }) => void;
+  const sentInvitations = jest
+    .fn()
+    .mockResolvedValueOnce({ items: [], nextCursor: null })
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePending = resolve;
+        }),
+    )
+    .mockResolvedValue({ items: [], nextCursor: null });
+  const api = {
+    sentInvitations,
+    availablePeople: jest.fn(async () => ({
+      items: [
+        { userId: 'race-peer', displayName: 'Race peer', cefrLevel: 'B1', isAvailable: true },
+      ],
+      nextCursor: null,
+    })),
+    inviteUser: jest.fn(async () => ({ id: 'sent' })),
+  };
+  const page = await render(
+    <RoomControls
+      roomId="room-1"
+      members={members}
+      ownMembershipId="own"
+      isHost
+      initialMode="invite"
+      api={api as never}
+      refresh={jest.fn()}
+      onClose={jest.fn()}
+    />,
+  );
+  try {
+    await waitFor(() => expect(page.getByText('Race peer')).toBeTruthy());
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(5000);
+    });
+    expect(sentInvitations).toHaveBeenCalledTimes(2);
+    await fireEvent.press(page.getByRole('button', { name: 'Invite Race peer' }));
+    await waitFor(() => expect(page.getByText('Invitation sent')).toBeTruthy());
+    await act(async () => resolvePending({ items: [], nextCursor: null }));
+    expect(page.getByText('Invitation sent')).toBeTruthy();
+    await fireEvent.press(
+      page.getByRole('button', { name: 'Invitation sent Race peer', disabled: true }),
+    );
+    expect(api.inviteUser).toHaveBeenCalledTimes(1);
+  } finally {
+    await page.unmount();
     jest.useRealTimers();
   }
 });

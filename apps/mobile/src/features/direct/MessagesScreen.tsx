@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import { MainListEmpty } from '../../components/ui/MainListEmpty';
 import { MainPageTitle } from '../../components/ui/MainPageTitle';
 import { LatestRequestQueue } from '../../services/latestRequestQueue';
@@ -247,9 +248,9 @@ const styles = StyleSheet.create({
   dialogTitle: { fontSize: 18, lineHeight: 26, fontWeight: '700', color: directColors.ink },
   note: { fontSize: 14, lineHeight: 24, color: directColors.muted },
   confirm: {
-    height: 48,
     backgroundColor: directColors.violet,
-    borderRadius: 24,
+
     justifyContent: 'center',
+    ...largeAction,
   },
 });

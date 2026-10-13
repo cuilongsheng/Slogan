@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import { AppText as Text } from '../../components/ui/AppText';
 import { useEffect, useMemo, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
@@ -345,12 +346,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   primary: {
-    minHeight: 50,
     backgroundColor: tokens.color.purple,
-    borderRadius: 25,
+
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 15,
+    ...largeAction,
   },
   primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   disabled: { backgroundColor: '#514267' },
