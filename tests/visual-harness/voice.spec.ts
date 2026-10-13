@@ -261,7 +261,9 @@ test('empty-seat invitation selects an idle partner through the generated API cl
     }),
   );
   let invited = false;
-  await page.route('**/v1/rooms/visual-room/invitations', (route) => {
+  await page.route('**/v1/rooms/visual-room/invitations*', (route) => {
+    if (route.request().method() === 'GET')
+      return route.fulfill({ json: { items: [], nextCursor: null } });
     const body = route.request().postDataJSON();
     expect(body.targetUserId).toBe('idle-partner');
     expect(body.clientRequestId).toMatch(/^[a-f0-9-]{36}$/);

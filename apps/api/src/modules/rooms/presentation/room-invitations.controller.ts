@@ -26,6 +26,7 @@ import {
   RoomInvitationPageDto,
   RoomInvitationPageQueryDto,
   RoomInvitationParamsDto,
+  SentRoomInvitationPageDto,
 } from './dto/room-invitation.dto.js';
 
 @ApiTags('room-invitations')
@@ -69,6 +70,17 @@ export class RoomInvitationsController {
         },
       })),
     };
+  }
+
+  @Get('rooms/:roomId/invitations')
+  @ApiOkResponse({ type: SentRoomInvitationPageDto })
+  async listSent(
+    @CurrentIdentity() identity: CurrentAccessIdentity,
+    @Param() params: RoomIdParamsDto,
+    @Query() query: RoomInvitationPageQueryDto,
+  ) {
+    const page = await this.invitations.listSent(identity.userId, params.roomId, query);
+    return { ...page, items: page.items.map((item) => this.present(item)) };
   }
 
   @Post('room-invitations/:invitationId/decline')

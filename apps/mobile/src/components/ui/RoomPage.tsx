@@ -1,3 +1,4 @@
+import { largeAction } from './largeAction';
 import type { StyleProp, TextStyle } from 'react-native';
 import { AppText as Text } from './AppText';
 import { useEffect, type ReactNode } from 'react';
@@ -221,11 +222,10 @@ const styles = StyleSheet.create({
   title: { color: tokens.color.foreground, fontSize: 16, fontWeight: '700', lineHeight: 24 },
   listTitle: { fontSize: 18, lineHeight: 26 },
   action: {
-    height: 56,
-    borderRadius: 28,
     backgroundColor: tokens.color.purple,
     justifyContent: 'center',
     alignItems: 'center',
+    ...largeAction,
   },
   actionDisabled: { opacity: 0.45 },
   actionText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },

@@ -3,6 +3,9 @@ import { expect, test } from '@playwright/test';
 const evidence = 'docs/acceptance/room-usability';
 
 test.beforeEach(async ({ page }) => {
+  await page.route('**/v1/rooms/visual-room/invitations*', (route) =>
+    route.fulfill({ json: { items: [], nextCursor: null } }),
+  );
   await page.route('**/v1/rooms/visual-room/messages*', (route) =>
     route.fulfill({ json: { items: [], nextCursor: 'fixture', hasMore: false } }),
   );
@@ -46,6 +49,8 @@ test('mouse invitation opens immediately, loads available partners, and sends th
     }),
   );
   await page.route('**/v1/rooms/visual-room/invitations', (route) => {
+    if (route.request().method() === 'GET')
+      return route.fulfill({ json: { items: [], nextCursor: null } });
     sent = route.request().postDataJSON();
     return route.fulfill({ status: 201, json: { id: 'invitation', status: 'PENDING' } });
   });

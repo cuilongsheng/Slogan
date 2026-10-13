@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import { AppText as Text } from '../../components/ui/AppText';
 import { useCallback, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
@@ -15,6 +16,7 @@ import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { t, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import type { AvailablePerson, RemovedMember, ReportInput, RoomMember, VoiceRoomApi } from './api';
+import { ReportReceiptSheet, type ReportSubmissionReceipt } from '../reporting';
 
 type Mode = 'members' | 'remove' | 'removed' | 'invite' | 'report' | 'receipt';
 type Category = ReportInput['category'];
@@ -66,7 +68,7 @@ export function RoomControls({
   const [category, setCategory] = useState<Category | null>(null);
   const [description, setDescription] = useState('');
   const [requestId, setRequestId] = useState(() => randomUUID());
-  const [receipt, setReceipt] = useState<{ id: string; caseId: string } | null>(null);
+  const [receipt, setReceipt] = useState<ReportSubmissionReceipt | null>(null);
   const [search, setSearch] = useState('');
   const [people, setPeople] = useState<AvailablePerson[]>([]);
   const [removed, setRemoved] = useState<RemovedMember[]>([]);
@@ -76,6 +78,11 @@ export function RoomControls({
   const [error, setError] = useState('');
   const [peopleError, setPeopleError] = useState(false);
   const [sentTo, setSentTo] = useState<string[]>([]);
+  const sentTargets = useRef(new Set<string>());
+  const sendInFlight = useRef(false);
+  const sendVersion = useRef(0);
+  const confirmedSends = useRef(new Map<string, number>());
+  const [invitationsReady, setInvitationsReady] = useState(false);
   const invitationIds = useRef(new Map<string, string>());
 
   const peopleQueue = useRef(new LatestRequestQueue());
@@ -91,20 +98,38 @@ export function RoomControls({
         if (cursor || !loadedPeople.current) setPeopleLoading(true);
         setPeopleError(false);
         try {
-          // Use the same server-owned online/idle eligibility as Partners, never the friends list.
-          const collected: AvailablePerson[] = [];
-          let next = cursor ?? undefined;
-          let pageCount = 0;
-          do {
-            const page = await api.availablePeople(next);
-            if (!current()) return;
-            for (const person of page.items) {
-              if (person.isAvailable && !collected.some((x) => x.userId === person.userId))
-                collected.push(person);
-            }
-            next = page.nextCursor ?? undefined;
-            pageCount++;
-          } while (!cursor && next && pageCount < loadedPeoplePages.current);
+          const readVersion = sendVersion.current;
+          const [pending, candidates] = await Promise.all([
+            (async () => {
+              const targets = new Set<string>();
+              let invitationCursor: string | undefined;
+              do {
+                const page = await api.sentInvitations(roomId, invitationCursor);
+                if (!current()) return targets;
+                for (const invitation of page.items) targets.add(invitation.inviteeUserId);
+                invitationCursor = page.nextCursor ?? undefined;
+              } while (invitationCursor);
+              return targets;
+            })(),
+            (async () => {
+              const collected: AvailablePerson[] = [];
+              let next = cursor ?? undefined;
+              let pageCount = 0;
+              do {
+                const page = await api.availablePeople(next);
+                if (!current()) return { collected, next, pageCount };
+                for (const person of page.items) {
+                  if (person.isAvailable && !collected.some((x) => x.userId === person.userId))
+                    collected.push(person);
+                }
+                next = page.nextCursor ?? undefined;
+                pageCount++;
+              } while (!cursor && next && pageCount < loadedPeoplePages.current);
+              return { collected, next, pageCount };
+            })(),
+          ]);
+          if (!current()) return;
+          const { collected, next, pageCount } = candidates;
           setPeople((old) =>
             cursor
               ? [
@@ -116,14 +141,24 @@ export function RoomControls({
           loadedPeoplePages.current = cursor ? loadedPeoplePages.current + 1 : pageCount;
           setNextCursor(next ?? null);
           loadedPeople.current = true;
+          // A read begun before a send completed cannot erase that confirmed send.
+          for (const [targetId, version] of confirmedSends.current) {
+            if (version > readVersion) pending.add(targetId);
+            else confirmedSends.current.delete(targetId);
+          }
+          sentTargets.current = pending;
+          setSentTo([...pending]);
+          setInvitationsReady(true);
         } catch {
           if (current()) setPeopleError(true);
         } finally {
-          setPeopleFetching(false);
-          if (current()) setPeopleLoading(false);
+          if (current()) {
+            setPeopleFetching(false);
+            setPeopleLoading(false);
+          }
         }
       }),
-    [api],
+    [api, roomId],
   );
   const pollPeople = useCallback(
     (current: () => boolean) => {
@@ -189,7 +224,9 @@ export function RoomControls({
   }
 
   async function invite(person: AvailablePerson) {
-    if (busy) return;
+    if (busy || sendInFlight.current || !invitationsReady || sentTargets.current.has(person.userId))
+      return;
+    sendInFlight.current = true;
     setBusy(true);
     setError('');
     const id = invitationIds.current.get(person.userId) ?? randomUUID();
@@ -197,10 +234,13 @@ export function RoomControls({
     try {
       await api.inviteUser(roomId, person.userId, id);
       invitationIds.current.delete(person.userId);
-      setSentTo((current) => [...current, person.userId]);
+      sentTargets.current.add(person.userId);
+      confirmedSends.current.set(person.userId, ++sendVersion.current);
+      setSentTo([...sentTargets.current]);
     } catch {
       setError(t('roomControlsFailed'));
     } finally {
+      sendInFlight.current = false;
       setBusy(false);
     }
   }
@@ -222,7 +262,7 @@ export function RoomControls({
         category,
         description: trimmed,
       });
-      setReceipt({ id: result.id, caseId: result.caseId });
+      setReceipt(result);
       setMode('receipt');
     } catch {
       setError(t('roomControlsFailed'));
@@ -237,6 +277,8 @@ export function RoomControls({
       !members.some((member) => member.userId === person.userId) &&
       person.displayName.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
   );
+  if (mode === 'receipt' && receipt)
+    return <ReportReceiptSheet receipt={receipt} onClose={onClose} />;
   return (
     <View style={styles.overlay}>
       <TouchableOpacity
@@ -458,7 +500,7 @@ export function RoomControls({
                   <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel={`${t(sentTo.includes(person.userId) ? 'roomInviteSent' : 'roomInviteAction')} ${person.displayName}`}
-                    disabled={busy || sentTo.includes(person.userId)}
+                    disabled={busy || !invitationsReady || sentTo.includes(person.userId)}
                     onPress={() => void invite(person)}
                     style={[styles.inviteButton, styles.onlineInviteButton]}
                   >
@@ -545,16 +587,6 @@ export function RoomControls({
               <Text style={[styles.primaryText, styles.reportSubmitText]}>
                 {t('roomReportSubmit')}
               </Text>
-            </TouchableOpacity>
-          </>
-        )}
-        {mode === 'receipt' && receipt && (
-          <>
-            <Text style={styles.body}>
-              {t('roomReportCaseId')} · {receipt.caseId}
-            </Text>
-            <TouchableOpacity accessibilityRole="button" style={styles.primary} onPress={onClose}>
-              <Text style={styles.primaryText}>{t('roomCloseSheet')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -678,7 +710,7 @@ const styles = StyleSheet.create({
     paddingBottom: 65,
     backgroundColor: '#34274F',
   },
-  reportSubmit: { height: 48, minHeight: 48, marginTop: 31, borderRadius: 24 },
+  reportSubmit: { marginTop: 31, ...largeAction },
   reportTitle: { fontSize: 18, lineHeight: 26, fontWeight: '500' },
   reportBody: { marginTop: 0, minHeight: 40, fontSize: 12, lineHeight: 20 },
   reportScroll: { flex: 1, minHeight: 0, marginTop: 13 },
@@ -711,12 +743,11 @@ const styles = StyleSheet.create({
   reportLink: { color: tokens.color.purple, fontSize: 12 },
   removeLink: { color: '#C6384A', fontWeight: '700' },
   primary: {
-    minHeight: 56,
-    borderRadius: 14,
     backgroundColor: tokens.color.purple,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 20,
+    ...largeAction,
   },
   secondaryMembers: {
     minHeight: 42,

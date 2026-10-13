@@ -1701,6 +1701,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PersonalReportsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/room-history": {
         parameters: {
             query?: never;
@@ -2012,7 +2028,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["RoomInvitationsController_listSent"];
         put?: never;
         post: operations["RoomInvitationsController_create"];
         delete?: never;
@@ -3358,6 +3374,47 @@ export interface components {
                 startsAt: string;
                 /** @enum {string} */
                 status: "ACTIVE" | "EXPIRED" | "LIFTED";
+            }[];
+            nextCursor: string | null;
+        };
+        PersonalReportDto: {
+            /** Format: uuid */
+            caseId: string | null;
+            /** @enum {string} */
+            category: "HARASSMENT_ABUSE" | "HATE_DISCRIMINATION" | "SEXUAL_CONTENT" | "SPAM_ADVERTISING" | "OTHER";
+            /** Format: date-time */
+            decidedAt: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "ROOM" | "ROOM_MEMBER" | "DIRECT_MESSAGE";
+            roomTopic: string | null;
+            /** @enum {string} */
+            status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PersonalReportPageDto: {
+            items: {
+                /** Format: uuid */
+                caseId: string | null;
+                /** @enum {string} */
+                category: "HARASSMENT_ABUSE" | "HATE_DISCRIMINATION" | "SEXUAL_CONTENT" | "SPAM_ADVERTISING" | "OTHER";
+                /** Format: date-time */
+                decidedAt: string | null;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                kind: "ROOM" | "ROOM_MEMBER" | "DIRECT_MESSAGE";
+                roomTopic: string | null;
+                /** @enum {string} */
+                status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+                /** Format: date-time */
+                submittedAt: string;
+                /** Format: date-time */
+                updatedAt: string;
             }[];
             nextCursor: string | null;
         };
@@ -4812,6 +4869,25 @@ export interface components {
             /** Format: uuid */
             clientRequestId: string;
             text: string;
+        };
+        SentRoomInvitationPageDto: {
+            items: {
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                inviteeUserId: string;
+                /** Format: uuid */
+                inviterUserId: string;
+                /** Format: date-time */
+                resolvedAt: string | null;
+                /** Format: uuid */
+                roomId: string;
+                /** @enum {string} */
+                status: "PENDING" | "DECLINED" | "CONSUMED" | "CANCELLED";
+            }[];
+            nextCursor: string | null;
         };
         SocialCommandDto: {
             /** Format: uuid */
@@ -18646,6 +18722,81 @@ export interface operations {
             };
         };
     };
+    PersonalReportsController_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            caseId: string | null;
+                            /** @enum {string} */
+                            category: "HARASSMENT_ABUSE" | "HATE_DISCRIMINATION" | "SEXUAL_CONTENT" | "SPAM_ADVERTISING" | "OTHER";
+                            /** Format: date-time */
+                            decidedAt: string | null;
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            kind: "ROOM" | "ROOM_MEMBER" | "DIRECT_MESSAGE";
+                            roomTopic: string | null;
+                            /** @enum {string} */
+                            status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+                            /** Format: date-time */
+                            submittedAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
     RoomHistoryController_list: {
         parameters: {
             query?: {
@@ -21378,6 +21529,144 @@ export interface operations {
                 };
             };
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    RoomInvitationsController_listSent: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            inviteeUserId: string;
+                            /** Format: uuid */
+                            inviterUserId: string;
+                            /** Format: date-time */
+                            resolvedAt: string | null;
+                            /** Format: uuid */
+                            roomId: string;
+                            /** @enum {string} */
+                            status: "PENDING" | "DECLINED" | "CONSUMED" | "CANCELLED";
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

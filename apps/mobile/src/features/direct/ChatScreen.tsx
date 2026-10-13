@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import backIcon from '../../../assets/icons/back.png';
 import phoneIcon from '../../../assets/icons/direct-phone.png';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import { isAppForeground } from '../../services/foregroundPolling';
 import { useMessageUnread } from './MessageUnreadProvider';
 import { useAuth } from '../auth';
 import { SocialApi } from '../social';
+import { ReportReceiptSheet, type ReportSubmissionReceipt } from '../reporting';
 import {
   DirectApi,
   directError,
@@ -62,6 +64,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     [reason, setReason] = useState(''),
     [notice, setNotice] = useState<MessageKey | null>(null),
     [selectingReport, setSelectingReport] = useState(false);
+  const [reportReceipt, setReportReceipt] = useState<ReportSubmissionReceipt | null>(null);
   const cursor = useRef<string | undefined>(undefined),
     callCursor = useRef<string | undefined>(undefined),
     lastRead = useRef(0),
@@ -241,7 +244,8 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
         conversationRef.current = { ...conversation, canInteract: false };
         setConversation(conversationRef.current);
       } else if (reportMessage) {
-        await api.report(conversationId, reportMessage.id, reason.trim(), id);
+        const receipt = await api.report(conversationId, reportMessage.id, reason.trim(), id);
+        setReportReceipt(receipt);
         setNotice('directReported');
       }
       commandIds.current.delete(action);
@@ -512,6 +516,9 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      {reportReceipt && (
+        <ReportReceiptSheet receipt={reportReceipt} onClose={() => setReportReceipt(null)} />
+      )}
     </RoomPage>
   );
 }
@@ -654,10 +661,9 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   confirm: {
-    height: 48,
-    borderRadius: 24,
     justifyContent: 'center',
     backgroundColor: directColors.violet,
+    ...largeAction,
   },
   confirmText: { color: '#FFFFFF', textAlign: 'center', fontSize: 14 },
   cancel: {

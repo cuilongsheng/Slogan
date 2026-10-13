@@ -44,7 +44,7 @@ test('creation stays compact on tall web previews and remains usable at a reduce
   await page.setViewportSize({ width: 390, height: 1258 });
   await page.goto('/?screen=create&language=en');
   const action = page.getByRole('button', { name: 'Create and open room', exact: true });
-  expect((await action.boundingBox())?.height).toBe(56);
+  expect(await action.boundingBox()).toMatchObject({ width: 342, height: 46 });
   const frame = await page.getByTestId('room-page').boundingBox();
   const button = await action.boundingBox();
   expect(frame!.y + frame!.height - button!.y - button!.height).toBe(37);

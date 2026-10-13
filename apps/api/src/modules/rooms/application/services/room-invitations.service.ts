@@ -44,4 +44,26 @@ export class RoomInvitationsService {
   decline(actorUserId: string, invitationId: string, clientRequestId: string, now = new Date()) {
     return this.invitations.decline({ actorUserId, invitationId, clientRequestId, now });
   }
+
+  async listSent(
+    actorUserId: string,
+    roomId: string,
+    query: { cursor?: string; limit?: number },
+    now = new Date(),
+  ) {
+    await this.social.assertEligible(actorUserId, now);
+    const page = await this.invitations.listSent({
+      actorUserId,
+      roomId,
+      now,
+      cursor: decodeSocialCursor('room-sent-invitations', query.cursor),
+      limit: query.limit ?? 20,
+    });
+    return {
+      items: page.items,
+      nextCursor: page.nextCursor
+        ? encodeSocialCursor('room-sent-invitations', page.nextCursor)
+        : null,
+    };
+  }
 }

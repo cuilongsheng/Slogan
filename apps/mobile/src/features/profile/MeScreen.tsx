@@ -1,3 +1,4 @@
+import { largeAction } from '../../components/ui/largeAction';
 import { MainPageTitle } from '../../components/ui/MainPageTitle';
 import defaultAvatar from '../../../assets/profile/default-avatar.png';
 import { AppText as Text } from '../../components/ui/AppText';
@@ -25,8 +26,8 @@ export function MeScreen() {
   };
   const [busy, setBusy] = useState(false);
   return (
-    <RoomPage direct hidePreviewIndicator>
-      <MainPageTitle title={t('meTitle')} size={18} />
+    <RoomPage direct ambient hidePreviewIndicator>
+      <MainPageTitle title={t('meTitle')} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.settings}>
           <TouchableOpacity
@@ -82,40 +83,49 @@ export function MeScreen() {
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.item}
-            onPress={() => router.push('/me/restrictions')}
-          >
-            <Text style={styles.title}>{t('meRestrictions')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={styles.item}
             onPress={() => router.push('/me/vocabulary')}
           >
             <Text style={styles.title}>{t('meVocabulary')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" style={styles.item} onPress={editProfile}>
-            <Text style={styles.title}>{t('editProfile')}</Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            style={styles.item}
+            onPress={() => router.push('/me/reports')}
+          >
+            <Text style={styles.title}>{t('myReports')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
-            disabled={busy}
-            style={[styles.item, styles.exit]}
-            onPress={() => {
-              if (busy) return;
-              setBusy(true);
-              void logout().finally(() => setBusy(false));
-            }}
+            style={styles.item}
+            onPress={() => router.push('/me/restrictions')}
           >
-            <Text style={[styles.title, styles.exitText]}>{t(busy ? 'submitting' : 'logout')}</Text>
+            <Text style={styles.title}>{t('meRestrictions')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" style={styles.item} onPress={editProfile}>
+            <Text style={styles.title}>{t('editProfile')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <View style={styles.logoutArea}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={busy}
+          style={[styles.item, styles.exit]}
+          onPress={() => {
+            if (busy) return;
+            setBusy(true);
+            void logout().finally(() => setBusy(false));
+          }}
+        >
+          <Text style={[styles.title, styles.exitText]}>{t(busy ? 'submitting' : 'logout')}</Text>
+        </TouchableOpacity>
+      </View>
       <BottomNavigation active={3} unreadMessages={unread.count} />
     </RoomPage>
   );
 }
 const styles = StyleSheet.create({
-  settings: { paddingHorizontal: 20, paddingTop: 24, gap: 20 },
+  settings: { paddingHorizontal: 20, paddingTop: 16, gap: 20 },
   profile: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   photo: { width: 52, height: 52, borderRadius: 26 },
   profileName: { fontSize: 18, color: tokens.color.foreground, fontWeight: '700' },
@@ -129,15 +139,17 @@ const styles = StyleSheet.create({
   },
   languageSelected: { backgroundColor: tokens.color.purpleSoft },
   languageText: { color: tokens.color.purple, fontSize: 14, fontWeight: '500', lineHeight: 20 },
-  list: { paddingHorizontal: 20, paddingTop: 24, gap: 16 },
+  list: { paddingHorizontal: 37, paddingTop: 24, gap: 5 },
+  logoutArea: { paddingHorizontal: 24, paddingBottom: 16 },
   item: {
-    height: 72,
+    height: 34,
     backgroundColor: tokens.color.purpleSoft,
-    borderRadius: 36,
-    alignItems: 'center',
+    borderRadius: 17,
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
     justifyContent: 'center',
   },
   title: { color: '#5538D8', fontSize: 14, fontWeight: '500' },
-  exit: { height: 56, borderRadius: 28, backgroundColor: tokens.color.purple },
+  exit: { backgroundColor: tokens.color.purple, alignItems: 'center', ...largeAction },
   exitText: { color: '#FFFFFF' },
 });

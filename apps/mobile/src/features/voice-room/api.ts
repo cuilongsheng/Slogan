@@ -250,6 +250,19 @@ export class VoiceRoomApi {
     return data;
   }
 
+  async sentInvitations(roomId: string, cursor?: string) {
+    const { data, error, response } = await this.authorize((accessToken) =>
+      this.client.GET('/v1/rooms/{roomId}/invitations', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { path: { roomId }, query: { limit: 50, ...(cursor ? { cursor } : {}) } },
+      }),
+    ).catch(() => {
+      throw new RoomApiError(0, 'NETWORK_ERROR');
+    });
+    if (!data) throw asApiError(response.status, error);
+    return data;
+  }
+
   async friends(cursor?: string) {
     const { data, error, response } = await this.authorize((accessToken) =>
       this.client.GET('/v1/me/friends', {

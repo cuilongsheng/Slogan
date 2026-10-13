@@ -236,7 +236,11 @@ test('an empty seat opens in-app people selection and sends a room invitation', 
     nextCursor: null,
   }));
   const inviteUser = jest.fn(async () => ({ id: 'invitation' }));
-  Object.assign(mockApi, { availablePeople, inviteUser });
+  Object.assign(mockApi, {
+    availablePeople,
+    inviteUser,
+    sentInvitations: jest.fn(async () => ({ items: [], nextCursor: null })),
+  });
   const screen = await render(<VoiceRoomScreen roomId="room" />);
   await fireEvent.press(screen.getByTestId('room-empty-seat-0'));
   await waitFor(() => expect(screen.getByText('Idle partner')).toBeTruthy());

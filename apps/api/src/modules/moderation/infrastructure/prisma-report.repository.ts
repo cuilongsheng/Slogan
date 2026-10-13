@@ -21,6 +21,54 @@ const categories: Record<ReportCategory, DatabaseCategory> = {
 @Injectable()
 export class PrismaReportRepository implements ReportRepository {
   constructor(private readonly prisma: PrismaService) {}
+  async listOwn(input: Parameters<ReportRepository['listOwn']>[0]) {
+    const rows = await this.prisma.report.findMany({
+      where: {
+        reporterUserId: input.reporterUserId,
+        ...(input.cursor
+          ? {
+              OR: [
+                { submittedAt: { lt: input.cursor.submittedAt } },
+                { submittedAt: input.cursor.submittedAt, id: { lt: input.cursor.id } },
+              ],
+            }
+          : {}),
+      },
+      // Deliberately exclude complaint text, private messages and moderation notes.
+      select: {
+        id: true,
+        submittedAt: true,
+        category: true,
+        directMessageId: true,
+        targetUserId: true,
+        room: { select: { topic: true } },
+        safetyCase: { select: { id: true, status: true, updatedAt: true, decidedAt: true } },
+      },
+      orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
+      take: input.limit + 1,
+    });
+    const items = rows.slice(0, input.limit).map((row) => ({
+      id: row.id,
+      caseId: row.safetyCase?.id ?? null,
+      kind: row.directMessageId
+        ? ('DIRECT_MESSAGE' as const)
+        : row.targetUserId
+          ? ('ROOM_MEMBER' as const)
+          : ('ROOM' as const),
+      roomTopic: row.room?.topic ?? null,
+      category: row.category,
+      status: row.safetyCase?.status ?? ('OPEN' as const),
+      submittedAt: row.submittedAt,
+      updatedAt: row.safetyCase?.updatedAt ?? row.submittedAt,
+      decidedAt: row.safetyCase?.decidedAt ?? null,
+    }));
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor:
+        rows.length > input.limit && last ? { submittedAt: last.submittedAt, id: last.id } : null,
+    };
+  }
   async submit(input: ReportInput) {
     const key = {
       reporterUserId_clientRequestId: {
