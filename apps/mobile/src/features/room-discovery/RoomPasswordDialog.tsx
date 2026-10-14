@@ -65,7 +65,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '700', color: tokens.color.foreground },
   helper: { fontSize: 14, color: tokens.color.muted },
   input: {
-    height: 56,
+    paddingVertical: 0,
+    height: tokens.control.height,
     borderWidth: 1,
     borderColor: tokens.color.border,
     borderRadius: 16,

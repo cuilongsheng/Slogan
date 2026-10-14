@@ -1,3 +1,4 @@
+import { MultilineField } from '../../components/ui/MultilineField';
 import { largeAction } from '../../components/ui/largeAction';
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -6,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -92,7 +92,7 @@ export function NoteScreen({ roomId }: { roomId: string }) {
       ) : (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
           <Text style={styles.private}>{t('notePrivate')}</Text>
-          <TextInput
+          <MultilineField
             accessibilityLabel={t('noteInputLabel')}
             multiline
             maxLength={2000}
@@ -156,7 +156,6 @@ const styles = StyleSheet.create({
   },
   private: { color: tokens.color.muted, fontSize: 12, marginBottom: 16 },
   input: {
-    minHeight: 210,
     borderRadius: tokens.radius.md,
     borderWidth: 1,
     borderColor: tokens.color.border,

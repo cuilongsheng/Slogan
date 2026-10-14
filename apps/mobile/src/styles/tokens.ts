@@ -1,4 +1,5 @@
 export const tokens = {
+  control: { height: 46, radius: 23 },
   color: {
     surface: '#FFF9F6',
     panel: '#ffffff',

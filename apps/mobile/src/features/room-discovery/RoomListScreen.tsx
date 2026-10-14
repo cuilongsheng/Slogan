@@ -229,9 +229,9 @@ const styles = StyleSheet.create({
   brand: { marginTop: 9, marginLeft: 18, width: 32, height: 32 },
   add: {
     flexShrink: 0,
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: tokens.control.height,
+    height: tokens.control.height,
+    borderRadius: tokens.control.radius,
     backgroundColor: tokens.color.coral,
     alignItems: 'center',
     justifyContent: 'center',

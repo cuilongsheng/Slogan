@@ -1,3 +1,4 @@
+import { MultilineField } from '../../components/ui/MultilineField';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -96,7 +97,7 @@ function VocabularyCard({
             maxLength={120}
             onChangeText={setText}
           />
-          <TextInput
+          <MultilineField
             accessibilityLabel={t('vocabularyNoteLabel')}
             style={[styles.input, styles.noteInput]}
             value={note}
@@ -396,6 +397,9 @@ const styles = StyleSheet.create({
   word: { color: tokens.color.foreground, fontSize: 20, fontWeight: '700', marginTop: 9 },
   note: { color: tokens.color.muted, fontSize: 13, marginTop: 7 },
   input: {
+    lineHeight: 22,
+    paddingVertical: 0,
+    height: tokens.control.height,
     color: tokens.color.foreground,
     borderWidth: 1,
     borderColor: tokens.color.border,
@@ -405,7 +409,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 9,
   },
-  noteInput: { minHeight: 72, textAlignVertical: 'top' },
+  noteInput: { textAlignVertical: 'top' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 17, marginTop: 16 },
   link: { color: tokens.color.purple, fontSize: 12, fontWeight: '700' },
   danger: { color: tokens.color.error, fontSize: 12, fontWeight: '700' },

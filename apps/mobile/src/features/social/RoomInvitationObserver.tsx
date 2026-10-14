@@ -211,8 +211,9 @@ const styles = StyleSheet.create({
   topic: { fontSize: 16, lineHeight: 24, fontWeight: '500', color: '#fff' },
   actions: { flexDirection: 'row', gap: 12 },
   action: {
+    height: tokens.control.height,
     flex: 1,
-    minHeight: 44,
+    minHeight: tokens.control.height,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',

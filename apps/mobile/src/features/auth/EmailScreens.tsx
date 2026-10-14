@@ -431,7 +431,9 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   input: {
-    height: 54,
+    lineHeight: 22,
+    paddingVertical: 0,
+    height: tokens.control.height,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: tokens.color.border,

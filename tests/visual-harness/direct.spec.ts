@@ -293,7 +293,7 @@ test('compact bubbles and input preserve legible text while a call event cannot 
   await expect.poll(() => reads.length).toBeGreaterThan(0);
   expect(reads.every((sequence) => sequence === 2)).toBe(true);
   const box = await input.boundingBox();
-  expect(box!.height).toBeGreaterThanOrEqual(50);
+  expect(box!.height).toBe(46);
   await expect(
     page.getByText('Voice calls connect only after the other person accepts.'),
   ).toHaveCount(0);

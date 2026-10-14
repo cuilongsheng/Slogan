@@ -39,8 +39,8 @@ const styles = StyleSheet.create({
   button: {
     width: 162,
     marginLeft: 20,
-    height: 55,
-    borderRadius: 28,
+    height: tokens.control.height,
+    borderRadius: tokens.control.radius,
     backgroundColor: tokens.color.purpleSoft,
     alignItems: 'center',
     justifyContent: 'center',

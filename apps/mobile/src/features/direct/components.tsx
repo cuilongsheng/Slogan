@@ -111,10 +111,10 @@ const styles = StyleSheet.create({
   name: { fontSize: 12, lineHeight: 21, fontWeight: '700', color: tokens.color.foreground },
   detail: { fontSize: 12, height: 18, lineHeight: 18, color: directColors.muted },
   action: {
-    height: 34,
-    width: 34,
+    height: tokens.control.height,
+    width: tokens.control.height,
     flexShrink: 0,
-    borderRadius: 17,
+    borderRadius: tokens.control.radius,
     backgroundColor: directColors.violet,
     alignItems: 'center',
     justifyContent: 'center',

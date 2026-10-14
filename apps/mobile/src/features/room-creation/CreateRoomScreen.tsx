@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   burst: { width: 25, height: 25, position: 'absolute', right: 39, top: -4 },
   label: { fontSize: 14, lineHeight: 20, fontWeight: '700', color: tokens.color.foreground },
   topicInput: {
-    height: 56,
+    height: tokens.control.height,
     marginTop: 10,
     fontFamily: 'NotoSansSC',
     backgroundColor: '#fff',
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   accessRow: { alignItems: 'flex-start', gap: 24, marginTop: 22 },
   accessChoices: { flexDirection: 'row', gap: 11 },
   passwordInput: {
-    height: 39,
+    height: tokens.control.height,
     backgroundColor: '#fff',
     borderColor: tokens.color.border,
     borderWidth: 1,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   instantTime: { fontSize: 11, lineHeight: 16, marginTop: 6, color: tokens.color.muted },
   modeRow: { flexDirection: 'row', gap: 8, marginBottom: 0 },
   dateRow: {
-    height: 43,
+    height: tokens.control.height,
     backgroundColor: '#fff',
     borderColor: tokens.color.border,
     borderWidth: 1,
@@ -445,7 +445,19 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'web' ? 37 : 16,
     backgroundColor: tokens.color.surface,
   },
-  dateInput: { flex: 1, textAlign: 'right', color: tokens.color.foreground, fontSize: 13 },
-  timeInput: { width: 70, textAlign: 'center', color: tokens.color.foreground, fontSize: 13 },
+  dateInput: {
+    height: tokens.control.height,
+    flex: 1,
+    textAlign: 'right',
+    color: tokens.color.foreground,
+    fontSize: 13,
+  },
+  timeInput: {
+    height: tokens.control.height,
+    width: 70,
+    textAlign: 'center',
+    color: tokens.color.foreground,
+    fontSize: 13,
+  },
   error: { color: tokens.color.error, marginHorizontal: 20, marginTop: 12, fontSize: 12 },
 });

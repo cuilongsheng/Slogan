@@ -119,7 +119,7 @@ test.describe('revised Discover toolbar', () => {
     expect(await filter.boundingBox()).toEqual({ x: 16, y: 95, width: 57, height: 32 });
     expect(await count.boundingBox()).toEqual({ x: 93, y: 100, width: 62, height: 17 });
     expect(await burst.boundingBox()).toEqual({ x: 173, y: 95, width: 32, height: 32 });
-    expect(await create.boundingBox()).toEqual({ x: 320, y: 86, width: 42, height: 42 });
+    expect(await create.boundingBox()).toEqual({ x: 316, y: 86, width: 46, height: 46 });
     await page.screenshot({ path: 'docs/acceptance/mobile-ui-v3/follow-up/discover-zh.png' });
     await create.click();
     await expect(page).toHaveURL('/rooms/create');

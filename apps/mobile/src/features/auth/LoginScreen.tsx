@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     color: tokens.color.purple,
   },
   input: {
-    height: 54,
+    height: tokens.control.height,
     borderWidth: 1,
     borderColor: tokens.color.border,
     borderRadius: 16,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   socialRow: { flexDirection: 'row', gap: 12, marginTop: 13, marginBottom: 20 },
   socialOption: {
     flex: 1,
-    height: 52,
+    height: tokens.control.height,
     borderWidth: 1,
     borderColor: tokens.color.border,
     borderRadius: 16,

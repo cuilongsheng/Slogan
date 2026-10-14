@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   downloadDescription: { marginTop: 16 },
   actions: { marginTop: 23, flexDirection: 'row', gap: 12 },
   action: {
-    height: 36,
+    height: tokens.control.height,
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
