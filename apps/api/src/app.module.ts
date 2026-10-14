@@ -2,6 +2,7 @@ import { ModerationModule } from './modules/moderation/index.js';
 import { VoiceModule } from './modules/voice/voice.module.js';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { SentryModule } from '@sentry/nestjs/setup';
 
 import { validateEnvironment } from './config/environment.js';
 import { DatabaseModule } from './infrastructure/database/database.module.js';
@@ -20,6 +21,7 @@ import { OperationsModule } from './modules/operations/index.js';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       cache: true,
       envFilePath: ['apps/api/.env', '.env'],

@@ -1,5 +1,5 @@
 import {
-  ArgumentsHost,
+  type ArgumentsHost,
   Catch,
   HttpException,
   HttpStatus,
@@ -9,6 +9,7 @@ import type { Request, Response } from 'express';
 
 import { StructuredLogger } from '../../infrastructure/observability/structured-logger.service.js';
 import { AppError } from '../errors/app-error.js';
+import { SentryExceptionCaptured, withScope } from '@sentry/nestjs';
 
 type RequestWithId = Request & { id?: string };
 
@@ -20,6 +21,28 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const request = http.getRequest<RequestWithId>();
     const response = http.getResponse<Response>();
+    const status =
+      exception instanceof AppError
+        ? exception.statusCode
+        : exception instanceof HttpException
+          ? exception.getStatus()
+          : this.isPublicCodedError(exception)
+            ? this.statusForCode(exception.code)
+            : 500;
+    if (status >= 500) {
+      // Normalize before the official decorator captures, preserving response semantics.
+      const error = new Error('Unexpected API failure');
+      const protectedRequest = request.path.startsWith('/v1/backoffice');
+      if (!protectedRequest && exception instanceof Error && exception.stack) {
+        error.stack = exception.stack;
+      } else {
+        delete error.stack;
+      }
+      withScope((scope) => {
+        scope.setTag('slogan.protected', protectedRequest);
+        this.captureUnexpectedException(error, host);
+      });
+    }
 
     if (request.path.startsWith('/v1/backoffice')) {
       this.logger.warn(
@@ -94,6 +117,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
       requestId: request.id,
     });
   }
+
+  // SDK treats HttpException (including 5xx) as expected. Feed this boundary a
+  // normalized Error only after the existing filter determines a server failure.
+  @SentryExceptionCaptured()
+  private captureUnexpectedException(_exception: Error, _host: ArgumentsHost): void {}
 
   private isPublicCodedError(
     error: unknown,
