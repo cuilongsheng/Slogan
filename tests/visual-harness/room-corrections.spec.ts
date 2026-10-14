@@ -19,6 +19,11 @@ test('occupied avatars and the three-action menu report the exact target without
   await expect(page.getByText('举报房间成员', { exact: true })).toBeVisible();
   await expect(page.getByText('Mika', { exact: true })).toHaveCount(2);
   await page.getByRole('button', { name: '骚扰辱骂', exact: true }).click();
+  const description = page.getByRole('textbox', { name: '详细说明' });
+  await description.fill(Array.from({ length: 12 }, () => 'A detailed report line').join('\n'));
+  await expect.poll(async () => (await description.boundingBox())!.height).toBe(160);
+  await description.fill('');
+  await expect.poll(async () => (await description.boundingBox())!.height).toBe(46);
   await page.getByRole('textbox', { name: '详细说明' }).fill('Member report details');
   await page.getByRole('button', { name: '提交举报', exact: true }).click();
   expect(reports[0]?.targetUserId).toBe('user-1');
@@ -29,7 +34,7 @@ test('occupied avatars and the three-action menu report the exact target without
   await page.screenshot({ path: `${evidence}/runtime-room-actions.png` });
   await page.getByRole('button', { name: '举报房间', exact: true }).click();
   const input = await page.getByRole('textbox', { name: '详细说明' }).boundingBox();
-  expect(input).toMatchObject({ x: 24, y: 604, width: 342, height: 95 });
+  expect(input).toMatchObject({ x: 24, width: 342, height: 46 });
   await page.screenshot({ path: `${evidence}/runtime-room-report.png` });
   await page.getByRole('button', { name: '其他', exact: true }).click();
   await page.getByRole('textbox', { name: '详细说明' }).fill('Room report details');

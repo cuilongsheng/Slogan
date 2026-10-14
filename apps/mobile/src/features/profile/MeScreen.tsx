@@ -30,42 +30,49 @@ export function MeScreen() {
     <RoomPage direct ambient hidePreviewIndicator>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.settings}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={t('profileSettings')}
-            style={styles.profile}
-            onPress={editProfile}
-          >
-            <Image
-              source={
-                state.kind === 'signedIn' && state.me.profile?.avatarUrl
-                  ? { uri: state.me.profile.avatarUrl }
-                  : defaultAvatar
-              }
-              style={styles.photo}
-            />
-            <Text style={styles.profileName} numberOfLines={1} ellipsizeMode="tail">
-              {state.kind === 'signedIn' ? state.me.profile?.displayName : ''}
-            </Text>
-          </TouchableOpacity>
-          <View accessibilityLabel={t('languageSetting')} style={styles.languages}>
-            {(['zh', 'en'] as const).map((value) => (
-              <TouchableOpacity
-                key={value}
-                accessibilityRole="button"
-                accessibilityState={{ selected: language === value }}
-                hitSlop={{ top: 9, bottom: 9, left: 0, right: 0 }}
-                onPress={() => {
-                  setLanguageError(false);
-                  void setLanguage(value).catch(() => setLanguageError(true));
-                }}
-                style={[styles.language, { width: value === 'zh' ? 102 : 112 }]}
+          <View style={styles.profile}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('profileSettings')}
+              onPress={editProfile}
+            >
+              <Image
+                source={
+                  state.kind === 'signedIn' && state.me.profile?.avatarUrl
+                    ? { uri: state.me.profile.avatarUrl }
+                    : defaultAvatar
+                }
+                style={styles.photo}
+              />
+            </TouchableOpacity>
+            <View style={styles.identity}>
+              <Text
+                onPress={editProfile}
+                style={styles.profileName}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
-                <Text style={styles.languageText}>
-                  {value === 'zh' ? '\u4e2d\u6587' : 'English'}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                {state.kind === 'signedIn' ? state.me.profile?.displayName : ''}
+              </Text>
+              <View accessibilityLabel={t('languageSetting')} style={styles.languages}>
+                {(['zh', 'en'] as const).map((value) => (
+                  <TouchableOpacity
+                    key={value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: language === value }}
+                    onPress={() => {
+                      setLanguageError(false);
+                      void setLanguage(value).catch(() => setLanguageError(true));
+                    }}
+                    style={styles.language}
+                  >
+                    <Text style={styles.languageText}>
+                      {value === 'zh' ? '\u4e2d\u6587' : 'English'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </View>
         </View>
         {languageError && (
@@ -134,35 +141,35 @@ export function MeScreen() {
   );
 }
 const styles = StyleSheet.create({
-  settings: { paddingHorizontal: 20, gap: 14 },
-  profile: { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3, gap: 8 },
+  settings: { paddingHorizontal: 23, paddingTop: 16, paddingBottom: 12 },
+  profile: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
+  identity: { flex: 1, minWidth: 0 },
   photo: { width: 52, height: 52, borderRadius: 26 },
   profileName: {
-    flex: 1,
     minWidth: 0,
-    marginBottom: 6,
     fontSize: 18,
     lineHeight: 27,
     color: tokens.color.headingInk,
     fontWeight: '700',
   },
-  languages: { height: 42, flexDirection: 'row', gap: 8 },
+  languages: { flexDirection: 'row', gap: 8, marginTop: 7 },
   language: {
-    height: 27,
+    height: tokens.control.height,
+    width: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
+    borderRadius: tokens.control.radius,
     backgroundColor: tokens.color.purpleSoft,
   },
-  languageText: { color: tokens.color.purple, fontSize: 14, fontWeight: '500', lineHeight: 20 },
+  languageText: { color: tokens.color.purple, fontSize: 12, fontWeight: '500', lineHeight: 20 },
   list: {
-    marginHorizontal: 20,
-    borderTopWidth: 1,
+    marginLeft: 23,
+    marginRight: 17,
     borderColor: tokens.color.divider,
   },
   logoutArea: { paddingHorizontal: 24, paddingBottom: 16 },
   item: {
-    minHeight: 44,
+    height: tokens.control.height,
     borderBottomWidth: 1,
     borderColor: tokens.color.divider,
     alignItems: 'flex-start',

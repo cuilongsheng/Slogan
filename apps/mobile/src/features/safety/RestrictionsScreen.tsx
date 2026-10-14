@@ -1,3 +1,4 @@
+import { MultilineField } from '../../components/ui/MultilineField';
 import { largeAction } from '../../components/ui/largeAction';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
@@ -7,7 +8,6 @@ import {
   FlatList,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -248,7 +248,7 @@ export function RestrictionsScreen() {
                 ) : null}
                 {eligible && editing ? (
                   <View style={styles.form}>
-                    <TextInput
+                    <MultilineField
                       accessibilityLabel={t('safetyReasonLabel')}
                       multiline
                       maxLength={2000}
@@ -325,7 +325,6 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   form: { marginTop: 12 },
   input: {
-    minHeight: 105,
     borderRadius: tokens.radius.md,
     borderWidth: 1,
     borderColor: tokens.color.border,

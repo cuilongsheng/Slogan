@@ -228,11 +228,11 @@ test('original six-seat geometry matches; four seats reclaim the unused second r
   const secondRow = await page.getByTestId('room-seat-row-1').boundingBox();
   expect(secondRow!.y - firstRow!.y).toBe(92);
   expect(await page.getByTestId('room-composer-clip').boundingBox()).toMatchObject({
-    y: 771,
-    height: 51,
+    y: 776,
+    height: 46,
   });
   const composer = await page.getByRole('textbox').boundingBox();
-  expect(composer).toMatchObject({ x: 16, y: 771, width: 236, height: 56 });
+  expect(composer).toMatchObject({ x: 16, y: 776, width: 232, height: 46 });
   await page.screenshot({ path: `${fidelityDir}/runtime-390.png` });
   const sixGridHeight = grid!.height;
   await page.goto('/?role=host&count=2&capacity=4');

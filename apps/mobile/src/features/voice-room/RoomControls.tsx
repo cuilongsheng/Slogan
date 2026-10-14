@@ -1,3 +1,4 @@
+import { MultilineField } from '../../components/ui/MultilineField';
 import { largeAction } from '../../components/ui/largeAction';
 import { AppText as Text } from '../../components/ui/AppText';
 import { useCallback, useRef, useState } from 'react';
@@ -560,7 +561,7 @@ export function RoomControls({
                 ))}
               </View>
               <Text style={[styles.label, styles.detailsLabel]}>{t('roomReportDescription')}</Text>
-              <TextInput
+              <MultilineField
                 accessibilityLabel={t('roomReportDescription')}
                 multiline
                 maxLength={2000}
@@ -641,7 +642,7 @@ const styles = StyleSheet.create({
     color: '#D6CBE9',
   },
   inviteSearch: {
-    height: 44,
+    height: tokens.control.height,
     flexShrink: 0,
     borderRadius: 22,
     backgroundColor: '#45365E',
@@ -683,7 +684,7 @@ const styles = StyleSheet.create({
   onlineInviteMeta: { color: '#C8BCE0', fontSize: 11, lineHeight: 18, marginTop: 3 },
   onlineInviteButton: {
     minWidth: 64,
-    height: 36,
+    height: tokens.control.height,
     paddingHorizontal: 12,
     paddingVertical: 0,
     backgroundColor: '#6D4DE3',
@@ -750,7 +751,8 @@ const styles = StyleSheet.create({
     ...largeAction,
   },
   secondaryMembers: {
-    minHeight: 42,
+    height: tokens.control.height,
+    minHeight: tokens.control.height,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
@@ -760,18 +762,20 @@ const styles = StyleSheet.create({
   targetName: { color: '#fff', fontSize: 18, marginTop: 28 },
   confirmActions: { flexDirection: 'row', gap: 12, marginTop: 110 },
   secondary: {
+    height: tokens.control.height,
     flex: 1,
     backgroundColor: '#4A3B65',
     borderRadius: 28,
-    minHeight: 52,
+    minHeight: tokens.control.height,
     alignItems: 'center',
     justifyContent: 'center',
   },
   danger: {
+    height: tokens.control.height,
     flex: 1,
     backgroundColor: '#9F3158',
     borderRadius: 28,
-    minHeight: 52,
+    minHeight: tokens.control.height,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -789,6 +793,7 @@ const styles = StyleSheet.create({
   lightName: { color: '#fff', fontWeight: '700' },
   lightMeta: { color: '#C7BBD8', marginTop: 4 },
   inviteButton: {
+    height: tokens.control.height,
     backgroundColor: tokens.color.purple,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -815,6 +820,7 @@ const styles = StyleSheet.create({
   },
   categories: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   category: {
+    height: tokens.control.height,
     width: '48.5%',
     backgroundColor: '#49395F',
     borderRadius: 20,
@@ -825,8 +831,6 @@ const styles = StyleSheet.create({
   categorySelected: { backgroundColor: tokens.color.purple },
   categoryText: { color: '#fff', fontSize: 11, lineHeight: 18 },
   textarea: {
-    minHeight: 95,
-    maxHeight: 130,
     backgroundColor: '#49395F',
     borderRadius: 16,
     color: '#fff',

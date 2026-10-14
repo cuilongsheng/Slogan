@@ -219,7 +219,9 @@ const styles = StyleSheet.create({
   fieldGroup: { marginTop: 16 },
   label: { color: tokens.color.foreground, fontSize: 13, fontWeight: '600', marginBottom: 8 },
   field: {
-    height: 54,
+    lineHeight: 22,
+    paddingVertical: 0,
+    height: tokens.control.height,
     borderRadius: tokens.radius.sm,
     borderWidth: 1,
     borderColor: tokens.color.border,

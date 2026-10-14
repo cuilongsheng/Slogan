@@ -1,3 +1,4 @@
+import { MultilineField } from '../../components/ui/MultilineField';
 import { largeAction } from '../../components/ui/largeAction';
 import backIcon from '../../../assets/icons/back.png';
 import phoneIcon from '../../../assets/icons/direct-phone.png';
@@ -54,7 +55,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     [calls, setCalls] = useState<DirectCall[]>([]),
     [pending, setPending] = useState<Pending[]>([]),
     [draft, setDraft] = useState(''),
-    [inputHeight, setInputHeight] = useState(50),
+    [inputHeight, setInputHeight] = useState<number>(tokens.control.height),
     [menuOpen, setMenuOpen] = useState(false),
     [error, setError] = useState<MessageKey | null>(null),
     [loading, setLoading] = useState(true),
@@ -422,7 +423,9 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
           maxLength={2000}
           multiline
           onContentSizeChange={(event) =>
-            setInputHeight(Math.min(120, Math.max(50, event.nativeEvent.contentSize.height)))
+            setInputHeight(
+              Math.min(120, Math.max(tokens.control.height, event.nativeEvent.contentSize.height)),
+            )
           }
           scrollEnabled={inputHeight >= 120}
           style={[styles.input, { height: inputHeight }]}
@@ -494,7 +497,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
               )}
             </Text>
             {dialog === 'report' && (
-              <TextInput
+              <MultilineField
                 autoFocus
                 value={reason}
                 onChangeText={setReason}
@@ -603,7 +606,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minWidth: 0,
-    height: 50,
+    height: tokens.control.height,
     maxHeight: 120,
     backgroundColor: tokens.color.panel,
     borderRadius: 20,
@@ -617,9 +620,9 @@ const styles = StyleSheet.create({
     color: directColors.ink,
   },
   send: {
-    width: 50,
-    height: 50,
-    borderRadius: 27,
+    width: tokens.control.height,
+    height: tokens.control.height,
+    borderRadius: tokens.control.radius,
     backgroundColor: directColors.violet,
     alignItems: 'center',
     justifyContent: 'center',
@@ -651,8 +654,6 @@ const styles = StyleSheet.create({
   dialogTitle: { lineHeight: 26, fontSize: 18, fontWeight: '700', color: directColors.ink },
   description: { fontSize: 14, lineHeight: 24, color: directColors.muted },
   reportInput: {
-    minHeight: 88,
-    maxHeight: 160,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 12,
@@ -667,8 +668,8 @@ const styles = StyleSheet.create({
   },
   confirmText: { color: '#FFFFFF', textAlign: 'center', fontSize: 14 },
   cancel: {
-    height: 38,
-    lineHeight: 24,
+    height: tokens.control.height,
+    lineHeight: tokens.control.height,
     fontSize: 14,
     color: directColors.violet,
     textAlign: 'center',

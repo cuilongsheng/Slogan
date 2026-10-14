@@ -312,9 +312,9 @@ const styles = StyleSheet.create({
   private: { color: '#C8BCE0', fontSize: 13, lineHeight: 18, marginTop: 5 },
   content: { minHeight: 245, paddingBottom: 12 },
   micCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: tokens.control.height,
+    height: tokens.control.height,
+    borderRadius: tokens.control.radius,
     backgroundColor: tokens.color.coral,
     alignItems: 'center',
     justifyContent: 'center',
