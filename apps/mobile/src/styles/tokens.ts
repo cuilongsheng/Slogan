@@ -9,8 +9,10 @@ export const tokens = {
     authHintInk: '#898595',
     muted: '#787587',
     border: '#E0DEED',
+    divider: '#EFEFF3',
     purple: '#6546EC',
     purpleSoft: '#F2EDFF',
+    avatarSoft: '#F5F2FF',
     coral: '#FF6F70',
     peach: '#FFF0E8',
     peachBorder: '#F0DCD5',
@@ -20,6 +22,14 @@ export const tokens = {
     blueSoft: '#E8F7FF',
     goldSoft: '#FFF4D8',
     error: '#BE3444',
+  },
+  navigation: {
+    color: {
+      active: '#6247E8',
+      label: '#787587',
+      icon: '#B2ADBE',
+      discoverIcon: '#787587',
+    },
   },
   // Original Rooms / Pilot V2 colors; kept separate from older screen accents.
   connection: {

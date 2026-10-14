@@ -1,6 +1,6 @@
 import chatActionIcon from '../../../assets/icons/direct-chat-action.png';
-import defaultAvatar from '../../../assets/profile/default-avatar.png';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText as Text } from '../../components/ui/AppText';
 import { tf } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
@@ -25,7 +25,6 @@ export function PeerRow({
   onPress,
   onLongPress,
   unread = 0,
-  variant = 'conversation',
 }: {
   name: string;
   avatar: string;
@@ -34,7 +33,6 @@ export function PeerRow({
   onPress: () => void;
   onLongPress?: () => void;
   unread?: number;
-  variant?: 'partner' | 'conversation';
 }) {
   return (
     <TouchableOpacity
@@ -42,9 +40,9 @@ export function PeerRow({
       accessibilityLabel={unread ? tf('directUnreadConversation', { name, count: unread }) : name}
       onPress={onPress}
       onLongPress={onLongPress}
-      style={[styles.row, variant === 'partner' && styles.partnerRow]}
+      style={styles.row}
     >
-      <Image source={avatar ? { uri: avatar } : defaultAvatar} style={styles.avatar} />
+      <PeerAvatar key={avatar || name} avatar={avatar} name={name} />
       <View style={styles.copy}>
         <Text style={[styles.name, unread > 0 && styles.unreadName]} numberOfLines={1}>
           {name}
@@ -66,31 +64,56 @@ export function PeerRow({
     </TouchableOpacity>
   );
 }
+function PeerAvatar({ avatar, name }: { avatar: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  return avatar && !failed ? (
+    <Image source={{ uri: avatar }} style={styles.avatar} onError={() => setFailed(true)} />
+  ) : (
+    <View style={[styles.avatar, styles.avatarFallback]}>
+      <Text style={styles.initial}>{Array.from(name.trim())[0]?.toUpperCase() ?? '?'}</Text>
+    </View>
+  );
+}
+export const directListStyles = StyleSheet.create({
+  heading: { height: 32, marginTop: Platform.OS === 'web' ? -13 : 0 },
+  headingText: { lineHeight: 32, color: tokens.color.foreground },
+  list: { flexGrow: 1, paddingTop: 16, paddingBottom: 16 },
+});
 const styles = StyleSheet.create({
   heading: { height: 58, paddingHorizontal: 20 },
   title: { fontSize: 18, height: 42, lineHeight: 26, fontWeight: '700', color: directColors.ink },
   row: {
-    height: 88,
-    borderRadius: 24,
-    backgroundColor: tokens.color.purpleSoft,
-    marginHorizontal: 16,
-    marginBottom: 8,
+    height: 61,
+    borderBottomWidth: 1,
+    borderColor: tokens.color.divider,
+    marginLeft: 16,
+    marginRight: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 14,
-    paddingRight: 16,
+    paddingRight: 6,
   },
-  partnerRow: { marginLeft: 12, marginRight: 20 },
   unreadName: { fontWeight: '700' },
   unreadDetail: { color: directColors.ink, fontWeight: '500' },
   unreadText: { fontSize: 10, lineHeight: 14, color: directColors.ink, fontWeight: '700' },
-  avatar: { width: 52, height: 52, borderRadius: 26 },
-  copy: { marginLeft: 12, flex: 1, minWidth: 0, gap: 4, transform: [{ translateY: -4 }] },
-  name: { fontSize: 16, lineHeight: 25, fontWeight: '500', color: directColors.ink },
-  detail: { fontSize: 12, height: 22, lineHeight: 18, color: directColors.muted },
+  avatar: { width: 42, height: 42, borderRadius: 21, flexShrink: 0 },
+  avatarFallback: {
+    backgroundColor: tokens.color.avatarSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initial: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '700',
+    color: tokens.discovery.color.tabAccent,
+  },
+  copy: { marginLeft: 10, flex: 1, minWidth: 0, gap: 4, transform: [{ translateY: -2.5 }] },
+  name: { fontSize: 12, lineHeight: 21, fontWeight: '700', color: tokens.color.foreground },
+  detail: { fontSize: 12, height: 18, lineHeight: 18, color: directColors.muted },
   action: {
     height: 34,
     width: 34,
+    flexShrink: 0,
     borderRadius: 17,
     backgroundColor: directColors.violet,
     alignItems: 'center',
@@ -100,8 +123,8 @@ const styles = StyleSheet.create({
   actionIcon: { width: 20, height: 20 },
   unread: {
     position: 'absolute',
-    top: 8,
-    right: 14,
+    top: 3,
+    right: 2,
     minWidth: 18,
     height: 18,
     paddingHorizontal: 4,

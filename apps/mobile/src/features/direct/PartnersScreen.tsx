@@ -3,7 +3,7 @@ import { MainPageTitle } from '../../components/ui/MainPageTitle';
 import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { RoomPage } from '../../components/ui/RoomPage';
 import { BottomNavigation } from '../../components/ui/BottomNavigation';
 import { AppText as Text } from '../../components/ui/AppText';
@@ -12,7 +12,7 @@ import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { SocialApi, type AvailablePage } from '../social';
 import { DirectApi, directError } from './api';
-import { PeerRow, directColors } from './components';
+import { PeerRow, directColors, directListStyles } from './components';
 import { useMessageUnread } from './MessageUnreadProvider';
 import { useFocusedPolling } from './useFocusedPolling';
 export function PartnersScreen() {
@@ -102,12 +102,11 @@ export function PartnersScreen() {
   };
   return (
     <RoomPage direct hidePreviewIndicator>
-      <MainPageTitle title={t('navPartners')} />
-      {(loading || items.length > 0) && (
-        <View style={styles.summary}>
-          <Text style={styles.heading}>{t('partnersAvailable')}</Text>
-        </View>
-      )}
+      <MainPageTitle
+        title={t('navPartners')}
+        style={directListStyles.heading}
+        textStyle={directListStyles.headingText}
+      />
       {loading ? (
         <ActivityIndicator style={styles.center} color={directColors.violet} />
       ) : items.length === 0 ? (
@@ -122,7 +121,6 @@ export function PartnersScreen() {
           keyExtractor={(item) => item.userId}
           renderItem={({ item }) => (
             <PeerRow
-              variant="partner"
               name={item.displayName}
               avatar={item.avatarUrl}
               detail={item.cefrLevel.replaceAll('_', '–') + ' · ' + t('directAvailable')}
@@ -133,7 +131,7 @@ export function PartnersScreen() {
           refreshing={loading}
           onRefresh={() => void refresh()}
           onEndReached={() => void moreItems()}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={directListStyles.list}
           ListEmptyComponent={<Text style={styles.empty}>{t(error ?? 'partnersEmpty')}</Text>}
           ListFooterComponent={
             more ? (
@@ -156,16 +154,6 @@ export function PartnersScreen() {
   );
 }
 const styles = StyleSheet.create({
-  summary: {
-    height: 30,
-    paddingHorizontal: 20,
-    paddingTop: 2,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  heading: { fontSize: 14, lineHeight: 24, fontWeight: '500', color: directColors.ink },
-  list: { flexGrow: 1, paddingBottom: 16 },
   center: { flex: 1 },
   emptyPanel: { position: 'absolute', top: 192, left: 30, right: 30, alignItems: 'center' },
   emptyText: {

@@ -1,5 +1,4 @@
 import { largeAction } from '../../components/ui/largeAction';
-import { MainPageTitle } from '../../components/ui/MainPageTitle';
 import defaultAvatar from '../../../assets/profile/default-avatar.png';
 import { AppText as Text } from '../../components/ui/AppText';
 import { useState } from 'react';
@@ -12,11 +11,13 @@ import { setLanguage, t, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useProfileDraft } from './draft';
 import { useAuth } from '../auth';
+import { useAppUpdates } from '../app-updates';
 
 export function MeScreen() {
   const language = useLanguage();
   const router = useRouter();
   const unread = useMessageUnread();
+  const updates = useAppUpdates();
   const { logout, state } = useAuth();
   const [languageError, setLanguageError] = useState(false);
   const { resetFromProfile } = useProfileDraft();
@@ -27,7 +28,6 @@ export function MeScreen() {
   const [busy, setBusy] = useState(false);
   return (
     <RoomPage direct ambient hidePreviewIndicator>
-      <MainPageTitle title={t('meTitle')} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.settings}>
           <TouchableOpacity
@@ -44,7 +44,7 @@ export function MeScreen() {
               }
               style={styles.photo}
             />
-            <Text style={styles.profileName}>
+            <Text style={styles.profileName} numberOfLines={1} ellipsizeMode="tail">
               {state.kind === 'signedIn' ? state.me.profile?.displayName : ''}
             </Text>
           </TouchableOpacity>
@@ -54,15 +54,12 @@ export function MeScreen() {
                 key={value}
                 accessibilityRole="button"
                 accessibilityState={{ selected: language === value }}
+                hitSlop={{ top: 9, bottom: 9, left: 0, right: 0 }}
                 onPress={() => {
                   setLanguageError(false);
                   void setLanguage(value).catch(() => setLanguageError(true));
                 }}
-                style={[
-                  styles.language,
-                  { width: value === 'zh' ? 102 : 112 },
-                  language === value && styles.languageSelected,
-                ]}
+                style={[styles.language, { width: value === 'zh' ? 102 : 112 }]}
               >
                 <Text style={styles.languageText}>
                   {value === 'zh' ? '\u4e2d\u6587' : 'English'}
@@ -90,13 +87,6 @@ export function MeScreen() {
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.item}
-            onPress={() => router.push('/me/reports')}
-          >
-            <Text style={styles.title}>{t('myReports')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={styles.item}
             onPress={() => router.push('/me/restrictions')}
           >
             <Text style={styles.title}>{t('meRestrictions')}</Text>
@@ -104,13 +94,32 @@ export function MeScreen() {
           <TouchableOpacity accessibilityRole="button" style={styles.item} onPress={editProfile}>
             <Text style={styles.title}>{t('editProfile')}</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            style={styles.item}
+            onPress={() => router.push('/me/reports')}
+          >
+            <Text style={styles.title}>{t('myReports')}</Text>
+          </TouchableOpacity>
+          {updates.supported && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              style={styles.item}
+              disabled={updates.checking}
+              onPress={updates.check}
+            >
+              <Text style={styles.title}>
+                {t(updates.checking ? 'updateChecking' : 'updateCheck')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
       <View style={styles.logoutArea}>
         <TouchableOpacity
           accessibilityRole="button"
           disabled={busy}
-          style={[styles.item, styles.exit]}
+          style={styles.exit}
           onPress={() => {
             if (busy) return;
             setBusy(true);
@@ -125,31 +134,54 @@ export function MeScreen() {
   );
 }
 const styles = StyleSheet.create({
-  settings: { paddingHorizontal: 20, paddingTop: 16, gap: 20 },
-  profile: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  settings: { paddingHorizontal: 20, gap: 14 },
+  profile: { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 3, gap: 8 },
   photo: { width: 52, height: 52, borderRadius: 26 },
-  profileName: { fontSize: 18, color: tokens.color.foreground, fontWeight: '700' },
-  languages: { flexDirection: 'row', gap: 8 },
+  profileName: {
+    flex: 1,
+    minWidth: 0,
+    marginBottom: 6,
+    fontSize: 18,
+    lineHeight: 27,
+    color: tokens.color.headingInk,
+    fontWeight: '700',
+  },
+  languages: { height: 42, flexDirection: 'row', gap: 8 },
   language: {
-    height: 42,
+    height: 27,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 18,
     backgroundColor: tokens.color.purpleSoft,
   },
-  languageSelected: { backgroundColor: tokens.color.purpleSoft },
   languageText: { color: tokens.color.purple, fontSize: 14, fontWeight: '500', lineHeight: 20 },
-  list: { paddingHorizontal: 37, paddingTop: 24, gap: 5 },
+  list: {
+    marginHorizontal: 20,
+    borderTopWidth: 1,
+    borderColor: tokens.color.divider,
+  },
   logoutArea: { paddingHorizontal: 24, paddingBottom: 16 },
   item: {
-    height: 34,
-    backgroundColor: tokens.color.purpleSoft,
-    borderRadius: 17,
+    minHeight: 44,
+    borderBottomWidth: 1,
+    borderColor: tokens.color.divider,
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
+    paddingHorizontal: 6,
+    paddingVertical: 10,
     justifyContent: 'center',
   },
-  title: { color: '#5538D8', fontSize: 14, fontWeight: '500' },
-  exit: { backgroundColor: tokens.color.purple, alignItems: 'center', ...largeAction },
-  exitText: { color: '#FFFFFF' },
+  title: {
+    color: tokens.discovery.color.tabAccent,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  exit: {
+    backgroundColor: tokens.color.purple,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...largeAction,
+    borderRadius: 14,
+  },
+  exitText: { color: tokens.color.panel },
 });

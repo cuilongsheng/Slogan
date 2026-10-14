@@ -44,7 +44,11 @@ export function BottomNavigation({
             source={icons[index]}
             style={styles.icon}
             tintColor={
-              active === index ? tokens.discovery.color.tabAccent : tokens.discovery.color.tabMuted
+              active === index
+                ? tokens.navigation.color.active
+                : index === 0
+                  ? tokens.navigation.color.discoverIcon
+                  : tokens.navigation.color.icon
             }
           />
           {index === 2 && unreadMessages > 0 && (
@@ -60,20 +64,18 @@ export function BottomNavigation({
 }
 const styles = StyleSheet.create({
   nav: {
-    height: 80,
+    height: 61,
     flexShrink: 0,
-    borderTopWidth: 1,
-    borderColor: tokens.discovery.color.navBorder,
     flexDirection: 'row',
     paddingHorizontal: 16,
     backgroundColor: tokens.color.panel,
   },
-  item: { flex: 1, minWidth: 0, height: 62, marginTop: 5, alignItems: 'center' },
+  item: { flex: 1, minWidth: 0, height: 58, marginTop: 3, alignItems: 'center' },
   icon: { width: 24, height: 24, marginTop: 5 },
   label: {
-    marginTop: 9,
+    marginTop: 4,
     textAlign: 'center',
-    color: tokens.discovery.color.tabMuted,
+    color: tokens.navigation.color.label,
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 16,
@@ -91,5 +93,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: { fontSize: 10, lineHeight: 14, color: tokens.color.foreground, fontWeight: '700' },
-  selected: { color: tokens.discovery.color.tabAccent },
+  selected: { color: tokens.navigation.color.active },
 });

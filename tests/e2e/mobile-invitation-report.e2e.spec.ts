@@ -97,7 +97,7 @@ test('two independent pages receive only their own invites; later/reopen, declin
     await receiver.close();
   }
 });
-test('Me retains profile and language beneath a 16px title; logout is 342×46 and history refresh keeps current progress', async ({
+test('Me keeps compact profile and language without a title; logout is 342×46 and history refresh keeps current progress', async ({
   page,
 }) => {
   await main(page);
@@ -117,12 +117,12 @@ test('Me retains profile and language beneath a 16px title; logout is 342×46 an
     route.fulfill({ json: { items: [{ ...report, status }], nextCursor: null } }),
   );
   await page.goto(`${origin}/me`);
-  await expect(page.getByRole('heading', { name: '我的', exact: true })).toHaveCSS(
-    'font-size',
-    '16px',
-  );
+  await expect(page.getByRole('heading', { name: '我的', exact: true })).toHaveCount(0);
   await expect(page.getByText('Preview A', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '中文', exact: true })).toBeVisible();
+  expect(await page.getByRole('button', { name: '中文', exact: true }).boundingBox()).toMatchObject(
+    { height: 27 },
+  );
   const logout = page.getByRole('button', { name: '退出', exact: true });
   expect(await logout.boundingBox()).toMatchObject({ x: 24, width: 342, height: 46 });
   await page.evaluate(() => document.fonts.ready);

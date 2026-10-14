@@ -9,6 +9,7 @@ export const getLocales = () => {
   return [{ languageTag: english ? 'en-US' : 'zh-CN', languageCode: english ? 'en' : 'zh' }];
 };
 export const randomUUID = () => crypto.randomUUID();
+export const usePathname = () => location.pathname;
 export const useRouter = () => ({
   replace: (url) => history.replaceState(null, '', url),
   push: (url) => history.pushState(null, '', url),

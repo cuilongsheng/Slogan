@@ -309,5 +309,6 @@ test('main tab headings are centered and incoming messages show a navigation bad
   await expect(page.getByRole('button', { name: 'Messages, 4 unread', exact: true })).toBeVisible();
   await page.goto('/?screen=me&language=en');
   await expect(page.getByRole('button', { name: 'Edit profile', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Me', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Me', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Edit profile', exact: true })).toBeVisible();
 });
