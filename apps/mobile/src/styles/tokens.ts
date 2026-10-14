@@ -9,6 +9,7 @@ export const tokens = {
     authHintInk: '#898595',
     muted: '#787587',
     border: '#E0DEED',
+    divider: '#EFEFF3',
     purple: '#6546EC',
     purpleSoft: '#F2EDFF',
     coral: '#FF6F70',
