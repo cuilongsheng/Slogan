@@ -20,7 +20,7 @@ import { t, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
 import { DirectApi, directError, type Conversation } from './api';
-import { PeerRow, directColors } from './components';
+import { PeerRow, directColors, directListStyles } from './components';
 import { useMessageUnread } from './MessageUnreadProvider';
 import { useFocusedPolling } from './useFocusedPolling';
 export function MessagesScreen() {
@@ -111,7 +111,11 @@ export function MessagesScreen() {
   };
   return (
     <RoomPage direct hidePreviewIndicator>
-      <MainPageTitle title={t('navMessages')} />
+      <MainPageTitle
+        title={t('navMessages')}
+        style={directListStyles.heading}
+        textStyle={directListStyles.headingText}
+      />
       {error && items.length === 0 ? (
         <View style={{ flex: 1 }}>
           <View style={styles.failure}>
@@ -133,7 +137,7 @@ export function MessagesScreen() {
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={directListStyles.list}
           refreshing={loading}
           onRefresh={() => void load()}
           onEndReached={() => void more()}
@@ -214,7 +218,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  list: { flexGrow: 1, paddingTop: 28, paddingBottom: 16 },
   empty: {
     fontSize: 14,
     lineHeight: 24,
