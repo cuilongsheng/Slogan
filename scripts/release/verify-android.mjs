@@ -40,6 +40,27 @@ assert.match(
   /uses-permission: name='android\.permission\.RECORD_AUDIO'/,
   'Voice APK must declare microphone permission',
 );
+assert.match(
+  badging,
+  /uses-permission: name='android\.permission\.REQUEST_INSTALL_PACKAGES'/,
+  'Updater APK must declare installation-source permission',
+);
+assert(
+  manifest.includes('expo.modules.sloganupdater.UpdateFileProvider'),
+  'Updater FileProvider missing',
+);
+assert(manifest.includes('com.slogan.mobile.slogan-updates'), 'Updater provider authority missing');
+const dexPaths = execFileSync('unzip', ['-Z1', apk], { encoding: 'utf8' })
+  .split('\n')
+  .filter((path) => /^classes\d*\.dex$/.test(path));
+assert(
+  dexPaths.some((path) =>
+    execFileSync('unzip', ['-p', apk, path], { maxBuffer: 64 * 1024 * 1024 }).includes(
+      Buffer.from('expo/modules/sloganupdater/SloganUpdaterModule'),
+    ),
+  ),
+  'Native updater not linked into APK',
+);
 const softInputMode = manifest.match(/windowSoftInputMode[^\n]*=0x([a-f0-9]+)/)?.[1];
 assert.equal(
   parseInt(softInputMode ?? '', 16) & 0xf0,
@@ -101,6 +122,7 @@ const metadata = {
   certificateSha256: certificate,
   launcherResources,
   roomUiRevision: 'direct-entry-v2',
+  updaterRevision: 'controlled-apk-v1',
   builtAt: new Date().toISOString(),
   deviceVerified: false,
 };

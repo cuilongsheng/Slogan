@@ -56,9 +56,10 @@ test('compact create preserves password and scheduled controls and uses aligned 
   await page.setViewportSize({ width: 360, height: 540 });
   await expect(page.getByRole('button', { name: '创建预约房间', exact: true })).toBeVisible();
 });
-test('My has a centered title and retains profile and language controls', async ({ page }) => {
+test('Me omits the title and retains profile editing and language controls', async ({ page }) => {
   await page.goto('/?screen=me&language=en');
-  await expect(page.getByRole('heading', { name: 'Me', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Me', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'English', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Edit profile', exact: true })).toBeVisible();
   await capture(page, 'me-en');
 });

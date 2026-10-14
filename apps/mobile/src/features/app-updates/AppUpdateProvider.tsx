@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { usePathname } from 'expo-router';
 import { AppState, Image, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import sloganLogo from '../../../assets/icons/slogan-mark-v3.png';
@@ -37,7 +45,9 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
     ((auth.kind === 'signedIn' && mainPages.has(path)) ||
       (auth.kind === 'signedOut' && path === '/sign-in'));
   const safeRef = useRef(safe);
-  safeRef.current = safe;
+  useLayoutEffect(() => {
+    safeRef.current = safe;
+  }, [safe]);
   const [ui, setUi] = useState<UpdateUi | null>(null);
   const uiRef = useRef<UpdateUi | null>(null);
   const [checking, setChecking] = useState(false);
@@ -48,6 +58,10 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
   const nextCheck = useRef(0);
   const dismissed = useRef(new Set<number>());
   const operation = useRef(0);
+  const invalidate = useCallback(() => {
+    operation.current++;
+    appUpdates.cancel();
+  }, []);
   const awaitingPermission = useRef(false);
   const installing = useRef(false);
   const show = useCallback((value: UpdateUi | null) => {
@@ -132,12 +146,11 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
     });
     return () => {
       alive.current = false;
-      operation.current++;
-      appUpdates.cancel();
+      invalidate();
       removeProgress();
       listener.remove();
     };
-  }, [install, show]);
+  }, [install, show, invalidate]);
 
   // Calls/rooms take precedence, including incoming calls detected by the root observer.
   useEffect(() => {
@@ -287,7 +300,9 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
               <>
                 <View style={styles.progressRow}>
                   <View
+                    accessible
                     accessibilityRole="progressbar"
+                    accessibilityLabel={t('updateDownloading')}
                     accessibilityValue={{ min: 0, max: 100, now: ui?.progress ?? 0 }}
                     style={styles.bar}
                   >
@@ -302,7 +317,8 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
                   onPress={() => {
                     operation.current++;
                     appUpdates.cancel();
-                    show({ stage: 'available', release: ui?.release });
+                    const release = uiRef.current?.release;
+                    show(release ? { stage: 'available', release } : null);
                   }}
                 >
                   <Text style={styles.secondaryText}>{t('updateCancel')}</Text>
