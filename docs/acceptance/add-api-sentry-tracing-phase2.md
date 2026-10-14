@@ -22,4 +22,4 @@
 
 ## 云端证据边界
 
-原提交的 Preview 与 Production 仍能响应只读请求；Sentry 中已看到新 trace。修复提交的两个环境发布及实际 /v1 接口 trace 尚待本轮后续验证，以发布记录补充。未进行真实 5xx 故障注入、source map 上传或通知测试。NODE_ENV 优先意味着 Preview 也可标为 production；两个部署不能仅凭该标签区分。
+原提交的 Preview 与 Production 仍能响应只读请求；Sentry 中已看到新 trace。修复提交 7e0eda53be4a738363e34dc81a0c8747909eb6ed 已完成两个环境云端构建及发布。Preview 20 次和 Production 40 次只读能力请求均返回 200，两个环境未登录 /v1/me 均为 401；Sentry 的两个独立请求时间窗口中分别确认 GET /v1/auth/capabilities、http.route、状态 200、client_sample_rate=0.1 和耗时。JSON 证据见 [cloud-tracing.json](add-api-sentry-tracing/cloud-tracing.json)，发布详情见 [发布记录](../releases/2026-10-15-api-sentry-tracing.md)。未进行真实 5xx 故障注入、source map 上传或通知测试。NODE_ENV 优先意味着 Preview 也可标为 production；两个部署不能仅凭该标签区分。

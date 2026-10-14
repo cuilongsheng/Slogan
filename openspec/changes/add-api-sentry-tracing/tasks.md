@@ -10,4 +10,4 @@
 用户后续授权配置及发布 Preview / Production，并要求继续第二步中的性能追踪。原 1.4 保留当时授权边界。
 
 - [x] 2.1 修复出站白名单误删 /v1 路由模板的问题，仅保留 instrumentation 提供的 http.route，不从原始 URL 推导；验证带版本前缀的根 span 接口名称和隐私白名单。
-- [ ] 2.2 隔离提交验证后发布两个环境，用只读请求验证真实 Sentry trace，记录环境、采样率和耗时证据；不新增公开故障接口，不启用 Logs/Profiling/Metrics。
+- [x] 2.2 隔离提交验证后发布两个环境，用只读请求验证真实 Sentry trace，记录环境、采样率和耗时证据；不新增公开故障接口，不启用 Logs/Profiling/Metrics。

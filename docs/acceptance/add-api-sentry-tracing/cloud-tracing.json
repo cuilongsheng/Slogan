@@ -1,0 +1,131 @@
+{
+  "commit": "7e0eda53be4a738363e34dc81a0c8747909eb6ed",
+  "project": "node-nestjs",
+  "projectId": "4512254552047696",
+  "preview": {
+    "httpSmoke": {
+      "environment": "preview",
+      "deploymentId": "dpl_FKsceaikaWSXgSgF6te3dKmweffi",
+      "url": "https://slogan-rlunu6bzu-cuilongshengs-projects.vercel.app",
+      "startedAt": "2026-10-14T18:04:43.125195+00:00",
+      "completedAt": "2026-10-14T18:05:40.464660+00:00",
+      "capabilitiesStatuses": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "unauthenticatedMeStatus": 401,
+      "unauthenticatedMeCode": "ACCESS_TOKEN_INVALID"
+    },
+    "sentryTrace": {
+      "traceId": "55baf9c78a944bd78c4fa2833df98136",
+      "spanId": "94dbc579ad28732c",
+      "startTimestamp": 1792001087.1422,
+      "route": "/v1/auth/capabilities",
+      "name": "GET /v1/auth/capabilities",
+      "httpStatus": 200,
+      "environment": "production",
+      "clientSampleRate": 0.1,
+      "durationMs": 79.257011,
+      "traceUrl": "https://tonycui.sentry.io/explore/traces/trace/55baf9c78a944bd78c4fa2833df98136/?project=4512254552047696&timestamp=1792001087"
+    }
+  },
+  "production": {
+    "httpSmoke": {
+      "environment": "production",
+      "deploymentId": "dpl_MjMguLmRwodm9PTRGE4ap2rk6XgW",
+      "url": "https://slogan-j596ya4jv-cuilongshengs-projects.vercel.app",
+      "startedAt": "2026-10-14T18:07:30.707718+00:00",
+      "completedAt": "2026-10-14T18:08:31.742103+00:00",
+      "capabilitiesStatuses": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "unauthenticatedMeStatus": 401,
+      "unauthenticatedMeCode": "ACCESS_TOKEN_INVALID"
+    },
+    "additionalReadOnlyProbe": {
+      "environment": "production",
+      "deploymentId": "dpl_MjMguLmRwodm9PTRGE4ap2rk6XgW",
+      "url": "https://slogan-j596ya4jv-cuilongshengs-projects.vercel.app",
+      "startedAt": "2026-10-14T18:10:01.313518+00:00",
+      "completedAt": "2026-10-14T18:10:53.368319+00:00",
+      "capabilitiesStatuses": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "unauthenticatedMeStatus": 401,
+      "unauthenticatedMeCode": "ACCESS_TOKEN_INVALID"
+    },
+    "sentryTrace": {
+      "traceId": "bdfc74193b6b4bbd9981c914eb22fee2",
+      "spanId": "9efc7818b86e80ae",
+      "startTimestamp": 1792001303.749084,
+      "route": "/v1/auth/capabilities",
+      "name": "GET /v1/auth/capabilities",
+      "httpStatus": 200,
+      "environment": "production",
+      "clientSampleRate": 0.1,
+      "durationMs": 4.414082,
+      "traceUrl": "https://tonycui.sentry.io/explore/traces/trace/bdfc74193b6b4bbd9981c914eb22fee2/?project=4512254552047696&timestamp=1792001303"
+    },
+    "aliasSmoke": {
+      "url": "https://slogan-api-pi.vercel.app",
+      "route": "/v1/auth/capabilities",
+      "httpStatus": 200
+    }
+  }
+}
