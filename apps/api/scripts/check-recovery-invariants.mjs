@@ -49,7 +49,7 @@ const checks = [
   [
     'safety',
     `SELECT COUNT(*)::int AS count FROM (
-      SELECT c.id FROM "SafetyCase" c LEFT JOIN "Report" r ON r.id=c."reportId" LEFT JOIN "Room" room ON room.id=c."roomId" LEFT JOIN "User" u ON u.id=c."targetUserId" WHERE r.id IS NULL OR (c."roomId" IS NOT NULL AND room.id IS NULL) OR u.id IS NULL
+      SELECT c.id FROM "SafetyCase" c LEFT JOIN "Report" r ON r.id=c."reportId" LEFT JOIN "Room" room ON room.id=c."roomId" LEFT JOIN "User" u ON u.id=c."targetUserId" WHERE r.id IS NULL OR (c."roomId" IS NOT NULL AND room.id IS NULL) OR (c."targetUserId" IS NOT NULL AND u.id IS NULL)
       UNION ALL SELECT sr.id FROM "SafetyRestriction" sr LEFT JOIN "SafetyCase" c ON c.id=sr."caseId" LEFT JOIN "User" u ON u.id=sr."userId" WHERE c.id IS NULL OR u.id IS NULL
       UNION ALL SELECT a.id FROM "SafetyAppeal" a LEFT JOIN "SafetyRestriction" sr ON sr.id=a."restrictionId" LEFT JOIN "User" u ON u.id=a."userId" WHERE sr.id IS NULL OR u.id IS NULL
     ) invalid`,
