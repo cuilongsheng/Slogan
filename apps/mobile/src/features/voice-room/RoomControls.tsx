@@ -820,7 +820,6 @@ const styles = StyleSheet.create({
   },
   categories: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   category: {
-    height: tokens.control.height,
     width: '48.5%',
     backgroundColor: '#49395F',
     borderRadius: 20,

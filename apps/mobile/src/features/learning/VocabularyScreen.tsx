@@ -370,8 +370,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chip: {
-    justifyContent: 'center',
-    height: tokens.control.height,
     borderColor: tokens.color.border,
     borderWidth: 1,
     borderRadius: 17,

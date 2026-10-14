@@ -6,7 +6,7 @@ Provide consistent, readable mobile input and action dimensions across pages and
 
 ### Requirement: Regular controls have consistent default height
 
-Mobile single-line form inputs and regular action buttons, option chips and composer send/microphone controls MUST have a 46 logical-pixel visual height. Text and placeholders MUST remain fully visible. Large page actions MUST retain their approved responsive maximum width of 342. Navigation bars, avatar/member/list targets and inline text links retain their separately designed geometry.
+Mobile single-line form inputs and regular action buttons and composer send/microphone controls MUST have a 46 logical-pixel visual height. Text and placeholders MUST remain fully visible. Large page actions MUST retain their approved responsive maximum width of 342. Selection controls (including language, level, capacity, access, room mode, profile preferences, filters and report categories), navigation bars, avatar/member/list targets and inline text links retain their separately designed geometry.
 
 #### Scenario: Open a form or action overlay
 
@@ -22,4 +22,4 @@ Me MUST show the avatar to the left of a display-name column with language actio
 
 - **WHEN** the authenticated user opens Me
 - **THEN** avatar and name/language controls use the revised side-by-side arrangement without a page heading
-- **AND** language selection continues to persist and regular action heights follow the shared sizing requirement
+- **AND** language selection continues to persist and language options retain their original dimensions while action buttons follow the shared sizing requirement

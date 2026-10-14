@@ -469,8 +469,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: 12 },
   choice: {
-    height: tokens.control.height,
-    minHeight: tokens.control.height,
+    minHeight: 42,
     borderRadius: 14,
     paddingHorizontal: 15,
     alignItems: 'center',

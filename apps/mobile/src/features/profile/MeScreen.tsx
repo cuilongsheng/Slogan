@@ -60,6 +60,7 @@ export function MeScreen() {
                     key={value}
                     accessibilityRole="button"
                     accessibilityState={{ selected: language === value }}
+                    hitSlop={{ top: 14, bottom: 14, left: 0, right: 0 }}
                     onPress={() => {
                       setLanguageError(false);
                       void setLanguage(value).catch(() => setLanguageError(true));
@@ -154,11 +155,11 @@ const styles = StyleSheet.create({
   },
   languages: { flexDirection: 'row', gap: 8, marginTop: 7 },
   language: {
-    height: tokens.control.height,
+    height: 18,
     width: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: tokens.control.radius,
+    borderRadius: 18,
     backgroundColor: tokens.color.purpleSoft,
   },
   languageText: { color: tokens.color.purple, fontSize: 12, fontWeight: '500', lineHeight: 20 },

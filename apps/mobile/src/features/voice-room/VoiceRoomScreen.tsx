@@ -1473,7 +1473,6 @@ const styles = StyleSheet.create({
   },
   extensionNoticeText: { color: '#E7DFFA', fontSize: 12, lineHeight: 18 },
   successorOption: {
-    height: tokens.control.height,
     minHeight: 40,
     borderRadius: 16,
     backgroundColor: '#EEE9F7',
