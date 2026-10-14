@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'expo-router';
-import { AppState, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { AppState, Image, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import sloganLogo from '../../../assets/icons/slogan-mark-v3.png';
 import { AppText as Text } from '../../components/ui/AppText';
 import { useForegroundPolling } from '../../hooks/useForegroundPolling';
 import { appUpdates } from '../../services/appUpdates';
@@ -227,19 +228,47 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
         onRequestClose={later}
       >
         <View style={styles.overlay}>
-          <View accessibilityRole="alert" style={styles.card}>
-            <Text accessibilityRole="header" style={styles.title}>
-              {t(title)}
-            </Text>
+          <View
+            accessibilityRole="alert"
+            style={[styles.card, stage === 'downloading' && styles.downloadCard]}
+          >
+            <View style={styles.heading}>
+              <Image
+                source={sloganLogo}
+                resizeMode="contain"
+                style={styles.logo}
+                accessible={false}
+              />
+              <Text
+                accessibilityRole="header"
+                style={[styles.title, stage !== 'downloading' && styles.titleInset]}
+              >
+                {t(title)}
+              </Text>
+            </View>
             {ui?.release && (
-              <Text style={styles.body}>
+              <Text
+                style={[
+                  styles.body,
+                  styles.version,
+                  stage === 'downloading' ? styles.downloadBodyInset : styles.bodyInset,
+                ]}
+              >
                 {tf('updateVersionSize', {
                   version: ui.release.version,
                   size: Math.ceil(ui.release.bytes / (1024 * 1024)),
                 })}
               </Text>
             )}
-            <Text style={styles.body}>
+            <Text
+              style={[
+                styles.body,
+                styles.description,
+                stage !== 'downloading' && styles.bodyInset,
+                stage === 'downloading' && styles.downloadDescription,
+                stage === 'downloading' && styles.downloadBodyInset,
+              ]}
+            >
               {stage === 'current'
                 ? tf('updateInstalledVersion', { version: ui?.installedVersion ?? '' })
                 : t(
@@ -256,17 +285,20 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
             </Text>
             {stage === 'downloading' ? (
               <>
-                <View
-                  accessibilityRole="progressbar"
-                  accessibilityValue={{ min: 0, max: 100, now: ui?.progress ?? 0 }}
-                  style={styles.bar}
-                >
-                  <View style={[styles.progress, { width: `${ui?.progress ?? 0}%` }]} />
+                <View style={styles.progressRow}>
+                  <View
+                    accessibilityRole="progressbar"
+                    accessibilityValue={{ min: 0, max: 100, now: ui?.progress ?? 0 }}
+                    style={styles.bar}
+                  >
+                    <View style={[styles.progress, { width: `${ui?.progress ?? 0}%` }]} />
+                  </View>
+                  <Text style={[styles.body, styles.percentage]}>{ui?.progress ?? 0}%</Text>
                 </View>
-                <Text style={styles.body}>{ui?.progress ?? 0}%</Text>
                 <TouchableOpacity
                   accessibilityRole="button"
-                  style={[styles.action, styles.secondary]}
+                  hitSlop={{ top: 4, bottom: 4 }}
+                  style={[styles.action, styles.secondary, styles.cancel]}
                   onPress={() => {
                     operation.current++;
                     appUpdates.cancel();
@@ -279,7 +311,8 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
             ) : stage === 'current' ? (
               <TouchableOpacity
                 accessibilityRole="button"
-                style={[styles.action, styles.primary]}
+                hitSlop={{ top: 4, bottom: 4 }}
+                style={[styles.action, styles.primary, styles.singleAction]}
                 onPress={later}
               >
                 <Text style={styles.primaryText}>{t('directConfirm')}</Text>
@@ -288,6 +321,7 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
               <View style={styles.actions}>
                 <TouchableOpacity
                   accessibilityRole="button"
+                  hitSlop={{ top: 4, bottom: 4 }}
                   style={[styles.action, styles.secondary, styles.paired]}
                   onPress={later}
                 >
@@ -295,6 +329,7 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
                 </TouchableOpacity>
                 <TouchableOpacity
                   accessibilityRole="button"
+                  hitSlop={{ top: 4, bottom: 4 }}
                   style={[styles.action, styles.primary, styles.paired]}
                   onPress={act}
                 >
@@ -320,26 +355,62 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 342,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 24,
     borderRadius: 24,
     backgroundColor: tokens.color.panel,
-    gap: 16,
   },
-  title: { fontSize: 16, lineHeight: 24, fontWeight: '700', color: tokens.color.headingInk },
+  downloadCard: { paddingBottom: 34 },
+  heading: { minHeight: 80, flexDirection: 'row', alignItems: 'flex-start', gap: 20 },
+  logo: { width: 80, height: 80, flexShrink: 0, marginLeft: -1 },
+  title: {
+    flex: 1,
+    minWidth: 0,
+    marginTop: 16,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '700',
+    color: tokens.color.headingInk,
+  },
+  titleInset: { marginLeft: 11 },
   body: { fontSize: 14, lineHeight: 22, color: tokens.color.headingInk },
-  actions: { flexDirection: 'row', gap: 12 },
+  version: { marginTop: 9 },
+  description: { marginTop: 9 },
+  bodyInset: { marginLeft: 11 },
+  downloadBodyInset: { marginLeft: 1 },
+  downloadDescription: { marginTop: 16 },
+  actions: { marginTop: 23, flexDirection: 'row', gap: 12 },
   action: {
-    height: 46,
+    height: 36,
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
   paired: { flex: 1 },
+  singleAction: { marginTop: 23 },
+  cancel: { marginTop: 17, marginLeft: -9, width: '100%' },
   primary: { backgroundColor: tokens.color.purple },
   secondary: { backgroundColor: tokens.color.purpleSoft },
   primaryText: { fontSize: 14, lineHeight: 20, color: tokens.color.panel, fontWeight: '500' },
   secondaryText: { fontSize: 14, lineHeight: 20, color: tokens.color.purple, fontWeight: '500' },
-  bar: { height: 6, borderRadius: 3, overflow: 'hidden', backgroundColor: tokens.color.purpleSoft },
+  progressRow: {
+    marginTop: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+    paddingLeft: 1,
+    paddingRight: 9,
+  },
+  percentage: { minWidth: 29, flexShrink: 0 },
+  bar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    backgroundColor: tokens.color.purpleSoft,
+    transform: [{ translateY: 3 }],
+  },
   progress: { height: 6, borderRadius: 3, backgroundColor: tokens.color.purple },
 });

@@ -21,9 +21,17 @@ New editable section `215:3248` / Android app updates / Optional upgrade:
 | Check failure | `217:3329` | Manual check retry |
 | Me manual entry | `217:3340` | MeScreen compact Check for updates row |
 
-Target frames: 390 × 844, centered dialog width342, padding24, gaps16, title16/24, body14/22, action height46/radius23. Buttons are component instances; canvas, ink, lavender and purple use existing variable bindings. No rasterized full-screen design was imported. Figma composition screenshot is design inspection only, not runtime acceptance.
+Target frames: 390 × 844, dialog width342/radius24, title16/24 and body14/22. Buttons are component instances; canvas, ink, lavender and purple use existing variable bindings. No rasterized full-screen design was imported. Figma composition screenshots are design inspection only, not runtime acceptance.
 
 Design capture: [update states](figma/update-states.png).
+
+## Latest owner update-only visual correction
+
+On 2026-10-14, the owner revised Available `215:3249` / dialog `215:3251` and Downloading `215:3260` / dialog `215:3262`, then explicitly restricted the implementation to app-update dialogs. Read both originals through Desktop Bridge and preserve them. Latest source captures: [available](figma/branded-available-original.png), [downloading](figma/branded-downloading-original.png). These replace the earlier unbranded layout as the template authority.
+
+Use the existing `slogan-mark-v3.png` asset, 80x80 at the left of the header, with the16/24 bold heading beside it. The short-copy reference dialogs are342x233 and342x271. Version, description and action spacing follow each state: available uses9px text gaps and23px action gap; downloading uses16px description gap,5px inline-progress gap and17px cancel gap. Progress track6/radius3 and percentage14/22 share a row. Compact dialog controls have36px visual height with expanded44px touch hit areas; page-button dimensions remain unchanged.
+
+All seven update states reuse this branded rendering block and retain their prior handlers. The other original state frames still document behavior/content; the owner's two updated frames define the shared appearance. Header height can grow for long localized text, and the progress track shrinks as percentages grow. Only update rendering/styles and its planning/evidence records changed; no other app dialogs were modified. Runtime/native visual verification is still deferred.
 
 ## Source review
 
