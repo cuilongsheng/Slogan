@@ -12,11 +12,13 @@ import { setLanguage, t, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useProfileDraft } from './draft';
 import { useAuth } from '../auth';
+import { useAppUpdates } from '../app-updates';
 
 export function MeScreen() {
   const language = useLanguage();
   const router = useRouter();
   const unread = useMessageUnread();
+  const updates = useAppUpdates();
   const { logout, state } = useAuth();
   const [languageError, setLanguageError] = useState(false);
   const { resetFromProfile } = useProfileDraft();
@@ -104,6 +106,18 @@ export function MeScreen() {
           <TouchableOpacity accessibilityRole="button" style={styles.item} onPress={editProfile}>
             <Text style={styles.title}>{t('editProfile')}</Text>
           </TouchableOpacity>
+          {updates.supported && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              style={styles.item}
+              disabled={updates.checking}
+              onPress={updates.check}
+            >
+              <Text style={styles.title}>
+                {t(updates.checking ? 'updateChecking' : 'updateCheck')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
       <View style={styles.logoutArea}>

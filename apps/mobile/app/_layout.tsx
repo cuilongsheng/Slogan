@@ -17,6 +17,7 @@ import { RoomExitProvider } from '../src/features/voice-room/exits';
 import { MessageUnreadProvider } from '../src/features/direct';
 import { PresenceHeartbeat } from '../src/features/social/PresenceHeartbeat';
 import { RoomInvitationObserver } from '../src/features/social/RoomInvitationObserver';
+import { AppUpdateProvider } from '../src/features/app-updates';
 
 export default function RootLayout() {
   const [localeReady, setLocaleReady] = useState(false);
@@ -33,20 +34,22 @@ export default function RootLayout() {
   if (!loaded || !localeReady) return <BrandLoading />;
   return (
     <AuthProvider>
-      <MessageUnreadProvider>
-        <PresenceHeartbeat />
-        <DirectCallObserver />
-        <RoomExitProvider>
-          <EmailFlowProvider>
-            <ProfileDraftProvider>
-              <JoinProvider>
-                <Stack screenOptions={{ headerShown: false }} />
-                <RoomInvitationObserver />
-              </JoinProvider>
-            </ProfileDraftProvider>
-          </EmailFlowProvider>
-        </RoomExitProvider>
-      </MessageUnreadProvider>
+      <AppUpdateProvider>
+        <MessageUnreadProvider>
+          <PresenceHeartbeat />
+          <DirectCallObserver />
+          <RoomExitProvider>
+            <EmailFlowProvider>
+              <ProfileDraftProvider>
+                <JoinProvider>
+                  <Stack screenOptions={{ headerShown: false }} />
+                  <RoomInvitationObserver />
+                </JoinProvider>
+              </ProfileDraftProvider>
+            </EmailFlowProvider>
+          </RoomExitProvider>
+        </MessageUnreadProvider>
+      </AppUpdateProvider>
     </AuthProvider>
   );
 }
