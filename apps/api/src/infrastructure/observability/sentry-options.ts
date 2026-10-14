@@ -22,7 +22,7 @@ export function sanitizeSentrySpan(span: Span): Span {
       : undefined;
   // Only instrumentation-provided route templates; never raw URLs or SQL descriptions.
   const httpRoute =
-    typeof route === 'string' && /^\/[a-zA-Z_/:.-]{0,160}$/.test(route) ? route : undefined;
+    typeof route === 'string' && /^\/[a-zA-Z0-9_/:.-]{0,160}$/.test(route) ? route : undefined;
   const status = span.attributes['http.response.status_code'];
   return {
     trace_id: span.trace_id,

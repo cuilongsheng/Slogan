@@ -35,4 +35,12 @@ pnpm --filter @slogan/api test:sentry
 
 `test:sentry` 使用独立测试 module 和内存 transport，不接云端，也不会往 AppModule 注册测试路由。验证自动 HTTP spans、500/503 各一次错误、403 不上报，以及 Logs/Metrics/私有内容不出站。
 
-关闭全部 Sentry：移除对应环境的 DSN 并重新发布。只关闭 Tracing：设置采样率为 `0`。无需数据库迁移。本次授权止于 develop 本地 commit；尚未配置 Vercel 或验证 Sentry 云端接收。
+关闭全部 Sentry：移除对应环境的 DSN 并重新发布。只关闭 Tracing：设置采样率为 `0`。无需数据库迁移。
+
+## 云端性能检查
+
+用户后续已授权并完成 Preview / Production 配置与发布，参见 `docs/releases/2026-10-14-api-sentry-production.md`。原本地验收记录保留当时的证据边界。
+
+在 Sentry 的 Explore → Traces 选择 `node-nestjs`，以 `span.op:http.server` 过滤根请求 span，按 route 模板查看耗时和状态。`/v1` 中的数字必须通过模板白名单；不能从原始 URL、query 或 params 获取名称。自动采样允许一小批请求没有 trace，不能据此直接断定发送失败。
+
+遵照 NODE_ENV 优先规则，Vercel Preview 也可能显示 `production`。两个部署的云端验收使用分开的请求时间窗口，不能仅凭该标签区分环境。采样 trace 的 count 和分位数来自 span 数据，不启用 Application Metrics 产品，也不能当作完整业务成功率或真实压测结果。真实错误送达、source map 定位、通知送达仍需分别验收。

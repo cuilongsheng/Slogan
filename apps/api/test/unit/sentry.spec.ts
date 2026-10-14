@@ -113,7 +113,7 @@ describe('Sentry outbound privacy', () => {
       is_segment: true,
       attributes: {
         'sentry.op': 'http.server',
-        'http.route': '/rooms/:roomId',
+        'http.route': '/v1/rooms/:roomId',
         'http.request.method': 'GET',
         'db.query.text': 'PRIVATE_CANARY',
         'url.full': 'PRIVATE_CANARY',
@@ -127,7 +127,7 @@ describe('Sentry outbound privacy', () => {
         },
       ],
     });
-    expect(span.name).toBe('GET /rooms/:roomId');
+    expect(span.name).toBe('GET /v1/rooms/:roomId');
     expect(span.end_timestamp).toBe(2);
     expect(JSON.stringify(span)).not.toContain('PRIVATE_CANARY');
     expect(span).not.toHaveProperty('links');

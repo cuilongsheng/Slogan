@@ -26,3 +26,7 @@ API 初始化、基础设施、现有异常过滤器、SDK 依赖、配置说明
 - Backend / API
 - Test / Acceptance
 - Deployment
+
+## Subsequent authorization
+
+用户后续授权配置 Sentry/Vercel、发布 Preview 和 Production，并在 2026-10-15 要求继续原选型第二步。先完成当前 API 性能追踪的真实云端验收，包括修复 /v1 路由白名单；三端错误、通知、源码映射和语音质量聚合等更广范围不计为本 change 已完成。

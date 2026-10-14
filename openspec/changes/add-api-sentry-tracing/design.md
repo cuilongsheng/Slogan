@@ -25,3 +25,7 @@ Non-Goals: 其他客户端、worker、云端配置、通知、source map 上传�
 ## Migration Plan
 
 无需数据库迁移。后续由负责人在 Vercel 配置 SENTRY_DSN、SENTRY_TRACES_SAMPLE_RATE。回滚时移除 DSN 并重新部署以关闭初始化，或 revert 本次提交。本次仅本地提交。
+
+## Subsequent authorized cloud verification
+
+用户后续授权配置与部署两个环境，发布记录单独保存。2026-10-15 真实 Sentry span 已有 0.1 采样、environment 和耗时，但白名单的路由正则排除了数字，误删项目的 /v1 前缀。允许 instrumentation 提供的 http.route 模板中包含数字，保持其余白名单；不回退至 request.url、originalUrl 或参数值。不新增 interceptor 或改变请求执行。HTTP harness 使用与真实 API 一致的 v1 全局前缀，并验证根 span 的路由名称。

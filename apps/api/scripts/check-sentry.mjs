@@ -80,6 +80,7 @@ class HarnessModule {}
 Module({ imports: [SentryModule.forRoot()], controllers: [HarnessController] })(HarnessModule);
 const app = await NestFactory.create(HarnessModule, { logger: false });
 app.useGlobalFilters(new ApiExceptionFilter({ warn() {}, error() {} }));
+app.setGlobalPrefix('v1');
 try {
   await app.listen(0, '127.0.0.1');
   const base = await app.getUrl();
@@ -89,7 +90,7 @@ try {
     ['unavailable', 503],
     ['denied', 403],
   ]) {
-    const response = await fetch(`${base}/fixture/${path}?secret=PRIVATE_CANARY`, {
+    const response = await fetch(`${base}/v1/fixture/${path}?secret=PRIVATE_CANARY`, {
       headers: { authorization: 'Bearer PRIVATE_CANARY', cookie: 'secret=PRIVATE_CANARY' },
     });
     assert.equal(response.status, status);
@@ -109,8 +110,11 @@ try {
     'automatic incoming HTTP span required',
   );
   assert.ok(
-    spans.some((span) => span.name.includes('/fixture/ok')),
-    'HTTP route template required',
+    spans.some(
+      (span) =>
+        span.attributes['sentry.op']?.value === 'http.server' && span.name === 'GET /v1/fixture/ok',
+    ),
+    'HTTP root span must contain its route template',
   );
   assert.ok(spans.every((span) => span.attributes['sentry.environment']?.value === 'test'));
   assert.ok(
@@ -135,6 +139,10 @@ try {
       cloudDelivery: 'not tested',
     }),
   );
+} catch {
+  // Closing the SDK removes its fatal handler; assertions must still fail CI.
+  process.stderr.write('Sentry runtime verification failed\n');
+  process.exitCode = 1;
 } finally {
   await app.close();
   await Sentry.close(2000);
