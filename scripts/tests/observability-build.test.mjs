@@ -2,9 +2,36 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, access, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { buildMetadata, uploadSourceMaps, removePublicMaps } from '../observability-build.mjs';
+import {
+  buildMetadata,
+  uploadSourceMaps,
+  removePublicMaps,
+  verifyClientBuild,
+} from '../observability-build.mjs';
 import { observabilityReadiness } from '../observability-readiness.mjs';
 const sha = 'a'.repeat(40);
+test('rejects cached client metadata and any private upload token in public JavaScript', async () => {
+  const directory = await mkdtemp(`${tmpdir()}/slogan-client-metadata-`);
+  const metadata = {
+    enabled: true,
+    release: 'slogan-mobile@current',
+    build: 'current',
+    env: { EXPO_PUBLIC_SENTRY_DSN: 'SYNTHETIC_DSN', SENTRY_AUTH_TOKEN: 'PRIVATE_CANARY' },
+  };
+  try {
+    await writeFile(`${directory}/entry.js`, 'old disabled build');
+    await assert.rejects(verifyClientBuild('mobile', directory, metadata), /does not match/);
+    await writeFile(`${directory}/entry.js`, 'slogan-mobile@current SYNTHETIC_DSN PRIVATE_CANARY');
+    await assert.rejects(
+      verifyClientBuild('mobile', directory, metadata),
+      /Private upload credential/,
+    );
+    await writeFile(`${directory}/entry.js`, 'slogan-mobile@current SYNTHETIC_DSN');
+    await verifyClientBuild('mobile', directory, metadata);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 test('disabled builds need no upload secret; enabled builds bind the actual revision', () => {
   assert.equal(buildMetadata('admin', {}, sha).enabled, false);
   assert.throws(

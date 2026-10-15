@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readdir, rm } from 'node:fs/promises';
+import { readdir, rm, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -63,6 +63,30 @@ export async function removePublicMaps(directory) {
     if (entry.isDirectory()) await removePublicMaps(path);
     else if (entry.name.endsWith('.map')) await rm(path);
   }
+}
+export async function verifyClientBuild(app, directory, metadata) {
+  if (!metadata.enabled) return;
+  let releaseFound = false,
+    buildFound = false,
+    dsnFound = false;
+  const prefix = app === 'admin' ? 'VITE_' : 'EXPO_PUBLIC_';
+  const dsn = metadata.env[`${prefix}SENTRY_DSN`];
+  async function visit(path) {
+    for (const entry of await readdir(path, { withFileTypes: true })) {
+      if (entry.isDirectory()) await visit(`${path}/${entry.name}`);
+      else if (entry.name.endsWith('.js')) {
+        const content = await readFile(`${path}/${entry.name}`, 'utf8');
+        if (metadata.env.SENTRY_AUTH_TOKEN && content.includes(metadata.env.SENTRY_AUTH_TOKEN))
+          throw new Error('Private upload credential in public build');
+        releaseFound ||= content.includes(metadata.release);
+        buildFound ||= content.includes(metadata.build);
+        dsnFound ||= Boolean(dsn && content.includes(dsn));
+      }
+    }
+  }
+  await visit(directory);
+  if (!releaseFound || !buildFound || !dsnFound)
+    throw new Error('Client build does not match monitoring configuration');
 }
 export function runTool(command, args, env, cwd = root) {
   const result = spawnSync(command, args, { cwd, env, stdio: 'inherit' });

@@ -101,6 +101,11 @@ export async function uploadVercelArtifacts(directory, metadata, upload = upload
       ...fn.config.environment,
       SENTRY_RELEASE: metadata.release,
       SENTRY_DIST: metadata.build,
+      OBSERVABILITY_RELEASE: metadata.release,
+      OBSERVABILITY_BUILD: metadata.build,
+      ...(metadata.env.OBSERVABILITY_ENVIRONMENT
+        ? { OBSERVABILITY_ENVIRONMENT: metadata.env.OBSERVABILITY_ENVIRONMENT }
+        : {}),
     };
     delete fn.config.environment.SENTRY_AUTH_TOKEN;
     delete fn.config.environment.SENTRY_ORG;

@@ -8,6 +8,7 @@ import {
   removePublicMaps,
   runTool,
   requireCleanRelease,
+  verifyClientBuild,
 } from './observability-build.mjs';
 
 export const API_ROUTES = { version: 1, include: ['/v1', '/v1/*'], exclude: [] };
@@ -31,6 +32,7 @@ const sites = {
       'web',
       '--output-dir',
       'dist-pages',
+      '--clear',
     ],
   },
 };
@@ -77,6 +79,7 @@ async function main() {
     env: { ...metadata.env, [site.key]: origin, EXPO_NO_DOTENV: '1' },
   });
   if (result.error || result.status !== 0) throw new Error('Pages frontend build failed');
+  await verifyClientBuild(process.argv[2], fileURLToPath(new URL(site.output, root)), metadata);
   if (process.argv[2] === 'mobile')
     await uploadSourceMaps('mobile', fileURLToPath(new URL(site.output, root)), metadata);
   await removePublicMaps(fileURLToPath(new URL(site.output, root)));
