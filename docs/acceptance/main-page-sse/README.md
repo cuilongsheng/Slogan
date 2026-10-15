@@ -26,3 +26,5 @@ The first root test attempt lost a generated Prisma source while a concurrent bu
 ## Migration and rollback
 
 The outbox table/functions/triggers are additive. Production follows encrypted backup, isolated restore and candidate schema upgrade before the approved main database migration. Keep previous clients compatible. Roll back client assets to the prior polling release if required; retain business data and the additive outbox schema. Repair publication forward; do not drop notification tables or erase committed state. Physical-device behavior and provider billing require separate evidence.
+
+The first Vercel preview rejected `functions["src/main.ts"]` as `unused_function`. Corrected by routing only the SSE path through a real `api/live-updates.ts` function, configured for 300 seconds and cancellation, forwarding to the unchanged Nest auth/controller boundary. The failed preview never changed production.

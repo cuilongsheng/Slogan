@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "src/main.ts": { "maxDuration": 300, "supportsCancellation": true },
     "api/realtime.ts": {
       "experimentalTriggers": [
         {
@@ -18,6 +17,10 @@
         }
       ],
       "maxDuration": 300
+    },
+    "api/live-updates.ts": {
+      "maxDuration": 300,
+      "supportsCancellation": true
     }
   },
   "crons": [
@@ -30,5 +33,11 @@
     "deploymentEnabled": {
       "main": false
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/v1/me/live-updates",
+      "destination": "/api/live-updates"
+    }
+  ]
 }
