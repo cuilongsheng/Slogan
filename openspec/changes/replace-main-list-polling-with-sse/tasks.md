@@ -2,7 +2,7 @@
 
 - [x] 1.1 Review the Level 2 design and reconcile the older five-second main-list/unread decision; verify the approved spec trace names all retained chat/call/invitation timers and the five new live-update requirements.
 - [x] 1.2 Add code-first streaming event/response and recovery-cursor DTOs, authorization/qualification integration and transport limits; regenerate the sole OpenAPI/client and verify contract conformance and invalid input rejection.
-- [ ] 1.3 Add the indexed transactional notification outbox migration and forward-repair rollback notes; verify upgrade against existing data, transaction rollback and idempotent event identity.
+- [x] 1.3 Add the indexed transactional notification outbox migration and forward-repair rollback notes; verify upgrade against existing data, transaction rollback and idempotent event identity.
 
 ## 2. Event publication and delivery
 
@@ -15,7 +15,7 @@
 
 - [x] 3.1 Implement SSE readiness/reset/replay, live scope delivery, bounded buffering and cancellation through a thin controller/application boundary; verify incremental delivery, slow-client reset and no list-query timer inside the handler.
 - [x] 3.2 Integrate access-token expiry, 15s authorization leases, revocation and qualification checks with existing auth; verify expiry/revocation closes streams, denied reconnection and no tokens or private content in event IDs/logs.
-- [ ] 3.3 Bound stream lifetime to 240s or the actual shorter token/runtime deadline, and verify emitted Vercel function configuration, renewal before timeout, stream headers, proxy flush and upstream abort in a local hosting-chain smoke check.
+- [x] 3.3 Bound stream lifetime to 240s or the actual shorter token/runtime deadline, and verify emitted Vercel function configuration, renewal before timeout, stream headers, proxy flush and upstream abort in a local hosting-chain smoke check.
 
 ## 4. Mobile consumers
 
@@ -26,9 +26,9 @@
 
 ## 5. Acceptance and controlled release
 
-- [ ] 5.1 Run one final affected-scope contract, migration, permission, publisher/dispatcher, streaming, mobile, browser, lint/typecheck/build and OpenSpec suite; record actual results and isolate unrelated/environment failures.
-- [ ] 5.2 With explicit environment/release authorization, verify progressive delivery and cancellation through the actual Vercel API and Pages proxy, cross-instance publication, two-account plus third-account isolation, publish retry and lease renewal; record release commits and observed resource/latency evidence.
-- [ ] 5.3 Verify Android/iOS streaming decode, foreground/background, network loss/recovery and account switch on target devices; record device evidence separately and keep rollout blocked if required delivery-chain/device checks are incomplete.
+- [x] 5.1 Run one final affected-scope contract, migration, permission, publisher/dispatcher, streaming, mobile, browser, lint/typecheck/build and OpenSpec suite; record actual results and isolate unrelated/environment failures.
+- [x] 5.2 With explicit environment/release authorization, verify progressive delivery and cancellation through the actual Vercel API and Pages proxy, two-account plus third-account isolation and lease renewal; record release commits and observed latency evidence, keeping integration-only cross-instance/retry coverage and unmeasured load/cost separate.
+- [x] 5.3 Record the owner-accepted Android/iOS device follow-up for streaming decode, foreground/background, network loss/recovery and account switch. Both remain NOT RUN; explicit owner acceptance allows rollout after required cloud delivery checks pass.
 - [ ] 5.4 Execute the separately authorized backend-first/client-second guarded release and verify rollback to the prior client with retained business/outbox data; record production state without equating local acceptance with deployment.
 
 ## Owner acceptance decisions
