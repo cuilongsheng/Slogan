@@ -80,13 +80,25 @@ export function runPrivateUpload(command, args, env, cwd = root) {
 }
 export async function uploadSourceMaps(app, directory, metadata, upload = runPrivateUpload) {
   if (!metadata.enabled) return;
-  if (app === 'mobile')
-    upload(
-      'pnpm',
-      ['--filter', '@slogan/mobile', 'exec', 'sentry-expo-upload-sourcemaps', directory],
-      metadata.env,
-    );
-  else {
+  if (!['api', 'admin', 'mobile'].includes(app)) throw new Error('Invalid upload target');
+  // Web exports use the official CLI explicitly: the Expo wrapper does not
+  // forward release/dist arguments and can exit successfully with no maps.
+  let pairs = 0;
+  async function validate(path) {
+    const entries = await readdir(path, { withFileTypes: true });
+    const names = new Set(entries.map((entry) => entry.name));
+    for (const entry of entries) {
+      if (entry.name === 'node_modules') continue;
+      if (entry.isDirectory()) await validate(`${path}/${entry.name}`);
+      else if (/\.[cm]?js$/.test(entry.name)) {
+        if (!names.has(entry.name + '.map')) throw new Error('Missing build source map');
+        pairs++;
+      }
+    }
+  }
+  await validate(directory);
+  if (!pairs) throw new Error('Missing build source maps');
+  {
     upload(
       'pnpm',
       ['exec', 'sentry-cli', 'sourcemaps', 'inject', '--ignore', '**/node_modules/**', directory],

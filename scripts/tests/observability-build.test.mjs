@@ -90,9 +90,24 @@ test('upload failure propagates and maps are removed only after upload', async (
       },
     );
     assert.equal(calls.length, 2);
+    const mobileCalls = [];
+    await uploadSourceMaps(
+      'mobile',
+      directory,
+      { enabled: true, env: {}, release: 'slogan-mobile@revision', build: 'revision' },
+      (...args) => mobileCalls.push(args),
+    );
+    assert.ok(mobileCalls[1][1].includes('slogan-mobile@revision'));
+    assert.ok(mobileCalls[1][1].includes('--dist'));
     await removePublicMaps(directory);
     await assert.rejects(access(`${directory}/app.js.map`));
     await access(`${directory}/app.js`);
+    await assert.rejects(
+      uploadSourceMaps('mobile', directory, { enabled: true, env: {} }, () =>
+        assert.fail('Must not upload incomplete artifacts'),
+      ),
+      /Missing build source map/,
+    );
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
