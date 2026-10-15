@@ -4,14 +4,14 @@
 
 ## 已配置
 
-组织 tonycui 的 node-nestjs、slogan-admin（React）、slogan-mobile（React Native）项目已统一启用邮件规则 `Slogan errors and recovery email`：捕获事件/issue activity、所有环境、指定当前账号、每个问题 5 分钟冷却。已通过 Sentry 的测试通知按钮生成测试 issue，并在当前账号 Gmail 中确认 `NODE-NESTJS-2 - Test Issue` 到达。此证据验证邮件渠道，不代替实际 API/消费者错误和源码定位。
+组织 tonycui 的 slogan-api（原 node-nestjs）、slogan-admin（React）、slogan-mobile（React Native）项目已统一启用邮件规则 `Slogan errors and recovery email`：捕获事件/issue activity、所有环境、指定当前账号、每个问题 5 分钟冷却。已通过 Sentry 的测试通知按钮生成测试 issue，并在当前账号 Gmail 中确认 `NODE-NESTJS-2 - Test Issue` 到达。此证据验证邮件渠道，不代替实际 API/消费者错误和源码定位。
 
 已按用户单独授权创建组织 token `Slogan source maps`，权限为 `org:ci`（源码上传、release 和 code mappings）；值保存在仓库外 `/Users/cls/.config/slogan/observability/sentry-build.env`，目录权限 700、文件权限 600。没有升级付费计划。该权限用途参见 [Sentry 权限说明](https://docs.sentry.io/api/permissions/)。
 
 ## 待提供的私有输入
 
 - 本机私有文件已准备。CI 运行时仍需把 token 保存为构建 secret；不要发到聊天，也不要把它设置成 VITE_/EXPO_PUBLIC_ 变量。
-- SENTRY_ORG 为 tonycui；API 的 SENTRY_PROJECT 为 node-nestjs。Admin/Mobile 项目分别为 slogan-admin、slogan-mobile；分环境 DSN/采样配置已保存为同一私有目录中的 admin-preview.env、admin-production.env、mobile-preview.env、mobile-production.env。不能在两个 Web build 中误用 API 的项目。
+- SENTRY_ORG 为 tonycui；API 的当前 SENTRY_PROJECT 为 slogan-api（项目 ID 未变）。Admin/Mobile 项目分别为 slogan-admin、slogan-mobile；分环境 DSN/采样配置已保存为同一私有目录中的 admin-preview.env、admin-production.env、mobile-preview.env、mobile-production.env。不能在两个 Web build 中误用 API 的项目。
 - 使用 `docs/runbooks/observability.env.example` 的空值模板。上传 token 仅在上传命令中使用；不要加到 Vercel 的通用函数运行时环境。新 prebuilt 流程在 compiler 和 deploy 子进程移除上传凭证，并在函数配置再次排除它们。
 - Android 当前未连接真机；原生 release、离线缓存、崩溃后补报和真实网络切换要在设备连接后单独验收。iOS 原生收集继续关闭。
 
@@ -55,3 +55,5 @@ node scripts/deploy-observability-vercel.mjs preview
 ## 本轮隔离提交范围
 
 本轮先提交可独立验证的客户端 Error Monitoring + Tracing、API 过滤兼容、Sentry 通知 sink 与源码上传门禁；不夹带当前工作区并行的字体/图标/房间/managed-queue 功能。较早实施的 health/monitor 持久调度与托管消费者仍在原工作区，依赖入口矩阵中的其他 change，不算作本轮可发布提交。
+
+三项目已在平台开启默认服务端脱敏、默认 scrubber 及新事件 IP 地址丢弃；minidump attachment 继承组织 Disabled。私有配置中的 API slug 已跟随实际控制台的 slogan-api，未重建 API 项目或更换 DSN。

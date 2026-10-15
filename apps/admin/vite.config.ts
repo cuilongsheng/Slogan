@@ -39,7 +39,11 @@ export default defineConfig(({ mode }) => {
               project: process.env.SENTRY_PROJECT!,
               authToken: process.env.SENTRY_AUTH_TOKEN!,
               telemetry: false,
-              release: { name: `slogan-admin@${revision}`, inject: true },
+              release: {
+                name: `slogan-admin@${revision}`,
+                dist: env.VITE_OBSERVABILITY_BUILD ?? revision,
+                inject: true,
+              },
               sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
               errorHandler: () => {
                 throw new Error('Observability source map upload failed');
