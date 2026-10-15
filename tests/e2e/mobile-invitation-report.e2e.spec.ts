@@ -121,7 +121,7 @@ test('Me keeps compact profile and language without a title; logout is 342×46 a
   await expect(page.getByText('Preview A', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '中文', exact: true })).toBeVisible();
   expect(await page.getByRole('button', { name: '中文', exact: true }).boundingBox()).toMatchObject(
-    { height: 18 },
+    { height: 24 },
   );
   const logout = page.getByRole('button', { name: '退出', exact: true });
   expect(await logout.boundingBox()).toMatchObject({ x: 24, width: 342, height: 46 });

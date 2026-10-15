@@ -80,18 +80,23 @@ test('list errors stay retryable and profile/create navigation works', async ({ 
   await expect(page).toHaveURL('/me');
 });
 
-test('Discover shows another actor new room on the next foreground refresh without reloading', async ({
+test('Discover updates on an event and does not poll an unchanged foreground list', async ({
   page,
 }) => {
   await page.clock.install({ time: now });
   let visible = [rooms[0]];
-  await page.route('**/v1/rooms?*', (route) =>
-    route.fulfill({ json: { items: visible, nextCursor: null } }),
-  );
+  let requests = 0;
+  await page.route('**/v1/rooms?*', (route) => {
+    requests++;
+    return route.fulfill({ json: { items: visible, nextCursor: null } });
+  });
   await page.goto('/?screen=rooms');
   await expect(page.getByTestId('room-card-room-0')).toBeVisible();
+  const before = requests;
+  await page.clock.fastForward(10000);
+  expect(requests).toBe(before);
   visible = [rooms[1], rooms[0]];
-  await page.clock.fastForward(5000);
+  await page.evaluate(() => window.dispatchEvent(new Event('fixture-live-rooms')));
   await expect(page.getByTestId('room-card-room-1')).toBeVisible();
   await expect(page.getByTestId('room-card-room-0')).toBeVisible();
 });

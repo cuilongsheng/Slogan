@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><title>Mobile correction evidence</title>
+  <style>
+    body {
+      font: 15px system-ui;
+      margin: 24px;
+      background: #eee;
+      color: #262438;
+    }
+    h1 {
+      font-size: 23px;
+    }
+    p {
+      max-width: 1000px;
+      line-height: 1.5;
+    }
+    .pair {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 20px 0 40px;
+    }
+    figure {
+      margin: 0;
+    }
+    figcaption {
+      padding: 10px 0;
+    }
+    img {
+      width: 390px;
+      height: 844px;
+      display: block;
+    }
+    .overlay {
+      position: relative;
+      width: 390px;
+      height: 844px;
+    }
+    .overlay img {
+      position: absolute;
+      inset: 0;
+    }
+    .overlay .runtime {
+      opacity: 0.5;
+    }
+    button {
+      padding: 8px 16px;
+      margin: 8px 0;
+    }
+    a {
+      color: #5538d8;
+    }
+  </style>
+  <h1>Original Figma / final running frontend</h1>
+  <p>
+    390×844,1×, Chromium web. Originals exported through Desktop Bridge; runtime data uses explicit
+    fixtures. The scoped compact Refresh geometry matches. Retained title/navigation, reports and
+    dynamic account content are documented differences; these pairs do not certify whole-screen or
+    native1:1 rendering. <a href="README.md">Acceptance record</a>
+  </p>
+  <div id="pairs"></div>
+  <script>
+    for (const name of ['partners', 'me', 'loading', 'login']) {
+      const section = document.createElement('section');
+      section.innerHTML = `<h2>${name}</h2><div class="pair"><figure><figcaption>Original Figma</figcaption><img src="figma/${name}.png"></figure><figure><figcaption>Final running screen</figcaption><img src="runtime/${name}.png"></figure><figure><figcaption>50% runtime overlay</figcaption><div class="overlay"><img src="figma/${name}.png"><img class="runtime" src="runtime/${name}.png"></div><button>Toggle overlay</button></figure></div>`;
+      section.querySelector('button').onclick = () => {
+        const image = section.querySelector('.runtime');
+        image.style.opacity = image.style.opacity === '0' ? '0.5' : '0';
+      };
+      document.getElementById('pairs').append(section);
+    }
+  </script>
+</html>

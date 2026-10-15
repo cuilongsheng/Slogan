@@ -15,6 +15,27 @@ export type BlockPage = Paths['/v1/blocks']['get']['responses'][200]['content'][
 export type InvitationPage =
   Paths['/v1/me/room-invitations']['get']['responses'][200]['content']['application/json'];
 
+/** An empty scan page can still have eligible people farther along its cursor. */
+export async function availableBatch(
+  api: Pick<SocialApi, 'available'>,
+  cursor?: string,
+  current: () => boolean = () => true,
+): Promise<{ page: AvailablePage; scannedPages: number }> {
+  const seen = new Set<string>();
+  let next = cursor;
+  let scannedPages = 0;
+  while (true) {
+    if (!current()) throw new Error('Available people request cancelled');
+    if (next) seen.add(next);
+    const page = await api.available(next);
+    scannedPages++;
+    if (!current() || page.items.length || !page.nextCursor || scannedPages === 10)
+      return { page, scannedPages };
+    if (seen.has(page.nextCursor)) throw new Error('Available people cursor did not advance');
+    next = page.nextCursor;
+  }
+}
+
 function failure(status: number, error: unknown): RoomApiError {
   const code =
     typeof error === 'object' && error !== null && 'code' in error

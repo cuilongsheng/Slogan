@@ -23,3 +23,10 @@ The follow-up icon actions and invitation-picker updates are included. The owner
 - [x] 13. Remove introductory page subtitles and their reserved space across mobile headers.
 - [x] 14. Restore Discover's filter/count/burst/create toolbar to the latest original header layout.
 - [x] 15. Verify affected page/refresh/navigation flows and save final source/runtime evidence.
+
+## Startup and empty-cursor correction, 2026-10-15
+
+- [x] 16. Restore authentication concurrently with fonts/locale and keep one startup surface; verify a held restore uses one request and a fast restore does not insert the brand in routed browser checks.
+- [x] 17. Match the latest Desktop Bridge compact 86×30 Refresh and retain useful touch bounds; verify measured browser geometry and the existing authenticated refresh action.
+- [x] 18. Follow empty available-people cursor pages with a bounded batch and preserve continuation; verify later-peer, scan-budget and stale-focus/repeated-cursor regressions plus a running budget/Load more flow.
+- [x] 19. Run mobile lint/typecheck/tests/export and record source/runtime evidence and native/production limits in `docs/acceptance/mobile-startup-empty-fix/README.md`; keep the separate SSE proposal unimplemented.

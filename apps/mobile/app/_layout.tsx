@@ -7,7 +7,8 @@ import bold from '../../../assets/fonts/NotoSansSC-700.ttf';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 
-import { BrandLoading } from '../src/components/ui/BrandLoading';
+import { StartupGate } from '../src/providers/StartupGate';
+import { LiveUpdatesProvider } from '../src/features/live-updates';
 import { AuthProvider } from '../src/features/auth/context';
 import { EmailFlowProvider } from '../src/features/auth/emailFlow';
 import { ProfileDraftProvider } from '../src/features/profile/draft';
@@ -31,25 +32,28 @@ export default function RootLayout() {
     NotoSansSCBold: bold,
   });
   if (error) throw error;
-  if (!loaded || !localeReady) return <BrandLoading />;
   return (
     <AuthProvider>
-      <AppUpdateProvider>
-        <MessageUnreadProvider>
-          <PresenceHeartbeat />
-          <DirectCallObserver />
-          <RoomExitProvider>
-            <EmailFlowProvider>
-              <ProfileDraftProvider>
-                <JoinProvider>
-                  <Stack screenOptions={{ headerShown: false }} />
-                  <RoomInvitationObserver />
-                </JoinProvider>
-              </ProfileDraftProvider>
-            </EmailFlowProvider>
-          </RoomExitProvider>
-        </MessageUnreadProvider>
-      </AppUpdateProvider>
+      <StartupGate ready={loaded && localeReady}>
+        <AppUpdateProvider>
+          <LiveUpdatesProvider>
+            <MessageUnreadProvider>
+              <PresenceHeartbeat />
+              <DirectCallObserver />
+              <RoomExitProvider>
+                <EmailFlowProvider>
+                  <ProfileDraftProvider>
+                    <JoinProvider>
+                      <Stack screenOptions={{ headerShown: false }} />
+                      <RoomInvitationObserver />
+                    </JoinProvider>
+                  </ProfileDraftProvider>
+                </EmailFlowProvider>
+              </RoomExitProvider>
+            </MessageUnreadProvider>
+          </LiveUpdatesProvider>
+        </AppUpdateProvider>
+      </StartupGate>
     </AuthProvider>
   );
 }

@@ -142,10 +142,10 @@ export function MeScreen() {
   );
 }
 const styles = StyleSheet.create({
-  settings: { paddingHorizontal: 23, paddingTop: 16, paddingBottom: 12 },
+  settings: { paddingHorizontal: 23, paddingTop: 12, paddingBottom: 10 },
   profile: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
   identity: { flex: 1, minWidth: 0 },
-  photo: { width: 52, height: 52, borderRadius: 26 },
+  photo: { width: 52, height: 52, borderRadius: 26, marginTop: 4 },
   profileName: {
     minWidth: 0,
     fontSize: 18,
@@ -153,9 +153,9 @@ const styles = StyleSheet.create({
     color: tokens.color.headingInk,
     fontWeight: '700',
   },
-  languages: { flexDirection: 'row', gap: 8, marginTop: 7 },
+  languages: { flexDirection: 'row', gap: 8, marginTop: 11 },
   language: {
-    height: 18,
+    height: 24,
     width: 80,
     alignItems: 'center',
     justifyContent: 'center',

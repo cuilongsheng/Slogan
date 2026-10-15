@@ -12,12 +12,12 @@ The mobile client MUST implement the approved compact chat/call/list layouts, di
 #### Scenario: Other actor creates a discoverable room
 
 - **WHEN** an eligible actor remains on Discover in the foreground
-- **THEN** the list periodically refreshes without manual action or a blank loading screen and stops polling when backgrounded or unfocused
+- **THEN** the list revalidates on its shared foreground SSE invalidation without manual action or a blank loading screen and stops its subscription work when backgrounded or unfocused
 
 #### Scenario: Partners update
 
 - **WHEN** the foreground partner page becomes focused or a peer's server-visible availability changes
-- **THEN** the client refreshes immediately on focus and every five seconds, without overlapping refreshes or applying stale responses after blur
+- **THEN** the client refreshes immediately on focus and on relevant SSE invalidation, without periodic list polling, overlapping refreshes or applying stale responses after blur
 
 #### Scenario: Unread message notification
 
@@ -51,12 +51,19 @@ An open host invitation picker SHALL refresh authenticated online idle candidate
 
 ### Requirement: Branded restoration and revised mobile layouts
 
-The client SHALL show the approved branded loading page while restoring a session, without adding a minimum delay or additional network requests. Login and room creation SHALL follow the latest approved layouts while retaining their existing validation and API operations. Successful empty Partners and Messages lists SHALL show a centered soft Refresh control; failed requests SHALL retain actionable error feedback.
+The client SHALL restore authentication alongside fonts and language initialization through one startup gate. A pending restoration longer than 180ms SHALL show the approved branded loading page once fonts and language are ready; a faster restoration SHALL enter its destination without briefly displaying the brand. It SHALL NOT delay a completed restoration or add network requests. Login and room creation SHALL follow the latest approved layouts while retaining their existing validation and API operations. Successful exhausted empty Partners and Messages lists SHALL show a compact soft Refresh control; failed requests SHALL retain actionable error feedback. An empty available-people scan with a continuation cursor SHALL continue bounded scanning or expose continuation before declaring exhaustion.
 
 #### Scenario: Restore session
 
 - **WHEN** authentication is restoring on the index, sign-in or guarded route
-- **THEN** the branded loading page is visible until the existing session result determines navigation
+- **THEN** one startup gate owns pending restoration and font/language readiness
+- **AND** fast restoration skips the brand while longer restoration shows it without a forced minimum display time or extra requests
+
+#### Scenario: Empty candidate scan with continuation
+
+- **WHEN** the available-people endpoint returns no rows but a non-null cursor
+- **THEN** the client follows bounded continuation pages until it finds rows or exhausts the cursor
+- **AND** reaching its scan budget preserves a visible continuation action instead of claiming terminal absence
 
 #### Scenario: Empty and failed lists
 
