@@ -17,6 +17,25 @@ const metadata: ObservabilityMetadata = {
   build: 'abcdef123456',
 };
 describe('observability privacy boundary', () => {
+  it('retains a trusted symbolication platform for server and client errors', () => {
+    for (const platform of ['node', 'web', 'android', 'ios'] as const) {
+      const server = platform === 'node';
+      const clean = sanitizeObservabilityEvent(
+        { platform: 'PRIVATE_CANARY' },
+        {
+          ...metadata,
+          platform,
+          service: server ? 'api' : 'mobile',
+          release: server ? metadata.release : 'slogan-mobile@abcdef123456',
+        },
+      );
+      expect(clean).toMatchObject({
+        platform: server ? 'node' : 'javascript',
+        tags: { platform },
+      });
+      expect(JSON.stringify(clean)).not.toContain('PRIVATE_CANARY');
+    }
+  });
   it('reconstructs events without nested private content while preserving source location', () => {
     const privateValue = 'PRIVATE_CANARY_AUDIO_TOKEN_EMAIL_SQL';
     const clean = sanitizeObservabilityEvent(

@@ -203,6 +203,9 @@ export function sanitizeObservabilityEvent(
   const stage = context.stage ?? tags.stage;
   if (typeof stage === 'string' && stages.has(stage)) cleanTags.stage = stage;
   const result: Fields = {
+    // Sentry uses this protocol field to select JavaScript/Node symbolication.
+    // Keep the device OS separately in tags; never trust the incoming platform.
+    platform: metadata.platform === 'node' ? 'node' : 'javascript',
     environment: metadata.environment,
     release: metadata.release,
     dist: metadata.build,
