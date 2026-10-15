@@ -1,6 +1,6 @@
-import { readFile, readdir, writeFile, rm } from 'node:fs/promises';
+import { readFile, readdir, writeFile, rm, copyFile } from 'node:fs/promises';
 import { resolve, join, relative } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import {
   buildMetadata,
@@ -10,6 +10,47 @@ import {
   uploadSourceMaps,
   removePublicMaps,
 } from './observability-build.mjs';
+
+/** NFT copies workspace JavaScript without adjacent maps. Attach only byte-identical build maps. */
+export async function attachWorkspaceSourceMaps(
+  directory,
+  sourceRoot = fileURLToPath(new URL('../', import.meta.url)),
+) {
+  async function attach(path) {
+    let entries;
+    try {
+      entries = await readdir(path, { withFileTypes: true });
+    } catch (error) {
+      if (error.code === 'ENOENT') return;
+      throw error;
+    }
+    for (const entry of entries) {
+      const target = join(path, entry.name);
+      if (entry.isDirectory()) await attach(target);
+      else if (entry.name.endsWith('.js')) {
+        const source = join(
+          sourceRoot,
+          relative(resolve(directory, 'functions'), target).split('.func/')[1],
+        );
+        if (!(await readFile(source)).equals(await readFile(target)))
+          throw new Error('Workspace JavaScript differs from its source map build');
+        const map = JSON.parse(await readFile(source + '.map', 'utf8'));
+        if (map.version !== 3 || !map.sources?.length)
+          throw new Error('Missing workspace source map');
+        await copyFile(source + '.map', target + '.map');
+      }
+    }
+  }
+  async function visit(path) {
+    for (const entry of await readdir(path, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name.endsWith('.func'))
+        await attach(join(path, entry.name, 'packages/shared/dist'));
+      else await visit(join(path, entry.name));
+    }
+  }
+  await visit(resolve(directory, 'functions'));
+}
 
 /** Post-compiler upload. Input must be the exact output subsequently deployed with --prebuilt. */
 export async function uploadVercelArtifacts(directory, metadata, upload = uploadSourceMaps) {
@@ -115,6 +156,7 @@ async function main() {
     ],
     buildEnv,
   );
+  await attachWorkspaceSourceMaps('.vercel/output');
   const manifest = await uploadVercelArtifacts('.vercel/output', metadata);
   console.log(`Prepared ${manifest.length} monitored Vercel functions; not deployed`);
 }

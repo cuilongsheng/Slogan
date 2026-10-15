@@ -4,13 +4,38 @@ import { mkdtemp, mkdir, writeFile, readFile, access, rm } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { verifyMonitoredOutput } from '../deploy-observability-vercel.mjs';
-import { uploadVercelArtifacts } from '../build-observability-vercel.mjs';
+import {
+  uploadVercelArtifacts,
+  attachWorkspaceSourceMaps,
+} from '../build-observability-vercel.mjs';
 const metadata = {
   enabled: true,
   release: `slogan-api@${'a'.repeat(40)}`,
   build: 'a'.repeat(40),
   env: { SENTRY_AUTH_TOKEN: 'PRIVATE_CANARY' },
 };
+test('attaches workspace maps only to identical JavaScript from the same build', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'slogan-workspace-maps-'));
+  try {
+    const source = join(directory, 'source/packages/shared/dist');
+    const target = join(directory, 'output/functions/index.func/packages/shared/dist');
+    await mkdir(source, { recursive: true });
+    await mkdir(target, { recursive: true });
+    await writeFile(join(source, 'index.js'), 'export const build = 1;');
+    await writeFile(join(source, 'index.js.map'), '{"version":3,"sources":["../src/index.ts"]}');
+    await writeFile(join(target, 'index.js'), 'export const build = 2;');
+    await assert.rejects(
+      attachWorkspaceSourceMaps(join(directory, 'output'), join(directory, 'source')),
+      /differs/,
+    );
+    await assert.rejects(access(join(target, 'index.js.map')));
+    await writeFile(join(target, 'index.js'), 'export const build = 1;');
+    await attachWorkspaceSourceMaps(join(directory, 'output'), join(directory, 'source'));
+    await access(join(target, 'index.js.map'));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 async function fixture() {
   const output = await mkdtemp(join(tmpdir(), 'slogan-vercel-upload-'));
   await writeFile(join(output, 'config.json'), '{"version":3}');
