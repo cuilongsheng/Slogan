@@ -312,3 +312,72 @@ test('main tab headings are centered and incoming messages show a navigation bad
   await expect(page.getByRole('heading', { name: 'Me', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Edit profile', exact: true })).toBeVisible();
 });
+
+test('SSE outage retains partner rows and shows localized reconnection feedback', async ({
+  page,
+}) => {
+  await fixtures(page);
+  await page.goto('/?screen=partners&language=en&live=reconnecting');
+  await expect(page.getByText('Luna', { exact: true })).toBeVisible();
+  await expect(page.getByText('Ravi', { exact: true })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Reconnecting');
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  await page.screenshot({
+    path: 'docs/acceptance/main-page-sse/runtime/partners-reconnecting.png',
+  });
+});
+
+test('a partner invalidation arriving during pagination is replayed after that page completes', async ({
+  page,
+}) => {
+  await fixtures(page);
+  let expanded = false,
+    reads = 0,
+    release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/v1/people/available*', async (route) => {
+    const cursor = new URL(route.request().url()).searchParams.get('cursor');
+    if (cursor) {
+      if (++reads === 1) await held;
+      return route.fulfill({ json: { items: [peers[2]], nextCursor: null } });
+    }
+    return route.fulfill({
+      json: { items: expanded ? [peers[0], peers[1]] : [peers[0]], nextCursor: 'next' },
+    });
+  });
+  await page.goto('/?screen=partners&language=en');
+  await expect(page.getByText('Luna', { exact: true })).toBeVisible();
+  // FlatList automatically requests its next page when this short list reaches the viewport end.
+  await expect.poll(() => reads).toBe(1);
+  expanded = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('fixture-live-partners')));
+  release();
+  await expect(page.getByText('Mika', { exact: true })).toBeVisible();
+  await expect(page.getByText('Ravi', { exact: true })).toBeVisible();
+  await expect(page.getByText('Luna', { exact: true })).toBeVisible();
+  await page.screenshot({
+    path: 'docs/acceptance/main-page-sse/runtime/partners-retained-pages.png',
+  });
+});
+
+for (const [status, message] of [
+  [403, 'Access to this list is restricted.'],
+  [503, 'This list is temporarily unavailable.'],
+] as const)
+  test(`partner ${status} failure is distinct from a successful empty list`, async ({ page }) => {
+    await fixtures(page);
+    await page.route('**/v1/people/available*', (route) =>
+      route.fulfill({
+        status,
+        json: { code: status === 403 ? 'SOCIAL_ACCESS_RESTRICTED' : 'SOCIAL_PRESENCE_UNAVAILABLE' },
+      }),
+    );
+    await page.goto('/?screen=partners&language=en');
+    await expect(page.getByRole('alert')).toContainText(message);
+    await expect(page.getByTestId('empty-list-refresh')).toBeVisible();
+    await page.screenshot({ path: `docs/acceptance/main-page-sse/runtime/partners-${status}.png` });
+  });

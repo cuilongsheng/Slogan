@@ -7,10 +7,12 @@ export function MainListEmpty({
   onRefresh,
   error,
   disabled = false,
+  label,
 }: {
   onRefresh: () => void;
   error?: string | undefined;
   disabled?: boolean;
+  label?: string | undefined;
 }) {
   return (
     <View style={styles.body}>
@@ -25,9 +27,10 @@ export function MainListEmpty({
           disabled={disabled}
           onPress={onRefresh}
           testID="empty-list-refresh"
+          hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }}
           style={[styles.button, disabled && styles.disabled]}
         >
-          <Text style={styles.label}>{t('refreshAction')}</Text>
+          <Text style={styles.label}>{label ?? t('refreshAction')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -35,12 +38,12 @@ export function MainListEmpty({
 }
 const styles = StyleSheet.create({
   body: { flex: 1 },
-  panel: { position: 'absolute', top: 223, left: 20, right: 20, alignItems: 'center' },
+  panel: { position: 'absolute', top: 267, left: 20, right: 20, alignItems: 'center' },
   button: {
-    width: 162,
+    width: 86,
     marginLeft: 20,
-    height: tokens.control.height,
-    borderRadius: tokens.control.radius,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: tokens.color.purpleSoft,
     alignItems: 'center',
     justifyContent: 'center',

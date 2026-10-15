@@ -1,4 +1,16 @@
 import React from 'react';
+import { LiveUpdatesContext } from '../../apps/mobile/src/features/live-updates/context';
+const fixtureLive = {
+  owner: 'visual-profile',
+  status:
+    new URL(location.href).searchParams.get('live') === 'reconnecting'
+      ? ('reconnecting' as const)
+      : ('connected' as const),
+  subscribe: (scope: string, listener: () => void) => {
+    window.addEventListener(`fixture-live-${scope}`, listener);
+    return () => window.removeEventListener(`fixture-live-${scope}`, listener);
+  },
+};
 import { BrandLoading } from '../../apps/mobile/src/components/ui/BrandLoading';
 import { createRoot } from 'react-dom/client';
 import { VoiceRoomScreen } from '../../apps/mobile/src/features/voice-room/VoiceRoomScreen';
@@ -38,26 +50,28 @@ import { CreateRoomScreen } from '../../apps/mobile/src/features/room-creation/C
 // Test-only harness: the real component runs with explicit session/recorder adapters.
 // No fixture entry or adapter is imported by the production application.
 createRoot(document.getElementById('root')!).render(
-  <MessageUnreadProvider>
-    <JoinProvider>
-      {directScreen ??
-        (['profile', 'preferences'].includes(
-          new URL(location.href).searchParams.get('screen') ?? '',
-        ) ? (
-          <ProfileDraftProvider>
-            {new URL(location.href).searchParams.get('screen') === 'profile' ? (
-              <BasicProfileScreen />
-            ) : (
-              <PreferencesScreen />
-            )}
-          </ProfileDraftProvider>
-        ) : new URL(location.href).searchParams.get('screen') === 'create' ? (
-          <CreateRoomScreen />
-        ) : new URL(location.href).searchParams.get('screen') === 'rooms' ? (
-          <RoomListScreen />
-        ) : (
-          <VoiceRoomScreen roomId="visual-room" />
-        ))}
-    </JoinProvider>
-  </MessageUnreadProvider>,
+  <LiveUpdatesContext.Provider value={fixtureLive}>
+    <MessageUnreadProvider>
+      <JoinProvider>
+        {directScreen ??
+          (['profile', 'preferences'].includes(
+            new URL(location.href).searchParams.get('screen') ?? '',
+          ) ? (
+            <ProfileDraftProvider>
+              {new URL(location.href).searchParams.get('screen') === 'profile' ? (
+                <BasicProfileScreen />
+              ) : (
+                <PreferencesScreen />
+              )}
+            </ProfileDraftProvider>
+          ) : new URL(location.href).searchParams.get('screen') === 'create' ? (
+            <CreateRoomScreen />
+          ) : new URL(location.href).searchParams.get('screen') === 'rooms' ? (
+            <RoomListScreen />
+          ) : (
+            <VoiceRoomScreen roomId="visual-room" />
+          ))}
+      </JoinProvider>
+    </MessageUnreadProvider>
+  </LiveUpdatesContext.Provider>,
 );

@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { LiveUpdatesContext } from '../live-updates/context';
 import { RoomListScreen } from './RoomListScreen';
 
 const mockPush = jest.fn();
@@ -37,7 +38,13 @@ beforeEach(() => {
 });
 
 test('one card press goes straight to the session and a second press cannot navigate again', async () => {
-  const page = await render(<RoomListScreen />);
+  const page = await render(
+    <LiveUpdatesContext.Provider
+      value={{ owner: 'test-account', status: 'connected', subscribe: () => () => {} }}
+    >
+      <RoomListScreen />
+    </LiveUpdatesContext.Provider>,
+  );
   await waitFor(() => expect(page.getByText('Travel')).toBeTruthy());
   await fireEvent.press(page.getByText('Travel'));
   await fireEvent.press(page.getByText('Travel'));
@@ -50,7 +57,13 @@ test('one card press goes straight to the session and a second press cannot navi
 test('a protected room goes only to the password input', async () => {
   const room = (await mockList()).items[0];
   mockList.mockResolvedValue({ items: [{ ...room, passwordProtected: true }], nextCursor: null });
-  const page = await render(<RoomListScreen />);
+  const page = await render(
+    <LiveUpdatesContext.Provider
+      value={{ owner: 'test-account', status: 'connected', subscribe: () => () => {} }}
+    >
+      <RoomListScreen />
+    </LiveUpdatesContext.Provider>,
+  );
   await waitFor(() => expect(page.getByText('Travel')).toBeTruthy());
   await fireEvent.press(page.getByText('Travel'));
   expect(mockPush).toHaveBeenCalledWith('/rooms/room-a/session');

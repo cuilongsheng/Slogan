@@ -125,6 +125,7 @@ const zh = {
   profileLevelRequired: '请选择适合你的英语等级。',
 
   appName: 'Slogan',
+  liveReconnecting: '实时更新连接已断开，正在重连；你仍可手动刷新。',
   username: '用户名',
   usernamePlaceholder: '输入用户名',
   password: '密码',
@@ -611,6 +612,8 @@ const zh = {
   socialTabInvitations: '房间邀请',
   socialEmpty: '这里暂时没有记录',
   socialLoadFailed: '列表加载失败，请重试。',
+  mainListDenied: '此列表暂不可访问，请检查账号状态。',
+  mainListUnavailable: '暂时无法加载列表，请稍后重试。',
   socialMoreFailed: '更多记录加载失败',
   socialLoadMore: '加载更多',
   socialCommandFailed: '操作结果未确认，可用同一操作重试。',
@@ -831,6 +834,7 @@ const en: Record<MessageKey, string> = {
   profileLevelRequired: 'Choose your English level.',
 
   appName: 'Slogan',
+  liveReconnecting: 'Reconnecting… You can still refresh manually.',
   username: 'Username',
   usernamePlaceholder: 'Enter username',
   password: 'Password',
@@ -1323,6 +1327,8 @@ const en: Record<MessageKey, string> = {
   socialTabInvitations: 'Room invites',
   socialEmpty: 'Nothing here yet',
   socialLoadFailed: 'Could not load this list. Try again.',
+  mainListDenied: 'Access to this list is restricted. Check your account status.',
+  mainListUnavailable: 'This list is temporarily unavailable. Try again shortly.',
   socialMoreFailed: 'Could not load more',
   socialLoadMore: 'Load more',
   socialCommandFailed: 'The result is uncertain. Retry the same action.',

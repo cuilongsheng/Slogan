@@ -22,7 +22,7 @@ import { useAuth } from '../auth';
 import { DirectApi, directError, type Conversation } from './api';
 import { PeerRow, directColors, directListStyles } from './components';
 import { useMessageUnread } from './MessageUnreadProvider';
-import { useFocusedPolling } from './useFocusedPolling';
+import { useFocusedLive, LiveConnectionNotice, mainListError } from '../live-updates';
 export function MessagesScreen() {
   useLanguage();
   const router = useRouter();
@@ -36,6 +36,7 @@ export function MessagesScreen() {
     [error, setError] = useState<MessageKey | null>(null),
     [selected, setSelected] = useState<Conversation | null>(null),
     [busy, setBusy] = useState(false);
+  const deferredRefresh = useRef<(() => boolean) | null>(null);
   const epoch = useRef(0),
     requestIds = useRef(new Map<string, string>()),
     paging = useRef(false),
@@ -44,7 +45,11 @@ export function MessagesScreen() {
   const load = useCallback(
     (current: () => boolean = () => true) =>
       refreshQueue.current.enqueue(async () => {
-        if (!current() || paging.current) return;
+        if (!current()) return;
+        if (paging.current) {
+          deferredRefresh.current = current;
+          return;
+        }
         refreshing.current = true;
         const generation = ++epoch.current;
         try {
@@ -64,8 +69,9 @@ export function MessagesScreen() {
           setItems(conversations);
           setCursor(next);
           setError(null);
-        } catch {
-          if (current() && generation === epoch.current) setError('directLoadFailed');
+        } catch (error) {
+          if (current() && generation === epoch.current)
+            setError(mainListError(error, 'directLoadFailed'));
         } finally {
           refreshing.current = false;
           if (current() && generation === epoch.current) setLoading(false);
@@ -73,24 +79,28 @@ export function MessagesScreen() {
       }),
     [api],
   );
-  useFocusedPolling(load, 5000);
+  const requestFence = useFocusedLive(load, 'messages');
   const more = async () => {
     if (!cursor || paging.current || refreshing.current) return;
     paging.current = true;
     const generation = epoch.current;
+    const current = requestFence();
     try {
       const page = await api.conversations(cursor);
-      if (generation !== epoch.current) return;
+      if (!current() || generation !== epoch.current) return;
       setItems((old) => [
         ...old,
         ...page.items.filter((item) => !old.some((x) => x.id === item.id)),
       ]);
       setCursor(page.nextCursor);
       loadedPages.current++;
-    } catch {
-      setError('socialMoreFailed');
+    } catch (error) {
+      if (current()) setError(mainListError(error, 'socialMoreFailed'));
     } finally {
       paging.current = false;
+      const deferred = deferredRefresh.current;
+      deferredRefresh.current = null;
+      if (deferred) void load(deferred);
     }
   };
   const hide = async () => {
@@ -174,6 +184,7 @@ export function MessagesScreen() {
           </Text>
         </TouchableOpacity>
       )}
+      <LiveConnectionNotice />
       <BottomNavigation active={2} unreadMessages={unread.count} />
       <Modal transparent visible={!!selected} onRequestClose={() => setSelected(null)}>
         <View style={styles.overlay}>

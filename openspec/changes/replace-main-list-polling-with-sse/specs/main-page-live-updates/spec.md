@@ -64,9 +64,16 @@ Availability events SHALL reflect eligibility, blocking, room/direct-call occupa
 
 ### Requirement: Streaming is verified through the actual delivery chain
 
-The release SHALL verify progressive event delivery and cancellation through its API host and frontend proxy, bounded connection renewal, native client decoding, and authorization failure handling before enabling SSE in a published client. Local or fixture results SHALL be identified separately from cloud and physical-device acceptance.
+The release SHALL verify progressive event delivery and cancellation through its API host and frontend proxy, bounded connection renewal and authorization failure handling before enabling SSE in a published client. Native client decoding and lifecycle acceptance SHALL be completed before client publication unless the owner explicitly accepts that platform verification as a follow-up. Local or fixture results SHALL be identified separately from cloud and physical-device acceptance.
 
 #### Scenario: Proxy buffers the event stream
 
 - **WHEN** the delivery chain buffers events until the response closes
 - **THEN** SSE rollout remains blocked and the current released client remains the rollback option
+
+
+#### Scenario: Owner accepts native verification as a follow-up
+
+- **WHEN** the owner explicitly accepts a named platform verification as a follow-up and instructs deployment to continue
+- **THEN** the release record keeps that platform verification outstanding without claiming device proof
+- **AND** cloud delivery and account-isolation acceptance remain required

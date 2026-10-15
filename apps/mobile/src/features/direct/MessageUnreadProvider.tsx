@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useAuth } from '../auth';
-import { useForegroundPolling } from '../../hooks/useForegroundPolling';
+import { useForegroundLive } from '../live-updates';
 import { isAppForeground } from '../../services/foregroundPolling';
 import { DirectApi } from './api';
 
@@ -54,7 +54,7 @@ export function MessageUnreadProvider({ children }: { children: ReactNode }) {
     },
     [api, userId],
   );
-  useForegroundPolling(load, 5000, !!userId);
+  useForegroundLive(load, 'messages', !!userId);
   const refresh = useCallback(() => load(), [load]);
   const value = useMemo(
     () => ({ count: snapshot.owner === userId ? snapshot.count : 0, refresh }),

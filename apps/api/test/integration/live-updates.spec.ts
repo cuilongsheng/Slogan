@@ -131,6 +131,33 @@ describe('real PostgreSQL/Redis authenticated SSE', () => {
     });
     expect(denied.status).toBe(400);
   }, 15000);
+  test('room lifecycle writes from another instance invalidate discovery and partner projections', async () => {
+    const actor = actors[0]!,
+      peer = actors[1]!;
+    const discovery = await open(actor),
+      partners = await open(peer, undefined, secondBase);
+    const room = await second.get(PrismaService).room.create({
+      data: {
+        id: randomUUID(),
+        hostUserId: actor.id,
+        topic: 'Transactional room event',
+        cefrLevel: 'B1',
+        capacity: 4,
+        startedAt: new Date(),
+        endsAt: new Date(Date.now() + 3600000),
+      },
+    });
+    await second.get(LiveUpdatesService).recover();
+    await Promise.all([
+      readUntil(discovery.reader, 'rooms'),
+      readUntil(partners.reader, 'partners'),
+    ]);
+    await second
+      .get(PrismaService)
+      .room.update({ where: { id: room.id }, data: { status: 'ENDED', endedAt: new Date() } });
+    await second.get(LiveUpdatesService).recover();
+    expect(await readUntil(discovery.reader, 'rooms')).not.toContain(room.id);
+  });
   test('outbox rolls back with business writes and survives failed Redis publication', async () => {
     const before = await prisma.liveUpdateOutbox.count();
     await expect(

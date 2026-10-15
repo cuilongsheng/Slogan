@@ -10,11 +10,11 @@ import { AppText as Text } from '../../components/ui/AppText';
 import { t, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
-import { SocialApi, type AvailablePage } from '../social';
+import { SocialApi, availableBatch, type AvailablePage } from '../social';
 import { DirectApi, directError } from './api';
 import { PeerRow, directColors, directListStyles } from './components';
 import { useMessageUnread } from './MessageUnreadProvider';
-import { useFocusedPolling } from './useFocusedPolling';
+import { useFocusedLive, LiveConnectionNotice, mainListError } from '../live-updates';
 export function PartnersScreen() {
   useLanguage();
   const router = useRouter();
@@ -28,6 +28,7 @@ export function PartnersScreen() {
     [loading, setLoading] = useState(true),
     [more, setMore] = useState(false),
     [error, setError] = useState<MessageKey | null>(null);
+  const deferredRefresh = useRef<(() => boolean) | null>(null);
   const opening = useRef(false),
     generation = useRef(0),
     paging = useRef(false),
@@ -36,14 +37,24 @@ export function PartnersScreen() {
   const refresh = useCallback(
     (current: () => boolean = () => true) =>
       refreshQueue.current.enqueue(async () => {
-        if (!current() || paging.current) return;
+        if (!current()) return;
+        if (paging.current) {
+          deferredRefresh.current = current;
+          return;
+        }
         refreshing.current = true;
         const epoch = ++generation.current;
         try {
           const collected: AvailablePage['items'] = [];
           let next: string | null = null;
-          for (let pageIndex = 0; pageIndex < loadedPages.current; pageIndex++) {
-            const page = await social.available(next ?? undefined);
+          let scannedPages = 0;
+          while (scannedPages < loadedPages.current) {
+            const { page, scannedPages: scanned } = await availableBatch(
+              social,
+              next ?? undefined,
+              current,
+            );
+            scannedPages += scanned;
             if (!current() || epoch !== generation.current) return;
             collected.push(
               ...page.items.filter(
@@ -53,11 +64,13 @@ export function PartnersScreen() {
             next = page.nextCursor;
             if (!next) break;
           }
+          loadedPages.current = scannedPages;
           setItems(collected);
           setCursor(next);
           setError(null);
-        } catch {
-          if (current() && epoch === generation.current) setError('socialLoadFailed');
+        } catch (error) {
+          if (current() && epoch === generation.current)
+            setError(mainListError(error, 'socialLoadFailed'));
         } finally {
           refreshing.current = false;
           if (current() && epoch === generation.current) setLoading(false);
@@ -65,26 +78,30 @@ export function PartnersScreen() {
       }),
     [social],
   );
-  useFocusedPolling(refresh, 5000);
+  const requestFence = useFocusedLive(refresh, 'partners');
   const moreItems = async () => {
     if (!cursor || paging.current || refreshing.current) return;
     paging.current = true;
     setMore(true);
     const epoch = generation.current;
+    const current = requestFence();
     try {
-      const page = await social.available(cursor);
-      if (epoch === generation.current) {
+      const { page, scannedPages } = await availableBatch(social, cursor, current);
+      if (current() && epoch === generation.current) {
         setItems((old) => [
           ...old,
           ...page.items.filter((item) => !old.some((x) => x.userId === item.userId)),
         ]);
         setCursor(page.nextCursor);
-        loadedPages.current++;
+        loadedPages.current += scannedPages;
       }
-    } catch {
-      setError('socialMoreFailed');
+    } catch (error) {
+      if (current()) setError(mainListError(error, 'socialMoreFailed'));
     } finally {
       paging.current = false;
+      const deferred = deferredRefresh.current;
+      deferredRefresh.current = null;
+      if (deferred) void refresh(deferred);
       setMore(false);
     }
   };
@@ -111,7 +128,8 @@ export function PartnersScreen() {
         <ActivityIndicator style={styles.center} color={directColors.violet} />
       ) : items.length === 0 ? (
         <MainListEmpty
-          onRefresh={() => void refresh()}
+          onRefresh={() => void (cursor ? moreItems() : refresh())}
+          label={cursor ? t('socialLoadMore') : undefined}
           disabled={more}
           error={error ? t(error) : undefined}
         />
@@ -149,6 +167,7 @@ export function PartnersScreen() {
           {t(error)}
         </Text>
       )}
+      <LiveConnectionNotice />
       <BottomNavigation active={1} unreadMessages={unread.count} />
     </RoomPage>
   );

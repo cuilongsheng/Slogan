@@ -20,7 +20,8 @@ import { tokens } from '../../styles/tokens';
 import addIcon from '../../../assets/icons/room-discovery/add.png';
 import speechBurstIcon from '../../../assets/icons/room-discovery/speech-burst.png';
 import { RoomDiscoveryApi, RoomListPager, type RoomSummary } from './api';
-import { useFocusedPolling, useMessageUnread } from '../direct';
+import { useMessageUnread } from '../direct';
+import { useFocusedLive, LiveConnectionNotice } from '../live-updates';
 import { RoomCard } from './RoomCard';
 import { useJoinDraft } from './join';
 
@@ -81,7 +82,7 @@ export function RoomListScreen() {
     },
     [refresh],
   );
-  useFocusedPolling(poll, 5000);
+  const requestFence = useFocusedLive(poll, 'rooms');
 
   useEffect(() => {
     if (!exitDelivery.revision) return;
@@ -91,14 +92,16 @@ export function RoomListScreen() {
 
   const loadMore = async () => {
     if (!cursor || moreLoading || loading || refreshPending.current) return;
+    const current = requestFence();
     setMoreLoading(true);
     setMoreError(false);
     try {
       const page = await pager.loadMore();
+      if (!current()) return;
       setRooms(page.items);
       setCursor(page.nextCursor);
     } catch {
-      setMoreError(true);
+      if (current()) setMoreError(true);
     } finally {
       setMoreLoading(false);
     }
@@ -198,6 +201,7 @@ export function RoomListScreen() {
           }
         />
       )}
+      <LiveConnectionNotice />
       <BottomNavigation active={0} unreadMessages={unread.count} />
     </RoomPage>
   );

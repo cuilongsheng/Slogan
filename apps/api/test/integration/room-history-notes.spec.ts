@@ -91,12 +91,13 @@ describe('room history and private notes on PostgreSQL', () => {
         (item) => item.roomId === consumedRoom,
       ),
     ).toMatchObject({ relationship: 'RESERVED_ONLY', reservationStatus: 'BOOKED' });
+    const activatedAt = new Date(Date.now() - 1000);
     await prisma.room.update({
       where: { id: consumedRoom },
       data: {
         status: 'OPEN',
-        startedAt: new Date(Date.now() - 1000),
-        initialHostDeadline: new Date(Date.now() + 299_000),
+        startedAt: activatedAt,
+        initialHostDeadline: new Date(activatedAt.getTime() + 300_000),
       },
     });
     await rooms.join(userId, consumedRoom, { rulesAccepted: true });
