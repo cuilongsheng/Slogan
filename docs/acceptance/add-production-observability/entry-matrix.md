@@ -29,3 +29,7 @@
 ## 私有输入与启用门禁
 
 真实 DSN/project、数据区域/留存、访问人员、预算、通知接收人、heartbeat/sink endpoint 和上传凭证由目标环境负责人提供。实施阶段先使用隔离 transport，不读取已有 `.env` 或供应商秘密，不创建远端资源、购买计划或部署。
+
+## 2026-10-15 续作更新
+
+以上为历史基线。监控已隔离提交至 develop，包含独立 health/observability consumer，不含并行的 managed realtime 业务切换；实际构建为 index.func + api/observability.func。Sentry 三项目、邮件规则、私有上传 token、实际源码上传和 API canary 邮件已配置并验证。当前线上已前进至 7cbbab7（5 函数），不可用旧基线覆盖。当前状态、逐入口测试和未完成项以 ../add-production-observability.md 的更新区为准。

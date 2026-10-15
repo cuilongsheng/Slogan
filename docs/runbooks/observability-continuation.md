@@ -42,7 +42,7 @@ node scripts/deploy-observability-vercel.mjs preview
 
 设置 OPERATIONS_ALERT_SINK_KIND=sentry 后，现有 outbox 可以通过官方 SDK transport 把白名单技术通知发送到 Sentry，再由邮件规则通知账号；不需要额外运行时管理 token。只有 ingest 返回 2xx 才确认持久投递，429/拒绝/超时继续复用原 outbox 重试和 fencing。恢复用独立 OPERATIONAL_RECOVERY 事件表达；Sentry issue 不替代业务 incident 的状态真相。
 
-现有 HTTP sink 仍可用，默认 kind=http。监控开关与自动治理/保留清理解耦；不要为告警开启治理删除。独立 observability topic、持久扫描状态和 heartbeat 的本地代码已存在，但与未提交 realtime change 有依赖；尚未一起部署。应用完全停止时必须靠外部 ready/heartbeat 发现，不能把 Sentry 错误邮件当作外部可用性监控。外部服务账号、免费额度允许的周期和私有 heartbeat URL 还未配置，本轮不注册付费服务或播种云端调度。
+现有 HTTP sink 仍可用，默认 kind=http。监控开关与自动治理/保留清理解耦；不要为告警开启治理删除。独立 observability topic、持久扫描状态和 heartbeat 已从并行 realtime 改动中隔离提交，可单独构建；尚未部署和播种。应用完全停止时必须靠外部 ready/heartbeat 发现，不能把 Sentry 错误邮件当作外部可用性监控。外部服务账号、免费额度允许的周期和私有 heartbeat URL 还未配置，本轮不注册付费服务或播种云端调度。
 
 ## 完成边界
 
@@ -59,3 +59,9 @@ node scripts/deploy-observability-vercel.mjs preview
 三项目已在平台开启默认服务端脱敏、默认 scrubber 及新事件 IP 地址丢弃；minidump attachment 继承组织 Disabled。私有配置中的 API slug 已跟随实际控制台的 slogan-api，未重建 API 项目或更换 DSN。
 
 隔离检查补充：独立 monitor 可只注册 api/observability 函数，不必携带 api/realtime 及其业务队列切换。唯一 OpenAPI 在隔离源重新生成，仅新增 live/ready 合同。启用持久扫描前仍必须先完成目标数据库迁移、外部 heartbeat 和实际费用/调度验证；当前不播种、不启用扫描。
+
+## 2026-10-15 云端与发布核对
+
+源码和真实上传版本以验收报告为准。实际 API 错误邮件已收到；Admin/Mobile Web 与 Vercel source maps 已上传，公开输出 maps 为 0。三项目新增删除 user 字段的服务端高级规则；新事件仍有平台推断的服务端出站 Geography，此规则未消除该字段，SDK 不发送终端用户 IP/身份。
+
+最新 Vercel Production 为 7cbbab7，包含 5 个函数；本轮隔离监控源只有 2 个函数。不得用此产物覆盖较新的业务发布。先把监控整合进最新发布源并保留 realtime/maintenance/seed/live-updates，再用真实站点 origin 重建、迁移、分环境部署和验收。完整证据见 docs/acceptance/add-production-observability.md。
