@@ -1,4 +1,5 @@
 import { ModerationModule } from './modules/moderation/index.js';
+import { LiveUpdatesModule } from './modules/live-updates/index.js';
 import { VoiceModule } from './modules/voice/voice.module.js';
 import { MaintenanceModule } from './modules/maintenance/index.js';
 import { DirectModule } from './modules/direct/index.js';
@@ -41,6 +42,7 @@ import { OperationsModule } from './modules/operations/index.js';
     SocialModule,
     DirectModule,
     MaintenanceModule,
+    LiveUpdatesModule,
     AssistanceModule,
     SpeechSafetyModule,
     PostRoomLearningModule,

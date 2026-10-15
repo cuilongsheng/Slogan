@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { LiveUpdatesModule } from '../live-updates/index.js';
 import { DirectModule } from '../direct/index.js';
 import { SafetyModule } from '../safety/index.js';
 import { OperationsModule } from '../operations/index.js';
@@ -9,6 +10,7 @@ import { MaintenanceLease } from '../../infrastructure/managed/maintenance-lease
 import { MaintenanceService } from './maintenance.service.js';
 @Module({
   imports: [
+    LiveUpdatesModule,
     DirectModule,
     SafetyModule,
     OperationsModule,

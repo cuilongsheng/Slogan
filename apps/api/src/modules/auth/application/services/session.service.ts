@@ -67,6 +67,14 @@ export class SessionService {
     return (await this.repository.isPublicTrialViewer?.(userId)) ?? false;
   }
 
+  async streamIdentity(token: string): Promise<AccessIdentity & { expiresAt: number }> {
+    const identity = await this.verifyAccessToken(token);
+    const claims = this.jwt.decode<{ exp?: number }>(token);
+    if (!claims || typeof claims.exp !== 'number')
+      throw new AuthError('ACCESS_TOKEN_INVALID', 'Access token is invalid');
+    return { ...identity, expiresAt: claims.exp * 1000 };
+  }
+
   async verifyAccessToken(token: string, now = new Date()): Promise<AccessIdentity> {
     try {
       const claims = await this.jwt.verifyAsync<AccessClaims>(token, {

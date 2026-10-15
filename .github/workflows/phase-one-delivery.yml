@@ -176,6 +176,10 @@ jobs:
         run: node scripts/release/deploy-api.mjs
       - name: Verify the deployed commit
         run: node scripts/release/api-runtime-gate.mjs
+      - name: Verify authenticated streaming through API and Pages
+        run: |
+          pnpm --filter @slogan/api build
+          node scripts/release/live-stream-smoke.mjs
       - name: Remove recovery artifacts
         if: always()
         run: rm -f "$RUNNER_TEMP/slogan-production.pgenc" "$RUNNER_TEMP/slogan-backup-receipt.json"

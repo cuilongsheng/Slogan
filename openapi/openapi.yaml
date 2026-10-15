@@ -2654,6 +2654,21 @@ components:
       required:
         - result
       type: object
+    LiveUpdateEventDto:
+      properties:
+        scope:
+          enum:
+            - reset
+            - rooms
+            - partners
+            - messages
+            - heartbeat
+            - renew
+            - unavailable
+          type: string
+      required:
+        - scope
+      type: object
     LoginMethodDto:
       properties:
         mask:
@@ -26687,6 +26702,124 @@ paths:
         - bearer: []
       tags:
         - social
+  /v1/me/live-updates:
+    get:
+      operationId: LiveUpdatesController_stream
+      parameters:
+        - description: Opaque account-bound recovery cursor (maximum 512 characters).
+          in: header
+          name: Last-Event-ID
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            text/event-stream:
+              schema:
+                properties:
+                  scope:
+                    enum:
+                      - reset
+                      - rooms
+                      - partners
+                      - messages
+                      - heartbeat
+                      - renew
+                      - unavailable
+                    type: string
+                required:
+                  - scope
+                type: object
+          description: 'SSE frames: event: change, id: opaque cursor, data: JSON event. Heartbeats are comments; renewal closes the bounded response.'
+        '400':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    example: VALIDATION_FAILED
+                    type: string
+                  details:
+                    type: object
+                  message:
+                    example: Request validation failed
+                    type: string
+                  requestId:
+                    example: 5b27b1e0-f183-46f6-b9e8-1421235a8bb1
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: ''
+      security:
+        - bearer: []
+      tags:
+        - live-updates
   /v1/me/login-methods:
     get:
       operationId: MeAuthController_methods

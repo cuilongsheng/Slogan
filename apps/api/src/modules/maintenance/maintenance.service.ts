@@ -1,4 +1,5 @@
 import { Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { LiveUpdatesService } from '../live-updates/index.js';
 import { ConfigService } from '@nestjs/config';
 import { QueueClient } from '@vercel/queue';
 import type { Environment } from '../../config/environment.js';
@@ -26,6 +27,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     private readonly leases: MaintenanceLease,
     private readonly config: ConfigService<Environment, true>,
     private readonly logger: StructuredLogger,
+    private readonly live: LiveUpdatesService,
   ) {}
   get managed() {
     return process.env.VERCEL === '1';
@@ -39,6 +41,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       if (this.running) return;
       this.running = this.direct
         .maintain()
+        .then(() => this.live.recover())
         .then(() => undefined)
         .catch(() => this.logger.warn('direct_maintenance_pending'))
         .finally(() => {
@@ -68,8 +71,24 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       { retentionSeconds: 604800, delaySeconds, idempotencyKey: `maintenance-${bucket}` },
     );
   }
-  async process(job: { kind: string }) {
+  async process(job: { kind: string; userId?: string; generation?: string }) {
     if (!this.production) return;
+    if (job?.kind === 'presence-expiry') {
+      if (
+        !job.userId ||
+        !/^[-a-f0-9]{36}$/.test(job.userId) ||
+        !job.generation ||
+        !/^[-a-f0-9]{36}$/.test(job.generation)
+      )
+        throw new Error('Invalid presence job');
+      const ttl = await this.live.expirePresence(job.userId, job.generation);
+      if (ttl > 0)
+        await this.queue.send('slogan-maintenance', job, {
+          delaySeconds: Math.max(1, Math.ceil(ttl / 1000)),
+          retentionSeconds: 604800,
+        });
+      return;
+    }
     if (job?.kind !== 'maintenance') throw new Error('Invalid maintenance job');
     // Publish the continuation before acknowledging this delivery. A failed publish must retry.
     await this.publish(60);
@@ -79,6 +98,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     try {
       const results = await Promise.allSettled([
         this.direct.maintain(),
+        this.live.recover(),
         this.safety.recover(),
         this.operations.runOnce(),
         this.realtime.ensureRecovery(),
@@ -88,6 +108,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       ]);
       if (results.some((result) => result.status === 'rejected'))
         throw new Error('Maintenance recovery pending');
+      await this.live.recover();
       success = true;
     } finally {
       await this.leases.finish(claim, success);

@@ -1,6 +1,14 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
+import { QueueClient } from '@vercel/queue';
+import {
+  LIVE_PUBLIC,
+  LIVE_EXPIRIES,
+  renewLivePresence,
+  expireLivePresence,
+} from './live-stream.scripts.js';
 
 import type { Environment } from '../../config/environment.js';
 import { SocialError } from '../../modules/social/domain/errors/social.error.js';
@@ -35,7 +43,33 @@ export class SocialPresenceStore implements SocialPresence, OnModuleDestroy {
       throw new SocialError('SOCIAL_PRESENCE_UNAVAILABLE', 'Presence is temporarily unavailable');
     try {
       await this.connect();
-      await this.client.set(this.key(userId), '1', 'EX', this.ttlSeconds);
+      await this.client.eval(
+        renewLivePresence,
+        3,
+        this.key(userId),
+        LIVE_PUBLIC,
+        LIVE_EXPIRIES,
+        userId,
+        this.ttlSeconds,
+      );
+      if (process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production') {
+        const chain = `slogan:live:presence-chain:${userId}`;
+        const generation = randomUUID();
+        if (
+          await this.client.set(chain, generation, 'EX', Math.max(300, this.ttlSeconds * 3), 'NX')
+        ) {
+          try {
+            await new QueueClient().send(
+              'slogan-maintenance',
+              { kind: 'presence-expiry', userId, generation },
+              { delaySeconds: this.ttlSeconds, retentionSeconds: 604800 },
+            );
+          } catch (error) {
+            await this.client.del(chain);
+            throw error;
+          }
+        }
+      }
       return {
         expiresAt: new Date(Date.now() + this.ttlSeconds * 1000),
         refreshAfterSeconds: Math.max(15, Math.floor(this.ttlSeconds / 2)),
@@ -65,6 +99,14 @@ export class SocialPresenceStore implements SocialPresence, OnModuleDestroy {
     try {
       await this.connect();
       await this.client.del(this.key(userId));
+      await this.client.eval(
+        expireLivePresence,
+        3,
+        this.key(userId),
+        LIVE_PUBLIC,
+        LIVE_EXPIRIES,
+        userId,
+      );
     } catch {
       this.client.disconnect();
     }
