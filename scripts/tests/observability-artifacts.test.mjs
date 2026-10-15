@@ -51,7 +51,7 @@ test('actual CLI inject and Node SDK preserve the same Debug ID after privacy fi
     assert.equal(events.length, 1);
     assert.ok(!output.includes('PRIVATE_CANARY'));
     assert.equal(events[0][1][0][1].debug_meta.images[0].debug_id, map.debugId);
-    assert.equal(events[0][1][0][1].debug_meta.images[0].code_file, 'dist/canary.js');
+    assert.equal(events[0][1][0][1].debug_meta.images[0].code_file, 'app:///dist/canary.js');
     const httpScript = `
       import * as Sentry from '@sentry/nestjs';
       import { createSentryOptions } from ${JSON.stringify(pathToFileURL(`${root}apps/api/dist/infrastructure/observability/sentry-options.js`).href)};

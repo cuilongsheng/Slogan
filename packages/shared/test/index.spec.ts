@@ -75,7 +75,9 @@ describe('observability privacy boundary', () => {
           {
             type: 'TypeError',
             value: 'UNEXPECTED_ERROR',
-            stacktrace: { frames: [{ filename: 'src/main.ts', function: 'bootstrap', lineno: 4 }] },
+            stacktrace: {
+              frames: [{ filename: 'app:///src/main.ts', function: 'bootstrap', lineno: 4 }],
+            },
           },
         ],
       },

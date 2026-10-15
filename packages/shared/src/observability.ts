@@ -166,6 +166,15 @@ export function sanitizeObservabilityEvent(
 ): Fields | null {
   if (!validObservabilityMetadata(metadata)) return null;
   const event = object(input);
+  const sourceFrame = (input: unknown): Fields | null => {
+    const frame = safeFrame(input);
+    if (frame && metadata.platform === 'node') {
+      // Debug ID processing requires a URL-shaped location, not a relative path.
+      const filename = frame.filename as string;
+      frame.filename = filename.startsWith('app:///') ? filename : `app:///${filename}`;
+    }
+    return frame;
+  };
   const tags = object(event.tags);
   const code =
     context.code ??
@@ -238,7 +247,7 @@ export function sanitizeObservabilityEvent(
       const frames = Array.isArray(rawFrames)
         ? rawFrames
             .slice(-30)
-            .map(safeFrame)
+            .map(sourceFrame)
             .filter((frame) => frame !== null)
         : [];
       return {
@@ -257,7 +266,7 @@ export function sanitizeObservabilityEvent(
   if (Array.isArray(images)) {
     const cleanImages = images.slice(0, 20).flatMap((image) => {
       const fields = object(image);
-      const frame = safeFrame({ filename: fields.code_file });
+      const frame = sourceFrame({ filename: fields.code_file });
       return fields.type === 'sourcemap' &&
         typeof fields.debug_id === 'string' &&
         validRequestId(fields.debug_id) &&
