@@ -1,7 +1,9 @@
-import { Room, RoomEvent, Track, type RemoteTrack } from 'livekit-client';
+import { Room, RoomEvent, Track, DisconnectReason, type RemoteTrack } from 'livekit-client';
 
 import type { RealtimeCredential } from './api';
 import { isRoomSafetyAlertSignal } from './safetySignal';
+import { reportMobileError } from '../../services/observability';
+import { beginVoiceTrace } from '../../services/observability/tracing';
 
 export type MediaConnection = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 export interface MediaParticipant {
@@ -30,6 +32,11 @@ export class LiveKitVoiceMedia {
   private safetySignalListeners = new Set<() => void>();
   private connection: MediaConnection = 'disconnected';
   private platformStarted = false;
+  private finishConnect: ReturnType<typeof beginVoiceTrace> | undefined;
+  private finishReconnect: ReturnType<typeof beginVoiceTrace> | undefined;
+  private finishQuality: ReturnType<typeof beginVoiceTrace> | undefined;
+  private qualityChanges = 0;
+  private quality = 'unknown';
 
   constructor(private readonly platform: MediaPlatform) {}
 
@@ -67,7 +74,11 @@ export class LiveKitVoiceMedia {
   }
 
   async connect(credential: RealtimeCredential): Promise<void> {
+    const started = Date.now();
     await this.disconnect();
+    this.finishConnect = beginVoiceTrace('connect');
+    this.qualityChanges = 0;
+    this.quality = 'unknown';
     this.connection = 'connecting';
     this.emit();
     try {
@@ -88,16 +99,70 @@ export class LiveKitVoiceMedia {
         this.safetySignalListeners.forEach((listener) => listener());
       });
       room.on(RoomEvent.Reconnecting, () => {
+        if (this.room !== room) return;
+        if (!this.finishReconnect) this.finishReconnect = beginVoiceTrace('reconnect');
         this.connection = 'reconnecting';
         this.emit();
       });
       room.on(RoomEvent.Reconnected, () => {
+        if (this.room !== room) return;
+        this.finishReconnect?.('ok');
+        this.finishReconnect = undefined;
         this.connection = 'connected';
         this.emit();
       });
-      room.on(RoomEvent.Disconnected, () => {
+      room.on(RoomEvent.Disconnected, (reason) => {
+        if (this.room !== room) return;
+        const expected =
+          reason === DisconnectReason.CLIENT_INITIATED ||
+          reason === DisconnectReason.PARTICIPANT_REMOVED ||
+          reason === DisconnectReason.ROOM_DELETED;
+        this.finishConnect?.(expected ? 'cancelled' : 'error');
+        this.finishConnect = undefined;
+        this.finishReconnect?.(expected ? 'cancelled' : 'error');
+        this.finishReconnect = undefined;
+        this.finishQuality?.('ok');
+        this.finishQuality = undefined;
+        if (this.room === room && !expected)
+          reportMobileError(
+            { code: 'VOICE_DISCONNECTED' },
+            {
+              code:
+                this.connection === 'reconnecting'
+                  ? 'VOICE_RECONNECT_FAILED'
+                  : 'VOICE_DISCONNECTED',
+              stage: this.connection === 'reconnecting' ? 'reconnect' : 'connect',
+              durationMs: Date.now() - started,
+            },
+          );
         this.connection = 'disconnected';
         this.emit();
+      });
+      room.on(RoomEvent.TrackSubscriptionFailed, () => {
+        if (this.room === room)
+          reportMobileError(
+            { code: 'VOICE_TRACK_SUBSCRIPTION_FAILED' },
+            { code: 'VOICE_TRACK_SUBSCRIPTION_FAILED', stage: 'subscribe' },
+          );
+      });
+      room.on(RoomEvent.ConnectionQualityChanged, (quality, participant) => {
+        if (
+          this.room !== room ||
+          participant !== room.localParticipant ||
+          this.connection === 'disconnected'
+        )
+          return;
+        const value = ['excellent', 'good', 'poor', 'lost'].includes(quality) ? quality : 'unknown';
+        if (value === this.quality) return;
+        if (this.qualityChanges >= 20) {
+          this.finishQuality?.('cancelled');
+          this.finishQuality = undefined;
+          return;
+        }
+        this.finishQuality?.('ok');
+        this.quality = value;
+        this.qualityChanges += 1;
+        this.finishQuality = beginVoiceTrace('quality', value);
       });
       room.on(RoomEvent.TrackSubscribed, (track) => {
         if (track.kind === Track.Kind.Audio) this.platform.attachRemoteAudio(track);
@@ -113,9 +178,20 @@ export class LiveKitVoiceMedia {
       if (room.localParticipant.isMicrophoneEnabled) {
         await room.localParticipant.setMicrophoneEnabled(false);
       }
+      if (this.room !== room) return;
       this.connection = 'connected';
+      this.finishConnect?.('ok');
+      this.finishConnect = undefined;
+      if (!this.finishQuality) this.finishQuality = beginVoiceTrace('quality', this.quality);
       this.emit();
     } catch (error) {
+      this.finishConnect?.('error');
+      this.finishConnect = undefined;
+      reportMobileError(error, {
+        code: 'VOICE_CONNECT_FAILED',
+        stage: 'connect',
+        durationMs: Date.now() - started,
+      });
       await this.disconnect();
       throw error;
     }
@@ -134,8 +210,15 @@ export class LiveKitVoiceMedia {
   }
 
   async disconnect(): Promise<void> {
+    this.finishConnect?.('cancelled');
+    this.finishConnect = undefined;
+    this.finishReconnect?.('cancelled');
+    this.finishReconnect = undefined;
+    this.finishQuality?.('ok');
+    this.finishQuality = undefined;
     const room = this.room;
     this.room = null;
+    room?.removeAllListeners();
     this.connection = 'disconnected';
     if (room) await room.disconnect();
     if (this.platformStarted) {

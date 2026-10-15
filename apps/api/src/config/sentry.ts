@@ -3,6 +3,7 @@ export interface SentryConfiguration {
   environment: string;
   tracesSampleRate: number;
   release?: string;
+  dist?: string;
 }
 
 /** Parse before Nest imports; never include configuration values in errors. */
@@ -41,10 +42,18 @@ export function readSentryConfiguration(
     throw new Error('Invalid Sentry environment configuration');
   }
   const sha = env.VERCEL_GIT_COMMIT_SHA;
+  const release =
+    env.SENTRY_RELEASE ?? (sha && /^[a-f\d]{40}$/i.test(sha) ? `slogan-api@${sha}` : undefined);
+  if (release && !/^slogan-api@[a-f\d]{40}$/i.test(release))
+    throw new Error('Invalid Sentry release configuration');
+  const dist = env.SENTRY_DIST;
+  if (dist && !/^[a-f\d]{7,40}(?:\.\d{1,12})?$/i.test(dist))
+    throw new Error('Invalid Sentry build configuration');
   return {
     dsn,
     environment,
     tracesSampleRate,
-    ...(sha && /^[a-f\d]{40}$/i.test(sha) ? { release: `slogan-api@${sha}` } : {}),
+    ...(release ? { release } : {}),
+    ...(dist ? { dist } : {}),
   };
 }

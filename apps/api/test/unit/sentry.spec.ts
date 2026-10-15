@@ -97,10 +97,45 @@ describe('Sentry outbound privacy', () => {
       },
     });
     expect(event.exception?.values?.[0]?.stacktrace?.frames?.[0]).toEqual({
-      filename: 'app:///src/main.ts',
+      filename: 'app:///apps/api/src/main.ts',
       lineno: 42,
     });
     expect(JSON.stringify(event)).not.toContain('PRIVATE_CANARY');
+  });
+  it('preserves matching debug IDs and code filenames without protected source information', () => {
+    const debugId = 'a1b2c3d4-e5f6-4abc-8def-123456789abc';
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          {
+            type: 'Error',
+            stacktrace: { frames: [{ filename: '/var/task/apps/api/src/main.js', lineno: 12 }] },
+          },
+        ],
+      },
+      debug_meta: {
+        images: [
+          {
+            type: 'sourcemap' as const,
+            debug_id: debugId,
+            code_file: '/var/task/apps/api/src/main.js',
+          },
+        ],
+      },
+    };
+    const clean = sanitizeSentryError(event);
+    expect(clean.debug_meta?.images?.[0]).toEqual({
+      type: 'sourcemap',
+      debug_id: debugId,
+      code_file: 'app:///apps/api/src/main.js',
+    });
+    expect(clean.exception?.values?.[0]?.stacktrace?.frames?.[0]?.filename).toBe(
+      'app:///apps/api/src/main.js',
+    );
+    expect(
+      sanitizeSentryError({ ...event, tags: { 'slogan.protected': true } }),
+    ).not.toHaveProperty('debug_meta');
   });
   it('removes SQL, links and free text from spans, keeping timing and fixed route templates', () => {
     const span = sanitizeSentrySpan({

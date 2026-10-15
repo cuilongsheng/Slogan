@@ -1,4 +1,7 @@
-import { Stack } from 'expo-router';
+import { Stack, ErrorBoundary as RouterErrorBoundary } from 'expo-router';
+import { wrapRouterErrorBoundary } from '../src/services/observability';
+
+export const ErrorBoundary = wrapRouterErrorBoundary(RouterErrorBoundary);
 
 import { AuthProvider } from '../src/features/auth/context';
 import { EmailFlowProvider } from '../src/features/auth/emailFlow';

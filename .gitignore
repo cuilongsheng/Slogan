@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-pages/
 coverage/
 .expo/
 expo-env.d.ts
@@ -23,3 +24,6 @@ apps/mobile/ios/
 *.log
 pnpm-debug.log*
 npm-debug.log*
+
+# Local Vercel settings and generated function bundles
+**/.vercel/

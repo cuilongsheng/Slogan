@@ -1,5 +1,6 @@
 import type * as Sentry from '@sentry/nestjs';
 import { captureException, getClient, httpIntegration } from '@sentry/nestjs';
+import { OBSERVABILITY_CODES, validRequestId } from '@slogan/shared';
 
 import type { SentryConfiguration } from '../../config/sentry.js';
 
@@ -10,6 +11,15 @@ type Event = Parameters<NonNullable<Options['beforeSend']>>[0];
 
 function operation(value: unknown): string {
   return typeof value === 'string' && /^[a-z_.]{1,60}$/.test(value) ? value : 'operation';
+}
+
+function codeFilename(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const filename = value.replaceAll('\\', '/');
+  const path = filename.match(
+    /\/(?:apps\/api\/|packages\/[a-zA-Z0-9_-]+\/)?(?:src|dist)\/[a-zA-Z0-9_./-]+\.[cm]?[jt]s$/,
+  )?.[0];
+  return path ? `app://${path}` : undefined;
 }
 
 export function sanitizeSentrySpan(span: Span): Span {
@@ -45,7 +55,16 @@ export function sanitizeSentrySpan(span: Span): Span {
 }
 
 export function sanitizeSentryError(event: Event): Event {
-  const protectedRequest = event.tags?.['slogan.protected'] === true;
+  const protectedRequest =
+    event.tags?.['slogan.protected'] === true ||
+    event.tags?.protected === 'true' ||
+    (event.exception?.values ?? []).some((value) =>
+      (value.stacktrace?.frames ?? []).some(
+        (frame) =>
+          typeof frame.filename === 'string' &&
+          /(?:\/|^)(?:backoffice|audit)(?:\/|\.)/.test(frame.filename),
+      ),
+    );
   const trace = event.contexts?.trace;
   return {
     type: undefined,
@@ -55,7 +74,33 @@ export function sanitizeSentryError(event: Event): Event {
     level: 'error',
     ...(event.environment === undefined ? {} : { environment: event.environment }),
     ...(event.release === undefined ? {} : { release: event.release }),
-    tags: { service: 'slogan-api' },
+    ...(event.dist === undefined ? {} : { dist: event.dist }),
+    tags: {
+      service: 'slogan-api',
+      ...(validRequestId(event.tags?.requestId) ? { requestId: event.tags.requestId } : {}),
+      ...(typeof event.tags?.resultCode === 'string' &&
+      OBSERVABILITY_CODES.some((code) => code === event.tags?.resultCode)
+        ? { resultCode: event.tags.resultCode }
+        : {}),
+    },
+    ...(!protectedRequest && event.debug_meta?.images
+      ? {
+          debug_meta: {
+            images: event.debug_meta.images
+              .flatMap((image) => {
+                if (image.type !== 'sourcemap') return [];
+                const filename = codeFilename(image.code_file);
+                return filename &&
+                  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+                    image.debug_id,
+                  )
+                  ? [{ type: 'sourcemap' as const, debug_id: image.debug_id, code_file: filename }]
+                  : [];
+              })
+              .slice(0, 30),
+          },
+        }
+      : {}),
     ...(!protectedRequest && trace
       ? {
           contexts: {
@@ -86,14 +131,11 @@ export function sanitizeSentryError(event: Event): Event {
           ? {
               stacktrace: {
                 frames: (value.stacktrace.frames ?? []).flatMap((frame) => {
-                  const filename = frame.filename?.replaceAll('\\', '/');
-                  const path = filename?.match(
-                    /\/(?:src|dist)\/([a-zA-Z0-9_./-]+\.[cm]?[jt]s)$/,
-                  )?.[0];
-                  if (!path) return [];
+                  const filename = codeFilename(frame.filename);
+                  if (!filename) return [];
                   return [
                     {
-                      filename: `app://${path}`,
+                      filename,
                       ...(frame.lineno === undefined ? {} : { lineno: frame.lineno }),
                       ...(frame.colno === undefined ? {} : { colno: frame.colno }),
                       ...(frame.in_app === undefined ? {} : { in_app: frame.in_app }),

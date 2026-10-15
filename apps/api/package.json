@@ -25,7 +25,7 @@
     "openapi:generate": "pnpm build && node dist/scripts/generate-openapi.js",
     "openapi:check": "pnpm build && node dist/scripts/generate-openapi.js --check",
     "test": "pnpm test:unit && pnpm test:integration && pnpm test:e2e",
-    "test:unit": "prisma generate && APP_NAME=slogan-api-test node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand test/unit test/bootstrap.spec.ts",
+    "test:unit": "prisma generate && APP_NAME=slogan-api-test node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand test/unit test/bootstrap.spec.ts src/modules",
     "test:integration": "pnpm db:test:migrate && prisma generate && DATABASE_URL=postgresql://slogan:slogan@127.0.0.1:54329/slogan_test APP_NAME=slogan-api-test node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand test/integration",
     "test:e2e": "prisma generate && APP_NAME=slogan-api-test node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand test/e2e",
     "test:runtime": "pnpm build && pnpm db:test:migrate && prisma generate && DATABASE_URL=postgresql://slogan:slogan@127.0.0.1:54329/slogan_test APP_NAME=slogan-api-test node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand test/runtime",
@@ -64,7 +64,8 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "yaml": "2.9.0",
-    "zod": "4.5.4"
+    "zod": "4.5.4",
+    "@slogan/shared": "workspace:*"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "10.1.1",

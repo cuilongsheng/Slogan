@@ -10,6 +10,11 @@ import type { Request, Response } from 'express';
 import { StructuredLogger } from '../../infrastructure/observability/structured-logger.service.js';
 import { AppError } from '../errors/app-error.js';
 import { SentryExceptionCaptured, withScope } from '@sentry/nestjs';
+import { classifyObservabilityError, validRequestId } from '@slogan/shared';
+import {
+  errorWasReported,
+  markErrorReported,
+} from '../../infrastructure/observability/error-reporting.js';
 
 type RequestWithId = Request & { id?: string };
 
@@ -29,7 +34,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
           : this.isPublicCodedError(exception)
             ? this.statusForCode(exception.code)
             : 500;
-    if (status >= 500) {
+    if (status >= 500 && !errorWasReported(exception)) {
       // Normalize before the official decorator captures, preserving response semantics.
       const error = new Error('Unexpected API failure');
       const protectedRequest = request.path.startsWith('/v1/backoffice');
@@ -40,8 +45,16 @@ export class ApiExceptionFilter implements ExceptionFilter {
       }
       withScope((scope) => {
         scope.setTag('slogan.protected', protectedRequest);
+        scope.setTag(
+          'resultCode',
+          protectedRequest
+            ? 'BACKOFFICE_INTERNAL_ERROR'
+            : (classifyObservabilityError(exception, status) ?? 'HTTP_SERVER_ERROR'),
+        );
+        if (validRequestId(request.id)) scope.setTag('requestId', request.id);
         this.captureUnexpectedException(error, host);
       });
+      markErrorReported(exception);
     }
 
     if (request.path.startsWith('/v1/backoffice')) {
@@ -216,6 +229,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       'ROOM_RESERVED',
       'ROOM_ENDED',
       'ROOM_FULL',
+      'ROOM_MESSAGE_RATE_LIMITED',
       'ROOM_PASSWORD_REQUIRED',
       'ROOM_PASSWORD_INVALID',
       'ROOM_RULES_NOT_ACCEPTED',
@@ -367,6 +381,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       ].includes(code)
     )
       return HttpStatus.CONFLICT;
+    if (code === 'ROOM_MESSAGE_RATE_LIMITED') return HttpStatus.TOO_MANY_REQUESTS;
     if (code === 'ROOM_ENDED' || code === 'ROOM_FULL') return HttpStatus.CONFLICT;
     if (code === 'ROOM_PASSWORD_REQUIRED' || code === 'ROOM_PASSWORD_INVALID') {
       return HttpStatus.FORBIDDEN;

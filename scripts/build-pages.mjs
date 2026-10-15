@@ -1,6 +1,14 @@
 import { spawnSync } from 'node:child_process';
 import { access, copyFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  buildMetadata,
+  currentRevision,
+  uploadSourceMaps,
+  removePublicMaps,
+  runTool,
+  requireCleanRelease,
+} from './observability-build.mjs';
 
 export const API_ROUTES = { version: 1, include: ['/v1', '/v1/*'], exclude: [] };
 const root = new URL('../', import.meta.url);
@@ -58,12 +66,20 @@ async function main() {
   const site = sites[process.argv[2]];
   if (!site) throw new Error('Choose admin or mobile');
   const origin = validateSiteOrigin(process.env[site.key], site.key);
-  const result = spawnSync('pnpm', site.args, {
+  const metadata = buildMetadata(process.argv[2], process.env, currentRevision());
+  if (metadata.enabled) requireCleanRelease();
+  runTool('pnpm', ['--filter', '@slogan/shared', 'build'], metadata.env);
+  const args = [...site.args];
+  if (process.argv[2] === 'mobile' && metadata.enabled) args.push('--source-maps');
+  const result = spawnSync('pnpm', args, {
     cwd: fileURLToPath(root),
     stdio: 'inherit',
-    env: { ...process.env, [site.key]: origin, EXPO_NO_DOTENV: '1' },
+    env: { ...metadata.env, [site.key]: origin, EXPO_NO_DOTENV: '1' },
   });
   if (result.error || result.status !== 0) throw new Error('Pages frontend build failed');
+  if (process.argv[2] === 'mobile')
+    await uploadSourceMaps('mobile', fileURLToPath(new URL(site.output, root)), metadata);
+  await removePublicMaps(fileURLToPath(new URL(site.output, root)));
   await packagePages(new URL(site.output, root));
   console.log(`Pages ${process.argv[2]} output includes worker and API routes`);
 }

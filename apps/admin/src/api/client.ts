@@ -1,4 +1,6 @@
 import { createSloganApiClient } from '@slogan/api-client';
+import { clearAdminObservability, observeAdminFetch } from '../app/observability';
+import { rememberAdminRequest, traceAdminFetch } from '../app/tracing';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 let accessToken: string | null = null;
@@ -6,10 +8,19 @@ let refreshPromise: Promise<string | null> | null = null;
 
 const browserClient = createSloganApiClient({
   baseUrl,
-  fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+  onRequest: rememberAdminRequest,
+  fetch: (input, init) =>
+    traceAdminFetch(
+      input,
+      init,
+      (tracedInput, tracedInit) =>
+        observeAdminFetch(() => fetch(tracedInput, { ...tracedInit, credentials: 'include' })),
+      baseUrl,
+    ),
 });
 
 export function setAccessToken(token: string | null) {
+  if (token === null) clearAdminObservability();
   accessToken = token;
 }
 
@@ -33,20 +44,31 @@ export async function refreshAccessToken(): Promise<string | null> {
 
 export const adminApi = createSloganApiClient({
   baseUrl,
-  fetch: async (input, init) => {
-    const request = new Request(input, init);
-    const headers = new Headers(request.headers);
-    if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-    let response = await fetch(request, { credentials: 'include', headers });
-    if (response.status === 401 && !request.url.includes('/v1/auth/')) {
-      const token = await refreshAccessToken();
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-        response = await fetch(request, { credentials: 'include', headers });
-      }
-    }
-    return response;
-  },
+  onRequest: rememberAdminRequest,
+  fetch: (input, init) =>
+    traceAdminFetch(
+      input,
+      init,
+      async (input, init) => {
+        const request = new Request(input, init);
+        const headers = new Headers(request.headers);
+        if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+        const isProtected = new URL(request.url).pathname.startsWith('/v1/backoffice');
+        const response = await observeAdminFetch(async () => {
+          let response = await fetch(request, { credentials: 'include', headers });
+          if (response.status === 401 && !request.url.includes('/v1/auth/')) {
+            const token = await refreshAccessToken();
+            if (token) {
+              headers.set('Authorization', `Bearer ${token}`);
+              response = await fetch(request, { credentials: 'include', headers });
+            }
+          }
+          return response;
+        }, isProtected);
+        return response;
+      },
+      baseUrl,
+    ),
 });
 
 export async function exchangePassword(username: string, password: string) {
@@ -66,6 +88,7 @@ export async function logoutBrowser() {
     await browserClient.POST('/v1/auth/web/logout');
   } finally {
     accessToken = null;
+    clearAdminObservability();
   }
 }
 
