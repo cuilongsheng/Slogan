@@ -102,6 +102,7 @@ export function createApiProxy({ fetchUpstream = fetch, timeoutMs = 90_000 } = {
         timedOut = true;
         controller.abort();
       }, timeoutMs);
+      let streamingResponse = false;
       try {
         const target = `${origin}${incoming.pathname}${incoming.search}`;
         const upstream = await fetchUpstream(target, {
@@ -152,6 +153,45 @@ export function createApiProxy({ fetchUpstream = fetch, timeoutMs = 90_000 } = {
         responseHeaders.set('cloudflare-cdn-cache-control', 'no-store');
         for (const name of ['etag', 'last-modified', 'expires', 'age'])
           responseHeaders.delete(name);
+        if (
+          upstream.headers.get('content-type')?.startsWith('text/event-stream') &&
+          upstream.body &&
+          request.method !== 'HEAD'
+        ) {
+          streamingResponse = true;
+          responseHeaders.set('cache-control', 'private, no-store, no-transform');
+          responseHeaders.delete('content-length');
+          const reader = upstream.body.getReader();
+          const bodyTimer = setTimeout(cancel, 300000);
+          const finish = () => {
+            clearTimeout(bodyTimer);
+            request.signal.removeEventListener('abort', cancel);
+          };
+          const body = new ReadableStream({
+            async pull(sink) {
+              try {
+                const chunk = await reader.read();
+                if (chunk.done) {
+                  finish();
+                  sink.close();
+                } else sink.enqueue(chunk.value);
+              } catch (error) {
+                finish();
+                sink.error(error);
+              }
+            },
+            async cancel() {
+              finish();
+              controller.abort();
+              await reader.cancel().catch(() => undefined);
+            },
+          });
+          return new Response(body, {
+            status: upstream.status,
+            statusText: upstream.statusText,
+            headers: responseHeaders,
+          });
+        }
         return new Response(
           request.method === 'HEAD' || [204, 205, 304].includes(upstream.status)
             ? null
@@ -170,7 +210,7 @@ export function createApiProxy({ fetchUpstream = fetch, timeoutMs = 90_000 } = {
         );
       } finally {
         clearTimeout(timer);
-        request.signal.removeEventListener('abort', cancel);
+        if (!streamingResponse) request.signal.removeEventListener('abort', cancel);
       }
     },
   };

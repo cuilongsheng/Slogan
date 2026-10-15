@@ -358,3 +358,38 @@ test('APK downloads use fixed public release redirects without forwarding creden
   });
   assert.equal(staticCalls, 1);
 });
+
+test('SSE proxy delivers separate chunks and keeps downstream cancellation bound after headers', async () => {
+  let upstreamSignal;
+  let source;
+  let cancelled = false;
+  const proxy = createApiProxy({
+    fetchUpstream: async (_url, init) => {
+      upstreamSignal = init.signal;
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            source = controller;
+          },
+          cancel() {
+            cancelled = true;
+          },
+        }),
+        { headers: { 'content-type': 'text/event-stream', 'content-length': '999' } },
+      );
+    },
+  });
+  const abort = new AbortController();
+  const response = await proxy.fetch(request('/v1/me/live-updates', { signal: abort.signal }), env);
+  assert.match(response.headers.get('cache-control'), /no-transform/);
+  assert.equal(response.headers.get('content-length'), null);
+  const reader = response.body.getReader();
+  source.enqueue(new TextEncoder().encode('data: {"scope":"reset"}\n\n'));
+  assert.match(new TextDecoder().decode((await reader.read()).value), /reset/);
+  source.enqueue(new TextEncoder().encode('data: {"scope":"messages"}\n\n'));
+  assert.match(new TextDecoder().decode((await reader.read()).value), /messages/);
+  abort.abort();
+  assert.equal(upstreamSignal.aborted, true);
+  await reader.cancel();
+  assert.equal(cancelled, true);
+});

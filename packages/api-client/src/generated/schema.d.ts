@@ -1525,6 +1525,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/live-updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["LiveUpdatesController_stream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/login-methods": {
         parameters: {
             query?: never;
@@ -3181,6 +3197,10 @@ export interface components {
         LinkResultDto: {
             /** @enum {string} */
             result: "CREATED" | "ALREADY_LINKED";
+        };
+        LiveUpdateEventDto: {
+            /** @enum {string} */
+            scope: "reset" | "rooms" | "partners" | "messages" | "heartbeat" | "renew" | "unavailable";
         };
         LoginMethodDto: {
             /** @example +86••78 */
@@ -17681,6 +17701,96 @@ export interface operations {
                 };
             };
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
+    LiveUpdatesController_stream: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Opaque account-bound recovery cursor (maximum 512 characters). */
+                "Last-Event-ID"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SSE frames: event: change, id: opaque cursor, data: JSON event. Heartbeats are comments; renewal closes the bounded response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": {
+                        /** @enum {string} */
+                        scope: "reset" | "rooms" | "partners" | "messages" | "heartbeat" | "renew" | "unavailable";
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

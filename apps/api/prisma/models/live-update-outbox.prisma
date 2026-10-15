@@ -1,0 +1,7 @@
+model LiveUpdateOutbox {
+  id String @id @default(uuid()) @db.Uuid
+  scope String @db.VarChar(16)
+  ownerId String? @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  @@index([createdAt, id])
+}
