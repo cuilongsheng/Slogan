@@ -1,3 +1,4 @@
+import '../../infrastructure/observability/instrument.js';
 import { NestFactory } from '@nestjs/core';
 import { AuthMailWorkerModule } from './auth-mail-worker.module.js';
 async function bootstrap() {

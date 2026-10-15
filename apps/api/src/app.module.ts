@@ -18,6 +18,7 @@ import { AssistanceModule } from './modules/assistance/index.js';
 import { SpeechSafetyModule } from './modules/speech-safety/index.js';
 import { PostRoomLearningModule } from './modules/post-room-learning/index.js';
 import { OperationsModule } from './modules/operations/index.js';
+import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { OperationsModule } from './modules/operations/index.js';
       validate: validateEnvironment,
     }),
     ObservabilityModule,
+    HealthModule,
     DatabaseModule,
     ProfilesModule,
     AuthModule,

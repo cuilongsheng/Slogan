@@ -1,3 +1,4 @@
+import '../../infrastructure/observability/instrument.js';
 import { NestFactory } from '@nestjs/core';
 import { RoomSpeechWorkerModule } from './room-speech-worker.module.js';
 

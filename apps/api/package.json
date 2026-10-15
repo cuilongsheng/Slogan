@@ -21,7 +21,7 @@
     "backup:postgres": "node scripts/backup-postgres.mjs",
     "restore:postgres": "node scripts/restore-postgres.mjs",
     "recovery:check": "node scripts/check-recovery-invariants.mjs",
-    "lint": "eslint src test --max-warnings=0",
+    "lint": "eslint src api test --max-warnings=0",
     "openapi:generate": "pnpm build && node dist/scripts/generate-openapi.js",
     "openapi:check": "pnpm build && node dist/scripts/generate-openapi.js --check",
     "test": "pnpm test:unit && pnpm test:integration && pnpm test:e2e",
@@ -34,7 +34,9 @@
     "start:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker node dist/workers/auth-mail/main.js",
     "dev:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker nest start --watch --entryFile workers/auth-mail/main",
     "preview:accounts": "node dist/scripts/preview-accounts.js",
-    "test:sentry": "node scripts/check-sentry.mjs"
+    "test:sentry": "node scripts/check-sentry.mjs",
+    "start:monitor-worker": "APP_NAME=slogan-monitor-worker node dist/workers/monitor/main.js",
+    "observability:seed": "APP_NAME=slogan-monitor-seed node dist/scripts/seed-observability.js"
   },
   "dependencies": {
     "@livekit/rtc-node": "1.0.0",
@@ -65,7 +67,8 @@
     "rxjs": "7.8.2",
     "yaml": "2.9.0",
     "zod": "4.5.4",
-    "@slogan/shared": "workspace:*"
+    "@slogan/shared": "workspace:*",
+    "@vercel/queue": "0.8.0"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "10.1.1",

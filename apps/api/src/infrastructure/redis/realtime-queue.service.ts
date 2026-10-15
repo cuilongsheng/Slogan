@@ -2,6 +2,7 @@ import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
+import { reportError } from '../observability/error-reporting.js';
 import type { Environment } from '../../config/environment.js';
 import { StructuredLogger } from '../observability/structured-logger.service.js';
 
@@ -37,9 +38,10 @@ export class RealtimeQueue implements OnModuleDestroy {
     });
     this.queue.on('error', () => this.logger.warn('realtime_queue_unavailable'));
     this.worker.on('error', () => this.logger.warn('realtime_worker_unavailable'));
-    this.worker.on('failed', (job) =>
-      this.logger.warn({ event: 'realtime_job_failed', jobId: job?.id }),
-    );
+    this.worker.on('failed', (job, error) => {
+      reportError(error, { code: 'QUEUE_TASK_FAILED', stage: 'worker' });
+      this.logger.warn({ event: 'realtime_job_failed', jobId: job?.id });
+    });
     // Connectivity recovery is asynchronous; durable PostgreSQL state remains the scheduling source.
   }
   async enqueue(job: RealtimeJob, runAt = new Date()) {

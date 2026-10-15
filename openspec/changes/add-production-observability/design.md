@@ -146,3 +146,5 @@ Admin 在实际 `build:pages:admin` 的 Vite 路径生成 hidden source maps、�
 - [Expo Sentry 构建/更新说明](https://docs.expo.dev/guides/using-sentry/) 与 [Sentry Vite source maps](https://docs.sentry.io/platforms/javascript/guides/react/sourcemaps/uploading/vite/)：映射到本仓库实际构建路径。
 - [Vercel Queues](https://vercel.com/docs/queues)、[SDK](https://vercel.com/docs/queues/sdk) 与 [价格/限制](https://vercel.com/docs/queues/pricing)：延迟、至少一次投递、幂等发布和 beta 限制不能作为本项目云端运行证据。
 - [Sentry 价格](https://sentry.io/pricing/) 与 [Better Stack 价格](https://betterstack.com/pricing)：只作为启用前的计划核对入口，不固定长期免费承诺。
+
+2026-10-15 后续授权补充：用户单独批准创建 org:ci 构建 token，并要求可直接完成 Sentry 配置。三项目、邮件与默认脱敏/IP 丢弃已经配置；token 只保存在仓库外私有文件，未升级付费计划。后续真实上传和源码定位使用隔离提交产物，验收状态以记录为准。

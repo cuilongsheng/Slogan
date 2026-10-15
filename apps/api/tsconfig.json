@@ -14,5 +14,5 @@
     "target": "ES2023",
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "api/**/*.ts"]
 }

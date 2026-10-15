@@ -54,6 +54,8 @@ node scripts/deploy-observability-vercel.mjs preview
 
 ## 本轮隔离提交范围
 
-本轮先提交可独立验证的客户端 Error Monitoring + Tracing、API 过滤兼容、Sentry 通知 sink 与源码上传门禁；不夹带当前工作区并行的字体/图标/房间/managed-queue 功能。较早实施的 health/monitor 持久调度与托管消费者仍在原工作区，依赖入口矩阵中的其他 change，不算作本轮可发布提交。
+本轮先提交可独立验证的客户端 Error Monitoring + Tracing、API 过滤兼容、Sentry 通知 sink 与源码上传门禁；不夹带当前工作区并行的字体/图标/房间/managed-queue 功能。health/monitor 持久调度、独立私有 observability 消费者、已有 worker 的错误与心跳现已从并行改动中单独整理。托管 realtime 业务消费者和房间功能继续留在原工作区，不能用本轮监控提交替代其验收。
 
 三项目已在平台开启默认服务端脱敏、默认 scrubber 及新事件 IP 地址丢弃；minidump attachment 继承组织 Disabled。私有配置中的 API slug 已跟随实际控制台的 slogan-api，未重建 API 项目或更换 DSN。
+
+隔离检查补充：独立 monitor 可只注册 api/observability 函数，不必携带 api/realtime 及其业务队列切换。唯一 OpenAPI 在隔离源重新生成，仅新增 live/ready 合同。启用持久扫描前仍必须先完成目标数据库迁移、外部 heartbeat 和实际费用/调度验证；当前不播种、不启用扫描。
