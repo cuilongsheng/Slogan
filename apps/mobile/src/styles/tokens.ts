@@ -32,6 +32,9 @@ export const tokens = {
       discoverIcon: '#787587',
     },
   },
+  profile: {
+    color: { menuInk: '#6D6975' },
+  },
   // Original Rooms / Pilot V2 colors; kept separate from older screen accents.
   connection: {
     color: {
