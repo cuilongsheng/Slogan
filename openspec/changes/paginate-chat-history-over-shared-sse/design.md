@@ -20,6 +20,8 @@ In the new parser, safely ignore valid future kinds without terminating the conn
 
 Keep authentication/session revocation at the existing auth boundary. For protocol2, replace the blanket social eligibility gate with topic authorization: valid non-trial authenticated users can receive their permitted own-account/report/appeal changes, while social/room/private peer topics remain independently qualified. Disabled/revoked sessions still close; public trial viewers remain excluded. Authorization is rechecked before private deliveries and at the existing bounded lease. Never trust resource IDs as permission grants. Store fan-out recipients by owner at commit time and re-evaluate access on delivery where a topic has changing role/membership requirements. Membership removal sends a minimal own-membership invalidation to the removed actor; no subsequent room content or host-only reference is allowed.
 
+Protocol2 also coalesces identical scope/resource/kind invalidations within each bounded reader batch before permission queries. Keep each last occurrence in source order and advance every consumed replay position; retain distinct resources and membership/visibility kinds. Recheck current permissions immediately before every retained delivery and on every later batch. Never cache a host or membership authorization across reads. This bounds database work for bulk message notifications without changing v1 frame delivery.
+
 ### 2. Publisher and consumer inventory
 
 | Topic                | Transactional source                                                                | Audience                                                               | Mobile consumer                                                                                 |

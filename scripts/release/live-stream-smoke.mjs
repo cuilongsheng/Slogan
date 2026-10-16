@@ -298,14 +298,29 @@ try {
       },
     },
   });
-  const waitNew = async (stream, scope, from) => {
+  const waitNew = async (stream, scope, from, stage) => {
+    const started = Date.now();
     const until = Date.now() + 30000;
     for (;;) {
       const event = stream.events
         .slice(from)
         .find((e) => e.scope === scope && e.resourceId === room);
-      if (event) return event;
-      check(!stream.closed && Date.now() < until, 'LIVE_SMOKE_ROOM_AUDIENCE_FAILED');
+      if (event) {
+        timings.push({ roomStage: stage, delayMs: Date.now() - started });
+        return event;
+      }
+      if (stream.closed || Date.now() >= until) {
+        process.stderr.write(
+          JSON.stringify({
+            roomAudienceStage: stage,
+            streamClosed: stream.closed,
+            elapsedMs: Date.now() - started,
+            receivedEvents: stream.events.length - from,
+            receivedScopes: [...new Set(stream.events.slice(from).map((e) => e.scope))],
+          }) + '\n',
+        );
+        throw new Error(`LIVE_SMOKE_ROOM_${stage}_FAILED`);
+      }
       await delay(50);
     }
   };
@@ -326,7 +341,7 @@ try {
   const hostStart = modernApi.events.length,
     memberStart = modernPages.events.length;
   await risk();
-  await waitNew(modernApi, 'room-safety', hostStart);
+  await waitNew(modernApi, 'room-safety', hostStart, 'INITIAL_HOST');
   await delay(2000);
   check(
     !modernPages.events
@@ -348,7 +363,7 @@ try {
     await tx.room.update({ where: { id: room }, data: { hostUserId: ids[1] } });
   });
   await risk();
-  await waitNew(modernPages, 'room-safety', successorStart);
+  await waitNew(modernPages, 'room-safety', successorStart, 'SUCCESSOR_HOST');
   await delay(2000);
   check(
     !modernApi.events
@@ -361,7 +376,7 @@ try {
     where: { roomId: room, userId: ids[0] },
     data: { lifecycle: 'REMOVED', removedAt: new Date() },
   });
-  await waitNew(modernApi, 'room-state', removedStart);
+  await waitNew(modernApi, 'room-state', removedStart, 'REMOVED_MEMBERSHIP');
   const removedTextStart = modernApi.events.length,
     memberTextStart = modernPages.events.length;
   await db.roomTextMessage.create({
@@ -374,7 +389,7 @@ try {
       text: 'Owned member-delivery verification',
     },
   });
-  await waitNew(modernPages, 'room-text', memberTextStart);
+  await waitNew(modernPages, 'room-text', memberTextStart, 'REMAINING_MEMBER_TEXT');
   await delay(2000);
   check(
     !modernApi.events
