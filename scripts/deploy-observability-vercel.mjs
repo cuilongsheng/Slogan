@@ -67,6 +67,7 @@ async function main() {
       'vercel@63.1.2',
       'deploy',
       '--prebuilt',
+      '--archive=tgz',
       ...(target === 'production' ? ['--prod'] : ['--target', 'preview']),
       '--meta',
       `githubCommitSha=${revision}`,

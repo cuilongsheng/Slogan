@@ -31,3 +31,5 @@ CI 发现共享包只 typecheck 不产生 dist，已在两条检查流水线先�
 独立验收心跳 510022 发生真实 missing-heartbeat incident 1032744726，2026-10-16 02:55 UTC 自动恢复，持续 37 秒；当前账号 Gmail 已确认故障、恢复两封邮件，验收心跳已暂停。实际 Sentry sink adapter 在 test 环境发送固定技术 component OBSERVABILITY_ACCEPTANCE 的 OPEN/RESOLVED 事件，两次 ingest 均 2xx；云端 issue 153988134（OPERATIONAL_ALERT）及 153988137（OPERATIONAL_RECOVERY）已出现，邮件 SLOGAN-API-8 同时包含两者。这证明外部通知与 sink 送达，尚不替代生产 DB/outbox/调度链验收。
 
 截图只保存本机 `/Users/cls/.codex/observability-evidence/2026-10-16/`，不提交含邮箱或邮件登录链接的材料。生产迁移、guarded deployment 与无人请求时的持续扫描结果仍待记录。
+
+真实 Preview `dac2875` 已验证 live/ready 200 JSON、no-store，普通 /v1/me 401；实际匿名 POST /api/observability 返回平台 404，未成为公开测试入口。PR 完整 CI 通过。该提交实际 Vercel 产物的 6 个函数 maps 已上传并移除，manifest 无剩余 map。预构建部署首次因 27274 个文件超过 Vercel 15000 文件限制而拒绝，使用官方 --archive=tgz 成功上传 31.2 MB，部署脚本固定该参数。此预构建 Preview 后被平台以提交作者无项目部署权限（TEAM_ACCESS_REQUIRED）阻止，没有发布；不通过修改保护、添加付费席位或伪造作者绕过。后续从 GitHub 当前账号合并产生的 main 提交，使用既有 guarded main CI 交付，并单独核实结果。
