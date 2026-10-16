@@ -45,8 +45,26 @@ export interface DirectPageQuery {
   cursor?: string;
   limit?: number;
 }
+export interface DirectTimelineQuery {
+  before?: string;
+  after?: string;
+  limit?: number;
+}
+export type DirectTimelineEntry =
+  | { kind: 'text'; revision: number; value: DirectMessageRecord }
+  | { kind: 'call'; revision: number; value: DirectCallRecord };
+export interface DirectTimelinePage {
+  items: DirectTimelineEntry[];
+  visibleAfterSequence: number;
+  nextBeforeCursor: string | null;
+  hasOlder: boolean;
+  syncCursor: string;
+  nextAfterCursor: string | null;
+  hasMoreChanges: boolean;
+}
 export const DIRECT_REPOSITORY = Symbol('DIRECT_REPOSITORY');
 export interface DirectRepository {
+  timeline(actor: string, id: string, query: DirectTimelineQuery): Promise<DirectTimelinePage>;
   unreadCount(actor: string): Promise<number>;
   open(actor: string, target: string): Promise<DirectConversationRecord>;
   conversations(

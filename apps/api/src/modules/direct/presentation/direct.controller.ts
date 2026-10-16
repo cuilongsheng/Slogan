@@ -25,6 +25,8 @@ import type {
 } from '../domain/direct.js';
 import { ReportReceiptDto } from '../../moderation/index.js';
 import {
+  DirectTimelineQueryDto,
+  DirectTimelinePageDto,
   ConversationParamsDto,
   DirectCallParamsDto,
   DirectReportParamsDto,
@@ -97,6 +99,23 @@ export class DirectController {
   @ApiOkResponse({ type: DirectConversationDto })
   async detail(@CurrentIdentity() who: CurrentAccessIdentity, @Param() p: ConversationParamsDto) {
     return conversation(await this.direct.detail(who.userId, p.conversationId));
+  }
+  @Get('conversations/:conversationId/timeline')
+  @ApiOkResponse({ type: DirectTimelinePageDto })
+  async timeline(
+    @CurrentIdentity() who: CurrentAccessIdentity,
+    @Param() p: ConversationParamsDto,
+    @Query() query: DirectTimelineQueryDto,
+  ) {
+    const page = await this.direct.timeline(who.userId, p.conversationId, query);
+    return {
+      ...page,
+      items: page.items.map((entry) =>
+        entry.kind === 'text'
+          ? { ...entry, value: message(entry.value) }
+          : { ...entry, value: call(entry.value) },
+      ),
+    };
   }
   @Get('conversations/:conversationId/messages')
   @ApiOkResponse({ type: DirectMessagePageDto })

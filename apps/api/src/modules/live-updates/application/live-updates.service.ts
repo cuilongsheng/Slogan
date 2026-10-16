@@ -4,15 +4,18 @@ import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../../config/environment.js';
 import { AppError } from '../../../common/errors/app-error.js';
 import { SessionService } from '../../auth/index.js';
-import { SocialService } from '../../social/index.js';
+import { SocialService, SocialError } from '../../social/index.js';
 import {
   LIVE_UPDATES_STORE,
   type LiveUpdatesStore,
   type StreamPositions,
+  type LiveScope,
 } from '../domain/live-updates.port.js';
 
 export type LiveFrame = {
-  scope: 'reset' | 'heartbeat' | 'renew' | 'rooms' | 'partners' | 'messages';
+  scope: 'ready' | 'reset' | 'heartbeat' | 'renew' | LiveScope;
+  resourceId?: string;
+  kind?: 'membership' | 'visibility';
   id?: string;
 };
 @Injectable()
@@ -26,6 +29,9 @@ export class LiveUpdatesService {
     private readonly social: SocialService,
     private readonly config: ConfigService<Environment, true>,
   ) {}
+  reconcileRelease() {
+    return this.store.reconcileRelease();
+  }
   recover(): Promise<void> {
     this.pending = true;
     if (this.publishing) return this.publishing;
@@ -45,16 +51,16 @@ export class LiveUpdatesService {
   expirePresence(owner: string, generation?: string) {
     return this.store.expirePresence(owner, generation);
   }
-  private signature(owner: string, body: string) {
+  private signature(owner: string, body: string, protocol = 1) {
     return createHmac('sha256', this.config.get('JWT_ACCESS_SECRET', { infer: true }))
-      .update(`live-v1:${owner}:${body}`)
+      .update(`live-v${protocol}:${owner}:${body}`)
       .digest('base64url');
   }
-  private encode(owner: string, positions: StreamPositions) {
+  private encode(owner: string, positions: StreamPositions, protocol = 1) {
     const body = Buffer.from(JSON.stringify([positions, Date.now()])).toString('base64url');
-    return `${body}.${this.signature(owner, body)}`;
+    return `${body}.${this.signature(owner, body, protocol)}`;
   }
-  private decode(owner: string, cursor?: string): StreamPositions | null {
+  private decode(owner: string, cursor?: string, protocol = 1): StreamPositions | null {
     if (!cursor) return null;
     if (cursor.length > 512 || !/^[-\w]+\.[-\w]{43}$/.test(cursor))
       throw new AppError('LIVE_CURSOR_INVALID', 'Invalid recovery cursor', 400);
@@ -62,7 +68,7 @@ export class LiveUpdatesService {
     if (
       !body ||
       !signature ||
-      !timingSafeEqual(Buffer.from(signature), Buffer.from(this.signature(owner, body)))
+      !timingSafeEqual(Buffer.from(signature), Buffer.from(this.signature(owner, body, protocol)))
     )
       throw new AppError('LIVE_CURSOR_INVALID', 'Invalid recovery cursor', 400);
     try {
@@ -81,12 +87,23 @@ export class LiveUpdatesService {
       throw new AppError('LIVE_CURSOR_INVALID', 'Invalid recovery cursor', 400);
     }
   }
-  async open(token: string, cursor: string | undefined, signal: AbortSignal) {
+  private async eligible(owner: string) {
+    try {
+      await this.social.assertEligible(owner);
+      return true;
+    } catch (error) {
+      if (error instanceof SocialError && error.code === 'SOCIAL_ACCESS_RESTRICTED') return false;
+      throw error;
+    }
+  }
+  async open(token: string, cursor: string | undefined, signal: AbortSignal, protocol = 1) {
+    if (protocol !== 1 && protocol !== 2)
+      throw new AppError('LIVE_PROTOCOL_INVALID', 'Unsupported live protocol', 400);
     const identity = await this.sessions.streamIdentity(token);
     if (await this.sessions.isPublicTrialViewer(identity.userId))
       throw new AppError('LIVE_ACCESS_DENIED', 'Live updates unavailable', 403);
-    await this.social.assertEligible(identity.userId);
-    const requested = this.decode(identity.userId, cursor);
+    if (protocol === 1) await this.social.assertEligible(identity.userId);
+    const requested = this.decode(identity.userId, cursor, protocol);
     try {
       await this.recover();
     } catch {
@@ -110,8 +127,12 @@ export class LiveUpdatesService {
     const frames = async function* (this: LiveUpdatesService): AsyncGenerator<LiveFrame> {
       let checkedAt = Date.now();
       try {
+        let eligible = await this.eligible(identity.userId);
         // Reset also requests a fresh snapshot for a retained/replayed cursor. It is duplicate-safe.
-        yield { scope: 'reset', id: this.encode(identity.userId, positions) };
+        yield {
+          scope: protocol === 2 && replay ? 'ready' : 'reset',
+          id: this.encode(identity.userId, positions, protocol),
+        };
         while (!signal.aborted && Date.now() < deadline) {
           if (Date.now() - this.recoveredAt >= 15000) await this.recover();
           const changes = await reader.read(positions);
@@ -120,17 +141,43 @@ export class LiveUpdatesService {
             const fresh = await this.sessions.verifyAccessToken(token);
             if (fresh.userId !== identity.userId || fresh.sessionId !== identity.sessionId) break;
             if (await this.sessions.isPublicTrialViewer(identity.userId)) break;
-            await this.social.assertEligible(identity.userId);
+            if (protocol === 1) await this.social.assertEligible(identity.userId);
+            eligible = await this.eligible(identity.userId);
             checkedAt = Date.now();
             if (!changes.length) yield { scope: 'heartbeat' };
           }
           for (const event of changes) {
             if (Date.now() >= deadline || signal.aborted) break;
             positions[event.index] = event.id;
-            yield { scope: event.scope, id: this.encode(identity.userId, positions) };
+            if (protocol === 1) {
+              if (['rooms', 'partners', 'messages'].includes(event.scope))
+                yield { scope: event.scope, id: this.encode(identity.userId, positions, protocol) };
+              continue;
+            }
+            if (event.scope === 'messages') continue; // Legacy broad invalidations have typed counterparts.
+            const selfService =
+              ['account', 'safety', 'reports', 'learning', 'release', 'calls'].includes(
+                event.scope,
+              ) ||
+              (event.scope === 'room-state' && event.kind === 'membership');
+            if (
+              (!eligible && !selfService) ||
+              !(await this.store.canReceive(identity.userId, event))
+            )
+              continue;
+            yield {
+              scope: event.scope,
+              ...(event.resourceId ? { resourceId: event.resourceId } : {}),
+              ...(event.kind ? { kind: event.kind } : {}),
+              id: this.encode(identity.userId, positions, protocol),
+            };
           }
         }
-        if (!signal.aborted) yield { scope: 'renew' };
+        if (!signal.aborted)
+          yield {
+            scope: 'renew',
+            ...(protocol === 2 ? { id: this.encode(identity.userId, positions, protocol) } : {}),
+          };
       } finally {
         reader.close();
       }

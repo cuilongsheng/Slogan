@@ -41,6 +41,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       if (this.running) return;
       this.running = this.direct
         .maintain()
+        .then(() => this.live.reconcileRelease())
         .then(() => this.live.recover())
         .then(() => undefined)
         .catch(() => this.logger.warn('direct_maintenance_pending'))
@@ -99,6 +100,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
       const results = await Promise.allSettled([
         this.direct.maintain(),
         this.live.recover(),
+        this.live.reconcileRelease(),
         this.safety.recover(),
         this.operations.runOnce(),
         this.realtime.ensureRecovery(),

@@ -1173,6 +1173,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conversations/{conversationId}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DirectController_timeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/direct-calls/{callId}": {
         parameters: {
             query?: never;
@@ -2948,6 +2964,119 @@ export interface components {
             clientRequestId: string;
             description: string;
         };
+        DirectTimelineCallDto: {
+            /** @enum {string} */
+            kind: "call";
+            revision: number;
+            value: {
+                /** Format: date-time */
+                acceptedAt: string | null;
+                /** Format: uuid */
+                calleeUserId: string;
+                /** Format: uuid */
+                callerUserId: string;
+                /** Format: uuid */
+                conversationId: string;
+                endReason: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: date-time */
+                expiresAt: string;
+                /** Format: uuid */
+                id: string;
+                peer?: {
+                    /** Format: uri */
+                    avatarUrl: string;
+                    /** @enum {string} */
+                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                    displayName: string;
+                    /** Format: uuid */
+                    userId: string;
+                };
+                sequence: number;
+                /** @enum {string} */
+                status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+            };
+        };
+        DirectTimelinePageDto: {
+            hasMoreChanges: boolean;
+            hasOlder: boolean;
+            items: ({
+                /** @enum {string} */
+                kind: "text";
+                revision: number;
+                value: {
+                    /** Format: uuid */
+                    clientRequestId: string;
+                    /** Format: uuid */
+                    conversationId: string;
+                    /** Format: date-time */
+                    createdAt: string;
+                    /** Format: uuid */
+                    id: string;
+                    /** Format: uuid */
+                    senderUserId: string;
+                    sequence: number;
+                    text: string;
+                };
+            } | {
+                /** @enum {string} */
+                kind: "call";
+                revision: number;
+                value: {
+                    /** Format: date-time */
+                    acceptedAt: string | null;
+                    /** Format: uuid */
+                    calleeUserId: string;
+                    /** Format: uuid */
+                    callerUserId: string;
+                    /** Format: uuid */
+                    conversationId: string;
+                    endReason: string | null;
+                    /** Format: date-time */
+                    endedAt: string | null;
+                    /** Format: date-time */
+                    expiresAt: string;
+                    /** Format: uuid */
+                    id: string;
+                    peer?: {
+                        /** Format: uri */
+                        avatarUrl: string;
+                        /** @enum {string} */
+                        cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                        displayName: string;
+                        /** Format: uuid */
+                        userId: string;
+                    };
+                    sequence: number;
+                    /** @enum {string} */
+                    status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                };
+            })[];
+            nextAfterCursor: string | null;
+            nextBeforeCursor: string | null;
+            syncCursor: string;
+            visibleAfterSequence: number;
+        };
+        DirectTimelineTextDto: {
+            /** @enum {string} */
+            kind: "text";
+            revision: number;
+            value: {
+                /** Format: uuid */
+                clientRequestId: string;
+                /** Format: uuid */
+                conversationId: string;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                senderUserId: string;
+                sequence: number;
+                text: string;
+            };
+        };
         DirectUnreadDto: {
             unreadCount: number;
         };
@@ -3236,7 +3365,14 @@ export interface components {
         };
         LiveUpdateEventDto: {
             /** @enum {string} */
-            scope: "reset" | "rooms" | "partners" | "messages" | "heartbeat" | "renew" | "unavailable";
+            kind?: "membership" | "visibility";
+            /**
+             * Format: uuid
+             * @description Protocol2 only: opaque resource in an authorized private audience.
+             */
+            resourceId?: string;
+            /** @enum {string} */
+            scope: "ready" | "reset" | "rooms" | "partners" | "messages" | "conversation-history" | "conversation-state" | "inbox" | "unread" | "calls" | "invitations" | "room-state" | "room-text" | "room-safety" | "account" | "safety" | "reports" | "learning" | "release" | "heartbeat" | "renew" | "unavailable";
         };
         LoginMethodDto: {
             /** @example +86••78 */
@@ -14948,6 +15084,202 @@ export interface operations {
             };
         };
     };
+    DirectController_timeline: {
+        parameters: {
+            query?: {
+                before?: string;
+                after?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        hasMoreChanges: boolean;
+                        hasOlder: boolean;
+                        items: ({
+                            /** @enum {string} */
+                            kind: "text";
+                            revision: number;
+                            value: {
+                                /** Format: uuid */
+                                clientRequestId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                senderUserId: string;
+                                sequence: number;
+                                text: string;
+                            };
+                        } | {
+                            /** @enum {string} */
+                            kind: "call";
+                            revision: number;
+                            value: {
+                                /** Format: date-time */
+                                acceptedAt: string | null;
+                                /** Format: uuid */
+                                calleeUserId: string;
+                                /** Format: uuid */
+                                callerUserId: string;
+                                /** Format: uuid */
+                                conversationId: string;
+                                endReason: string | null;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                /** Format: date-time */
+                                expiresAt: string;
+                                /** Format: uuid */
+                                id: string;
+                                peer?: {
+                                    /** Format: uri */
+                                    avatarUrl: string;
+                                    /** @enum {string} */
+                                    cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | "A1_A2" | "B1_B2" | "C1_C2";
+                                    displayName: string;
+                                    /** Format: uuid */
+                                    userId: string;
+                                };
+                                sequence: number;
+                                /** @enum {string} */
+                                status: "RINGING" | "ACTIVE" | "REJECTED" | "EXPIRED" | "ENDED";
+                            };
+                        })[];
+                        nextAfterCursor: string | null;
+                        nextBeforeCursor: string | null;
+                        syncCursor: string;
+                        visibleAfterSequence: number;
+                    };
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example VALIDATION_FAILED */
+                        code: string;
+                        details?: Record<string, never>;
+                        /** @example Request validation failed */
+                        message: string;
+                        /** @example 5b27b1e0-f183-46f6-b9e8-1421235a8bb1 */
+                        requestId?: string;
+                    };
+                };
+            };
+        };
+    };
     DirectController_call: {
         parameters: {
             query?: never;
@@ -17863,7 +18195,9 @@ export interface operations {
     };
     LiveUpdatesController_stream: {
         parameters: {
-            query?: never;
+            query?: {
+                protocol?: 1 | 2;
+            };
             header?: {
                 /** @description Opaque account-bound recovery cursor (maximum 512 characters). */
                 "Last-Event-ID"?: string;
@@ -17881,7 +18215,14 @@ export interface operations {
                 content: {
                     "text/event-stream": {
                         /** @enum {string} */
-                        scope: "reset" | "rooms" | "partners" | "messages" | "heartbeat" | "renew" | "unavailable";
+                        kind?: "membership" | "visibility";
+                        /**
+                         * Format: uuid
+                         * @description Protocol2 only: opaque resource in an authorized private audience.
+                         */
+                        resourceId?: string;
+                        /** @enum {string} */
+                        scope: "ready" | "reset" | "rooms" | "partners" | "messages" | "conversation-history" | "conversation-state" | "inbox" | "unread" | "calls" | "invitations" | "room-state" | "room-text" | "room-safety" | "account" | "safety" | "reports" | "learning" | "release" | "heartbeat" | "renew" | "unavailable";
                     };
                 };
             };

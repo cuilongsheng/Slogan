@@ -1,5 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Environment } from '../../../config/environment.js';
+import { timelineCursor } from './timeline-cursor.js';
 import {
   Prisma,
   type DirectConversation,
@@ -16,7 +19,12 @@ import {
   readSocialUserEligible,
 } from '../../social/index.js';
 import { createSafetyCaseForReport } from '../../safety/persistence.js';
-import type { DirectRepository, DirectPageQuery } from '../domain/direct.js';
+import type {
+  DirectRepository,
+  DirectPageQuery,
+  DirectTimelineQuery,
+  DirectTimelineEntry,
+} from '../domain/direct.js';
 
 type Tx = Prisma.TransactionClient;
 const unavailable = () =>
@@ -33,6 +41,7 @@ export class PrismaDirectRepository implements DirectRepository {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(SOCIAL_PRESENCE) private readonly presence: SocialPresence,
+    private readonly config: ConfigService<Environment, true>,
   ) {}
 
   private async lockUsers(tx: Tx, ids: string[]) {
@@ -254,6 +263,90 @@ export class PrismaDirectRepository implements DirectRepository {
             : null,
       };
     });
+  }
+  async timeline(actor: string, id: string, query: DirectTimelineQuery) {
+    if (query.before && query.after)
+      throw new AppError(
+        'DIRECT_TIMELINE_QUERY_INVALID',
+        'Choose older history or newer changes',
+        400,
+      );
+    const limit = query.limit ?? 20;
+    if (!Number.isInteger(limit) || limit < 1 || limit > 20)
+      throw new AppError(
+        'DIRECT_TIMELINE_QUERY_INVALID',
+        'Timeline pages contain at most 20 entries',
+        400,
+      );
+    const codec = timelineCursor(this.config.get('JWT_ACCESS_SECRET', { infer: true }), actor, id);
+    const before = query.before ? codec.decode(query.before, 'before') : null;
+    const after = query.after ? codec.decode(query.after, 'after') : null;
+    return this.prisma.$transaction(
+      async (tx) => {
+        const { row, member } = await this.member(tx, actor, id);
+        const watermark = row.nextSequence - 1;
+        const anchor = before ? Math.min(before.anchor, watermark) : watermark;
+        const lower = Math.max(member.hiddenThrough, after?.sequence ?? 0);
+        const [texts, calls] = await Promise.all([
+          tx.directMessage.findMany({
+            where: {
+              conversationId: id,
+              sequence: after
+                ? { gt: lower, lte: watermark }
+                : {
+                    gt: member.hiddenThrough,
+                    lte: anchor,
+                    ...(before ? { lt: before.sequence } : {}),
+                  },
+            },
+            orderBy: { sequence: after ? 'asc' : 'desc' },
+            take: limit + 1,
+          }),
+          tx.directCall.findMany({
+            where: {
+              conversationId: id,
+              sequence: after
+                ? { gt: member.hiddenThrough }
+                : {
+                    gt: member.hiddenThrough,
+                    lte: anchor,
+                    ...(before ? { lt: before.sequence } : {}),
+                  },
+              ...(after ? { stateSequence: { gt: after.sequence, lte: watermark } } : {}),
+            },
+            orderBy: after ? { stateSequence: 'asc' } : { sequence: 'desc' },
+            take: limit + 1,
+          }),
+        ]);
+        const all: DirectTimelineEntry[] = [
+          ...texts.map((value) => ({ kind: 'text' as const, revision: value.sequence, value })),
+          ...calls.map((value) => ({
+            kind: 'call' as const,
+            revision: value.stateSequence,
+            value,
+          })),
+        ];
+        all.sort((a, b) => (after ? a.revision - b.revision : b.value.sequence - a.value.sequence));
+        const more = all.length > limit;
+        const page = all.slice(0, limit);
+        const applied = after && more ? page.at(-1)!.revision : watermark;
+        const syncCursor = codec.encode({ mode: 'after', sequence: applied, anchor: watermark });
+        const nextBeforeCursor =
+          !after && more && page.length
+            ? codec.encode({ mode: 'before', sequence: page.at(-1)!.value.sequence, anchor })
+            : null;
+        return {
+          items: page.sort((a, b) => a.value.sequence - b.value.sequence),
+          visibleAfterSequence: member.hiddenThrough,
+          nextBeforeCursor,
+          hasOlder: !!nextBeforeCursor,
+          syncCursor,
+          nextAfterCursor: after && more ? syncCursor : null,
+          hasMoreChanges: !!after && more,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
   }
   async messages(actor: string, id: string, query: DirectPageQuery) {
     const scope = `messages:${actor}:${id}`;

@@ -1,3 +1,16 @@
+// ConfigModule validates at import time, before individual suites' beforeAll hooks.
+// Apply the owned database override here as well as in the fixture factory.
+if (process.env.SLOGAN_TEST_DATABASE_URL) {
+  const target = new URL(process.env.SLOGAN_TEST_DATABASE_URL);
+  if (
+    target.protocol !== 'postgresql:' ||
+    !['127.0.0.1', 'localhost'].includes(target.hostname) ||
+    target.port !== '54329' ||
+    !/^\/slogan_test_[a-z0-9_]+$/.test(target.pathname)
+  )
+    throw new Error('Isolated test database must be a named loopback test database');
+  process.env.DATABASE_URL = target.href;
+}
 const defaults = {
   APP_NAME: 'slogan-api-test',
   APP_PORT: '3000',
