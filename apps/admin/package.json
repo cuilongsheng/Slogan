@@ -11,13 +11,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@sentry/react": "11.7.0",
     "@slogan/api-client": "workspace:*",
+    "@slogan/shared": "workspace:*",
     "@tanstack/react-query": "5.90.20",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-router-dom": "7.18.3"
   },
   "devDependencies": {
+    "@sentry/vite-plugin": "5.4.1",
     "@tailwindcss/vite": "4.3.3",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "7.0.1",

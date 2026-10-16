@@ -1,0 +1,10 @@
+{
+  "eventId": "9a8b1076d0414199ab7fc7a8890543f1",
+  "release": "slogan-api@e50cb75908bcbca0b7604849b9b79216e75ac980",
+  "dist": "e50cb75908bcbca0b7604849b9b79216e75ac980",
+  "debugId": "8db7dda5-fa07-5c3e-8ba8-f094c9a26f3c",
+  "evidence": "local invalid-window call in actual private-consumer compiler artifact; actual Sentry ingest; no database/queue/deployment mutation",
+  "cloudSourceLocation": "apps/api/src/modules/operations/application/services/observability-monitor.service.ts:59:13",
+  "cloudIssue": "https://tonycui.sentry.io/issues/153865582/events/9a8b1076d0414199ab7fc7a8890543f1/",
+  "platformInferredGeographyStillPresent": true
+}

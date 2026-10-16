@@ -5,7 +5,8 @@ import medium from '../../../assets/fonts/NotoSansSC-500.ttf';
 import semibold from '../../../assets/fonts/NotoSansSC-600.ttf';
 import bold from '../../../assets/fonts/NotoSansSC-700.ttf';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, ErrorBoundary as RouterErrorBoundary } from 'expo-router';
+import { wrapRouterErrorBoundary } from '../src/services/observability';
 
 import { StartupGate } from '../src/providers/StartupGate';
 import { LiveUpdatesProvider } from '../src/features/live-updates';
@@ -19,6 +20,8 @@ import { MessageUnreadProvider } from '../src/features/direct';
 import { PresenceHeartbeat } from '../src/features/social/PresenceHeartbeat';
 import { RoomInvitationObserver } from '../src/features/social/RoomInvitationObserver';
 import { AppUpdateProvider } from '../src/features/app-updates';
+
+export const ErrorBoundary = wrapRouterErrorBoundary(RouterErrorBoundary);
 
 export default function RootLayout() {
   const [localeReady, setLocaleReady] = useState(false);

@@ -1,3 +1,5 @@
+import '../src/instrument.js';
+import { reportError, flushErrors } from '../src/infrastructure/observability/error-reporting.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import { createApiApp } from '../src/bootstrap/create-api-app.js';
@@ -34,7 +36,9 @@ export default async function stream(request: IncomingMessage, response: ServerR
       response.once('close', finish);
       app.getHttpAdapter().getInstance()(request, response);
     });
-  } catch {
+  } catch (error) {
+    reportError(error, { code: 'HTTP_SERVER_ERROR', stage: 'http' });
+    await flushErrors();
     if (!response.headersSent && !response.destroyed)
       response
         .writeHead(503, {

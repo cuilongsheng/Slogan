@@ -1,0 +1,23 @@
+{
+  "eventId": "b54168d101ea4a439bcbd2d4ede5b11d",
+  "release": "slogan-api@e50cb75908bcbca0b7604849b9b79216e75ac980",
+  "dist": "e50cb75908bcbca0b7604849b9b79216e75ac980",
+  "flushed": true,
+  "debugImages": [
+    {
+      "type": "sourcemap",
+      "debug_id": "773e4008-c2f1-5824-9252-c41df0a385ab",
+      "code_file": "app:///apps/api/src/config/sentry.js"
+    }
+  ],
+  "frames": [
+    {
+      "filename": "app:///apps/api/src/config/sentry.js",
+      "lineno": 20,
+      "colno": 15,
+      "in_app": true,
+      "function": "readSentryConfiguration"
+    }
+  ],
+  "evidence": "actual-Sentry-ingest-from-local-Vercel-artifact; not-deployed-runtime"
+}

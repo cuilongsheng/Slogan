@@ -90,7 +90,10 @@ export class IncidentsService {
   }
 
   async dispatchOne(now = new Date()): Promise<{ handled: boolean; delivered?: boolean }> {
-    if (!this.config.get('OPERATIONS_GOVERNANCE_ENABLED', { infer: true }))
+    if (
+      !this.config.get('OPERATIONS_GOVERNANCE_ENABLED', { infer: true }) &&
+      !this.config.get('OBSERVABILITY_MONITOR_ENABLED', { infer: true })
+    )
       return { handled: false };
     const claim = await this.repository.claimDelivery(
       this.config.get('GOVERNANCE_LEASE_SECONDS', { infer: true }),

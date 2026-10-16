@@ -3,6 +3,7 @@ import { browserSession, profileHintStorage, sessionStorage } from '../../servic
 
 import { createMobileApiClient } from '../../api/client';
 import { googleRedirectUri } from '../../services/googleSignIn';
+import { clearMobileObservability } from '../../services/observability';
 
 type OAuthResult =
   SloganApiPaths['/v1/auth/oauth/{provider}/exchange']['post']['responses'][200]['content']['application/json'];
@@ -223,6 +224,7 @@ export class MobileSession {
   }
 
   async clear(): Promise<void> {
+    clearMobileObservability();
     this.saved = null;
     await this.storage.deleteItemAsync(STORAGE_KEY);
     if (browserSession) await profileHintStorage.deleteItemAsync(PROFILE_HINT_KEY);

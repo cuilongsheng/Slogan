@@ -21,6 +21,14 @@
     "api/live-updates.ts": {
       "maxDuration": 300,
       "supportsCancellation": true
+    },
+    "api/observability.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "slogan-observability"
+        }
+      ]
     }
   },
   "crons": [

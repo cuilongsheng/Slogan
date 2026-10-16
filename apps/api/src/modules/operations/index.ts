@@ -1,4 +1,12 @@
 export { OperationsModule } from './operations.module.js';
+export { ObservabilityMonitorService } from './application/services/observability-monitor.service.js';
+export type { MonitorJob } from './application/services/observability-monitor.service.js';
+export { OBSERVABILITY_MONITOR_REPOSITORY } from './domain/ports/observability-monitor.repository.js';
+export type {
+  MonitorClaim,
+  ObservabilityMonitorRepository,
+} from './domain/ports/observability-monitor.repository.js';
+export { INCIDENTS_REPOSITORY } from './domain/ports/incidents.repository.js';
 export { MetricsService } from './application/services/metrics.service.js';
 export { IncidentsService } from './application/services/incidents.service.js';
 export { GovernanceService } from './application/services/governance.service.js';

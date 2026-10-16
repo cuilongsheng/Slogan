@@ -2,6 +2,15 @@ import { spawnSync } from 'node:child_process';
 import { access, copyFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { API_ORIGIN } from './release/deployment-gate.mjs';
+import {
+  buildMetadata,
+  currentRevision,
+  uploadSourceMaps,
+  removePublicMaps,
+  runTool,
+  requireCleanRelease,
+  verifyClientBuild,
+} from './observability-build.mjs';
 
 export const API_ROUTES = {
   version: 1,
@@ -34,6 +43,7 @@ const sites = {
       'web',
       '--output-dir',
       'dist-pages',
+      '--clear',
     ],
   },
 };
@@ -112,12 +122,21 @@ async function main() {
   const site = sites[process.argv[2]];
   if (!site) throw new Error('Choose admin or mobile');
   const origin = validateSiteOrigin(process.env[site.key], site.key);
-  const result = spawnSync('pnpm', site.args, {
+  const metadata = buildMetadata(process.argv[2], process.env, currentRevision());
+  if (metadata.enabled) requireCleanRelease();
+  runTool('pnpm', ['--filter', '@slogan/shared', 'build'], metadata.env);
+  const args = [...site.args];
+  if (process.argv[2] === 'mobile' && metadata.enabled) args.push('--source-maps');
+  const result = spawnSync('pnpm', args, {
     cwd: fileURLToPath(root),
     stdio: 'inherit',
-    env: { ...process.env, [site.key]: origin, EXPO_NO_DOTENV: '1' },
+    env: { ...metadata.env, [site.key]: origin, EXPO_NO_DOTENV: '1' },
   });
   if (result.error || result.status !== 0) throw new Error('Pages frontend build failed');
+  await verifyClientBuild(process.argv[2], fileURLToPath(new URL(site.output, root)), metadata);
+  if (process.argv[2] === 'mobile')
+    await uploadSourceMaps('mobile', fileURLToPath(new URL(site.output, root)), metadata);
+  await removePublicMaps(fileURLToPath(new URL(site.output, root)));
   await packagePages(new URL(site.output, root));
   await waitForProductionPagesApi();
   console.log(`Pages ${process.argv[2]} output includes worker and API routes`);

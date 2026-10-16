@@ -44,7 +44,10 @@
     "react-native-safe-area-context": "5.7.0",
     "react-native-screens": "4.26.2",
     "react-native-web": "^0.21.2",
-    "react-native-worklets": "0.10.1"
+    "react-native-worklets": "0.10.1",
+    "@sentry/core": "10.76.0",
+    "@sentry/react-native": "8.30.0",
+    "@slogan/shared": "workspace:*"
   },
   "devDependencies": {
     "@react-native/metro-config": "0.86.3",

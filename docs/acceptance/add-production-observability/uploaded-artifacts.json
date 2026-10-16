@@ -1,0 +1,47 @@
+{
+  "sourceCommit": "e50cb75908bcbca0b7604849b9b79216e75ac980",
+  "deployed": false,
+  "publicOrigins": "synthetic build-only origins; not deployable site configuration",
+  "clients": [
+    {
+      "app": "admin",
+      "release": "slogan-admin@e50cb75908bcbca0b7604849b9b79216e75ac980",
+      "dist": "e50cb75908bcbca0b7604849b9b79216e75ac980",
+      "releasePresentInBundle": true,
+      "publicMaps": 0,
+      "uploadTokenPresent": false,
+      "scripts": ["_worker.js", "assets/index-MzepriYd.js"]
+    },
+    {
+      "app": "mobile",
+      "release": "slogan-mobile@e50cb75908bcbca0b7604849b9b79216e75ac980",
+      "dist": "e50cb75908bcbca0b7604849b9b79216e75ac980",
+      "releasePresentInBundle": true,
+      "publicMaps": 0,
+      "uploadTokenPresent": false,
+      "scripts": [
+        "_expo/static/js/web/entry-29416db30b21e14ad54afd2942599b93.js",
+        "_expo/static/js/web/microphone-f0ceef35f10c2ee6c2133baab4c7d855.js",
+        "_worker.js"
+      ]
+    }
+  ],
+  "vercel": {
+    "release": "slogan-api@e50cb75908bcbca0b7604849b9b79216e75ac980",
+    "build": "e50cb75908bcbca0b7604849b9b79216e75ac980",
+    "functions": [
+      {
+        "name": "api/observability.func",
+        "handler": "apps/api/api/observability.js",
+        "runtime": "nodejs24.x",
+        "handlerSha256": "dd0817b14b8f7a1b887cf8432bb48ec060115ffff557c0bba00fcb66f066f93b"
+      },
+      {
+        "name": "index.func",
+        "handler": "apps/api/src/main.js",
+        "runtime": "nodejs24.x",
+        "handlerSha256": "eb1b27709013ccac4bb1d3214ef9d1e1b8929d447b5eb2094fc0c0bcea0ba2c0"
+      }
+    ]
+  }
+}

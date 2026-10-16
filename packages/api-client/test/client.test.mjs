@@ -29,3 +29,17 @@ test('uses the configured origin and injected fetch for a contract path', async 
   assert.equal(requestedUrl, 'https://api.example.test/v1/me');
   assert.equal(result.data?.onboardingState, 'ELIGIBLE');
 });
+
+test('request observer receives a contract template with no parameter interpolation', async () => {
+  const observed = [];
+  const client = createSloganApiClient({
+    baseUrl: 'https://api.example.test',
+    onRequest: (request, schemaPath) => observed.push({ request, schemaPath }),
+    fetch: async (request) => {
+      assert.equal(observed[0].request, request);
+      return new globalThis.Response('{}', { headers: { 'content-type': 'application/json' } });
+    },
+  });
+  await client.GET('/v1/rooms/{roomId}', { params: { path: { roomId: 'PRIVATE_CANARY' } } });
+  assert.equal(observed[0].schemaPath, '/v1/rooms/{roomId}');
+});

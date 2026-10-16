@@ -2,6 +2,9 @@ import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@ne
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../config/environment.js';
 import { StructuredLogger } from '../../infrastructure/observability/structured-logger.service.js';
+import { Optional } from '@nestjs/common';
+import { ObservabilityHeartbeat } from '../../infrastructure/observability/heartbeat.service.js';
+import { reportError } from '../../infrastructure/observability/error-reporting.js';
 import { RoomSpeechReadinessStore } from '../../infrastructure/redis/room-speech-readiness.service.js';
 import {
   ROOM_SPEECH_COORDINATOR,
@@ -39,6 +42,7 @@ export class RoomSpeechWorkerRunner implements OnModuleInit, OnModuleDestroy {
     @Inject(ROOM_MEDIA_SOURCE) private readonly mediaSource: RoomMediaSource,
     private readonly logger: StructuredLogger,
     private readonly readiness: RoomSpeechReadinessStore,
+    @Optional() private readonly heartbeat?: ObservabilityHeartbeat,
   ) {}
 
   onModuleInit() {
@@ -63,7 +67,9 @@ export class RoomSpeechWorkerRunner implements OnModuleInit, OnModuleDestroy {
   private tick() {
     if (this.running || this.stopped) return;
     this.running = this.reconcile()
-      .catch(async () => {
+      .then(() => this.heartbeat?.completed('room-speech'))
+      .catch(async (error) => {
+        reportError(error, { code: 'WORKER_FAILED', stage: 'worker' });
         try {
           await this.service.degrade(undefined, 'COORDINATION', 'WORKER_RECOVERY_UNAVAILABLE');
         } catch {

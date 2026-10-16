@@ -49,7 +49,13 @@ export class NetworkOperationsDependencyProbes
 
   private async postgresqlProbe(): Promise<DependencyProbeResult> {
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$transaction(
+        async (tx) => {
+          await tx.$executeRaw`SET LOCAL statement_timeout = '2000ms'`;
+          await tx.$queryRaw`SELECT 1`;
+        },
+        { maxWait: 2000, timeout: 3000 },
+      );
       return { component: 'POSTGRESQL', enabled: true, ready: true };
     } catch {
       return {
@@ -74,6 +80,7 @@ export class NetworkOperationsDependencyProbes
         enableOfflineQueue: false,
         maxRetriesPerRequest: 1,
         connectTimeout: 2_000,
+        commandTimeout: 2_000,
       });
       if (['wait', 'end'].includes(this.redis.status)) await this.redis.connect();
       await this.redis.ping();
@@ -129,9 +136,18 @@ export class NetworkOperationsDependencyProbes
         headers: { authorization: `Bearer ${token}` },
         signal: controller.signal,
       });
-      return response.status < 500
-        ? { component, enabled: true, ready: true }
-        : { component, enabled: true, ready: false, reasonCode: `${component}_UNAVAILABLE` };
+      if ([401, 403].includes(response.status))
+        return { component, enabled: true, ready: false, reasonCode: `${component}_AUTH_REJECTED` };
+      if (response.status >= 500)
+        return { component, enabled: true, ready: false, reasonCode: `${component}_UNAVAILABLE` };
+      // A HEAD of a provider API root does not prove authenticated business readiness.
+      return {
+        component,
+        enabled: true,
+        ready: false,
+        unknown: true,
+        reasonCode: `${component}_READINESS_UNKNOWN`,
+      };
     } catch {
       return { component, enabled: true, ready: false, reasonCode: `${component}_UNAVAILABLE` };
     } finally {

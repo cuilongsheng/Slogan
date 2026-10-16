@@ -1,3 +1,4 @@
+import '../../infrastructure/observability/instrument.js';
 import { NestFactory } from '@nestjs/core';
 import { OperationsWorkerModule } from './operations-worker.module.js';
 

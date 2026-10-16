@@ -41,6 +41,7 @@ jest.mock('livekit-client', () => ({
     on: jest.fn(),
     connect: jest.fn(async () => {}),
     disconnect: jest.fn(async () => {}),
+    removeAllListeners: jest.fn(),
   })),
   RoomEvent: {},
   Track: { Kind: { Audio: 'audio' } },
