@@ -1,0 +1,505 @@
+{
+  "source": "owned native fixture HTTP observer; no headers, tokens, cursors or contents logged",
+  "windows": [
+    [
+      1792141106700,
+      1792141179100
+    ],
+    [
+      1792141597000,
+      1792141682100
+    ],
+    [
+      1792158390000,
+      1792158520000
+    ]
+  ],
+  "requests": [
+    {
+      "at": 1792141106732,
+      "method": "POST",
+      "path": "/v1/auth/password/exchange",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792141106874,
+      "method": "GET",
+      "path": "/v1/me",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792141106921,
+      "method": "POST",
+      "path": "/v1/me/presence/heartbeat",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792141106923,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141107119,
+      "method": "GET",
+      "path": "/v1/me",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141107124,
+      "method": "GET",
+      "path": "/v1/me/conversations/unread",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141107125,
+      "method": "GET",
+      "path": "/v1/me/room-invitations",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792141107126,
+      "method": "GET",
+      "path": "/v1/rooms",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792141107128,
+      "method": "GET",
+      "path": "/v1/me/direct-calls",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141111552,
+      "method": "GET",
+      "path": "/v1/me/conversations",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792141116593,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/timeline",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792141116592,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141151914,
+      "method": "POST",
+      "path": "/v1/me/presence/heartbeat",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141179004,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/timeline",
+      "protocol": null,
+      "mode": "after",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792141179003,
+      "method": "GET",
+      "path": "/v1/me/conversations/unread",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141597103,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/timeline",
+      "protocol": null,
+      "mode": "before",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792141601942,
+      "method": "POST",
+      "path": "/v1/me/presence/heartbeat",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141624112,
+      "method": "GET",
+      "path": "/v1/me/conversations/unread",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141624113,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/timeline",
+      "protocol": null,
+      "mode": "after",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792141644620,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792141681716,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141681721,
+      "method": "GET",
+      "path": "/v1/me/conversations/unread",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141681722,
+      "method": "POST",
+      "path": "/v1/me/presence/heartbeat",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141681725,
+      "method": "GET",
+      "path": "/v1/me/direct-calls",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141681723,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/timeline",
+      "protocol": null,
+      "mode": "after",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792141681724,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141681766,
+      "method": "GET",
+      "path": "/v1/me",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141681950,
+      "method": "GET",
+      "path": "/v1/me/conversations/unread",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792141681951,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/timeline",
+      "protocol": null,
+      "mode": "after",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792158394737,
+      "method": "GET",
+      "path": "/v1/me/room-invitations",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792158394739,
+      "method": "GET",
+      "path": "/v1/me/conversations",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792158399653,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792158399674,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158412433,
+      "method": "POST",
+      "path": "/v1/auth/logout",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158412499,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792158441785,
+      "method": "POST",
+      "path": "/v1/auth/password/exchange",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792158441925,
+      "method": "GET",
+      "path": "/v1/me",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792158441959,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158441961,
+      "method": "POST",
+      "path": "/v1/me/presence/heartbeat",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158442210,
+      "method": "GET",
+      "path": "/v1/me",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158442214,
+      "method": "GET",
+      "path": "/v1/me/conversations/unread",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158442216,
+      "method": "GET",
+      "path": "/v1/me/room-invitations",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792158442217,
+      "method": "GET",
+      "path": "/v1/me/direct-calls",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158442217,
+      "method": "GET",
+      "path": "/v1/rooms",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792158449638,
+      "method": "GET",
+      "path": "/v1/me/conversations",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792158456704,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158456705,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/timeline",
+      "protocol": null,
+      "mode": "latest",
+      "limit": "20",
+      "active": 1
+    },
+    {
+      "at": 1792158456815,
+      "method": "POST",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/read",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158456976,
+      "method": "GET",
+      "path": "/v1/me/conversations/unread",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158516843,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792158516846,
+      "method": "POST",
+      "path": "/v1/me/presence/heartbeat",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 0
+    },
+    {
+      "at": 1792158516849,
+      "method": "GET",
+      "path": "/v1/me/live-updates",
+      "protocol": "2",
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158517025,
+      "method": "GET",
+      "path": "/v1/me/conversations/unread",
+      "protocol": null,
+      "mode": "latest",
+      "limit": null,
+      "active": 1
+    },
+    {
+      "at": 1792158517027,
+      "method": "GET",
+      "path": "/v1/conversations/0a8d3f3f-c440-409a-8ed1-7e8c2c2e1b7b/timeline",
+      "protocol": null,
+      "mode": "after",
+      "limit": "20",
+      "active": 1
+    }
+  ]
+}

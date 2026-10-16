@@ -31,7 +31,7 @@ import { t, tf, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { isAppForeground } from '../../services/foregroundPolling';
 import { ChatTimeline } from './chatTimeline';
-import { useFocusedLive } from '../live-updates';
+import { useFocusedLive, LiveConnectionNotice } from '../live-updates';
 import { captureChatAnchor } from '../../services/chatListAnchor';
 import { useAuth } from '../auth';
 import { SocialApi } from '../social';
@@ -156,6 +156,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
   const load = useCallback((current: () => boolean) => history.refresh(current), [history]);
   const fence = useFocusedLive(load, 'conversation-history', conversationId);
   const loadOlder = () => {
+    userScrolled.current = false;
     nearBottom.current = false;
     restoreAnchor.current ??= captureChatAnchor(list.current as FlatList<unknown> | null);
     void history.older(fence());
@@ -298,6 +299,13 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     ...calls.map((value) => ({ kind: 'call' as const, value })),
   ].sort((a, b) => a.value.sequence - b.value.sequence);
   timeline.push(...pending.map((value) => ({ kind: 'pending' as const, value })));
+  const historyEdge = historyState.loadingOlder ? (
+    <ActivityIndicator color={directColors.violet} />
+  ) : historyState.hasOlder ? (
+    <TouchableOpacity accessibilityRole="button" onPress={loadOlder}>
+      <Text style={styles.notice}>{t('directOlderMessages')}</Text>
+    </TouchableOpacity>
+  ) : null;
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<{ item: Timeline; isViewable: boolean }> }) => {
       for (const row of viewableItems) {
@@ -346,13 +354,15 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
           <Image source={phoneIcon} style={styles.icon} />
         </TouchableOpacity>
       </View>
+      <LiveConnectionNotice manualRefresh={false} />
       {loading ? (
         <ActivityIndicator style={{ flex: 1 }} color={directColors.violet} />
       ) : (
         <FlatList
           key={`${userId}:${conversationId}`}
           ref={list}
-          data={timeline}
+          data={Platform.OS === 'web' ? timeline : [...timeline].reverse()}
+          inverted={Platform.OS !== 'web'}
           keyExtractor={(item) => item.kind + item.value.id}
           contentContainerStyle={styles.timeline}
           maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
@@ -361,24 +371,18 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
             userScrolled.current = true;
             restoreAnchor.current = null;
           }}
-          ListHeaderComponent={
-            historyState.loadingOlder ? (
-              <ActivityIndicator color={directColors.violet} />
-            ) : historyState.hasOlder ? (
-              <TouchableOpacity accessibilityRole="button" onPress={loadOlder}>
-                <Text style={styles.notice}>{t('directOlderMessages')}</Text>
-              </TouchableOpacity>
-            ) : null
-          }
+          ListHeaderComponent={Platform.OS === 'web' ? historyEdge : null}
+          ListFooterComponent={Platform.OS !== 'web' ? historyEdge : null}
           onScroll={(event) => {
             const value = event.nativeEvent;
+            const distanceFromEnd =
+              value.contentSize.height - value.layoutMeasurement.height - value.contentOffset.y;
             nearBottom.current =
-              value.contentSize.height - value.layoutMeasurement.height - value.contentOffset.y <
-              64;
+              (Platform.OS === 'web' ? distanceFromEnd : value.contentOffset.y) < 64;
             if (nearBottom.current) acknowledge();
             if (
               userScrolled.current &&
-              value.contentOffset.y < 40 &&
+              (Platform.OS === 'web' ? value.contentOffset.y : distanceFromEnd) < 40 &&
               !historyState.loadingOlder &&
               historyState.hasOlder
             )
@@ -387,7 +391,8 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
           scrollEventThrottle={100}
           onContentSizeChange={() => {
             if (!restoreAnchor.current && nearBottom.current) {
-              list.current?.scrollToEnd({ animated: false });
+              if (Platform.OS === 'web') list.current?.scrollToEnd({ animated: false });
+              else list.current?.scrollToOffset({ offset: 0, animated: false });
               acknowledge();
             }
           }}
