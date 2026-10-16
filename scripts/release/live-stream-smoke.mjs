@@ -23,7 +23,7 @@ const db = new PrismaClient({
 const ids = [],
   streams = [],
   timings = [];
-let conversation;
+let conversation, room;
 function check(value, code) {
   if (!value) throw new Error(code);
 }
@@ -272,6 +272,122 @@ try {
     delta.items.length === 1 && delta.items[0].value.sequence === 66 && !delta.hasMoreChanges,
     'LIVE_SMOKE_DELTA20_FAILED',
   );
+  // Separate API instances must recheck current host and membership at delivery.
+  room = randomUUID();
+  const now = new Date();
+  await db.room.create({
+    data: {
+      id: room,
+      hostUserId: ids[0],
+      topic: 'Owned stream authorization verification',
+      cefrLevel: 'B1',
+      capacity: 4,
+      startedAt: now,
+      endsAt: new Date(now.getTime() + 600000),
+      sensitiveSpeechDetectionEnabled: true,
+      memberships: {
+        create: ids.slice(0, 2).map((userId, i) => ({
+          id: randomUUID(),
+          userId,
+          role: i === 0 ? 'HOST' : 'MEMBER',
+          joinOrder: i + 1,
+          rulesVersion: 'release-fixture',
+          rulesAcceptedAt: now,
+          joinedAt: now,
+        })),
+      },
+    },
+  });
+  const waitNew = async (stream, scope, from) => {
+    const until = Date.now() + 30000;
+    for (;;) {
+      const event = stream.events
+        .slice(from)
+        .find((e) => e.scope === scope && e.resourceId === room);
+      if (event) return event;
+      check(!stream.closed && Date.now() < until, 'LIVE_SMOKE_ROOM_AUDIENCE_FAILED');
+      await delay(50);
+    }
+  };
+  const risk = () =>
+    db.roomSpeechRiskEvent.create({
+      data: {
+        id: randomUUID(),
+        roomId: room,
+        subjectUserId: ids[1],
+        category: 'OTHER_SAFETY_RISK',
+        severity: 'LOW',
+        ruleSetVersion: 'release-fixture',
+        correlationHash: randomBytes(32).toString('hex'),
+        firstOccurredAt: new Date(),
+        lastOccurredAt: new Date(),
+      },
+    });
+  const hostStart = modernApi.events.length,
+    memberStart = modernPages.events.length;
+  await risk();
+  await waitNew(modernApi, 'room-safety', hostStart);
+  await delay(2000);
+  check(
+    !modernPages.events
+      .slice(memberStart)
+      .some((e) => e.scope === 'room-safety' && e.resourceId === room),
+    'LIVE_SMOKE_NONHOST_ALERT_FAILED',
+  );
+  const formerStart = modernApi.events.length,
+    successorStart = modernPages.events.length;
+  await db.$transaction(async (tx) => {
+    await tx.roomMembership.updateMany({
+      where: { roomId: room, userId: ids[0] },
+      data: { role: 'MEMBER' },
+    });
+    await tx.roomMembership.updateMany({
+      where: { roomId: room, userId: ids[1] },
+      data: { role: 'HOST' },
+    });
+    await tx.room.update({ where: { id: room }, data: { hostUserId: ids[1] } });
+  });
+  await risk();
+  await waitNew(modernPages, 'room-safety', successorStart);
+  await delay(2000);
+  check(
+    !modernApi.events
+      .slice(formerStart)
+      .some((e) => e.scope === 'room-safety' && e.resourceId === room),
+    'LIVE_SMOKE_FORMER_HOST_FAILED',
+  );
+  const removedStart = modernApi.events.length;
+  await db.roomMembership.updateMany({
+    where: { roomId: room, userId: ids[0] },
+    data: { lifecycle: 'REMOVED', removedAt: new Date() },
+  });
+  await waitNew(modernApi, 'room-state', removedStart);
+  const removedTextStart = modernApi.events.length,
+    memberTextStart = modernPages.events.length;
+  await db.roomTextMessage.create({
+    data: {
+      id: randomUUID(),
+      roomId: room,
+      senderUserId: ids[1],
+      senderDisplayName: 'Release verification',
+      clientRequestId: randomUUID(),
+      text: 'Owned member-delivery verification',
+    },
+  });
+  await waitNew(modernPages, 'room-text', memberTextStart);
+  await delay(2000);
+  check(
+    !modernApi.events
+      .slice(removedTextStart)
+      .some((e) => e.scope === 'room-text' && e.resourceId === room),
+    'LIVE_SMOKE_REMOVED_MEMBER_FAILED',
+  );
+  check(
+    !modernOutsider.events.some(
+      (e) => ['room-state', 'room-text', 'room-safety'].includes(e.scope) && e.resourceId === room,
+    ),
+    'LIVE_SMOKE_ROOM_OUTSIDER_FAILED',
+  );
   const protocolMismatch = await fetch(`${pages}/v1/me/live-updates`, {
     headers: { Authorization: `Bearer ${actors[0]}`, 'Last-Event-ID': modernApi.events[0].id },
     signal: AbortSignal.timeout(30000),
@@ -311,6 +427,9 @@ try {
         'api-progressive',
         'pages-progressive',
         'private-participants',
+        'current-host-role-transfer',
+        'removed-member-terminal-only',
+        'room-outsider-isolation',
         'third-account-isolation',
         'foreign-cursor',
         'session-revocation',
@@ -331,6 +450,10 @@ try {
   await Promise.allSettled(streams.map((s) => s.run));
   try {
     await db.$transaction(async (tx) => {
+      if (room) {
+        await tx.room.delete({ where: { id: room } });
+        await tx.liveUpdateOutbox.deleteMany({ where: { resourceId: room } });
+      }
       if (conversation) {
         await tx.directMessage.deleteMany({ where: { conversationId: conversation } });
         await tx.directConversationMember.deleteMany({ where: { conversationId: conversation } });
