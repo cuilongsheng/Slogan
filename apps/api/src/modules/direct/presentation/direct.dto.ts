@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, ApiExtraModels, getSchemaPath } from '@nestjs/swagger';
 import {
   IsIn,
   IsInt,
@@ -136,4 +136,54 @@ export class DirectCredentialsDto {
   @ApiProperty({ format: 'date-time' }) expiresAt!: string;
   @ApiProperty() identity!: string;
   @ApiProperty() roomName!: string;
+}
+
+export class DirectTimelineQueryDto {
+  @ApiPropertyOptional({ maxLength: 1000 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  before?: string;
+  @ApiPropertyOptional({ maxLength: 1000 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  after?: string;
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  limit?: number;
+}
+export class DirectTimelineTextDto {
+  @ApiProperty({ enum: ['text'] }) kind!: 'text';
+  @ApiProperty() revision!: number;
+  @ApiProperty({ type: DirectMessageDto }) value!: DirectMessageDto;
+}
+export class DirectTimelineCallDto {
+  @ApiProperty({ enum: ['call'] }) kind!: 'call';
+  @ApiProperty() revision!: number;
+  @ApiProperty({ type: DirectCallDto }) value!: DirectCallDto;
+}
+@ApiExtraModels(DirectTimelineTextDto, DirectTimelineCallDto)
+export class DirectTimelinePageDto {
+  @ApiProperty({
+    type: 'array',
+    items: {
+      oneOf: [
+        { $ref: getSchemaPath(DirectTimelineTextDto) },
+        { $ref: getSchemaPath(DirectTimelineCallDto) },
+      ],
+      discriminator: { propertyName: 'kind' },
+    },
+  })
+  items!: Array<DirectTimelineTextDto | DirectTimelineCallDto>;
+  @ApiProperty() visibleAfterSequence!: number;
+  @ApiProperty({ type: String, nullable: true }) nextBeforeCursor!: string | null;
+  @ApiProperty() hasOlder!: boolean;
+  @ApiProperty() syncCursor!: string;
+  @ApiProperty({ type: String, nullable: true }) nextAfterCursor!: string | null;
+  @ApiProperty() hasMoreChanges!: boolean;
 }

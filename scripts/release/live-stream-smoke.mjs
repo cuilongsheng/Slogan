@@ -43,14 +43,17 @@ async function json(origin, path, token, body) {
   );
   return response.json();
 }
-async function open(origin, token, cursor) {
+async function open(origin, token, cursor, protocol = 1) {
   const controller = new AbortController(),
     started = Date.now(),
     events = [];
-  const response = await fetch(`${origin}/v1/me/live-updates`, {
-    headers: { Authorization: `Bearer ${token}`, ...(cursor ? { 'Last-Event-ID': cursor } : {}) },
-    signal: controller.signal,
-  });
+  const response = await fetch(
+    `${origin}/v1/me/live-updates${protocol === 2 ? '?protocol=2' : ''}`,
+    {
+      headers: { Authorization: `Bearer ${token}`, ...(cursor ? { 'Last-Event-ID': cursor } : {}) },
+      signal: controller.signal,
+    },
+  );
   if (!local)
     check(response.headers.get('x-slogan-commit') === sha, 'LIVE_SMOKE_STREAM_COMMIT_FAILED');
   check(
@@ -83,10 +86,18 @@ async function open(origin, token, cursor) {
           if (data) {
             const value = JSON.parse(data);
             check(
-              Object.keys(value).length === 1 && typeof value.scope === 'string',
+              typeof value.scope === 'string' &&
+                (protocol === 1
+                  ? Object.keys(value).length === 1 &&
+                    ['reset', 'rooms', 'partners', 'messages', 'renew', 'unavailable'].includes(
+                      value.scope,
+                    )
+                  : Object.keys(value).every((key) =>
+                      ['scope', 'resourceId', 'kind'].includes(key),
+                    )),
               'LIVE_SMOKE_PRIVATE_PAYLOAD_FAILED',
             );
-            events.push({ scope: value.scope, at: Date.now(), id: lastId });
+            events.push({ ...value, at: Date.now(), id: lastId });
           }
         }
       }
@@ -114,7 +125,7 @@ async function open(origin, token, cursor) {
     },
   };
   streams.push(stream);
-  const reset = await stream.wait('reset');
+  const reset = await stream.wait(protocol === 2 && cursor ? 'ready' : 'reset');
   timings.push({ path: origin === api ? 'api' : 'pages', resetMs: reset.at - started });
   return stream;
 }
@@ -189,6 +200,9 @@ try {
   const alice = await open(api, actors[0]),
     bob = await open(pages, actors[1]),
     outsider = await open(pages, actors[2]);
+  const modernApi = await open(api, actors[0], undefined, 2),
+    modernPages = await open(pages, actors[1], undefined, 2),
+    modernOutsider = await open(pages, actors[2], undefined, 2);
   const sentAt = Date.now();
   await json(api, `/conversations/${conversation}/messages`, actors[0], {
     text: 'Owned release stream verification',
@@ -196,11 +210,74 @@ try {
   });
   const [a, b] = await Promise.all([alice.wait('messages'), bob.wait('messages')]);
   timings.push({ apiMessageMs: a.at - sentAt, pagesMessageMs: b.at - sentAt });
+  const typed = await Promise.all([
+    modernApi.wait('conversation-history'),
+    modernPages.wait('conversation-history'),
+  ]);
+  check(
+    typed.every((event) => event.resourceId === conversation),
+    'LIVE_SMOKE_TYPED_REFERENCE_FAILED',
+  );
   await delay(2000);
   check(
-    !outsider.events.some((e) => e.scope === 'messages'),
+    !outsider.events.some((e) => e.scope === 'messages') &&
+      !modernOutsider.events.some((e) =>
+        ['conversation-history', 'inbox', 'unread'].includes(e.scope),
+      ),
     'LIVE_SMOKE_ACCOUNT_ISOLATION_FAILED',
   );
+  // A script-owned long history proves the public latest/before/after contract.
+  await db.$transaction(async (tx) => {
+    await tx.directConversation.update({ where: { id: conversation }, data: { nextSequence: 66 } });
+    await tx.directMessage.createMany({
+      data: Array.from({ length: 64 }, (_, i) => ({
+        id: randomUUID(),
+        conversationId: conversation,
+        senderUserId: ids[0],
+        clientRequestId: randomUUID(),
+        sequence: i + 2,
+        text: 'Owned pagination verification',
+      })),
+    });
+  });
+  const latest = await json(pages, `/conversations/${conversation}/timeline?limit=20`, actors[1]);
+  check(
+    latest.items.length === 20 &&
+      latest.items[0].value.sequence === 46 &&
+      latest.items.at(-1).value.sequence === 65 &&
+      latest.hasOlder,
+    'LIVE_SMOKE_LATEST20_FAILED',
+  );
+  const older = await json(
+    pages,
+    `/conversations/${conversation}/timeline?limit=20&before=${encodeURIComponent(latest.nextBeforeCursor)}`,
+    actors[1],
+  );
+  check(
+    older.items.length === 20 &&
+      older.items[0].value.sequence === 26 &&
+      older.items.at(-1).value.sequence === 45,
+    'LIVE_SMOKE_OLDER20_FAILED',
+  );
+  await json(api, `/conversations/${conversation}/messages`, actors[1], {
+    text: 'Owned incremental verification',
+    clientRequestId: randomUUID(),
+  });
+  const delta = await json(
+    pages,
+    `/conversations/${conversation}/timeline?limit=20&after=${encodeURIComponent(latest.syncCursor)}`,
+    actors[1],
+  );
+  check(
+    delta.items.length === 1 && delta.items[0].value.sequence === 66 && !delta.hasMoreChanges,
+    'LIVE_SMOKE_DELTA20_FAILED',
+  );
+  const protocolMismatch = await fetch(`${pages}/v1/me/live-updates`, {
+    headers: { Authorization: `Bearer ${actors[0]}`, 'Last-Event-ID': modernApi.events[0].id },
+    signal: AbortSignal.timeout(30000),
+  });
+  check(protocolMismatch.status === 400, 'LIVE_SMOKE_PROTOCOL_CURSOR_FAILED');
+  await protocolMismatch.body?.cancel();
   const foreign = await fetch(`${pages}/v1/me/live-updates`, {
     headers: { Authorization: `Bearer ${actors[2]}`, 'Last-Event-ID': alice.events[0].id },
     signal: AbortSignal.timeout(30000),
@@ -208,19 +285,29 @@ try {
   check(foreign.status === 400, 'LIVE_SMOKE_CURSOR_ISOLATION_FAILED');
   await foreign.body?.cancel();
   await db.authSession.updateMany({ where: { userId: ids[2] }, data: { revokedAt: new Date() } });
-  await outsider.wait('unavailable', 22000);
+  await Promise.all([
+    outsider.wait('unavailable', 22000),
+    modernOutsider.wait('unavailable', 22000),
+  ]);
   if (!local) {
     const renew = await bob.wait('renew', 245000);
     timings.push({ pagesLeaseMs: renew.at - bob.events[0].at });
     check(renew.at - bob.events[0].at <= 245000, 'LIVE_SMOKE_LEASE_FAILED');
+    await modernPages.wait('renew', 245000);
   }
   const resumed = await open(pages, actors[0], alice.events.at(-1)?.id);
   resumed.controller.abort();
+  const modernResumed = await open(pages, actors[0], modernApi.events.at(-1)?.id, 2);
+  modernResumed.controller.abort();
   process.stdout.write(
     JSON.stringify({
       status: 'SUCCEEDED',
       commit: sha ?? 'local',
       checks: [
+        'protocol2-progressive',
+        'legacy-coexistence',
+        'protocol-cursor-isolation',
+        'latest20-older20-delta20',
         'api-progressive',
         'pages-progressive',
         'private-participants',

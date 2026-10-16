@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, appendFile } from 'node:fs/promises';
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../../src/infrastructure/database/prisma.service.js';
 import { ScryptPasswordHasher } from '../../src/modules/auth/testing.js';
@@ -44,6 +44,74 @@ import { clearRealtimeFixtures, seedAdult } from '../fixtures/realtime.js';
     await social.heartbeat(alice.id);
     await social.heartbeat(bob.id);
     const conversation = await direct.open(bob.id, alice.id);
+    if (process.env.SLOGAN_UNIFIED_NATIVE === '1') {
+      await prisma.emailCredential.create({
+        data: {
+          userId: bob.id,
+          username: 'stream_smoke_b',
+          email: 'stream_smoke_b@example.test',
+          origin: 'EMAIL_VERIFIED',
+          verifiedAt: new Date(),
+          passwordHash: await new ScryptPasswordHasher().hash('SseFixture26!'),
+        },
+      });
+      await prisma.directMessage.createMany({
+        data: Array.from({ length: 65 }, (_, i) => ({
+          id: randomUUID(),
+          conversationId: conversation.id,
+          senderUserId: alice.id,
+          clientRequestId: randomUUID(),
+          sequence: i + 1,
+          text: `Native history ${i + 1} — a long conversation pagination fixture.`,
+        })),
+      });
+      await prisma.directConversation.update({
+        where: { id: conversation.id },
+        data: { nextSequence: 66 },
+      });
+      await writeFile(
+        '/tmp/slogan-unified-native-info.json',
+        JSON.stringify({ conversationId: conversation.id, alice: alice.id, bob: bob.id }),
+      );
+      let active = 0;
+      await writeFile('/tmp/slogan-unified-native-requests.jsonl', '');
+      app.use(
+        (
+          req: { url: string; method: string },
+          res: { on(event: string, callback: () => void): void },
+          next: () => void,
+        ) => {
+          const url = new URL(req.url, 'http://127.0.0.1:3000');
+          const stream = url.pathname === '/v1/me/live-updates';
+          if (stream) active++;
+          const record = () =>
+            void appendFile(
+              '/tmp/slogan-unified-native-requests.jsonl',
+              JSON.stringify({
+                at: Date.now(),
+                method: req.method,
+                path: url.pathname,
+                protocol: url.searchParams.get('protocol'),
+                mode: url.searchParams.has('before')
+                  ? 'before'
+                  : url.searchParams.has('after')
+                    ? 'after'
+                    : 'latest',
+                limit: url.searchParams.get('limit'),
+                active,
+              }) + '\n',
+            );
+          record();
+          if (stream)
+            res.on('close', () => {
+              active--;
+              record();
+            });
+          next();
+        },
+      );
+    }
+
     await app.listen(3000, '127.0.0.1');
     await writeFile('/tmp/slogan-native-ready', 'ready');
     let previous = '';

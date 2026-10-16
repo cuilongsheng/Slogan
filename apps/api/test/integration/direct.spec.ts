@@ -73,6 +73,128 @@ describe('private conversations and exclusive two-party voice', () => {
     await clearRealtimeFixtures(prisma);
     await moduleRef.close();
   });
+  async function timelineFixture() {
+    await prisma.directMessage.createMany({
+      data: Array.from({ length: 65 }, (_, i) => i + 1)
+        .filter((sequence) => ![10, 50].includes(sequence))
+        .map((sequence) => ({
+          id: randomUUID(),
+          conversationId,
+          senderUserId: alice,
+          clientRequestId: randomUUID(),
+          sequence,
+          text: `Text ${sequence}`,
+          createdAt: new Date('2026-10-15T00:00:00Z'),
+        })),
+    });
+    await prisma.directCall.createMany({
+      data: [10, 50].map((sequence) => ({
+        id: randomUUID(),
+        conversationId,
+        sequence,
+        stateSequence: sequence,
+        callerUserId: alice,
+        calleeUserId: bob,
+        status: 'ENDED',
+        expiresAt: new Date('2026-10-15T00:00:30Z'),
+        endedAt: new Date('2026-10-15T00:00:20Z'),
+        endReason: 'HANGUP',
+      })),
+    });
+    await prisma.directConversation.update({
+      where: { id: conversationId },
+      data: { nextSequence: 66 },
+    });
+  }
+  it('opens only the latest twenty mixed entries and pages older history without changing the legacy endpoint', async () => {
+    await timelineFixture();
+    const initial = await direct.timeline(alice, conversationId, {});
+    expect(initial.items.map((e) => e.value.sequence)).toEqual(
+      Array.from({ length: 20 }, (_, i) => 46 + i),
+    );
+    expect(initial.hasOlder).toBe(true);
+    expect(initial.items.filter((e) => e.kind === 'call')).toHaveLength(1);
+    expect((await direct.messages(alice, conversationId, {})).items[0]?.sequence).toBe(1);
+    await direct.send(bob, conversationId, 'Newest', randomUUID());
+    const second = await direct.timeline(alice, conversationId, {
+      before: initial.nextBeforeCursor!,
+    });
+    expect(second.items.map((e) => e.value.sequence)).toEqual(
+      Array.from({ length: 20 }, (_, i) => 26 + i),
+    );
+    const third = await direct.timeline(alice, conversationId, {
+      before: second.nextBeforeCursor!,
+    });
+    const last = await direct.timeline(alice, conversationId, { before: third.nextBeforeCursor! });
+    expect(last.items.map((e) => e.value.sequence)).toEqual([1, 2, 3, 4, 5]);
+    expect(last.hasOlder).toBe(false);
+    expect(last.nextBeforeCursor).toBeNull();
+    const delta = await direct.timeline(alice, conversationId, { after: initial.syncCursor });
+    expect(delta.items.map((e) => e.value.sequence)).toEqual([66]);
+    expect(delta.hasMoreChanges).toBe(false);
+    expect(
+      (await direct.timeline(alice, conversationId, { after: delta.syncCursor })).items,
+    ).toEqual([]);
+  });
+  it('uses an independent bounded revision cursor and updates old calls in place', async () => {
+    await timelineFixture();
+    const initial = await direct.timeline(alice, conversationId, {});
+    await prisma.directMessage.createMany({
+      data: Array.from({ length: 25 }, (_, i) => ({
+        id: randomUUID(),
+        conversationId,
+        senderUserId: bob,
+        clientRequestId: randomUUID(),
+        sequence: 66 + i,
+        text: `New ${i}`,
+      })),
+    });
+    await prisma.directCall.updateMany({
+      where: { conversationId, sequence: 10 },
+      data: { stateSequence: 91, endReason: 'UPDATED' },
+    });
+    await prisma.directConversation.update({
+      where: { id: conversationId },
+      data: { nextSequence: 92 },
+    });
+    const first = await direct.timeline(alice, conversationId, { after: initial.syncCursor });
+    expect(first.items).toHaveLength(20);
+    expect(first.hasMoreChanges).toBe(true);
+    const second = await direct.timeline(alice, conversationId, { after: first.nextAfterCursor! });
+    expect(second.items).toHaveLength(6);
+    expect(second.items.find((e) => e.kind === 'call')).toMatchObject({
+      revision: 91,
+      value: { sequence: 10, endReason: 'UPDATED' },
+    });
+    expect(second.hasMoreChanges).toBe(false);
+    expect(
+      (await direct.timeline(alice, conversationId, { after: second.syncCursor })).items,
+    ).toHaveLength(0);
+  });
+  it('binds history cursors to owner, conversation and direction and never restores hidden content', async () => {
+    await timelineFixture();
+    const initial = await direct.timeline(alice, conversationId, {});
+    await expect(
+      direct.timeline(bob, conversationId, { before: initial.nextBeforeCursor! }),
+    ).rejects.toMatchObject({ code: 'DIRECT_CURSOR_INVALID' });
+    await expect(
+      direct.timeline(alice, conversationId, { after: initial.nextBeforeCursor! }),
+    ).rejects.toMatchObject({ code: 'DIRECT_CURSOR_INVALID' });
+    await expect(direct.timeline(outsider, conversationId, {})).rejects.toMatchObject({
+      code: 'DIRECT_NOT_FOUND',
+    });
+    await expect(direct.timeline(alice, conversationId, { limit: 21 })).rejects.toMatchObject({
+      code: 'DIRECT_TIMELINE_QUERY_INVALID',
+    });
+    await direct.hide(alice, conversationId, randomUUID());
+    expect(
+      (await direct.timeline(alice, conversationId, { before: initial.nextBeforeCursor! })).items,
+    ).toHaveLength(0);
+    const delta = await direct.timeline(alice, conversationId, { after: initial.syncCursor });
+    expect(delta.visibleAfterSequence).toBe(65);
+    expect(delta.items).toHaveLength(0);
+    expect((await direct.timeline(bob, conversationId, {})).items).toHaveLength(20);
+  });
   it('replays concurrent sends once, rejects altered identifiers, and keeps personal visibility separate', async () => {
     const id = randomUUID();
     const results = await Promise.all([

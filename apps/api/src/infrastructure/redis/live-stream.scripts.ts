@@ -3,7 +3,7 @@ export const LIVE_EXPIRIES = 'slogan:live:presence-expiries';
 export const liveOwner = (id: string) => `slogan:live:owner:${id}`;
 export const publishLive = `
 if redis.call('EXISTS',KEYS[2])==1 then return 0 end
-redis.call('XADD',KEYS[1],'MAXLEN','~',1000,'*','scope',ARGV[1])
+redis.call('XADD',KEYS[1],'MAXLEN','~',1000,'*','scope',ARGV[1],'resourceId',ARGV[2] or '','kind',ARGV[3] or '')
 redis.call('EXPIRE',KEYS[1],3600)
 redis.call('SET',KEYS[2],'1','EX',3600)
 return 1`;

@@ -10,6 +10,7 @@ import {
   publishLive,
   expireLivePresence,
 } from '../../../infrastructure/redis/live-stream.scripts.js';
+import { LIVE_SCOPES } from '../domain/live-updates.port.js';
 import type {
   LiveUpdatesStore,
   LiveScope,
@@ -60,24 +61,97 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
       100,
     );
     for (const owner of due) await this.expirePresence(owner);
-    await this.prisma.$transaction(
-      async (tx) => {
-        const rows = await tx.$queryRaw<
-          Array<{ id: string; scope: LiveScope; ownerId: string | null }>
-        >`SELECT id,scope,"ownerId" FROM "LiveUpdateOutbox" ORDER BY "createdAt",id LIMIT 100 FOR UPDATE SKIP LOCKED`;
-        for (const row of rows) {
-          await redis.eval(
-            publishLive,
-            2,
-            row.ownerId ? liveOwner(row.ownerId) : LIVE_PUBLIC,
-            `slogan:live:sent:${row.id}`,
-            row.scope,
-          );
-          await tx.$executeRaw`DELETE FROM "LiveUpdateOutbox" WHERE id=${row.id}::uuid`;
-        }
-      },
-      { timeout: 10000 },
-    );
+    const deadline = Date.now() + 5000;
+    for (let batch = 0; batch < 10 && Date.now() < deadline; batch++) {
+      const count = await this.prisma.$transaction(
+        async (tx) => {
+          const rows = await tx.$queryRaw<
+            Array<{
+              id: string;
+              scope: LiveScope;
+              ownerId: string | null;
+              resourceId: string | null;
+              kind: string | null;
+            }>
+          >`SELECT id,scope,"ownerId","resourceId",kind FROM "LiveUpdateOutbox" ORDER BY "createdAt",id LIMIT 100 FOR UPDATE SKIP LOCKED`;
+          if (!rows.length) return 0;
+          const pipeline = redis.pipeline();
+          for (const row of rows) {
+            pipeline.eval(
+              publishLive,
+              2,
+              row.ownerId ? liveOwner(row.ownerId) : LIVE_PUBLIC,
+              `slogan:live:sent:${row.id}`,
+              row.scope,
+              row.resourceId ?? '',
+              row.kind ?? '',
+            );
+          }
+          const published = await pipeline.exec();
+          if (!published || published.some(([error]) => error))
+            throw new Error('Live publication pending');
+          await tx.liveUpdateOutbox.deleteMany({
+            where: { id: { in: rows.map((row) => row.id) } },
+          });
+          return rows.length;
+        },
+        { timeout: 10000 },
+      );
+      if (count < 100) break;
+    }
+  }
+  async reconcileRelease() {
+    const redis = await this.redis();
+    if (!(await redis.set('slogan:live:release-check', '1', 'EX', 300, 'NX'))) return;
+    const response = await fetch('https://slogan-preview-mobile.pages.dev/downloads/android.json', {
+      signal: AbortSignal.timeout(10000),
+      redirect: 'follow',
+    });
+    if (!response.ok) throw new Error('Release metadata unavailable');
+    const value: unknown = await response.json();
+    if (!validRelease(value)) throw new Error('Invalid published release metadata');
+    const prior = Number((await redis.get('slogan:live:release-version')) ?? 0);
+    if (value.versionCode <= prior) return;
+    // Commit the durable notification before recording progress; retries can duplicate, never lose it.
+    await this.prisma.liveUpdateOutbox.create({ data: { scope: 'release' } });
+    await redis.set('slogan:live:release-version', String(value.versionCode));
+  }
+  async canReceive(owner: string, change: StreamChange) {
+    const { scope, resourceId, kind } = change;
+    if (scope === 'rooms' || scope === 'partners' || scope === 'release') return !resourceId;
+    if (['account', 'safety', 'reports', 'learning'].includes(scope)) return !resourceId;
+    if (!resourceId) return scope === 'messages';
+    if (['conversation-history', 'conversation-state', 'inbox', 'unread'].includes(scope))
+      return !!(await this.prisma.directConversationMember.count({
+        where: { userId: owner, conversationId: resourceId },
+      }));
+    if (scope === 'calls')
+      return !!(await this.prisma.directCall.count({
+        where: { id: resourceId, OR: [{ callerUserId: owner }, { calleeUserId: owner }] },
+      }));
+    const membership = await this.prisma.roomMembership.findUnique({
+      where: { roomId_userId: { roomId: resourceId, userId: owner } },
+      include: { room: true },
+    });
+    if (scope === 'invitations')
+      return (
+        (membership?.lifecycle === 'ACTIVE' &&
+          membership.role === 'HOST' &&
+          membership.room.hostUserId === owner) ||
+        !!(await this.prisma.roomInvitation.count({
+          where: { roomId: resourceId, inviteeUserId: owner },
+        }))
+      );
+    if (scope === 'room-state' && kind === 'membership') return !!membership;
+    if (membership?.lifecycle !== 'ACTIVE') return false;
+    if (scope === 'room-safety')
+      return (
+        membership.role === 'HOST' &&
+        membership.room.hostUserId === owner &&
+        membership.room.sensitiveSpeechDetectionEnabled
+      );
+    if (scope === 'room-text') return ['OPEN', 'ENDING'].includes(membership.room.status);
+    return scope === 'room-state';
   }
   async expirePresence(owner: string, generation?: string) {
     const redis = await this.redis();
@@ -183,11 +257,26 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
                 const index = ownKeys.indexOf(key);
                 if (index < 0) return [];
                 return entries.flatMap(([id, fields]) => {
-                  const scope = fields[fields.indexOf('scope') + 1];
+                  const field = (name: string) => {
+                    const index = fields.indexOf(name);
+                    return index < 0 ? undefined : fields[index + 1];
+                  };
+                  const scope = field('scope') as LiveScope;
+                  const resourceId = field('resourceId');
+                  const kind = field('kind');
+                  const publicScope = ['rooms', 'partners', 'release'].includes(scope);
                   return compare(id, pending.positions[index]!) > 0 &&
-                    ((index === 0 && (scope === 'rooms' || scope === 'partners')) ||
-                      (index === 1 && scope === 'messages'))
-                    ? [{ index, id, scope: scope as LiveScope }]
+                    LIVE_SCOPES.includes(scope) &&
+                    ((index === 0 && publicScope && !resourceId) || (index === 1 && !publicScope))
+                    ? [
+                        {
+                          index,
+                          id,
+                          scope,
+                          ...(resourceId ? { resourceId } : {}),
+                          ...(kind === 'membership' || kind === 'visibility' ? { kind } : {}),
+                        },
+                      ]
                     : [];
                 });
               }),
@@ -231,4 +320,26 @@ function compare(a: string, b: string) {
   const [at, as] = a.split('-').map(BigInt),
     [bt, bs] = b.split('-').map(BigInt);
   return at === bt ? (as! < bs! ? -1 : as === bs ? 0 : 1) : at! < bt! ? -1 : 1;
+}
+
+export function validRelease(value: unknown): value is { versionCode: number } {
+  if (typeof value !== 'object' || !value) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    Number.isSafeInteger(v.versionCode) &&
+    Number(v.versionCode) > 0 &&
+    Number(v.versionCode) < 2147483647 &&
+    typeof v.version === 'string' &&
+    /^\d+\.\d+\.\d+$/.test(v.version) &&
+    typeof v.commit === 'string' &&
+    /^[a-f0-9]{40}$/.test(v.commit) &&
+    typeof v.sha256 === 'string' &&
+    /^[a-f0-9]{64}$/.test(v.sha256) &&
+    Number.isSafeInteger(v.bytes) &&
+    Number(v.bytes) > 0 &&
+    v.package === 'com.slogan.mobile' &&
+    v.apiOrigin === 'https://slogan-api-pi.vercel.app' &&
+    v.signing === 'controlled-debug' &&
+    v.certificateSha256 === 'fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c'
+  );
 }

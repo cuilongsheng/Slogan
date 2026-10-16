@@ -1,12 +1,23 @@
 import type { Environment } from '../../src/config/environment.js';
 
 export function testEnvironment(overrides: Partial<Environment> = {}): Environment {
+  const databaseUrl = process.env.SLOGAN_TEST_DATABASE_URL;
+  if (databaseUrl) {
+    const target = new URL(databaseUrl);
+    if (
+      target.protocol !== 'postgresql:' ||
+      !['127.0.0.1', 'localhost'].includes(target.hostname) ||
+      target.port !== '54329' ||
+      !/^\/slogan_test_[a-z0-9_]+$/.test(target.pathname)
+    )
+      throw new Error('Isolated test database must be a named loopback test database');
+  }
   return {
     APP_NAME: 'slogan-api-test',
     APP_PORT: 3000,
     APP_HOST: '127.0.0.1',
     NODE_ENV: 'test',
-    DATABASE_URL: 'postgresql://slogan:slogan@127.0.0.1:54329/slogan_test',
+    DATABASE_URL: databaseUrl ?? 'postgresql://slogan:slogan@127.0.0.1:54329/slogan_test',
     CORS_ALLOWED_ORIGINS: ['http://localhost:5173'],
     JWT_ACCESS_SECRET: 'test-access-secret-with-at-least-32-characters',
     JWT_ACCESS_TTL_SECONDS: 900,

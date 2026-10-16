@@ -7,6 +7,7 @@ import {
   DIRECT_REPOSITORY,
   type DirectRepository,
   type DirectPageQuery,
+  type DirectTimelineQuery,
 } from '../domain/direct.js';
 
 @Injectable()
@@ -16,6 +17,9 @@ export class DirectService {
     @Inject(REALTIME_PROVIDER) private readonly media: RealtimeProvider,
     private readonly config: ConfigService<Environment, true>,
   ) {}
+  timeline(actor: string, id: string, query: DirectTimelineQuery) {
+    return this.repository.timeline(actor, id, query);
+  }
   unreadCount(actor: string) {
     return this.repository.unreadCount(actor);
   }
