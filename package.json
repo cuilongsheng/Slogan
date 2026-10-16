@@ -9,6 +9,15 @@
     "pnpm": "12.3.4"
   },
   "scripts": {
+    "test:observability:build": "node --test scripts/tests/observability-build.test.mjs scripts/tests/observability-vercel-upload.test.mjs scripts/tests/observability-cross-trace.test.mjs",
+    "observability:readiness": "node scripts/observability-readiness.mjs",
+    "build:observability:vercel": "node scripts/build-observability-vercel.mjs",
+    "deploy:observability:vercel": "node scripts/deploy-observability-vercel.mjs",
+    "test:observability:native": "node scripts/test-native-observability.mjs",
+    "test:observability:runtime": "pnpm --filter @slogan/api build && node --test scripts/tests/observability-artifacts.test.mjs",
+    "test:observability:vercel": "pnpm --filter @slogan/api build && node scripts/test-vercel-observability.mjs",
+    "build:observability:api": "node scripts/build-observability-api.mjs",
+    "build:observability:android": "node scripts/build-observability-android.mjs",
     "build:pages:admin": "node scripts/build-pages.mjs admin",
     "build:pages:mobile": "node scripts/build-pages.mjs mobile",
     "test:pages": "node --test scripts/tests/pages-*.test.mjs",
@@ -32,6 +41,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
+    "@sentry/cli": "3.8.0",
     "@types/node": "24.13.3",
     "dependency-cruiser": "18.2.0",
     "eslint": "10.10.0",

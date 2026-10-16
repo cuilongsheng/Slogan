@@ -1,5 +1,6 @@
 import { isIP } from 'node:net';
 import { z } from 'zod';
+import { validSentryDsn } from '@slogan/shared';
 
 const blankToUndefined = (value: unknown) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value;
@@ -28,6 +29,25 @@ const environmentSchema = z
     APP_PORT: z.coerce.number().int().positive().max(65_535).default(3000),
     APP_HOST: z.enum(['127.0.0.1', '0.0.0.0']).default('127.0.0.1'),
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    OBSERVABILITY_ENABLED: booleanFromEnvironment,
+    OBSERVABILITY_ENVIRONMENT: z
+      .enum(['development', 'test', 'preview', 'production'])
+      .default('development'),
+    OBSERVABILITY_RELEASE: optionalString,
+    OBSERVABILITY_BUILD: optionalString,
+    SENTRY_DSN: optionalString,
+    OBSERVABILITY_MAX_EVENTS_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(30),
+    OBSERVABILITY_FLUSH_TIMEOUT_MS: z.coerce.number().int().min(100).max(2000).default(2000),
+    OBSERVABILITY_MONITOR_ENABLED: booleanFromEnvironment,
+    OBSERVABILITY_MONITOR_INTERVAL_SECONDS: z.coerce.number().int().min(60).max(3600).default(60),
+    OBSERVABILITY_MONITOR_LEASE_SECONDS: z.coerce.number().int().min(10).max(50).default(45),
+    OBSERVABILITY_COMMAND_DEADLINE_SECONDS: z.coerce.number().int().min(30).max(3600).default(120),
+    OBSERVABILITY_MONITOR_HEARTBEAT_URL: optionalString,
+    OBSERVABILITY_REALTIME_HEARTBEAT_URL: optionalString,
+    OBSERVABILITY_AUTH_MAIL_HEARTBEAT_URL: optionalString,
+    OBSERVABILITY_OPERATIONS_HEARTBEAT_URL: optionalString,
+    OBSERVABILITY_ROOM_SPEECH_HEARTBEAT_URL: optionalString,
+    OBSERVABILITY_HEARTBEAT_TIMEOUT_MS: z.coerce.number().int().min(100).max(2000).default(2000),
     DATABASE_URL: z.string().startsWith('postgresql://'),
     CORS_ALLOWED_ORIGINS: commaSeparatedUrls,
     JWT_ACCESS_SECRET: z.string().min(32),
@@ -207,6 +227,7 @@ const environmentSchema = z
     OPERATIONS_INCIDENT_FAILURE_THRESHOLD: z.coerce.number().int().min(1).max(100).default(3),
     OPERATIONS_INCIDENT_COOLDOWN_SECONDS: z.coerce.number().int().min(10).max(86_400).default(300),
     OPERATIONS_ALERT_SINK_URL: optionalString,
+    OPERATIONS_ALERT_SINK_KIND: z.enum(['http', 'sentry']).default('http'),
     OPERATIONS_ALERT_SINK_TOKEN: optionalString,
     OPERATIONS_ALERT_TIMEOUT_MS: z.coerce.number().int().min(500).max(30_000).default(5000),
     GOVERNANCE_RETENTION_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),
@@ -237,6 +258,29 @@ const environmentSchema = z
     WECHAT_OAUTH_REDIRECT_URIS: optionalString,
   })
   .superRefine((environment, context) => {
+    if (
+      environment.OBSERVABILITY_ENABLED &&
+      (!validSentryDsn(environment.SENTRY_DSN) ||
+        !/^slogan-api@[0-9a-f]{7,40}$/.test(environment.OBSERVABILITY_RELEASE ?? '') ||
+        !/^[0-9a-f]{7,40}(?:\.[0-9]{1,12})?$/.test(environment.OBSERVABILITY_BUILD ?? ''))
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['OBSERVABILITY_ENABLED'],
+        message: 'Invalid observability configuration',
+      });
+    }
+    for (const key of [
+      'OBSERVABILITY_MONITOR_HEARTBEAT_URL',
+      'OBSERVABILITY_REALTIME_HEARTBEAT_URL',
+      'OBSERVABILITY_AUTH_MAIL_HEARTBEAT_URL',
+      'OBSERVABILITY_OPERATIONS_HEARTBEAT_URL',
+      'OBSERVABILITY_ROOM_SPEECH_HEARTBEAT_URL',
+    ] as const) {
+      const value = environment[key];
+      if (value && !validProviderUrl(value, environment.NODE_ENV))
+        context.addIssue({ code: 'custom', path: [key], message: 'Invalid heartbeat endpoint' });
+    }
     try {
       const shareUrl = new URL(environment.ROOM_SHARE_BASE_URL);
       const localDevelopmentUrl =
@@ -491,6 +535,9 @@ const environmentSchema = z
         });
       }
     }
+    if (environment.OPERATIONS_ALERT_SINK_KIND === 'sentry' && !environment.SENTRY_DSN) {
+      context.addIssue({ code: 'custom', message: 'Sentry alert delivery requires its DSN' });
+    }
     const alertSinkConfigured = environment.OPERATIONS_ALERT_SINK_URL !== undefined;
     if (
       alertSinkConfigured &&
@@ -606,7 +653,16 @@ function validKeyRing(value: string | undefined, activeId: string): boolean {
 }
 
 export function validateEnvironment(input: Record<string, unknown>): Environment {
-  const result = environmentSchema.parse(input);
+  const parsed = environmentSchema.safeParse(input);
+  if (!parsed.success) {
+    // Built-in Zod diagnostics can echo values. Keep field names, and the
+    // existing root-level custom messages defined by this schema (fixed text;
+    // provider names come from the fixed list, never configuration input).
+    throw new Error(
+      `Invalid environment configuration: ${[...new Set(parsed.error.issues.map((issue) => (issue.code === 'custom' && issue.path.length === 0 ? issue.message : issue.path.join('.'))))].join(', ')}`,
+    );
+  }
+  const result = parsed.data;
   return {
     ...result,
     EMAIL_AUTH_MAIL_ENABLED: result.EMAIL_AUTH_MAIL_ENABLED ?? result.EMAIL_PASSWORD_AUTH_ENABLED,

@@ -173,6 +173,13 @@ jobs:
         working-directory: apps/api
         run: node scripts/migrate-production.mjs
       - name: Deploy API after migration
+        env:
+          SENTRY_UPLOAD_SOURCEMAPS: 'true'
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_API_DSN }}
+          SENTRY_ORG: tonycui
+          SENTRY_PROJECT: slogan-api
+          OBSERVABILITY_ENVIRONMENT: production
         run: node scripts/release/deploy-api.mjs
       - name: Verify the deployed commit
         run: node scripts/release/api-runtime-gate.mjs

@@ -25,14 +25,16 @@ function setup(mediaEnabled = true) {
     expire: jest.fn(async () => undefined),
     reconcile: jest.fn(async () => undefined),
   };
+  const heartbeat = { completed: jest.fn(async () => undefined) };
   const runner = new RealtimeRunner(
     new ConfigService(testEnvironment({ REALTIME_ENABLED: mediaEnabled })),
     queue as never,
     rooms as never,
     voice as never,
     { warn: jest.fn() } as never,
+    heartbeat as never,
   );
-  return { runner, queue, rooms, voice, consume: (job: RealtimeJob) => consume!(job) };
+  return { runner, queue, rooms, voice, heartbeat, consume: (job: RealtimeJob) => consume!(job) };
 }
 test('managed mode has no in-process timer; delivery runs cleanup independently of a request', async () => {
   const { runner, rooms, voice, consume } = setup();
@@ -68,4 +70,17 @@ test('retention cleanup still scans when media processing is disabled', async ()
   await consume({ kind: 'recovery', id: 'scan' });
   expect(rooms.pendingCommands).toHaveBeenCalled();
   expect(voice.dispatch).not.toHaveBeenCalled();
+});
+
+test('managed heartbeat follows successful recovery and continuation only', async () => {
+  const { runner, queue, rooms, heartbeat, consume } = setup();
+  await runner.onModuleInit();
+  rooms.pendingCommands.mockRejectedValueOnce(new Error('database unavailable'));
+  await expect(consume({ kind: 'recovery', id: 'scan' })).rejects.toThrow();
+  expect(heartbeat.completed).not.toHaveBeenCalled();
+  queue.ensureRecovery.mockRejectedValueOnce(new Error('publish unavailable'));
+  await expect(consume({ kind: 'recovery', id: 'scan' })).rejects.toThrow();
+  expect(heartbeat.completed).not.toHaveBeenCalled();
+  await consume({ kind: 'recovery', id: 'scan' });
+  expect(heartbeat.completed).toHaveBeenCalledWith('realtime');
 });

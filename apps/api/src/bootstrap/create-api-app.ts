@@ -13,6 +13,7 @@ import { ApiExceptionFilter } from '../common/filters/api-exception.filter.js';
 import type { Environment } from '../config/environment.js';
 import { StructuredLogger } from '../infrastructure/observability/structured-logger.service.js';
 import { LOG_REDACTION } from '../infrastructure/observability/log-redaction.js';
+import { validRequestId } from '@slogan/shared';
 
 // Load Helmet's callable CommonJS export consistently in Node and Vercel's compiler.
 const require = createRequire(import.meta.url);
@@ -54,8 +55,7 @@ export function configureApiApp(app: INestApplication): void {
       level: config.get('NODE_ENV', { infer: true }) === 'test' ? 'silent' : 'info',
       genReqId(request, response) {
         const incoming = request.headers['x-request-id'];
-        const requestId =
-          typeof incoming === 'string' && incoming.length <= 128 ? incoming : randomUUID();
+        const requestId = validRequestId(incoming) ? incoming : randomUUID();
         response.setHeader('x-request-id', requestId);
         return requestId;
       },
@@ -65,6 +65,7 @@ export function configureApiApp(app: INestApplication): void {
   app.enableCors({
     origin: config.get('CORS_ALLOWED_ORIGINS', { infer: true }),
     credentials: true,
+    exposedHeaders: ['x-request-id'],
   });
   app.useGlobalPipes(
     new ValidationPipe({

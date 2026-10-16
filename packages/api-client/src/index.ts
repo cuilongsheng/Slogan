@@ -7,9 +7,10 @@ export type SloganApiPaths = paths;
 export interface SloganApiClientOptions {
   baseUrl: string;
   fetch?: typeof globalThis.fetch;
+  onRequest?: (request: Request, schemaPath: string) => void;
 }
 
-export function createSloganApiClient({ baseUrl, fetch }: SloganApiClientOptions) {
+export function createSloganApiClient({ baseUrl, fetch, onRequest }: SloganApiClientOptions) {
   let url: URL;
 
   try {
@@ -22,10 +23,17 @@ export function createSloganApiClient({ baseUrl, fetch }: SloganApiClientOptions
     throw new Error('The API base URL must use HTTP or HTTPS.');
   }
 
-  return createClient<paths>({
+  const client = createClient<paths>({
     baseUrl: url.toString().replace(/\/$/, ''),
     ...(fetch ? { fetch } : {}),
   });
+  if (onRequest)
+    client.use({
+      onRequest: ({ request, schemaPath }) => {
+        onRequest(request, schemaPath);
+      },
+    });
+  return client;
 }
 
 export type SloganApiClient = ReturnType<typeof createSloganApiClient>;

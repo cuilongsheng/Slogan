@@ -24,7 +24,8 @@ export class OperationsRunnerService {
     if (!this.config.get('OPERATIONS_GOVERNANCE_ENABLED', { infer: true }))
       return { enabled: false };
     const outcomes: Record<string, unknown> = { enabled: true };
-    outcomes.dependencies = await this.probes.run(now);
+    if (!this.config.get('OBSERVABILITY_MONITOR_ENABLED', { infer: true }))
+      outcomes.dependencies = await this.probes.run(now);
     if (this.config.get('PHONE_AUTH_ENABLED', { infer: true }) && this.phoneChallenges)
       try {
         outcomes.temporaryCoordination = {
@@ -114,6 +115,13 @@ export class OperationsRunnerService {
         reasonCode: 'RESTRICTION_RECOVERY_DELAYED',
       },
     ]) {
+      if (
+        this.config.get('OBSERVABILITY_MONITOR_ENABLED', { infer: true }) &&
+        ['REALTIME_COMMAND', 'POST_ROOM_KEYWORDS', 'SAFETY_CASE', 'SAFETY_RESTRICTION'].includes(
+          probe.component,
+        )
+      )
+        continue;
       if (probe.count < this.config.get('OPERATIONS_INCIDENT_FAILURE_THRESHOLD', { infer: true }))
         continue;
       await this.incidents.observe({

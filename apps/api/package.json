@@ -34,8 +34,11 @@
     "start:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker node dist/workers/auth-mail/main.js",
     "dev:auth-mail-worker": "APP_NAME=slogan-auth-mail-worker nest start --watch --entryFile workers/auth-mail/main",
     "public-trial:accounts": "node dist/scripts/public-trial-accounts.js",
+    "start:realtime-worker": "APP_NAME=slogan-realtime-worker node dist/workers/realtime/main.js",
     "preview:accounts": "node dist/scripts/preview-accounts.js",
-    "start:realtime-worker": "APP_NAME=slogan-realtime-worker node dist/workers/realtime/main.js"
+    "test:sentry": "node scripts/check-sentry.mjs",
+    "start:monitor-worker": "APP_NAME=slogan-monitor-worker node dist/workers/monitor/main.js",
+    "observability:seed": "APP_NAME=slogan-monitor-seed node dist/scripts/seed-observability.js"
   },
   "dependencies": {
     "@livekit/rtc-node": "1.0.0",
@@ -47,6 +50,7 @@
     "@nestjs/swagger": "12.0.1",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "@sentry/nestjs": "11.7.0",
     "@vercel/functions": "3.9.11",
     "@vercel/queue": "0.8.0",
     "bullmq": "6.3.4",
@@ -67,7 +71,9 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "yaml": "2.9.0",
-    "zod": "4.5.4"
+    "zod": "4.5.4",
+    "@slogan/shared": "workspace:*",
+    "@vercel/queue": "0.8.0"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "10.1.1",

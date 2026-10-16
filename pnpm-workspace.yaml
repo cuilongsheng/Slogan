@@ -19,12 +19,11 @@ minimumReleaseAgeExclude:
   - expo-auth-session@57.0.13
   - expo-linking@57.0.11
 
-onlyBuiltDependencies:
-  - '@swc/core'
-  - esbuild
 allowBuilds:
   '@prisma/engines': true
   '@scarf/scarf': false
+  '@sentry/cli': true
+  '@swc/core': true
   esbuild: true
   msgpackr-extract: false
   prisma: true

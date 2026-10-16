@@ -19,11 +19,23 @@ import { PrismaGovernanceRepository } from './infrastructure/prisma-governance.r
 import { PrismaIncidentsRepository } from './infrastructure/prisma-incidents.repository.js';
 import { PrismaMetricsRepository } from './infrastructure/prisma-metrics.repository.js';
 import { OperationsController } from './presentation/operations.controller.js';
+import { ObservabilityMonitorService } from './application/services/observability-monitor.service.js';
+import { PrismaObservabilityMonitorRepository } from './infrastructure/prisma-observability-monitor.repository.js';
+import { OBSERVABILITY_MONITOR_REPOSITORY } from './domain/ports/observability-monitor.repository.js';
+import { MONITOR_SCHEDULER } from './domain/ports/monitor-scheduler.port.js';
+import { VercelMonitorScheduler } from './infrastructure/vercel-monitor-scheduler.js';
 
 @Module({
   imports: [AuthModule, BackofficeModule],
   controllers: [OperationsController],
   providers: [
+    { provide: MONITOR_SCHEDULER, useFactory: () => new VercelMonitorScheduler() },
+    ObservabilityMonitorService,
+    PrismaObservabilityMonitorRepository,
+    {
+      provide: OBSERVABILITY_MONITOR_REPOSITORY,
+      useExisting: PrismaObservabilityMonitorRepository,
+    },
     MetricsService,
     IncidentsService,
     GovernanceService,
@@ -43,6 +55,12 @@ import { OperationsController } from './presentation/operations.controller.js';
       useExisting: NetworkOperationsDependencyProbes,
     },
   ],
-  exports: [MetricsService, IncidentsService, GovernanceService, OperationsRunnerService],
+  exports: [
+    MetricsService,
+    IncidentsService,
+    GovernanceService,
+    OperationsRunnerService,
+    ObservabilityMonitorService,
+  ],
 })
 export class OperationsModule {}

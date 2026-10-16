@@ -1,4 +1,6 @@
-import { Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { Injectable, Optional, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { ObservabilityHeartbeat } from '../../infrastructure/observability/heartbeat.service.js';
+import { reportError } from '../../infrastructure/observability/error-reporting.js';
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../config/environment.js';
 import { StructuredLogger } from '../../infrastructure/observability/structured-logger.service.js';
@@ -12,6 +14,7 @@ export class OperationsWorkerRunner implements OnModuleInit, OnModuleDestroy {
     private readonly runner: OperationsRunnerService,
     private readonly config: ConfigService<Environment, true>,
     private readonly logger: StructuredLogger,
+    @Optional() private readonly heartbeat?: ObservabilityHeartbeat,
   ) {}
   onModuleInit() {
     if (!this.config.get('OPERATIONS_GOVERNANCE_ENABLED', { infer: true })) return;
@@ -23,8 +26,11 @@ export class OperationsWorkerRunner implements OnModuleInit, OnModuleDestroy {
     if (this.active) return;
     this.active = this.runner
       .runOnce()
-      .then(() => undefined)
-      .catch(() => this.logger.warn('operations_runner_failed'))
+      .then(() => this.heartbeat?.completed('operations'))
+      .catch((error) => {
+        reportError(error, { code: 'WORKER_FAILED', stage: 'worker' });
+        this.logger.warn('operations_runner_failed');
+      })
       .finally(() => {
         this.active = undefined;
       });

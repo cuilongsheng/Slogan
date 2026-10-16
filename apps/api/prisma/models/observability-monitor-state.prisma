@@ -1,0 +1,14 @@
+model ObservabilityMonitorState {
+  environment         String   @db.VarChar(16)
+  monitorKey          String   @db.VarChar(64)
+  completedWindow     BigInt   @default(-1)
+  nextWindow          BigInt?
+  consecutiveFailures Int      @default(0)
+  lastCompletedAt     DateTime? @db.Timestamptz(3)
+  leaseId             String?  @db.Uuid
+  lockedUntil         DateTime? @db.Timestamptz(3)
+  generation          Int      @default(0)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
+
+  @@id([environment, monitorKey])
+}

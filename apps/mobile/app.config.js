@@ -36,6 +36,25 @@ module.exports = () => {
       },
     },
     plugins: [
+      [
+        '@sentry/react-native/expo',
+        {
+          organization: process.env.SENTRY_ORG || '',
+          project: process.env.SENTRY_PROJECT || '',
+          useNativeInit: false,
+          disableAutoUpload: process.env.EXPO_PUBLIC_OBSERVABILITY_ENABLED !== 'true',
+        },
+      ],
+      [
+        './plugins/with-observability.cjs',
+        {
+          enabled: process.env.EXPO_PUBLIC_OBSERVABILITY_ENABLED === 'true',
+          dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+          environment: process.env.EXPO_PUBLIC_OBSERVABILITY_ENVIRONMENT,
+          release: process.env.EXPO_PUBLIC_OBSERVABILITY_RELEASE,
+          build: process.env.EXPO_PUBLIC_OBSERVABILITY_BUILD,
+        },
+      ],
       'expo-font',
       [
         'expo-image-picker',
