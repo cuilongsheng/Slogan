@@ -56,6 +56,12 @@ the later room control-plane change must enforce this state on create, join and 
 
 ## Product-owner Review
 
-DEFERRED by the product owner until frontend integration is ready. Keep the OpenSpec change open;
-review the criteria, generated OpenAPI contract, migration, automated evidence, real-provider
-blockers and current non-goals as part of the unified frontend/backend acceptance before archive.
+Accepted for archive on 2026-10-16. The owner confirmed the reviewed current state and requested
+preserving it while archiving completed changes. The criteria, contract, migration, automated
+evidence and disclosed provider limits were reviewed under that instruction. This is owner
+acceptance, not a new provider or device test result. Later approved optional-profile and
+phase-one requirements remain authoritative over the initial implementation design.
+
+Historical review status: review was previously deferred until frontend integration. The
+automated/runtime tables above retain their original evidence scope; unexecuted provider checks
+remain BLOCKED rather than becoming PASS through archival.
