@@ -1,6 +1,6 @@
 ## Context
 
-See Why of [proposal.md](./proposal.md). This design implements the existing [identity-and-profile spec](../../specs/identity-and-profile/spec.md) without modifying product requirements.
+See Why of [proposal.md](proposal.md). This design implements the existing [identity-and-profile spec](../../../specs/identity-and-profile/spec.md) without modifying product requirements.
 
 Currently `apps/api` only has the ESM startup shell of NestJS + Express and the Zod environment configuration verification; there is no database, public API, authentication, OpenAPI contract or business module implementation yet. This change spans auth, users, profiles, database, OAuth and HTTP bootstrap, and introduces persistence and public interfaces for the first time, so it is processed as Level 2.
 

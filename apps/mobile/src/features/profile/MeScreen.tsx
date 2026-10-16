@@ -1,5 +1,9 @@
 import { largeAction } from '../../components/ui/largeAction';
 import defaultAvatar from '../../../assets/profile/default-avatar.png';
+import vocabularyIcon from '../../../assets/profile/me-vocabulary.png';
+import restrictionsIcon from '../../../assets/profile/me-restrictions.png';
+import profileIcon from '../../../assets/profile/me-profile.png';
+import chevronIcon from '../../../assets/profile/me-chevron.png';
 import { AppText as Text } from '../../components/ui/AppText';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -90,24 +94,32 @@ export function MeScreen() {
             style={styles.item}
             onPress={() => router.push('/me/vocabulary')}
           >
+            <Image source={vocabularyIcon} style={styles.itemIcon} />
             <Text style={styles.title}>{t('meVocabulary')}</Text>
+            <Image source={chevronIcon} style={styles.chevron} />
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.item}
             onPress={() => router.push('/me/restrictions')}
           >
+            <Image source={restrictionsIcon} style={styles.itemIcon} />
             <Text style={styles.title}>{t('meRestrictions')}</Text>
+            <Image source={chevronIcon} style={styles.chevron} />
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" style={styles.item} onPress={editProfile}>
+            <Image source={profileIcon} style={styles.itemIcon} />
             <Text style={styles.title}>{t('editProfile')}</Text>
+            <Image source={chevronIcon} style={styles.chevron} />
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.item}
             onPress={() => router.push('/me/reports')}
           >
+            <View style={styles.itemIcon} />
             <Text style={styles.title}>{t('myReports')}</Text>
+            <Image source={chevronIcon} style={styles.chevron} />
           </TouchableOpacity>
           {updates.supported && (
             <TouchableOpacity
@@ -116,9 +128,11 @@ export function MeScreen() {
               disabled={updates.checking}
               onPress={updates.check}
             >
+              <View style={styles.itemIcon} />
               <Text style={styles.title}>
                 {t(updates.checking ? 'updateChecking' : 'updateCheck')}
               </Text>
+              <Image source={chevronIcon} style={styles.chevron} />
             </TouchableOpacity>
           )}
         </View>
@@ -134,7 +148,7 @@ export function MeScreen() {
             void logout().finally(() => setBusy(false));
           }}
         >
-          <Text style={[styles.title, styles.exitText]}>{t(busy ? 'submitting' : 'logout')}</Text>
+          <Text style={styles.exitText}>{t(busy ? 'submitting' : 'logout')}</Text>
         </TouchableOpacity>
       </View>
       <BottomNavigation active={3} unreadMessages={unread.count} />
@@ -142,7 +156,13 @@ export function MeScreen() {
   );
 }
 const styles = StyleSheet.create({
-  settings: { paddingHorizontal: 23, paddingTop: 12, paddingBottom: 10 },
+  settings: {
+    marginTop: -5,
+    paddingHorizontal: 14,
+    paddingTop: 25,
+    paddingBottom: 25,
+    backgroundColor: tokens.color.panel,
+  },
   profile: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
   identity: { flex: 1, minWidth: 0 },
   photo: { width: 52, height: 52, borderRadius: 26, marginTop: 4 },
@@ -166,20 +186,24 @@ const styles = StyleSheet.create({
   list: {
     marginLeft: 23,
     marginRight: 17,
+    paddingTop: 14,
     borderColor: tokens.color.divider,
   },
   logoutArea: { paddingHorizontal: 24, paddingBottom: 16 },
   item: {
-    height: tokens.control.height,
+    minHeight: 43,
     borderBottomWidth: 1,
     borderColor: tokens.color.divider,
-    alignItems: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 10,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 8,
   },
+  itemIcon: { width: 24, height: 24 },
+  chevron: { width: 24, height: 24, marginLeft: 'auto' },
   title: {
-    color: tokens.discovery.color.tabAccent,
+    flexShrink: 1,
+    color: tokens.profile.color.menuInk,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '500',
@@ -191,5 +215,10 @@ const styles = StyleSheet.create({
     ...largeAction,
     borderRadius: 14,
   },
-  exitText: { color: tokens.color.panel },
+  exitText: {
+    color: tokens.color.panel,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
 });

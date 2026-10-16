@@ -39,7 +39,8 @@
   ],
   "git": {
     "deploymentEnabled": {
-      "main": false
+      "main": false,
+      "codex/merge-reviewed-v1-20261016": false
     }
   },
   "rewrites": [

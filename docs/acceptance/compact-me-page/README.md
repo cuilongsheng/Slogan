@@ -23,3 +23,16 @@ The three illustrated entries appear first: vocabulary, restrictions/appeals, ed
 Web RoomPage uses 49px simulated system chrome versus the source's profile y47; physical native safe-area chrome varies by device. Profile/content geometry is implemented in normal responsive flow, not hard-coded absolute coordinates from the screenshot. Long names truncate within the row; small visual language pills use larger touch hit areas. Short screens scroll the menu while keeping logout/navigation outside the scroll area.
 
 Source and diff were inspected. No lint, typecheck, tests, build, browser/Android runtime capture or deployment was run. Final affected checks and source-to-runtime comparison remain in the OpenSpec task list.
+
+
+## Menu visual correction — 2026-10-16
+
+The owner requested the revised Me V3 screenshot before merging, with no tests or deployment in this delivery. This is a Level 0 visual correction; routes, authorization, API contracts and action behavior are unchanged.
+
+Desktop Bridge confirmed the original `152:1467` frame at 390×844. [Current original capture](figma/me-menu-refresh-2026-10-16.png) records the white identity panel, 52px avatar, 18/27 bold name, unchanged 80×24 language options and compact menu rows. Identity content follows a 14px horizontal inset and 25px top/bottom padding; menu labels use the source #6D6975 color, 14/20 medium typography, dividers and right chevrons. The three illustrated menu icons and chevron are exported from the original Bridge nodes as PNG assets, without modifying the design or substituting generic icons. Authenticated avatar/name remain dynamic.
+
+Asset mapping: vocabulary `I230:3555;106:1370`, restrictions `I230:3564;105:1181`, edit profile `I230:3569;105:1213`, right chevron `230:3560`. Original PNGs are exported at 3× for native rendering. Existing My reports, Android Check for updates and main navigation remain available as documented above; the three screenshot actions stay first. Logout retains its existing size, position and behavior. Native safe-area and web simulated status-bar placement remain platform dependent.
+
+Tests, lint, typecheck, build, runtime visual comparison and deployment were explicitly deferred by the owner. Source/diff review does not establish runtime, device or 1:1 visual acceptance. Delivery commits use `[skip ci]` to defer the repository's automatic test and deployment workflows until a later release.
+
+The API Vercel configuration also disables native Git deployment for the exact delivery branch `codex/merge-reviewed-v1-20261016`; the existing `main` Git-deployment exclusion remains. This prevents a PR preview deployment independently of GitHub Actions and does not disable later workflow-driven releases.
