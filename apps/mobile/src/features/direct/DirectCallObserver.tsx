@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { usePathname, useRouter } from 'expo-router';
-import { useForegroundPolling } from '../../hooks/useForegroundPolling';
+import { useForegroundLive } from '../live-updates';
 import { useAuth } from '../auth';
 import { DirectApi } from './api';
 import { flushCallEnds, locallyEnded } from './callRecovery';
@@ -48,6 +48,6 @@ export function DirectCallObserver() {
     },
     [userId, api, router],
   );
-  useForegroundPolling(poll, 5000, !!userId);
+  useForegroundLive(poll, 'calls', !!userId);
   return null;
 }

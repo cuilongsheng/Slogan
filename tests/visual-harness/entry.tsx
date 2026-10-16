@@ -1,14 +1,20 @@
 import React from 'react';
-import { LiveUpdatesContext } from '../../apps/mobile/src/features/live-updates/context';
+import {
+  LiveUpdatesContext,
+  LiveUpdatesProvider,
+} from '../../apps/mobile/src/features/live-updates/context';
 const fixtureLive = {
   owner: 'visual-profile',
   status:
     new URL(location.href).searchParams.get('live') === 'reconnecting'
       ? ('reconnecting' as const)
       : ('connected' as const),
-  subscribe: (scope: string, listener: () => void) => {
-    window.addEventListener(`fixture-live-${scope}`, listener);
-    return () => window.removeEventListener(`fixture-live-${scope}`, listener);
+  subscribe: (scope: string, listener: () => void, resourceId?: string) => {
+    const notify = (event: Event) => {
+      if (!resourceId || (event as CustomEvent).detail?.resourceId === resourceId) listener();
+    };
+    window.addEventListener(`fixture-live-${scope}`, notify);
+    return () => window.removeEventListener(`fixture-live-${scope}`, notify);
   },
 };
 import { BrandLoading } from '../../apps/mobile/src/components/ui/BrandLoading';
@@ -30,7 +36,11 @@ const directScreen =
   ) : screen === 'messages' ? (
     <MessagesScreen />
   ) : screen === 'chat' ? (
-    <ChatScreen conversationId="conversation-luna" />
+    <ChatScreen
+      conversationId={
+        new URL(location.href).searchParams.get('conversationId') ?? 'conversation-luna'
+      }
+    />
   ) : screen === 'call' ? (
     <CallScreen callId="call-luna" />
   ) : screen === 'me' ? (
@@ -47,10 +57,17 @@ import { RoomListScreen } from '../../apps/mobile/src/features/room-discovery/Ro
 import { JoinProvider } from '../../apps/mobile/src/features/room-discovery/join';
 import { CreateRoomScreen } from '../../apps/mobile/src/features/room-creation/CreateRoomScreen';
 
+const LiveHarness = ({ children }: { children: React.ReactNode }) =>
+  new URL(location.href).searchParams.has('transport') ? (
+    <LiveUpdatesProvider>{children}</LiveUpdatesProvider>
+  ) : (
+    <LiveUpdatesContext.Provider value={fixtureLive}>{children}</LiveUpdatesContext.Provider>
+  );
+
 // Test-only harness: the real component runs with explicit session/recorder adapters.
 // No fixture entry or adapter is imported by the production application.
 createRoot(document.getElementById('root')!).render(
-  <LiveUpdatesContext.Provider value={fixtureLive}>
+  <LiveHarness>
     <MessageUnreadProvider>
       <JoinProvider>
         {directScreen ??
@@ -73,5 +90,5 @@ createRoot(document.getElementById('root')!).render(
           ))}
       </JoinProvider>
     </MessageUnreadProvider>
-  </LiveUpdatesContext.Provider>,
+  </LiveHarness>,
 );

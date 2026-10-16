@@ -4,7 +4,7 @@ import { randomUUID } from 'expo-crypto';
 import { Modal, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText as Text } from '../../components/ui/AppText';
 import { phonePreview } from '../../components/ui/phonePreview';
-import { useForegroundPolling } from '../../hooks/useForegroundPolling';
+import { useForegroundLive } from '../live-updates';
 import { t, tf, useLanguage } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
@@ -60,7 +60,7 @@ function InvitationMonitor() {
     },
     [api],
   );
-  useForegroundPolling(poll, 5000, onMainPage);
+  useForegroundLive(poll, 'invitations', onMainPage);
   const selected = items.find((item) => item.id === selectedId);
   const dismiss = () => {
     if (commanding.current) return;

@@ -41,11 +41,17 @@ test('one connection invalidates only its scope and does not periodically refetc
     await Promise.resolve();
   });
   expect(receiveLiveUpdates).toHaveBeenCalledTimes(1);
-  await act(async () => event({ scope: 'reset' }, 'cursor'));
+  await act(async () => {
+    event({ scope: 'reset' }, 'cursor');
+    jest.advanceTimersByTime(50);
+  });
   const before = [rooms.mock.calls.length, messages.mock.calls.length];
   await act(async () => jest.advanceTimersByTime(20000));
   expect([rooms.mock.calls.length, messages.mock.calls.length]).toEqual(before);
-  await act(async () => event({ scope: 'rooms' }, 'next'));
+  await act(async () => {
+    event({ scope: 'rooms' }, 'next');
+    jest.advanceTimersByTime(50);
+  });
   expect(rooms).toHaveBeenCalledTimes(before[0]! + 1);
   expect(messages).toHaveBeenCalledTimes(before[1]!);
   await screen.unmount();
@@ -134,7 +140,10 @@ test('normal lease renewal reconnects without falsely displaying an outage', asy
   await act(async () => {
     await Promise.resolve();
   });
-  await act(async () => event({ scope: 'reset' }, 'cursor'));
+  await act(async () => {
+    event({ scope: 'reset' }, 'cursor');
+    jest.advanceTimersByTime(50);
+  });
   expect(screen.getByText('connected')).toBeTruthy();
   await act(async () => {
     event({ scope: 'renew' }, '');
@@ -144,4 +153,59 @@ test('normal lease renewal reconnects without falsely displaying an outage', asy
   await act(async () => jest.advanceTimersByTime(0));
   expect(receiveLiveUpdates).toHaveBeenCalledTimes(2);
   await screen.unmount();
+});
+
+test('resource subscriptions coalesce a burst and retain a newer invalidation during an in-flight read', async () => {
+  jest.useFakeTimers();
+  let event!: (value: LiveEvent, id: string) => void;
+  (receiveLiveUpdates as jest.Mock).mockImplementation((_auth, _signal, _cursor, callback) => {
+    event = callback;
+    return new Promise<void>(() => {});
+  });
+  let complete!: () => void;
+  const work = jest
+    .fn()
+    .mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          complete = resolve;
+        }),
+    )
+    .mockResolvedValue(undefined);
+  function Scoped() {
+    useForegroundLive(work, ['conversation-history', 'conversation-state'], true, 'conversation-a');
+    return null;
+  }
+  const page = await render(
+    <LiveUpdatesProvider>
+      <Scoped />
+    </LiveUpdatesProvider>,
+  );
+  await act(async () => {
+    await Promise.resolve();
+    event({ scope: 'reset' }, 'start');
+    jest.advanceTimersByTime(50);
+  });
+  expect(work).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    event({ scope: 'conversation-history', resourceId: 'conversation-b' }, 'other');
+    jest.advanceTimersByTime(50);
+  });
+  await act(async () => {
+    for (let i = 0; i < 10; i++) {
+      event({ scope: 'conversation-history', resourceId: 'conversation-a' }, 'next');
+      event({ scope: 'conversation-state', resourceId: 'conversation-a' }, 'next');
+    }
+    jest.advanceTimersByTime(50);
+  });
+  expect(work).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    complete();
+    await Promise.resolve();
+  });
+  expect(work).toHaveBeenCalledTimes(2);
+  await act(async () => jest.advanceTimersByTime(60000));
+  expect(work).toHaveBeenCalledTimes(2);
+  expect(receiveLiveUpdates).toHaveBeenCalledTimes(1);
+  await page.unmount();
 });

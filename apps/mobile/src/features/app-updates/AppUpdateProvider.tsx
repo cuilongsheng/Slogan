@@ -11,7 +11,7 @@ import { usePathname } from 'expo-router';
 import { AppState, Image, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import sloganLogo from '../../../assets/icons/slogan-mark-v3.png';
 import { AppText as Text } from '../../components/ui/AppText';
-import { useForegroundPolling } from '../../hooks/useForegroundPolling';
+import { useForegroundLive } from '../live-updates';
 import { appUpdates } from '../../services/appUpdates';
 import type { AndroidRelease } from '../../services/appUpdates/types';
 import { isAppForeground } from '../../services/foregroundPolling';
@@ -70,12 +70,15 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const check = useCallback(
-    async (manual = false) => {
+    async (manual = false, notified = false) => {
       if (
         !safeRef.current ||
         checkingRef.current ||
         downloading.current ||
-        (!manual && (Date.now() < nextCheck.current || uiRef.current))
+        installing.current ||
+        awaitingPermission.current ||
+        (notified && ['ready', 'permission'].includes(uiRef.current?.stage ?? '')) ||
+        (!manual && !notified && (Date.now() < nextCheck.current || uiRef.current))
       )
         return;
       checkingRef.current = true;
@@ -99,14 +102,13 @@ export function AppUpdateProvider({ children }: { children: React.ReactNode }) {
     },
     [show],
   );
-  const autoCheck = useCallback(async () => {
-    await check();
+  const releaseChanged = useCallback(async () => {
+    await check(false, true);
   }, [check]);
-  const checkInterval = useCallback(
-    () => Math.max(5 * 60 * 1000, nextCheck.current - Date.now()),
-    [],
-  );
-  useForegroundPolling(autoCheck, checkInterval, safe);
+  useForegroundLive(releaseChanged, 'release', safe && auth.kind === 'signedIn');
+  useEffect(() => {
+    if (safe && foreground && auth.kind === 'signedOut') void check();
+  }, [safe, foreground, auth.kind, check]);
 
   const install = useCallback(async () => {
     if (!alive.current || !safeRef.current || !isAppForeground() || installing.current) return;

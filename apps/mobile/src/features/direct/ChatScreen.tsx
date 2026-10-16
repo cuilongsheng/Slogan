@@ -2,7 +2,15 @@ import { MultilineField } from '../../components/ui/MultilineField';
 import { largeAction } from '../../components/ui/largeAction';
 import backIcon from '../../../assets/icons/back.png';
 import phoneIcon from '../../../assets/icons/direct-phone.png';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
@@ -21,9 +29,10 @@ import { RoomPage } from '../../components/ui/RoomPage';
 import { AppText as Text } from '../../components/ui/AppText';
 import { t, tf, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
-import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { isAppForeground } from '../../services/foregroundPolling';
-import { useMessageUnread } from './MessageUnreadProvider';
+import { ChatTimeline } from './chatTimeline';
+import { useFocusedLive } from '../live-updates';
+import { captureChatAnchor } from '../../services/chatListAnchor';
 import { useAuth } from '../auth';
 import { SocialApi } from '../social';
 import { ReportReceiptSheet, type ReportSubmissionReceipt } from '../reporting';
@@ -35,7 +44,6 @@ import {
   type DirectCall,
 } from './api';
 import { directColors } from './components';
-import { useFocusedPolling } from './useFocusedPolling';
 type Pending = { id: string; text: string; busy: boolean };
 type Timeline =
   | { kind: 'text'; value: DirectMessage }
@@ -44,21 +52,16 @@ type Timeline =
 export function ChatScreen({ conversationId }: { conversationId: string }) {
   useLanguage();
   const router = useRouter();
-  const refreshQueue = useRef(new LatestRequestQueue());
-  const { refresh: refreshUnread } = useMessageUnread();
   const { authorized, state } = useAuth();
   const userId = state.kind === 'signedIn' ? state.me.userId : '';
   const api = useMemo(() => new DirectApi(authorized), [authorized]),
     social = useMemo(() => new SocialApi(authorized), [authorized]);
   const [conversation, setConversation] = useState<Conversation | null>(null),
-    [messages, setMessages] = useState<DirectMessage[]>([]),
-    [calls, setCalls] = useState<DirectCall[]>([]),
     [pending, setPending] = useState<Pending[]>([]),
     [draft, setDraft] = useState(''),
     [inputHeight, setInputHeight] = useState<number>(tokens.control.height),
     [menuOpen, setMenuOpen] = useState(false),
     [error, setError] = useState<MessageKey | null>(null),
-    [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false);
   const [dialog, setDialog] = useState<'block' | 'hide' | 'report' | null>(null),
     [reportMessage, setReportMessage] = useState<DirectMessage | null>(null),
@@ -66,37 +69,82 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     [notice, setNotice] = useState<MessageKey | null>(null),
     [selectingReport, setSelectingReport] = useState(false);
   const [reportReceipt, setReportReceipt] = useState<ReportSubmissionReceipt | null>(null);
-  const cursor = useRef<string | undefined>(undefined),
-    callCursor = useRef<string | undefined>(undefined),
-    lastRead = useRef(0),
-    lastDetail = useRef(0),
+  const lastRead = useRef(0),
     sending = useRef(new Set<string>()),
     commandIds = useRef(new Map<string, string>()),
     list = useRef<FlatList<Timeline>>(null);
-  const conversationRef = useRef<Conversation | null>(null);
+  const history = useMemo(
+    () => new ChatTimeline(api, conversationId, userId),
+    [api, conversationId, userId],
+  );
+  const historyState = useSyncExternalStore(
+    history.subscribe,
+    history.getSnapshot,
+    history.getSnapshot,
+  );
+  const { loading } = historyState;
+  const messages = historyState.items.flatMap((e) => (e.kind === 'text' ? [e.value] : []));
+  const calls = historyState.items.flatMap((e) => (e.kind === 'call' ? [e.value] : []));
   const nearBottom = useRef(true);
+  const restoreAnchor = useRef<(() => boolean) | null>(null);
+  const userScrolled = useRef(false);
+  useEffect(
+    () =>
+      history.beforeChange(() => {
+        if (!nearBottom.current && !restoreAnchor.current)
+          restoreAnchor.current = captureChatAnchor(list.current as FlatList<unknown> | null);
+      }),
+    [history],
+  );
+  useEffect(() => () => history.dispose(), [history]);
+  useLayoutEffect(() => {
+    if (!restoreAnchor.current) return;
+    let attempts = 0;
+    let frame: number;
+    const restore = () => {
+      if (!restoreAnchor.current) return;
+      restoreAnchor.current();
+      // Virtualized rows settle in several layout batches. Keep the same entry
+      // anchored through those batches, including delayed variable-height measurement.
+      if (Platform.OS !== 'web' || ++attempts >= 12) restoreAnchor.current = null;
+      else frame = requestAnimationFrame(restore);
+    };
+    frame = requestAnimationFrame(restore);
+    return () => cancelAnimationFrame(frame);
+  }, [historyState.items]);
+  const conversationRef = useRef<Conversation | null>(null);
   const focused = useRef(false);
   const readCandidate = useRef(0);
   const readPending = useRef<Promise<void> | null>(null);
-  const acknowledge = useCallback(() => {
-    if (readPending.current || !focused.current || !nearBottom.current || !isAppForeground())
-      return;
-    const sequence = readCandidate.current;
-    if (sequence <= lastRead.current) return;
-    const request = api
-      .read(conversationId, sequence)
-      .then(() => {
-        lastRead.current = Math.max(lastRead.current, sequence);
-        void refreshUnread();
-      })
-      .catch(() => {
-        // Keep the badge unread; a subsequent visible refresh retries the acknowledgement.
-      })
-      .finally(() => {
-        if (readPending.current === request) readPending.current = null;
-      });
-    readPending.current = request;
-  }, [api, conversationId, refreshUnread]);
+  const actionFence = useRef<() => () => boolean>(() => () => false);
+  const acknowledge = useCallback(
+    function acknowledgeVisibleText() {
+      if (readPending.current || !focused.current || !nearBottom.current || !isAppForeground())
+        return;
+      const current = actionFence.current();
+      const sequence = readCandidate.current;
+      if (sequence <= lastRead.current) return;
+      let committed = false;
+      const request = api
+        .read(conversationId, sequence)
+        .then(() => {
+          if (current()) {
+            committed = true;
+            lastRead.current = Math.max(lastRead.current, sequence);
+          }
+        })
+        .catch(() => {
+          // Keep the badge unread; a subsequent visible refresh retries the acknowledgement.
+        })
+        .finally(() => {
+          if (readPending.current === request) readPending.current = null;
+          if (committed && current() && readCandidate.current > lastRead.current)
+            acknowledgeVisibleText();
+        });
+      readPending.current = request;
+    },
+    [api, conversationId],
+  );
   useFocusEffect(
     useCallback(() => {
       focused.current = true;
@@ -105,85 +153,67 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
       };
     }, []),
   );
-  const load = useCallback(
-    (current: () => boolean = () => true) =>
-      refreshQueue.current.enqueue(async () => {
+  const load = useCallback((current: () => boolean) => history.refresh(current), [history]);
+  const fence = useFocusedLive(load, 'conversation-history', conversationId);
+  const loadOlder = () => {
+    nearBottom.current = false;
+    restoreAnchor.current ??= captureChatAnchor(list.current as FlatList<unknown> | null);
+    void history.older(fence());
+  };
+  actionFence.current = fence;
+  const loadDetail = useCallback(
+    async (current: () => boolean) => {
+      try {
+        const detail = await api.detail(conversationId);
         if (!current()) return;
-        try {
-          const needsDetail = !conversationRef.current || Date.now() - lastDetail.current > 15000;
-          const [detail, page, history] = await Promise.all([
-            needsDetail ? api.detail(conversationId) : Promise.resolve(null),
-            api.messages(conversationId, cursor.current),
-            api.callHistory(conversationId, callCursor.current),
-          ]);
-          if (!current()) return;
-          if (detail) {
-            conversationRef.current = detail;
-            setConversation(detail);
-            lastDetail.current = Date.now();
-          }
-          cursor.current = page.nextCursor ?? undefined;
-          callCursor.current = history.nextCursor ?? undefined;
-          setMessages((old) =>
-            [
-              ...old.filter(
-                (item) =>
-                  item.sequence > page.visibleAfterSequence &&
-                  !page.items.some((next) => next.id === item.id),
-              ),
-              ...page.items,
-            ].sort((a, b) => a.sequence - b.sequence),
-          );
-          setCalls((old) =>
-            [
-              ...old.filter(
-                (item) =>
-                  item.sequence > history.visibleAfterSequence &&
-                  !history.items.some((next) => next.id === item.id),
-              ),
-              ...history.items,
-            ].sort((a, b) => a.sequence - b.sequence),
-          );
-          setPending((old) =>
-            old.filter(
-              (item) => !page.items.some((message) => message.clientRequestId === item.id),
-            ),
-          );
-          // Call history has a separate cursor: it cannot acknowledge text we have not loaded.
-          readCandidate.current = Math.max(
-            readCandidate.current,
-            ...page.items.map((item) => item.sequence),
-            0,
-          );
-          setError(null);
-        } catch (e) {
-          if (current()) setError(directError(e));
-        } finally {
-          if (current()) setLoading(false);
-        }
-      }),
+        conversationRef.current = detail;
+        setConversation(detail);
+      } catch (e) {
+        if (current()) setError(directError(e));
+      }
+    },
     [api, conversationId],
   );
-  useFocusedPolling(load, 3000);
+  useFocusedLive(loadDetail, 'conversation-state', conversationId);
+  useLayoutEffect(() => {
+    conversationRef.current = null;
+    setConversation(null);
+    setPending([]);
+    setDraft('');
+    setBusy(false);
+    lastRead.current = 0;
+    readCandidate.current = 0;
+    readPending.current = null;
+    nearBottom.current = true;
+    userScrolled.current = false;
+    restoreAnchor.current = null;
+    sending.current.clear();
+    commandIds.current.clear();
+  }, [history]);
   useEffect(() => {
+    const ids = new Set(
+      historyState.items.flatMap((e) => (e.kind === 'text' ? [e.value.clientRequestId] : [])),
+    );
+    setPending((old) =>
+      old.filter((e) => !ids.has(e.id)).map((e) => ({ ...e, busy: sending.current.has(e.id) })),
+    );
     if (!loading) acknowledge();
-  }, [messages, loading, acknowledge]);
+  }, [historyState.items, loading, acknowledge]);
   const send = async (item: Pending) => {
     if (sending.current.has(item.id)) return;
+    const current = fence();
     sending.current.add(item.id);
     setPending((old) => old.map((row) => (row.id === item.id ? { ...row, busy: true } : row)));
     try {
       nearBottom.current = true;
       const message = await api.send(conversationId, item.text, item.id);
-      setMessages((old) =>
-        [...old.filter((row) => row.id !== message.id), message].sort(
-          (a, b) => a.sequence - b.sequence,
-        ),
-      );
+      if (!current()) return;
+      history.mergeOwn({ kind: 'text', revision: message.sequence, value: message });
       setPending((old) => old.filter((row) => row.id !== item.id));
       setDraft((old) => (old.trim() === item.text ? '' : old));
       setError(null);
     } catch (e) {
+      if (!current()) return;
       setPending((old) => old.map((row) => (row.id === item.id ? { ...row, busy: false } : row)));
       setError(directError(e));
     } finally {
@@ -204,17 +234,19 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
   };
   const requestCall = async () => {
     if (busy) return;
+    const current = fence();
     setBusy(true);
     const requestId = commandIds.current.get('call') ?? randomUUID();
     commandIds.current.set('call', requestId);
     try {
       const call = await api.requestCall(conversationId, requestId);
+      if (!current()) return;
       commandIds.current.delete('call');
       router.push(`/calls/${call.id}`);
     } catch (e) {
-      setError(directError(e));
+      if (current()) setError(directError(e));
     } finally {
-      setBusy(false);
+      if (current()) setBusy(false);
     }
   };
   const command = async () => {
@@ -225,6 +257,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
       (dialog === 'report' && (!reportMessage || !reason.trim()))
     )
       return;
+    const current = fence();
     setBusy(true);
     const action =
       dialog + ':' + (reportMessage?.id ?? '') + ':' + (dialog === 'report' ? reason.trim() : '');
@@ -233,19 +266,19 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     try {
       if (dialog === 'hide') {
         await api.hide(conversationId, id);
-        cursor.current = undefined;
-        callCursor.current = undefined;
-        setMessages([]);
-        setCalls([]);
+        if (!current()) return;
+        history.reset();
+        void history.refresh(fence());
         readCandidate.current = 0;
-        void refreshUnread();
         setPending([]);
       } else if (dialog === 'block') {
         await social.block(conversation.peer.userId, id);
+        if (!current()) return;
         conversationRef.current = { ...conversation, canInteract: false };
         setConversation(conversationRef.current);
       } else if (reportMessage) {
         const receipt = await api.report(conversationId, reportMessage.id, reason.trim(), id);
+        if (!current()) return;
         setReportReceipt(receipt);
         setNotice('directReported');
       }
@@ -255,9 +288,9 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
       setReportMessage(null);
       setError(null);
     } catch (e) {
-      setError(directError(e));
+      if (current()) setError(directError(e));
     } finally {
-      setBusy(false);
+      if (current()) setBusy(false);
     }
   };
   const timeline: Timeline[] = [
@@ -265,6 +298,22 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
     ...calls.map((value) => ({ kind: 'call' as const, value })),
   ].sort((a, b) => a.value.sequence - b.value.sequence);
   timeline.push(...pending.map((value) => ({ kind: 'pending' as const, value })));
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: Array<{ item: Timeline; isViewable: boolean }> }) => {
+      for (const row of viewableItems) {
+        const item = row.item;
+        if (
+          row.isViewable &&
+          item.kind === 'text' &&
+          item.value.senderUserId !== userId &&
+          history.getSnapshot().items.some((e) => e.value.id === item.value.id)
+        )
+          readCandidate.current = Math.max(readCandidate.current, item.value.sequence);
+      }
+      acknowledge();
+    },
+    [acknowledge, history, userId],
+  );
   return (
     <RoomPage direct>
       <View style={styles.header}>
@@ -301,20 +350,43 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
         <ActivityIndicator style={{ flex: 1 }} color={directColors.violet} />
       ) : (
         <FlatList
+          key={`${userId}:${conversationId}`}
           ref={list}
           data={timeline}
           keyExtractor={(item) => item.kind + item.value.id}
           contentContainerStyle={styles.timeline}
+          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+          onViewableItemsChanged={onViewableItemsChanged}
+          onScrollBeginDrag={() => {
+            userScrolled.current = true;
+            restoreAnchor.current = null;
+          }}
+          ListHeaderComponent={
+            historyState.loadingOlder ? (
+              <ActivityIndicator color={directColors.violet} />
+            ) : historyState.hasOlder ? (
+              <TouchableOpacity accessibilityRole="button" onPress={loadOlder}>
+                <Text style={styles.notice}>{t('directOlderMessages')}</Text>
+              </TouchableOpacity>
+            ) : null
+          }
           onScroll={(event) => {
             const value = event.nativeEvent;
             nearBottom.current =
               value.contentSize.height - value.layoutMeasurement.height - value.contentOffset.y <
               64;
             if (nearBottom.current) acknowledge();
+            if (
+              userScrolled.current &&
+              value.contentOffset.y < 40 &&
+              !historyState.loadingOlder &&
+              historyState.hasOlder
+            )
+              loadOlder();
           }}
           scrollEventThrottle={100}
           onContentSizeChange={() => {
-            if (nearBottom.current) {
+            if (!restoreAnchor.current && nearBottom.current) {
               list.current?.scrollToEnd({ animated: false });
               acknowledge();
             }
@@ -323,6 +395,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
             if (item.kind === 'call')
               return (
                 <TouchableOpacity
+                  testID={`chat-entry-${item.value.id}`}
                   onPress={() => {
                     if (item.value.status === 'ACTIVE' || item.value.status === 'RINGING')
                       router.push(`/calls/${item.value.id}`);
@@ -361,6 +434,7 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
             const own = item.value.senderUserId === userId;
             return (
               <TouchableOpacity
+                testID={`chat-entry-${item.value.id}`}
                 activeOpacity={own ? 1 : 0.7}
                 accessibilityRole={!own ? 'button' : undefined}
                 accessibilityLabel={
@@ -395,10 +469,10 @@ export function ChatScreen({ conversationId }: { conversationId: string }) {
       {!conversation?.canInteract && conversation && (
         <Text style={styles.error}>{t('directBlocked')}</Text>
       )}
-      {error && (
-        <TouchableOpacity onPress={() => void load()}>
+      {(error || historyState.error) && (
+        <TouchableOpacity onPress={() => void history.refresh(fence())}>
           <Text accessibilityRole="alert" style={styles.error}>
-            {t(error)} · {t('retry')}
+            {t(error ?? 'directLoadFailed')} · {t('retry')}
           </Text>
         </TouchableOpacity>
       )}

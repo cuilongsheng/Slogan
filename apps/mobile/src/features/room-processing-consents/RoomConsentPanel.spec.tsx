@@ -1,3 +1,4 @@
+jest.mock('../live-updates', () => jest.requireActual('../../../test/live-updates'));
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { randomUUID } from 'expo-crypto';
 

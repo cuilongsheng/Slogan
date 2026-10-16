@@ -79,7 +79,7 @@ export function MessagesScreen() {
       }),
     [api],
   );
-  const requestFence = useFocusedLive(load, 'messages');
+  const requestFence = useFocusedLive(load, 'inbox');
   const more = async () => {
     if (!cursor || paging.current || refreshing.current) return;
     paging.current = true;

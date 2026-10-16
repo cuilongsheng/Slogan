@@ -34,6 +34,7 @@ async function fixtures(
   await page.route('**/v1/**', async (route) => {
     const url = new URL(route.request().url()),
       path = url.pathname;
+    if (path === '/v1/me/live-updates') return route.continue();
     let body: unknown = {};
     if (path === '/v1/people/available')
       body = { items: options.empty ? [] : peers, nextCursor: null };
@@ -48,6 +49,41 @@ async function fixtures(
       body = { items: [conversation(), conversation(2)], nextCursor: null };
     } else if (path === '/v1/conversations' || path === '/v1/conversations/conversation-luna')
       body = conversation();
+    else if (path.endsWith('/timeline'))
+      body = {
+        items: url.searchParams.has('after')
+          ? []
+          : [
+              {
+                kind: 'text',
+                revision: 1,
+                value: {
+                  id: 'message-1',
+                  senderUserId: 'peer-0',
+                  text: 'What movie did you watch?',
+                  sequence: 1,
+                  createdAt: now.toISOString(),
+                },
+              },
+              {
+                kind: 'text',
+                revision: 2,
+                value: {
+                  id: 'message-2',
+                  senderUserId: 'visual-profile',
+                  text: 'I watched The Secret Life of Walter Mitty.',
+                  sequence: 2,
+                  createdAt: now.toISOString(),
+                },
+              },
+            ],
+        visibleAfterSequence: 0,
+        nextBeforeCursor: null,
+        hasOlder: false,
+        syncCursor: 'fixture-sync',
+        nextAfterCursor: null,
+        hasMoreChanges: false,
+      };
     else if (path.endsWith('/messages'))
       body = {
         items: [
@@ -277,12 +313,33 @@ test('compact bubbles and input preserve legible text while a call event cannot 
     reads.push(route.request().postDataJSON().sequence);
     return route.fulfill({ json: conversation() });
   });
-  await page.route('**/v1/conversations/conversation-luna/calls*', (route) =>
+  await page.route('**/v1/conversations/conversation-luna/timeline*', (route) =>
     route.fulfill({
       json: {
-        items: [{ id: 'past-call', sequence: 900, status: 'ENDED' }],
-        nextCursor: null,
+        items: [
+          {
+            kind: 'text',
+            revision: 1,
+            value: {
+              id: 'message-1',
+              senderUserId: 'peer-0',
+              text: 'What movie did you watch?',
+              sequence: 1,
+              createdAt: now.toISOString(),
+            },
+          },
+          {
+            kind: 'call',
+            revision: 900,
+            value: { id: 'past-call', sequence: 900, status: 'ENDED' },
+          },
+        ],
         visibleAfterSequence: 0,
+        nextBeforeCursor: null,
+        hasOlder: false,
+        syncCursor: 'fixture-sync',
+        nextAfterCursor: null,
+        hasMoreChanges: false,
       },
     }),
   );
@@ -291,7 +348,7 @@ test('compact bubbles and input preserve legible text while a call event cannot 
   await expect(input).toHaveAttribute('placeholder', 'Say something…');
   await expect(page.getByText('What movie did you watch?', { exact: true })).toBeVisible();
   await expect.poll(() => reads.length).toBeGreaterThan(0);
-  expect(reads.every((sequence) => sequence === 2)).toBe(true);
+  expect(reads.every((sequence) => sequence === 1)).toBe(true);
   const box = await input.boundingBox();
   expect(box!.height).toBe(46);
   await expect(
@@ -381,3 +438,88 @@ for (const [status, message] of [
     await expect(page.getByTestId('empty-list-refresh')).toBeVisible();
     await page.screenshot({ path: `docs/acceptance/main-page-sse/runtime/partners-${status}.png` });
   });
+
+test('long chat loads latest20, prepends20 with a stable anchor, and one shared SSE keeps idle requests quiet', async ({
+  page,
+}, info) => {
+  await fixtures(page);
+  const id = `915261f9-28de-4e64-bb21-${info.workerIndex.toString(16).padStart(12, '0')}`;
+  let connections = 0;
+  const isStream = (url: string) => new URL(url).pathname === '/v1/me/live-updates';
+  page.on('request', (request) => {
+    if (isStream(request.url())) connections++;
+  });
+  await page.route(`**/v1/conversations/${id}`, (route) =>
+    route.fulfill({ json: { ...conversation(), id } }),
+  );
+  const requests: string[] = [];
+  let newest = 65;
+  await page.route(`**/v1/conversations/${id}/timeline*`, (route) => {
+    const url = new URL(route.request().url());
+    requests.push(url.search);
+    expect(url.searchParams.get('limit')).toBe('20');
+    const before = url.searchParams.get('before');
+    const after = url.searchParams.get('after');
+    const end = before ? Number(before) - 1 : newest;
+    const start = after ? Number(after) + 1 : Math.max(1, end - 19);
+    const values = Array.from({ length: Math.max(0, end - start + 1) }, (_, i) => start + i);
+    return route.fulfill({
+      json: {
+        items: values.map((n) => ({
+          kind: 'text',
+          revision: n,
+          value: {
+            id: `long-${n}`,
+            senderUserId: 'peer-0',
+            text: `History entry ${n} with enough text to wrap into two lines.`,
+            sequence: n,
+            createdAt: now.toISOString(),
+          },
+        })),
+        visibleAfterSequence: 0,
+        nextBeforeCursor: start > 1 ? String(start) : null,
+        hasOlder: start > 1,
+        syncCursor: String(newest),
+        nextAfterCursor: null,
+        hasMoreChanges: false,
+      },
+    });
+  });
+  await page.goto(`/?screen=chat&language=en&transport=real&conversationId=${id}`);
+  await expect(page.getByText(/History entry 65 /)).toBeVisible();
+  expect(requests).toEqual(['?limit=20']);
+  expect(connections).toBe(1);
+  await page.waitForTimeout(6500);
+  expect(requests).toHaveLength(1);
+  expect(connections).toBe(1);
+  const earlier = page.getByRole('button', { name: 'Load earlier history' });
+  await earlier.scrollIntoViewIfNeeded();
+  const anchor = page.getByTestId('chat-entry-long-46');
+  await expect(anchor).toBeVisible();
+  const top = (await anchor.boundingBox())!.y;
+  await earlier.click();
+  await expect.poll(() => requests.length).toBe(2);
+  await expect.poll(async () => (await anchor.boundingBox())!.y).toBeCloseTo(top, 0);
+  newest = 66;
+  await page.request.post(
+    '/__fixture/live?scope=conversation-history&resourceId=11111111-1111-4111-8111-111111111111',
+  );
+  await page.waitForTimeout(100);
+  expect(requests).toHaveLength(2);
+  await page.request.post(`/__fixture/live?scope=conversation-history&resourceId=${id}`);
+  await expect.poll(() => requests.length).toBe(3);
+  expect(new URLSearchParams(requests[2]).get('after')).toBe('65');
+  await expect.poll(async () => (await anchor.boundingBox())!.y).toBeCloseTo(top, 0);
+  await page.screenshot({ path: 'docs/acceptance/unified-mobile-events/chat-older-runtime.png' });
+  await page.goto('about:blank');
+  await expect
+    .poll(
+      async () =>
+        (
+          await (
+            await page.request.get(`http://localhost:8094/__fixture/live?conversationId=${id}`)
+          ).json()
+        ).active,
+    )
+    .toBe(0);
+});

@@ -1,11 +1,10 @@
-import { createSloganApiClient, type SloganApiPaths } from '@slogan/api-client';
+import { createSloganApiClient } from '@slogan/api-client';
 import type { useAuth } from '../auth';
 type AuthorizedRequest = ReturnType<typeof useAuth>['authorized'];
 import { streamFetch } from '../../services/streamFetch';
-import { EventStreamParser } from './parser';
+import { EventStreamParser, liveEnvelope, type LiveEvent } from './parser';
 
-export type LiveEvent =
-  SloganApiPaths['/v1/me/live-updates']['get']['responses'][200]['content']['text/event-stream'];
+export type { LiveEvent } from './parser';
 export async function receiveLiveUpdates(
   authorized: AuthorizedRequest,
   signal: AbortSignal,
@@ -19,6 +18,7 @@ export async function receiveLiveUpdates(
   const result = await authorized((token) =>
     client.GET('/v1/me/live-updates', {
       headers: { Authorization: `Bearer ${token}`, ...(cursor ? { 'Last-Event-ID': cursor } : {}) },
+      params: { query: { protocol: 2 } },
       parseAs: 'stream',
       signal,
     }),
@@ -32,16 +32,8 @@ export async function receiveLiveUpdates(
   const reader = result.data.getReader();
   const decoder = new TextDecoder();
   const parser = new EventStreamParser((value, id) => {
-    if (
-      typeof value !== 'object' ||
-      value === null ||
-      !('scope' in value) ||
-      !['reset', 'rooms', 'partners', 'messages', 'heartbeat', 'renew'].includes(
-        String(value.scope),
-      )
-    )
-      throw new Error('Live event unavailable');
-    onEvent(value as LiveEvent, id);
+    if (id.length > 512) throw new Error('Live cursor exceeds limit');
+    onEvent(liveEnvelope(value), id);
   });
   let timer: ReturnType<typeof setTimeout> | undefined;
   const watchdog = () => {

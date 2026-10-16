@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
+import { useForegroundLive, useLiveUpdates } from '../live-updates';
+import { LatestRequestQueue } from '../../services/latestRequestQueue';
+import { isAppForeground } from '../../services/foregroundPolling';
 import { randomUUID } from 'expo-crypto';
 import type { VoiceRoomApi, RoomTextMessage } from './api';
 
@@ -16,109 +19,94 @@ export function mergeMessages(current: RoomTextMessage[], incoming: RoomTextMess
     .slice(-300);
 }
 export function useRoomMessages(api: VoiceRoomApi, roomId: string) {
-  const [messages, setMessages] = useState<RoomTextMessage[]>([]);
-  const [text, setText] = useState('');
-  const [error, setError] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [owner, setOwner] = useState({ api, roomId });
-  if (owner.api !== api || owner.roomId !== roomId) {
-    setOwner({ api, roomId });
-    setMessages([]);
-    setText('');
-    setError(false);
-    setSending(false);
-  }
-  const live = useRef(false);
-  const roomGeneration = useRef(0);
-  const pending = useRef(false);
-  const draft = useRef<{ text: string; id: string } | null>(null);
-  const wakePoll = useRef<(() => void) | null>(null);
+  const { owner: account } = useLiveUpdates();
+  const [messages, setMessages] = useState<RoomTextMessage[]>([]),
+    [text, setText] = useState(''),
+    [error, setError] = useState(false),
+    [sending, setSending] = useState(false);
+  const cursor = useRef<string | undefined>(undefined),
+    generation = useRef(0),
+    pending = useRef(false),
+    draft = useRef<{ text: string; id: string } | null>(null),
+    abort = useRef<AbortController | undefined>(undefined),
+    queue = useRef(new LatestRequestQueue());
+  const refresh = useCallback(
+    (current: () => boolean) => {
+      const epoch = generation.current;
+      return queue.current.enqueue(async () => {
+        const live = () => current() && generation.current === epoch;
+        if (!live()) return;
+        abort.current = new AbortController();
+        try {
+          for (;;) {
+            const previous = cursor.current;
+            const page = await api.messages(roomId, previous, abort.current.signal);
+            if (!live()) return;
+            setMessages((items) => mergeMessages(items, page.items));
+            cursor.current = page.nextCursor;
+            setError(false);
+            if (!page.hasMore) break;
+            if (page.nextCursor === previous) throw new Error('Non-advancing room messages');
+          }
+        } catch {
+          if (live()) setError(true);
+        }
+      });
+    },
+    [api, roomId],
+  );
   useEffect(() => {
-    live.current = true;
-    const scopeGeneration = ++roomGeneration.current;
-    pending.current = false;
+    generation.current++;
+    cursor.current = undefined;
     draft.current = null;
-    let cursor: string | undefined;
-    let active = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
-    let generation = 0;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let abort: AbortController | undefined;
-    let inFlight = false;
-    let delay = 2000;
-    let idlePages = 0;
-    async function poll() {
-      if (!active || !live.current || inFlight) return;
-      inFlight = true;
-      const current = generation;
-      abort = new AbortController();
-      try {
-        const page = await api.messages(roomId, cursor, abort.signal);
-        if (generation !== current || !active || !live.current) return;
-        setMessages((items) => mergeMessages(items, page.items));
-        cursor = page.nextCursor;
-        idlePages = page.items.length ? 0 : idlePages + 1;
-        delay = Math.min(10_000, 2000 * 2 ** Math.max(0, idlePages - 1));
-        timer = setTimeout(() => void poll(), page.hasMore ? 0 : delay);
-      } catch {
-        if (generation === current && active && live.current)
-          timer = setTimeout(
-            () => void poll(),
-            (delay = Math.min(30_000, Math.max(4000, delay * 2))),
-          );
-      } finally {
-        if (generation === current) inFlight = false;
-      }
-    }
-    wakePoll.current = () => {
-      idlePages = 0;
-      delay = 2000;
-      if (timer) clearTimeout(timer);
-      // Never overlap a current GET. Its response will schedule the next one.
-      if (active && !inFlight) void poll();
-    };
-    void poll();
-    const subscription = AppState.addEventListener('change', (next) => {
-      active = next === 'active';
-      generation++;
-      inFlight = false;
-      idlePages = 0;
-      delay = 2000;
-      if (timer) clearTimeout(timer);
-      abort?.abort();
-      if (active) void poll();
+    pending.current = false;
+    const epoch = generation.current;
+    void Promise.resolve().then(() => {
+      if (generation.current !== epoch) return;
+      setMessages([]);
+      setText('');
+      setError(false);
+      setSending(false);
     });
-    return () => {
-      roomGeneration.current = scopeGeneration + 1;
-      live.current = false;
-      active = false;
-      generation++;
-      if (timer) clearTimeout(timer);
-      abort?.abort();
-      subscription.remove();
-      wakePoll.current = null;
+    const invalidate = () => {
+      generation.current++;
+      abort.current?.abort();
     };
-  }, [api, roomId]);
+    const cancel = () => {
+      invalidate();
+      pending.current = false;
+      setSending(false);
+    };
+    const native = AppState.addEventListener('change', cancel);
+    const browser = Platform.OS === 'web' && typeof document !== 'undefined' ? document : null;
+    browser?.addEventListener('visibilitychange', cancel);
+    return () => {
+      invalidate();
+      native.remove();
+      browser?.removeEventListener('visibilitychange', cancel);
+    };
+  }, [api, roomId, account]);
+  useForegroundLive(refresh, 'room-text', !!roomId, roomId);
   const send = useCallback(async () => {
     const content = text.trim();
-    if (!content || [...content].length > 1000 || pending.current) return;
+    if (!content || [...content].length > 1000 || pending.current || !isAppForeground()) return;
     if (draft.current?.text !== content) draft.current = { text: content, id: randomUUID() };
-    const generation = roomGeneration.current;
+    const epoch = generation.current;
     pending.current = true;
     setSending(true);
     setError(false);
     try {
       const message = await api.sendMessage(roomId, content, draft.current.id);
-      if (!live.current || generation !== roomGeneration.current) return;
+      if (epoch !== generation.current || !isAppForeground()) return;
       setMessages((items) => mergeMessages(items, [message]));
       setText((value) => (value.trim() === content ? '' : value));
       draft.current = null;
-      wakePoll.current?.();
     } catch {
-      if (live.current && generation === roomGeneration.current) setError(true);
+      if (epoch === generation.current) setError(true);
     } finally {
-      if (generation === roomGeneration.current) {
+      if (epoch === generation.current) {
         pending.current = false;
-        if (live.current) setSending(false);
+        setSending(false);
       }
     }
   }, [api, roomId, text]);

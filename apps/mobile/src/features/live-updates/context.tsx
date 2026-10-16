@@ -12,28 +12,44 @@ import { AppState, Platform } from 'react-native';
 import { useAuth } from '../auth';
 import { isAppForeground } from '../../services/foregroundPolling';
 import { receiveLiveUpdates, type LiveEvent } from './api';
-export type LiveScope = 'rooms' | 'partners' | 'messages';
+export type LiveScope = Exclude<
+  LiveEvent['scope'],
+  'ready' | 'reset' | 'heartbeat' | 'renew' | 'unavailable'
+>;
+type Subscription = { listener: () => void; resourceId?: string };
 type Status = 'connecting' | 'connected' | 'reconnecting';
 export const LiveUpdatesContext = createContext<{
   owner: string | null;
   status: Status;
-  subscribe: (scope: LiveScope, listener: () => void) => () => void;
+  subscribe: (scope: LiveScope, listener: () => void, resourceId?: string) => () => void;
 }>({ owner: null, status: 'connecting', subscribe: () => () => {} });
 export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
   const { state, authorized } = useAuth();
-  const owner =
-    state.kind === 'signedIn' && state.me.onboardingState === 'ELIGIBLE' ? state.me.userId : null;
-  const listeners = useRef(new Map<LiveScope, Set<() => void>>());
+  const owner = state.kind === 'signedIn' ? state.me.userId : null;
+  const listeners = useRef(new Map<LiveScope, Set<Subscription>>());
   const [snapshot, setSnapshot] = useState<{ owner: string | null; status: Status }>({
     owner: null,
     status: 'connecting',
   });
-  const subscribe = useCallback((scope: LiveScope, listener: () => void) => {
+  const pending = useRef(new Set<() => void>());
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const schedule = useCallback((listener: () => void) => {
+    pending.current.add(listener);
+    flushTimer.current ??= setTimeout(() => {
+      flushTimer.current = undefined;
+      const work = [...pending.current];
+      pending.current.clear();
+      for (const fn of work) fn();
+    }, 50);
+  }, []);
+  const subscribe = useCallback((scope: LiveScope, listener: () => void, resourceId?: string) => {
     const bucket = listeners.current.get(scope) ?? new Set();
     listeners.current.set(scope, bucket);
-    bucket.add(listener);
+    const subscription = { listener, ...(resourceId ? { resourceId } : {}) };
+    bucket.add(subscription);
     return () => {
-      bucket.delete(listener);
+      bucket.delete(subscription);
+      pending.current.delete(listener);
     };
   }, []);
   useEffect(() => {
@@ -49,6 +65,9 @@ export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
       epoch++;
       if (timer) clearTimeout(timer);
       controller?.abort();
+      if (flushTimer.current) clearTimeout(flushTimer.current);
+      flushTimer.current = undefined;
+      pending.current.clear();
     };
     const connect = async () => {
       if (!alive || !isAppForeground()) return;
@@ -59,16 +78,16 @@ export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
         if (!current(generation)) return;
         if (id) cursor = id;
         if (value.scope === 'renew') renewing = true;
-        else if (value.scope === 'reset') {
+        else if (value.scope === 'reset' || value.scope === 'ready') {
           attempts = 0;
           setSnapshot({ owner, status: 'connected' });
-          for (const bucket of listeners.current.values()) for (const fn of bucket) fn();
-        } else if (
-          value.scope === 'rooms' ||
-          value.scope === 'partners' ||
-          value.scope === 'messages'
-        )
-          for (const fn of listeners.current.get(value.scope) ?? []) fn();
+          if (value.scope === 'reset')
+            for (const bucket of listeners.current.values())
+              for (const item of bucket) schedule(item.listener);
+        } else {
+          for (const item of listeners.current.get(value.scope as LiveScope) ?? [])
+            if (!item.resourceId || item.resourceId === value.resourceId) schedule(item.listener);
+        }
       };
       try {
         await receiveLiveUpdates(authorized, controller.signal, cursor, event);
@@ -99,7 +118,7 @@ export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
       native.remove();
       browser?.removeEventListener('visibilitychange', resume);
     };
-  }, [owner, authorized]);
+  }, [owner, authorized, schedule]);
   const value = useMemo(
     () => ({
       owner,

@@ -125,6 +125,6 @@ test('an already open invitation picker discovers a newly idle peer without clos
   items = [
     { userId: 'new-idle', displayName: 'New idle peer', cefrLevel: 'B1', isAvailable: true },
   ];
-  await page.clock.fastForward(5000);
+  await page.evaluate(() => window.dispatchEvent(new Event('fixture-live-partners')));
   await expect(page.getByText('New idle peer')).toBeVisible();
 });

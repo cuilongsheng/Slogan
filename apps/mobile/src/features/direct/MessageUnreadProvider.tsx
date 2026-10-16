@@ -54,7 +54,7 @@ export function MessageUnreadProvider({ children }: { children: ReactNode }) {
     },
     [api, userId],
   );
-  useForegroundLive(load, 'messages', !!userId);
+  useForegroundLive(load, 'unread', !!userId);
   const refresh = useCallback(() => load(), [load]);
   const value = useMemo(
     () => ({ count: snapshot.owner === userId ? snapshot.count : 0, refresh }),

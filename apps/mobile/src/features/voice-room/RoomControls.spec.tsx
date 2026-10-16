@@ -1,3 +1,5 @@
+import { emitLive } from '../../../test/live-updates';
+jest.mock('../live-updates', () => jest.requireActual('../../../test/live-updates'));
 import type * as ReactTypes from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
@@ -187,7 +189,7 @@ test('a room report opens directly and sends no accused user identifier', async 
   );
 });
 
-test('an open invitation picker updates when a peer becomes idle and stops polling on close', async () => {
+test('an open invitation picker updates on an event and unsubscribes on close', async () => {
   jest.useFakeTimers();
   const availablePeople = jest
     .fn()
@@ -218,7 +220,8 @@ test('an open invitation picker updates when a peer becomes idle and stops polli
   try {
     await waitFor(() => expect(availablePeople).toHaveBeenCalledTimes(1));
     await act(async () => {
-      await jest.advanceTimersByTimeAsync(5000);
+      emitLive('partners');
+      await Promise.resolve();
     });
     expect(page.getByText('New idle peer')).toBeTruthy();
     await page.unmount();
@@ -302,7 +305,8 @@ test('a pending read begun before a send completes cannot erase the successful s
   try {
     await waitFor(() => expect(page.getByText('Race peer')).toBeTruthy());
     await act(async () => {
-      await jest.advanceTimersByTimeAsync(5000);
+      emitLive('partners');
+      await Promise.resolve();
     });
     expect(sentInvitations).toHaveBeenCalledTimes(2);
     await fireEvent.press(page.getByRole('button', { name: 'Invite Race peer' }));

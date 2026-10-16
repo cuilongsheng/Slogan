@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { googleSignOut } from '../../services/googleSignIn';
 
 import { MobileSession, SessionError, type Me, type ProfileInput } from './session';
@@ -16,6 +25,7 @@ interface AuthContextValue {
   loginPassword(username: string, password: string): Promise<void>;
   putProfile(profile: ProfileInput): Promise<Me>;
   retry(): Promise<void>;
+  refreshMe(): Promise<void>;
   logout(): Promise<void>;
   authorized<T extends { response: Response }>(
     request: (accessToken: string) => Promise<T>,
@@ -27,6 +37,10 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const session = useMemo(() => new MobileSession(), []);
   const [state, setState] = useState<AuthState>({ kind: 'loading' });
+  const latestState = useRef(state);
+  useLayoutEffect(() => {
+    latestState.current = state;
+  }, [state]);
   const [suggestedProfile, setSuggestedProfile] =
     useState<AuthContextValue['suggestedProfile']>(null);
 
@@ -118,10 +132,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [session],
   );
 
+  const refreshMe = useCallback(async () => {
+    const owner = latestState.current.kind === 'signedIn' ? latestState.current.me.userId : null;
+    if (!owner) return;
+    try {
+      const me = await session.me();
+      if (latestState.current.kind === 'signedIn' && latestState.current.me.userId === owner)
+        setState({ kind: 'signedIn', me });
+    } catch (error) {
+      if (
+        error instanceof SessionError &&
+        error.code === 'AUTH' &&
+        latestState.current.kind === 'signedIn' &&
+        latestState.current.me.userId === owner
+      )
+        setState({ kind: 'signedOut' });
+    }
+  }, [session]);
   const value = useMemo(
     () => ({
       state,
       suggestedProfile,
+      refreshMe,
       loginGoogle,
       loginPassword,
       putProfile,
@@ -129,7 +161,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       authorized,
     }),
-    [state, suggestedProfile, loginGoogle, loginPassword, putProfile, retry, logout, authorized],
+    [
+      state,
+      suggestedProfile,
+      refreshMe,
+      loginGoogle,
+      loginPassword,
+      putProfile,
+      retry,
+      logout,
+      authorized,
+    ],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

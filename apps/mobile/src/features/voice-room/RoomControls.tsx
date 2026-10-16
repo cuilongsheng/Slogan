@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 
-import { useFocusedPolling } from '../../hooks/useFocusedPolling';
+import { useForegroundLive } from '../live-updates';
 import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { t, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
@@ -168,7 +168,7 @@ export function RoomControls({
     },
     [loadPeople],
   );
-  useFocusedPolling(pollPeople, 5000, isHost && mode === 'invite');
+  useForegroundLive(pollPeople, ['partners', 'invitations'], isHost && mode === 'invite');
 
   async function loadRemoved() {
     setPeopleLoading(true);
