@@ -5,6 +5,9 @@ import { RealtimeQueue } from '../../../infrastructure/redis/realtime-queue.serv
 import { StructuredLogger } from '../../../infrastructure/observability/structured-logger.service.js';
 import { RoomRealtimeService } from '../../rooms/index.js';
 import { VoiceService } from '../application/services/voice.service.js';
+import { ObservabilityHeartbeat } from '../../../infrastructure/observability/heartbeat.service.js';
+import { Optional } from '@nestjs/common';
+import { reportError } from '../../../infrastructure/observability/error-reporting.js';
 
 @Injectable()
 export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
@@ -16,6 +19,7 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
     private readonly rooms: RoomRealtimeService,
     private readonly voice: VoiceService,
     private readonly logger: StructuredLogger,
+    @Optional() private readonly heartbeat?: ObservabilityHeartbeat,
   ) {}
   async onModuleInit() {
     await this.queue.start(async (job) => {
@@ -25,6 +29,7 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
           (await this.rooms.recoverableRooms()).length > 0 ||
           (await this.rooms.pendingCommands()).length > 0;
         await this.queue.ensureRecovery(active ? 30 : 300);
+        await this.heartbeat?.completed('realtime');
         return;
       }
       if (job.kind === 'appointment-open' || job.kind === 'appointment-start-window') {
@@ -43,7 +48,11 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
   private tick() {
     if (this.running) return;
     this.running = this.recover()
-      .catch(() => this.logger.warn('realtime_recovery_unavailable'))
+      .then(() => this.heartbeat?.completed('realtime'))
+      .catch((error) => {
+        reportError(error, { code: 'RECOVERY_FAILED', stage: 'recovery' });
+        this.logger.warn('realtime_recovery_unavailable');
+      })
       .finally(() => {
         this.running = undefined;
       });
@@ -61,7 +70,8 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
             { kind: 'appointment-start-window', id: room.id },
             room.initialHostDeadline!,
           );
-      } catch {
+      } catch (error) {
+        reportError(error, { code: 'RECOVERY_FAILED', stage: 'recovery' });
         this.logger.warn({ event: 'appointment_recovery_pending', roomId: room.id });
       }
     }
@@ -70,7 +80,8 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
     for (const timer of await this.rooms.scheduledHostTimeouts()) {
       try {
         await this.queue.enqueue({ kind: 'host-timeout', id: timer.id }, timer.runAt);
-      } catch {
+      } catch (error) {
+        reportError(error, { code: 'RECOVERY_FAILED', stage: 'recovery' });
         this.logger.warn('host_timeout_scheduling_pending');
       }
     }
@@ -83,14 +94,16 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
             await this.voice.reconcile(room.id);
           }
         }
-      } catch {
+      } catch (error) {
+        reportError(error, { code: 'RECOVERY_FAILED', stage: 'recovery' });
         this.logger.warn({ event: 'realtime_room_recovery_pending', roomId: room.id });
       }
     }
     for (const id of pendingCommands) {
       try {
         await this.queue.enqueue({ kind: 'command', id });
-      } catch {
+      } catch (error) {
+        reportError(error, { code: 'RECOVERY_FAILED', stage: 'recovery' });
         this.logger.warn('realtime_command_scheduling_pending');
       }
     }

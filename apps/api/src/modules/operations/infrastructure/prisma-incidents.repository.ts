@@ -59,70 +59,83 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async observe(input: IncidentObservationInput, cooldownSeconds: number): Promise<IncidentView> {
+    return this.prisma.$transaction((tx) => this.observeInTransaction(tx, input, cooldownSeconds));
+  }
+
+  async observeInTransaction(
+    tx: Prisma.TransactionClient,
+    input: IncidentObservationInput,
+    cooldownSeconds: number,
+  ): Promise<IncidentView> {
     const fingerprint = incidentFingerprint(input);
-    return this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fingerprint}, 0))`;
-      let row = await tx.operationalIncident.findFirst({
-        where: { fingerprint, status: { not: 'RESOLVED' } },
-        orderBy: { occurrence: 'desc' },
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fingerprint}, 0))`;
+    let row = await tx.operationalIncident.findFirst({
+      where: { fingerprint, status: { not: 'RESOLVED' } },
+      orderBy: { occurrence: 'desc' },
+    });
+    if (row) {
+      row = await tx.operationalIncident.update({
+        where: { id: row.id },
+        data: {
+          severity: input.severity,
+          reasonCode: input.reasonCode,
+          lastObservedAt: input.observedAt,
+          observationCount: { increment: 1 },
+        },
       });
-      if (row) {
-        row = await tx.operationalIncident.update({
-          where: { id: row.id },
-          data: {
-            severity: input.severity,
-            reasonCode: input.reasonCode,
-            lastObservedAt: input.observedAt,
-            observationCount: { increment: 1 },
-          },
-        });
-      } else {
-        const last = await tx.operationalIncident.findFirst({
-          where: { fingerprint },
-          orderBy: { occurrence: 'desc' },
-          select: { occurrence: true, resolvedAt: true },
-        });
-        row = await tx.operationalIncident.create({
-          data: {
-            id: randomUUID(),
-            fingerprint,
-            occurrence: (last?.occurrence ?? 0) + 1,
-            component: input.component,
-            category: input.category,
-            severity: input.severity,
-            scopeType: input.scopeType,
-            scopeKey: input.scopeKey,
-            ruleVersion: input.ruleVersion,
-            reasonCode: input.reasonCode,
-            firstObservedAt: input.observedAt,
-            lastObservedAt: input.observedAt,
-          },
-        });
-        await tx.operationalAlertDelivery.create({
-          data: {
-            id: randomUUID(),
-            incidentId: row.id,
-            nextAttemptAt:
-              last?.resolvedAt &&
-              last.resolvedAt.getTime() + cooldownSeconds * 1000 > input.observedAt.getTime()
-                ? new Date(last.resolvedAt.getTime() + cooldownSeconds * 1000)
-                : input.observedAt,
-          },
-        });
-      }
-      await tx.operationalIncidentObservation.create({
+    } else {
+      const last = await tx.operationalIncident.findFirst({
+        where: { fingerprint },
+        orderBy: { occurrence: 'desc' },
+        select: { occurrence: true, resolvedAt: true },
+      });
+      row = await tx.operationalIncident.create({
+        data: {
+          id: randomUUID(),
+          fingerprint,
+          occurrence: (last?.occurrence ?? 0) + 1,
+          component: input.component,
+          category: input.category,
+          severity: input.severity,
+          scopeType: input.scopeType,
+          scopeKey: input.scopeKey,
+          ruleVersion: input.ruleVersion,
+          reasonCode: input.reasonCode,
+          firstObservedAt: input.observedAt,
+          lastObservedAt: input.observedAt,
+        },
+      });
+      await tx.operationalAlertDelivery.create({
         data: {
           id: randomUUID(),
           incidentId: row.id,
-          reasonCode: input.reasonCode,
-          observedAt: input.observedAt,
+          nextAttemptAt:
+            last?.resolvedAt &&
+            last.resolvedAt.getTime() + cooldownSeconds * 1000 > input.observedAt.getTime()
+              ? new Date(last.resolvedAt.getTime() + cooldownSeconds * 1000)
+              : input.observedAt,
         },
       });
-      return view(row);
+    }
+    await tx.operationalIncidentObservation.create({
+      data: {
+        id: randomUUID(),
+        incidentId: row.id,
+        reasonCode: input.reasonCode,
+        observedAt: input.observedAt,
+      },
     });
+    return view(row);
   }
 
   async recover(
+    input: Omit<IncidentObservationInput, 'severity' | 'reasonCode'>,
+  ): Promise<boolean> {
+    return this.prisma.$transaction((tx) => this.recoverInTransaction(tx, input));
+  }
+
+  async recoverInTransaction(
+    tx: Prisma.TransactionClient,
     input: Omit<IncidentObservationInput, 'severity' | 'reasonCode'>,
   ): Promise<boolean> {
     const fingerprint = incidentFingerprint({
@@ -130,43 +143,41 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
       severity: 'INFO',
       reasonCode: 'RECOVERED',
     });
-    return this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fingerprint}, 0))`;
-      const current = await tx.operationalIncident.findFirst({
-        where: { fingerprint, status: { not: 'RESOLVED' } },
-        orderBy: { occurrence: 'desc' },
-      });
-      if (!current) return false;
-      await tx.operationalIncident.update({
-        where: { id: current.id },
-        data: {
-          status: 'RESOLVED',
-          resolvedAt: input.observedAt,
-          resolutionReason: 'PROBE_RECOVERED',
-          lastObservedAt: input.observedAt,
-        },
-      });
-      await tx.operationalIncidentObservation.create({
-        data: {
-          id: randomUUID(),
-          incidentId: current.id,
-          reasonCode: 'PROBE_RECOVERED',
-          observedAt: input.observedAt,
-        },
-      });
-      await tx.operationalAlertDelivery.update({
-        where: { incidentId: current.id },
-        data: {
-          status: 'PENDING',
-          nextAttemptAt: input.observedAt,
-          leaseId: null,
-          lockedUntil: null,
-          deliveredAt: null,
-          lastError: null,
-        },
-      });
-      return true;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fingerprint}, 0))`;
+    const current = await tx.operationalIncident.findFirst({
+      where: { fingerprint, status: { not: 'RESOLVED' } },
+      orderBy: { occurrence: 'desc' },
     });
+    if (!current) return false;
+    await tx.operationalIncident.update({
+      where: { id: current.id },
+      data: {
+        status: 'RESOLVED',
+        resolvedAt: input.observedAt,
+        resolutionReason: 'PROBE_RECOVERED',
+        lastObservedAt: input.observedAt,
+      },
+    });
+    await tx.operationalIncidentObservation.create({
+      data: {
+        id: randomUUID(),
+        incidentId: current.id,
+        reasonCode: 'PROBE_RECOVERED',
+        observedAt: input.observedAt,
+      },
+    });
+    await tx.operationalAlertDelivery.update({
+      where: { incidentId: current.id },
+      data: {
+        status: 'PENDING',
+        nextAttemptAt: input.observedAt,
+        leaseId: null,
+        lockedUntil: null,
+        deliveredAt: null,
+        lastError: null,
+      },
+    });
+    return true;
   }
 
   async list(
@@ -350,7 +361,7 @@ export class PrismaIncidentsRepository implements IncidentsRepository {
     return this.prisma.$transaction(async (tx) => {
       const rows = await tx.$queryRaw<Array<{ id: string }>>`
         SELECT id FROM "OperationalAlertDelivery"
-        WHERE status IN ('PENDING','FAILED') AND "nextAttemptAt" <= ${now}
+        WHERE status IN ('PENDING','FAILED','RUNNING') AND "nextAttemptAt" <= ${now}
           AND ("lockedUntil" IS NULL OR "lockedUntil" <= ${now})
         ORDER BY "nextAttemptAt", id FOR UPDATE SKIP LOCKED LIMIT 1`;
       const candidate = rows[0];

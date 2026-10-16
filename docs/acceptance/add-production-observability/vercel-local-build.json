@@ -1,0 +1,36 @@
+{
+  "evidence": "local-isolated-build",
+  "cli": "63.1.2",
+  "node": "24.21.0",
+  "remoteResourcesChanged": false,
+  "dotenvCopied": false,
+  "functions": {
+    "api/observability.func": {
+      "runtime": "nodejs24.x",
+      "handler": "apps/api/api/observability.js",
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "slogan-observability",
+          "consumer": "api_Sobservability_Dts"
+        }
+      ]
+    },
+    "api/realtime.func": {
+      "runtime": "nodejs24.x",
+      "handler": "apps/api/api/realtime.js",
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "slogan-realtime",
+          "consumer": "api_Srealtime_Dts"
+        }
+      ]
+    },
+    "index.func": {
+      "runtime": "nodejs24.x",
+      "handler": "apps/api/src/main.js",
+      "experimentalTriggers": null
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-10-15",
+  "project": "slogan-api",
+  "team": "cuilongshengs-projects",
+  "latestProduction": {
+    "url": "https://slogan-6usg55eey-cuilongshengs-projects.vercel.app",
+    "commit": "7cbbab734d26a4011538bc08647ea5bd93cea511",
+    "state": "READY",
+    "nodeFunctions": 5
+  },
+  "monitoringArtifact": {
+    "commit": "e50cb75908bcbca0b7604849b9b79216e75ac980",
+    "nodeFunctions": 2,
+    "deployed": false
+  },
+  "missingComparedToLatestProduction": [
+    "api/live-updates.ts",
+    "api/maintenance-seed.ts",
+    "api/maintenance.ts",
+    "api/realtime.ts"
+  ],
+  "decision": "Do not overwrite newer production with this older source base. Integrate monitoring into the latest release source and rebuild before deployment."
+}

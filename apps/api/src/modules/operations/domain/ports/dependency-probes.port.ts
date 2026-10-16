@@ -4,6 +4,7 @@ export interface DependencyProbeResult {
   component: 'POSTGRESQL' | 'REDIS' | 'LIVEKIT' | 'AI' | 'STT' | 'SMS';
   enabled: boolean;
   ready: boolean;
+  unknown?: boolean;
   reasonCode?: string;
 }
 

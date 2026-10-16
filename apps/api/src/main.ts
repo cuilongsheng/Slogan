@@ -1,3 +1,4 @@
+import './instrument.js';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 

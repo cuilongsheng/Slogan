@@ -8,8 +8,10 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
-      '**/dist-pages/**',
-      '**/dist-web/**',
+      '**/dist-*/**',
+      '**/.vercel/**',
+      'apps/mobile/android/**',
+      'apps/mobile/ios/**',
       '**/coverage/**',
       '**/node_modules/**',
       '**/.expo/**',
@@ -21,8 +23,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   {
     files: [
-      'scripts/**/*.mjs',
-      'apps/api/scripts/**/*.mjs',
+      '**/scripts/**/*.mjs',
       '*.config.{mjs,cjs,ts}',
       'apps/api/*.config.cjs',
       'apps/mobile/app.config.js',
@@ -34,7 +35,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.cjs'],
+    files: ['**/*.cjs', 'apps/mobile/app.config.js'],
     languageOptions: {
       sourceType: 'commonjs',
       globals: {
@@ -44,7 +45,7 @@ export default tseslint.config(
   },
   ...tseslint.configs.recommended,
   {
-    files: ['apps/mobile/app.config.js'],
+    files: ['**/*.cjs', 'apps/mobile/app.config.js'],
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {

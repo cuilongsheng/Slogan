@@ -42,6 +42,8 @@ jobs:
         run: echo "SLOGAN_ANDROID_VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Build shared workspace exports
+        run: pnpm --filter @slogan/shared build
       - name: Check delivery and mobile code
         run: |
           node --test scripts/tests/release-delivery.test.mjs scripts/tests/pages-proxy.test.mjs

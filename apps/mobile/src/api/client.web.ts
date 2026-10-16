@@ -1,5 +1,7 @@
 import { createSloganApiClient } from '@slogan/api-client';
 import { boundedFetch } from './boundedFetch';
+import { observeMobileFetch } from '../services/observability';
+import { rememberMobileRequest, traceMobileFetch } from '../services/observability/tracing';
 
 export function createMobileApiClient(baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL) {
   if (!baseUrl) {
@@ -8,6 +10,16 @@ export function createMobileApiClient(baseUrl = process.env.EXPO_PUBLIC_API_BASE
 
   return createSloganApiClient({
     baseUrl,
-    fetch: (input, init) => boundedFetch(input, { ...init, credentials: 'include' }),
+    onRequest: rememberMobileRequest,
+    fetch: (input, init) =>
+      traceMobileFetch(
+        input,
+        init,
+        (tracedInput, tracedInit) =>
+          observeMobileFetch(() =>
+            boundedFetch(tracedInput, { ...tracedInit, credentials: 'include' }),
+          ),
+        baseUrl,
+      ),
   });
 }

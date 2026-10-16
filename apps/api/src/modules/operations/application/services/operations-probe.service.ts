@@ -21,6 +21,7 @@ export class OperationsProbeService {
     const results = await this.probes.check();
     const threshold = this.config.get('OPERATIONS_INCIDENT_FAILURE_THRESHOLD', { infer: true });
     for (const result of results) {
+      if (result.unknown) continue;
       if (!result.enabled || result.ready) {
         if ((this.consecutiveFailures.get(result.component) ?? 0) >= threshold)
           await this.incidents.recover({
