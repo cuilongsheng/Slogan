@@ -10,6 +10,7 @@ import {
   type LiveUpdatesStore,
   type StreamPositions,
   type LiveScope,
+  type StreamChange,
 } from '../domain/live-updates.port.js';
 
 export type LiveFrame = {
@@ -146,9 +147,16 @@ export class LiveUpdatesService {
             checkedAt = Date.now();
             if (!changes.length) yield { scope: 'heartbeat' };
           }
+          // These are snapshot invalidations. Keep the last identical notification in this
+          // bounded read, so a message burst cannot turn into hundreds of permission queries.
+          // Last-occurrence ordering preserves replay positions; permissions are still checked
+          // immediately before each retained delivery, never cached across reads.
+          const latest = new Map<string, string>();
+          if (protocol === 2) for (const event of changes) latest.set(changeKey(event), event.id);
           for (const event of changes) {
             if (Date.now() >= deadline || signal.aborted) break;
             positions[event.index] = event.id;
+            if (protocol === 2 && latest.get(changeKey(event)) !== event.id) continue;
             if (protocol === 1) {
               if (['rooms', 'partners', 'messages'].includes(event.scope))
                 yield { scope: event.scope, id: this.encode(identity.userId, positions, protocol) };
@@ -184,6 +192,9 @@ export class LiveUpdatesService {
     }.bind(this);
     return frames();
   }
+}
+function changeKey(event: StreamChange) {
+  return `${event.index}:${event.scope}:${event.resourceId ?? ''}:${event.kind ?? ''}`;
 }
 function compareId(a: string, b: string) {
   const left = a.split('-').map(BigInt),

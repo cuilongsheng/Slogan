@@ -1,26 +1,26 @@
 # Unified mobile events and chat history
 
-Implementation in progress, 2026-10-15. Change: paginate-chat-history-over-shared-sse. Owner explicitly requested implementation after reviewing the proposal. This does not claim completion, device acceptance or a new deployment.
+Acceptance updated2026-10-16. Change: paginate-chat-history-over-shared-sse. Backend PR32 is deployed; client PR33 has passed final local verification and Phase-one CI. Client PR33 is merged as0f9fcde910f4f2c8acfc4d95ee934696184210e1. Guarded publication and expanded Cloud audience acceptance are pending. Android physical-device acceptance is explicitly deferred by the owner for this change. The later sections record the final native and Cloud results; earlier sections preserve intermediate verification history.
 
 ## Timer inventory and acceptance boundaries
 
-| Consumer | Prior schedule | Disposition |
-| --- | --- | --- |
-| ChatScreen text/calls and detail |3s /15s| Migrate to resource-scoped shared SSE + latest20/older20/delta20 timeline |
-| DirectCallObserver |5s| Migrate incoming-call detection; pending end commands remain bounded retries |
-| RoomInvitationObserver |5s on main pages| Migrate invitation detection; retain explicit join/decline/dismiss |
-| CallScreen |5s call GET or heartbeat| Migrate call GET; retain active-call outbound heartbeat |
-| useRoomMessages |2–10s idle reads| Migrate room-text invalidation and bounded catch-up |
-| VoiceRoomScreen room/membership refresh |15s| Migrate state invalidation; retain SDK/device/resume callbacks |
-| RoomControls invite candidates |5s while open| Reuse partners invalidation |
-| MyReportsScreen |5s| Migrate reports scope |
-| Profile/restrictions/appeals/history/learning |entry/manual reads| Add only affected focused/self-service subscriptions |
-| AppUpdateProvider |6h signed-in/out timer| Signed-in release notification; signed-out entry/foreground/manual metadata check |
-| PresenceHeartbeat |server-advised lease| Keep outbound renewal |
-| Active call liveness |5s heartbeat| Keep outbound renewal |
-| Exit queues, failed commands |bounded backoff| Keep command recovery, not change detection |
-| Call duration, create schedule and restriction countdown |1s/60s/10s local clocks| Keep UI clocks; no extra network polling |
-| SSE watchdog/reconnect/lease |bounded transport timers| Keep one root connection; valid protocol2 renewal emits ready without snapshot requery |
+| Consumer                                                 | Prior schedule           | Disposition                                                                            |
+| -------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------- |
+| ChatScreen text/calls and detail                         | 3s /15s                  | Migrate to resource-scoped shared SSE + latest20/older20/delta20 timeline              |
+| DirectCallObserver                                       | 5s                       | Migrate incoming-call detection; pending end commands remain bounded retries           |
+| RoomInvitationObserver                                   | 5s on main pages         | Migrate invitation detection; retain explicit join/decline/dismiss                     |
+| CallScreen                                               | 5s call GET or heartbeat | Migrate call GET; retain active-call outbound heartbeat                                |
+| useRoomMessages                                          | 2–10s idle reads         | Migrate room-text invalidation and bounded catch-up                                    |
+| VoiceRoomScreen room/membership refresh                  | 15s                      | Migrate state invalidation; retain SDK/device/resume callbacks                         |
+| RoomControls invite candidates                           | 5s while open            | Reuse partners invalidation                                                            |
+| MyReportsScreen                                          | 5s                       | Migrate reports scope                                                                  |
+| Profile/restrictions/appeals/history/learning            | entry/manual reads       | Add only affected focused/self-service subscriptions                                   |
+| AppUpdateProvider                                        | 6h signed-in/out timer   | Signed-in release notification; signed-out entry/foreground/manual metadata check      |
+| PresenceHeartbeat                                        | server-advised lease     | Keep outbound renewal                                                                  |
+| Active call liveness                                     | 5s heartbeat             | Keep outbound renewal                                                                  |
+| Exit queues, failed commands                             | bounded backoff          | Keep command recovery, not change detection                                            |
+| Call duration, create schedule and restriction countdown | 1s/60s/10s local clocks  | Keep UI clocks; no extra network polling                                               |
+| SSE watchdog/reconnect/lease                             | bounded transport timers | Keep one root connection; valid protocol2 renewal emits ready without snapshot requery |
 
 Desktop Bridge live probe succeeded for original Slogan file56nIowZmvBhb0QJvOlDQdU /02UI. Original chat186:2389 (390×844), incoming186:2407 and active186:2418 were inspected without mutation. chat-original.png is the live plugin export. Runtime comparison is pending; recorded node IDs alone do not certify visual acceptance.
 
@@ -63,3 +63,19 @@ After the final transport/list changes,68 mobile suites /259 tests and53 compone
 ## Backend-first Cloud acceptance
 
 PR32 merged as17e16ef3773a13ffec8fb8b16f9994145ffb5afa. Guarded production run38876533350 passed encrypted snapshot, isolated restore/33-migration invariants, production migration, API commit verification and authenticated streaming. API and both Pages release identities match that commit. The hosted smoke passed protocol2 progressive delivery, default/v1 coexistence, participant/third-account and protocol cursor isolation, latest20/older20/delta20, session revocation, reset/cancel and full lease renewal; all owned fixtures were cleaned up. API message delivery was478ms, Pages487ms, and the Pages lease renewed at242274ms. These are one smoke run's measurements, not a latency guarantee. Expanded current-host/removed-member Cloud checks run with the client release; their local integration already passed.
+
+## Final clean browser and candidate CI verification
+
+After the final transport/list correction, the full application-router suite passed29 cases in1.2m in a clean environment. The earlier rerun accidentally reached the real native fixture API with fake browser tokens and returned to login; it is a failed diagnostic run. Stopping the owned native fixture and Metro server restored the browser suite's intended isolation; the10 affected create/admission cases and the full29-case suite then passed. No product change was needed for that environment failure.
+
+Phase-one candidate run38910942014 passed at b39066181c01da4b06db687b3cc27d7e6ed290d9. Android candidate run38910942601 initially failed while downloading/unzipping the Google NDK, before native compilation. Its failed-job retry is tracked separately; this infrastructure failure is not classified as a passing APK build.
+
+The failed-job Android retry succeeded: candidate APK0.0.120/code1120, source b390661, SHA-25696656f8d9eca1754726881a20ef78bdc7029bf2df81093b5a839dc0a225a5a63. Actual APK validation checked controlled certificate, package/ABI/version, required permissions, updater linkage and source/API identity. This candidate artifact is not the final main release. PR33 merged as0f9fcde; main production runs38913808883 and38913808919 are in progress.
+
+## Client release gate failure and burst follow-up
+
+Main0f9fcde passed all verification, backup/restore/migration and API runtime identity. API and mobile Pages deployed, but the expanded Cloud probe failed with LIVE_SMOKE_ROOM_AUDIENCE_FAILED; owned fixture cleanup succeeded. That generic code does not identify the failing room stage, so it is not evidence of a permission leak or of successful host/removal Cloud acceptance. The follow-up adds sanitized stage/elapsed/count diagnostics.
+
+Source inspection found one database permission query for every protocol2 notification, including hundreds of duplicate projections produced by the bulk history fixture. This is a plausible Cloud latency/backlog cause and an unnecessary query amplification independently of the probe failure. The fix retains only each last identical scope/resource/kind notification within the bounded read before permission checks, preserves replay order and current authorization, and keeps v1 unchanged. Four focused tests passed, including a90-event burst with four distinct permission checks, distinct resources/kinds, replay positions, fresh permissions on a later read and exact legacy duplicate delivery. Expanded HTTP integration and new candidate/main CI follow.
+
+Android0.0.121/code1121 built at0f9fcde with SHA-25621acddad4e4a7b7279de47addc8beff5264e4abbcc00cf8e777014e4038eddb6, but publication was correctly blocked by the failed admin Pages check. It was not published as the latest release.
