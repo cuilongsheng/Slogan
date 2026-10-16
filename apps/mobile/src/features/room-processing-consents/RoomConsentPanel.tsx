@@ -1,5 +1,4 @@
 import { randomUUID } from 'expo-crypto';
-import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { StyleProp, TextStyle } from 'react-native';
@@ -7,6 +6,7 @@ import type { StyleProp, TextStyle } from 'react-native';
 import { t } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
 import { useAuth } from '../auth';
+import { useFocusedLive } from '../live-updates';
 import {
   RoomProcessingConsentApi,
   bundledNoticeVersion,
@@ -44,28 +44,27 @@ export function RoomConsentPanel({
   const requestIds = useRef(new Map<string, string>());
   const pending = useRef(false);
 
-  const refresh = useCallback(async () => {
-    if (required.length === 0) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setItems(null);
-    setError('');
-    try {
-      setItems(await api.list());
-    } catch {
-      setError(t('consentLoadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [api, required]);
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh]),
+  const refresh = useCallback(
+    async (current: () => boolean = () => true) => {
+      if (required.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      setError('');
+      try {
+        const next = await api.list();
+        if (current()) setItems(next);
+      } catch {
+        if (current()) setError(t('consentLoadFailed'));
+      } finally {
+        if (current()) setLoading(false);
+      }
+    },
+    [api, required],
   );
+  const fence = useFocusedLive(refresh, 'account');
 
   const ready =
     required.length === 0 ||
@@ -88,17 +87,19 @@ export function RoomConsentPanel({
     const id = requestIds.current.get(key) ?? randomUUID();
     requestIds.current.set(key, id);
     pending.current = true;
+    const current = fence();
     setBusy(purpose);
     setError('');
     try {
       const result = await api.command(purpose, action, version, id);
+      if (!current()) return;
       setItems((current) => [
         ...(current ?? []).filter((item) => item.purpose !== purpose),
         result,
       ]);
       requestIds.current.delete(key);
     } catch {
-      setError(t('consentCommandFailed'));
+      if (current()) setError(t('consentCommandFailed'));
     } finally {
       pending.current = false;
       setBusy(null);

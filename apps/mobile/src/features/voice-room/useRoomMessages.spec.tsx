@@ -1,12 +1,31 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { AppState, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import type { VoiceRoomApi, RoomTextMessage } from './api';
+import { LiveUpdatesContext } from '../live-updates/context';
 import { mergeMessages, useRoomMessages } from './useRoomMessages';
 
 jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'a1434794-a743-4eaf-bc27-6bfd8d377cdd'),
 }));
+const liveListeners = new Set<{ scope: string; resource?: string; fn: () => void }>();
+const subscribe = (scope: string, fn: () => void, resource?: string) => {
+  const entry = { scope, fn, ...(resource ? { resource } : {}) };
+  liveListeners.add(entry);
+  return () => {
+    liveListeners.delete(entry);
+  };
+};
+function notify(room = 'room-1') {
+  for (const entry of liveListeners)
+    if (entry.scope === 'room-text' && entry.resource === room) entry.fn();
+}
 beforeEach(() => {
+  liveListeners.clear();
+  Object.defineProperty(AppState, 'currentState', {
+    configurable: true,
+    writable: true,
+    value: 'active',
+  });
   jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() });
 });
 afterEach(() => {
@@ -21,7 +40,7 @@ const message = (id: string, sequence: string, text = id): RoomTextMessage => ({
   senderDisplayName: 'Member',
   createdAt: '2026-10-07T00:00:00Z',
 });
-function Harness({ api, roomId = 'room-1' }: { api: VoiceRoomApi; roomId?: string }) {
+function MessagesHarness({ api, roomId = 'room-1' }: { api: VoiceRoomApi; roomId?: string }) {
   const chat = useRoomMessages(api, roomId);
   return (
     <View>
@@ -38,6 +57,13 @@ function Harness({ api, roomId = 'room-1' }: { api: VoiceRoomApi; roomId?: strin
         <Text key={item.id}>{item.text}</Text>
       ))}
     </View>
+  );
+}
+function Harness(props: { api: VoiceRoomApi; roomId?: string }) {
+  return (
+    <LiveUpdatesContext.Provider value={{ owner: 'account-a', status: 'connected', subscribe }}>
+      <MessagesHarness {...props} />
+    </LiveUpdatesContext.Provider>
   );
 }
 test('orders bigint sequences exactly and merges repeated delivery in a bounded window', () => {
@@ -78,9 +104,19 @@ test('background and unmount abort polling; foreground resumes at the last curso
   jest.useFakeTimers();
   let stateListener: ((state: 'active' | 'background') => void) | undefined;
   const remove = jest.fn();
+  const callbacks = new Set<(value: 'active' | 'background') => void>();
   const state = jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
-    stateListener = listener;
-    return { remove };
+    callbacks.add(listener);
+    stateListener = (value) => {
+      AppState.currentState = value;
+      for (const fn of callbacks) fn(value);
+    };
+    return {
+      remove: () => {
+        callbacks.delete(listener);
+        remove();
+      },
+    };
   });
   const api = {
     messages: jest.fn<ReturnType<VoiceRoomApi['messages']>, Parameters<VoiceRoomApi['messages']>>(
@@ -134,7 +170,7 @@ test('a pending send cannot leak into the next room', async () => {
   expect(page.getByLabelText('Message').props.value).toBe('');
 });
 
-test('idle message polling backs off, drains backlog immediately, and speeds up after new messages', async () => {
+test('idle room text has no query timer and only matching room invalidations fetch changes', async () => {
   jest.useFakeTimers();
   const api = {
     messages: jest.fn(async () => ({
@@ -147,30 +183,20 @@ test('idle message polling backs off, drains backlog immediately, and speeds up 
   const screen = await render(<Harness api={api as never} />);
   await act(async () => {});
   expect(api.messages).toHaveBeenCalledTimes(1);
-  for (const delay of [2000, 4000, 8000, 10000]) {
-    const before = api.messages.mock.calls.length;
-    await act(async () => {
-      jest.advanceTimersByTime(delay - 1);
-    });
-    expect(api.messages).toHaveBeenCalledTimes(before);
-    await act(async () => {
-      jest.advanceTimersByTime(1);
-    });
-    expect(api.messages).toHaveBeenCalledTimes(before + 1);
-  }
+  await act(async () => {
+    jest.advanceTimersByTime(60000);
+    notify('unrelated-room');
+  });
+  expect(api.messages).toHaveBeenCalledTimes(1);
   api.messages.mockResolvedValueOnce({
     items: [message('received', '1')],
     nextCursor: 'new',
     hasMore: false,
   });
   await act(async () => {
-    jest.advanceTimersByTime(10000);
+    notify();
   });
   expect(screen.getByText('received')).toBeTruthy();
-  const before = api.messages.mock.calls.length;
-  await act(async () => {
-    jest.advanceTimersByTime(2000);
-  });
-  expect(api.messages).toHaveBeenCalledTimes(before + 1);
+  expect(api.messages).toHaveBeenCalledTimes(2);
   await screen.unmount();
 });

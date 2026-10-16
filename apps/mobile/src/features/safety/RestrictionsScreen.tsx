@@ -1,8 +1,9 @@
+import { useFocusedLive } from '../live-updates';
 import { MultilineField } from '../../components/ui/MultilineField';
 import { largeAction } from '../../components/ui/largeAction';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -64,6 +65,8 @@ export function RestrictionsScreen() {
   const router = useRouter();
   const { authorized } = useAuth();
   const api = useMemo(() => new MySafetyApi(authorized), [authorized]);
+  const pages = useRef(1);
+  const requestEpoch = useRef(0);
   const [items, setItems] = useState<Restriction[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,48 +89,72 @@ export function RestrictionsScreen() {
   }, []);
 
   const refresh = useCallback(
-    async (pull = false) => {
+    async (pull = false, current: () => boolean = () => true) => {
+      const epoch = ++requestEpoch.current;
+      setLoadingMore(false);
       if (pull) setRefreshing(true);
       else setLoading(true);
       setError(false);
       try {
-        const page = await api.list();
+        const collected: Restriction[] = [];
+        let next: string | undefined;
+        let count = 0;
+        do {
+          const page = await api.list(next);
+          if (epoch !== requestEpoch.current || !current()) return;
+          collected.push(
+            ...page.items.filter((item) => !collected.some((old) => old.id === item.id)),
+          );
+          next = page.nextCursor ?? undefined;
+          count++;
+        } while (next && count < pages.current);
+        const page = { items: collected, nextCursor: next ?? null };
+        pages.current = count;
+        if (epoch !== requestEpoch.current || !current()) return;
         setItems(page.items);
         setCursor(page.nextCursor);
         setMoreError(false);
         return page;
       } catch {
-        setError(true);
+        if (epoch === requestEpoch.current && current()) setError(true);
         return null;
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (epoch === requestEpoch.current && current()) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
     [api],
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh]),
+  const liveRefresh = useCallback(
+    async (current: () => boolean) => {
+      await refresh(false, current);
+    },
+    [refresh],
   );
+  const fence = useFocusedLive(liveRefresh, 'safety');
 
   async function loadMore() {
     if (!cursor || loadingMore || loading) return;
+    const epoch = requestEpoch.current;
+    const active = fence();
     setLoadingMore(true);
     setMoreError(false);
     try {
       const page = await api.list(cursor);
+      if (epoch !== requestEpoch.current || !active()) return;
+      pages.current++;
       setItems((current) => [
         ...current,
         ...page.items.filter((item) => !current.some((old) => old.id === item.id)),
       ]);
       setCursor(page.nextCursor);
     } catch {
-      setMoreError(true);
+      if (epoch === requestEpoch.current && active()) setMoreError(true);
     } finally {
-      setLoadingMore(false);
+      if (epoch === requestEpoch.current && active()) setLoadingMore(false);
     }
   }
 
@@ -177,7 +204,7 @@ export function RestrictionsScreen() {
       ) : error && items.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.empty}>{t('safetyLoadFailed')}</Text>
-          <TouchableOpacity accessibilityRole="button" onPress={() => void refresh()}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => void refresh(false, fence())}>
             <Text style={styles.link}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
@@ -187,13 +214,16 @@ export function RestrictionsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           refreshing={refreshing}
-          onRefresh={() => void refresh(true)}
+          onRefresh={() => void refresh(true, fence())}
           onEndReached={() => void loadMore()}
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.empty}>{t('safetyEmpty')}</Text>
-              <TouchableOpacity accessibilityRole="button" onPress={() => void refresh(true)}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={() => void refresh(true, fence())}
+              >
                 <Text style={styles.link}>{t('safetyRefresh')}</Text>
               </TouchableOpacity>
             </View>

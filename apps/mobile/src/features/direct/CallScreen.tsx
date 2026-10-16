@@ -21,7 +21,9 @@ import { useAuth } from '../auth';
 import { createVoiceMedia } from '../voice-room';
 import { DirectApi, directError, type DirectCall } from './api';
 import { DirectHeading, directColors } from './components';
-import { useFocusedPolling } from './useFocusedPolling';
+import { useFocusedLive } from '../live-updates';
+import { useForegroundPolling } from '../../hooks/useForegroundPolling';
+import { mergeCall } from './mergeCall';
 import { queueCallEnd, flushCallEnds, locallyEnded } from './callRecovery';
 export function CallScreen({ callId }: { callId: string }) {
   useLanguage();
@@ -51,15 +53,9 @@ export function CallScreen({ callId }: { callId: string }) {
   const refresh = useCallback(
     async (current: () => boolean = () => true) => {
       try {
-        const value =
-          callRef.current?.status === 'ACTIVE'
-            ? await api.heartbeat(callId)
-            : await api.call(callId);
+        const value = await api.call(callId);
         if (!current() || leaving.current) return;
-        setCall((previous) => {
-          const peer = value.peer ?? previous?.peer;
-          return { ...value, ...(peer ? { peer } : {}) };
-        });
+        setCall((previous) => mergeCall(previous, value));
         if (!['RINGING', 'ACTIVE'].includes(value.status)) void media.disconnect();
       } catch (e) {
         if (current()) setError(directError(e));
@@ -67,7 +63,23 @@ export function CallScreen({ callId }: { callId: string }) {
     },
     [api, callId, media],
   );
-  useFocusedPolling(refresh, 5000);
+  useFocusedLive(refresh, 'calls', callId);
+  const heartbeat = useCallback(
+    async (current: () => boolean) => {
+      if (leaving.current) return;
+      try {
+        const value = await api.heartbeat(callId);
+        if (current() && !leaving.current) {
+          setCall((previous) => mergeCall(previous, value));
+          if (!['RINGING', 'ACTIVE'].includes(value.status)) void media.disconnect();
+        }
+      } catch (e) {
+        if (current()) setError(directError(e));
+      }
+    },
+    [api, callId, media],
+  );
+  useForegroundPolling(heartbeat, 5000, active);
   const leave = useCallback(
     (action: 'end' | 'reject' = 'end') => {
       if (leaving.current) return;

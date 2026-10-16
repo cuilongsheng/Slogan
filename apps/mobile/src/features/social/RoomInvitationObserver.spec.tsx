@@ -24,10 +24,10 @@ jest.mock('../room-discovery', () => ({ useJoinDraft: () => ({ beginDirect: mock
 jest.mock('./api', () => ({
   SocialApi: jest.fn(() => ({ invitations: mockInvitations, declineInvitation: mockDecline })),
 }));
-jest.mock('../../hooks/useForegroundPolling', () => ({
-  useForegroundPolling: (
+jest.mock('../live-updates', () => ({
+  useForegroundLive: (
     work: (current: () => boolean) => Promise<void>,
-    _interval: number,
+    _scope: string,
     enabled: boolean,
   ) => {
     const React = jest.requireActual('react') as typeof ReactTypes;

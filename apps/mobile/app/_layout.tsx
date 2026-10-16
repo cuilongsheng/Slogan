@@ -9,7 +9,7 @@ import { Stack, ErrorBoundary as RouterErrorBoundary } from 'expo-router';
 import { wrapRouterErrorBoundary } from '../src/services/observability';
 
 import { StartupGate } from '../src/providers/StartupGate';
-import { LiveUpdatesProvider } from '../src/features/live-updates';
+import { LiveUpdatesProvider, AccountUpdatesObserver } from '../src/features/live-updates';
 import { AuthProvider } from '../src/features/auth/context';
 import { EmailFlowProvider } from '../src/features/auth/emailFlow';
 import { ProfileDraftProvider } from '../src/features/profile/draft';
@@ -38,8 +38,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <StartupGate ready={loaded && localeReady}>
-        <AppUpdateProvider>
-          <LiveUpdatesProvider>
+        <LiveUpdatesProvider>
+          <AppUpdateProvider>
+            <AccountUpdatesObserver />
             <MessageUnreadProvider>
               <PresenceHeartbeat />
               <DirectCallObserver />
@@ -54,8 +55,8 @@ export default function RootLayout() {
                 </EmailFlowProvider>
               </RoomExitProvider>
             </MessageUnreadProvider>
-          </LiveUpdatesProvider>
-        </AppUpdateProvider>
+          </AppUpdateProvider>
+        </LiveUpdatesProvider>
       </StartupGate>
     </AuthProvider>
   );

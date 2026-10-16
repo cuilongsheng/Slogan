@@ -1,5 +1,6 @@
+import { useFocusedLive } from '../live-updates';
 import { randomUUID } from 'expo-crypto';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -29,22 +30,22 @@ export function SummaryScreen({ roomId }: { roomId: string }) {
   const [imported, setImported] = useState<Set<string>>(new Set());
   const [importError, setImportError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setLoadError(false);
-    try {
-      setSummary(await api.summary(roomId));
-    } catch {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, roomId]);
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh]),
+  const refresh = useCallback(
+    async (current: () => boolean = () => true) => {
+      setLoading(true);
+      setLoadError(false);
+      try {
+        const next = await api.summary(roomId);
+        if (current()) setSummary(next);
+      } catch {
+        if (current()) setLoadError(true);
+      } finally {
+        if (current()) setLoading(false);
+      }
+    },
+    [api, roomId],
   );
+  const fence = useFocusedLive(refresh, 'learning');
 
   async function importOne(id: string) {
     if (importing || imported.has(id)) return;
@@ -71,7 +72,7 @@ export function SummaryScreen({ roomId }: { roomId: string }) {
             <Text accessibilityRole="alert" style={styles.muted}>
               {t('summaryLoadFailed')}
             </Text>
-            <TouchableOpacity accessibilityRole="button" onPress={() => void refresh()}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => void refresh(fence())}>
               <Text style={styles.link}>{t('retry')}</Text>
             </TouchableOpacity>
           </View>
@@ -90,7 +91,7 @@ export function SummaryScreen({ roomId }: { roomId: string }) {
                       : t('summaryUnavailable')}
               </Text>
               {summary.status === 'PENDING' ? (
-                <TouchableOpacity accessibilityRole="button" onPress={() => void refresh()}>
+                <TouchableOpacity accessibilityRole="button" onPress={() => void refresh(fence())}>
                   <Text style={styles.link}>{t('summaryRefresh')}</Text>
                 </TouchableOpacity>
               ) : null}

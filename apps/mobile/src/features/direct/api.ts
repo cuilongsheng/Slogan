@@ -3,6 +3,9 @@ import { createMobileApiClient } from '../../api/client';
 import { RoomApiError, type AuthorizedRequest } from '../room-discovery';
 import type { MessageKey } from '../../services/locale';
 type Paths = SloganApiPaths;
+export type TimelinePage =
+  Paths['/v1/conversations/{conversationId}/timeline']['get']['responses'][200]['content']['application/json'];
+export type TimelineEntry = TimelinePage['items'][number];
 export type Conversation =
   Paths['/v1/conversations/{conversationId}']['get']['responses'][200]['content']['application/json'];
 export type ConversationPage =
@@ -71,6 +74,14 @@ export class DirectApi {
       this.client.GET('/v1/conversations/{conversationId}', {
         headers: { Authorization: `Bearer ${token}` },
         params: { path: { conversationId } },
+      }),
+    );
+  }
+  timeline(conversationId: string, query: { before?: string; after?: string } = {}) {
+    return this.invoke((token) =>
+      this.client.GET('/v1/conversations/{conversationId}/timeline', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { path: { conversationId }, query: { ...query, limit: 20 } },
       }),
     );
   }

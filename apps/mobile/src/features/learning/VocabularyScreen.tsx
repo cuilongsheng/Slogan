@@ -1,5 +1,6 @@
+import { useFocusedLive } from '../live-updates';
 import { MultilineField } from '../../components/ui/MultilineField';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -38,7 +39,9 @@ function VocabularyCard({
   const [note, setNote] = useState(item.note ?? '');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [conflict, setConflict] = useState(false);
+  const [serverConflict, setConflict] = useState(false);
+  const [editingVersion, setEditingVersion] = useState(item.version);
+  const conflict = serverConflict || (editing && editingVersion !== item.version);
   const [error, setError] = useState('');
 
   function commandError(cause: unknown) {
@@ -179,6 +182,9 @@ function VocabularyCard({
                 disabled={busy}
                 onPress={() => {
                   setEditing(true);
+                  setEditingVersion(item.version);
+                  setText(item.text);
+                  setNote(item.note ?? '');
                   setError('');
                 }}
               >
@@ -210,6 +216,7 @@ export function VocabularyScreen() {
     () => ({ ...(kind !== 'ALL' ? { kind } : {}), ...(favorites ? { favorite: true } : {}) }),
     [kind, favorites],
   );
+  const pages = useRef(1);
   const [items, setItems] = useState<VocabularyItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,51 +225,67 @@ export function VocabularyScreen() {
   const [moreError, setMoreError] = useState(false);
   const requestEpoch = useRef(0);
 
-  const refresh = useCallback(async () => {
-    const epoch = ++requestEpoch.current;
-    setLoading(true);
-    setError(false);
-    try {
-      const page = await api.list(filter);
-      if (epoch !== requestEpoch.current) return;
-      setItems(page.items);
-      setCursor(page.nextCursor ?? null);
-      setMoreError(false);
-    } catch {
-      if (epoch === requestEpoch.current) setError(true);
-    } finally {
-      if (epoch === requestEpoch.current) setLoading(false);
-    }
-  }, [api, filter]);
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh]),
+  const refresh = useCallback(
+    async (current: () => boolean = () => true) => {
+      const epoch = ++requestEpoch.current;
+      setLoadingMore(false);
+      setLoading(true);
+      setError(false);
+      try {
+        const collected: VocabularyItem[] = [];
+        let next: string | undefined;
+        let count = 0;
+        do {
+          const page = await api.list(filter, next);
+          if (epoch !== requestEpoch.current || !current()) return;
+          collected.push(
+            ...page.items.filter((item) => !collected.some((old) => old.id === item.id)),
+          );
+          next = page.nextCursor ?? undefined;
+          count++;
+        } while (next && count < pages.current);
+        const page = { items: collected, nextCursor: next ?? null };
+        pages.current = count;
+        if (epoch !== requestEpoch.current || !current()) return;
+        setItems(page.items);
+        setCursor(page.nextCursor ?? null);
+        setMoreError(false);
+      } catch {
+        if (epoch === requestEpoch.current && current()) setError(true);
+      } finally {
+        if (epoch === requestEpoch.current && current()) setLoading(false);
+      }
+    },
+    [api, filter],
   );
+  const fence = useFocusedLive(refresh, 'learning');
 
   async function loadMore() {
     if (!cursor || loading || loadingMore) return;
     const epoch = requestEpoch.current;
+    const active = fence();
     setLoadingMore(true);
     setMoreError(false);
     try {
       const page = await api.list(filter, cursor);
-      if (epoch !== requestEpoch.current) return;
+      if (epoch !== requestEpoch.current || !active()) return;
+      pages.current++;
       setItems((current) => [
         ...current,
         ...page.items.filter((item) => !current.some((old) => old.id === item.id)),
       ]);
       setCursor(page.nextCursor ?? null);
     } catch {
-      if (epoch === requestEpoch.current) setMoreError(true);
+      if (epoch === requestEpoch.current && active()) setMoreError(true);
     } finally {
-      if (epoch === requestEpoch.current) setLoadingMore(false);
+      if (epoch === requestEpoch.current && active()) setLoadingMore(false);
     }
   }
 
   function changeFilter(nextKind: KindFilter, nextFavorites: boolean) {
     if (nextKind === kind && nextFavorites === favorites) return;
     ++requestEpoch.current;
+    pages.current = 1;
     setItems([]);
     setCursor(null);
     setLoadingMore(false);
@@ -307,7 +330,7 @@ export function VocabularyScreen() {
           <Text accessibilityRole="alert" style={styles.error}>
             {t('vocabularyLoadFailed')}
           </Text>
-          <TouchableOpacity accessibilityRole="button" onPress={() => void refresh()}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => void refresh(fence())}>
             <Text style={styles.link}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
@@ -317,9 +340,9 @@ export function VocabularyScreen() {
       ) : (
         <FlatList
           data={items}
-          keyExtractor={(item) => `${item.id}:${item.version}`}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          onRefresh={() => void refresh()}
+          onRefresh={() => void refresh(fence())}
           refreshing={loading}
           onEndReached={() => void loadMore()}
           onEndReachedThreshold={0.3}
@@ -352,7 +375,7 @@ export function VocabularyScreen() {
                 )
               }
               onRemoved={(id) => setItems((current) => current.filter((entry) => entry.id !== id))}
-              onReload={() => void refresh()}
+              onReload={() => void refresh(fence())}
             />
           )}
         />

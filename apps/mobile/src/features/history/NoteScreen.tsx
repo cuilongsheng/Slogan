@@ -1,7 +1,8 @@
+import { useFocusedLive } from '../live-updates';
 import { MultilineField } from '../../components/ui/MultilineField';
 import { largeAction } from '../../components/ui/largeAction';
-import { useCallback, useMemo, useState } from 'react';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   ScrollView,
@@ -31,39 +32,82 @@ export function NoteScreen({ roomId }: { roomId: string }) {
   const [conflict, setConflict] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const note = await api.note(roomId);
-      setRemote(note);
-      setDraft(note.content ?? '');
-      setConflict(false);
-      setSaved(false);
-    } catch {
-      setError(t('noteLoadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [api, roomId]);
-  useFocusEffect(
-    useCallback(() => {
-      void reload();
-    }, [reload]),
+  const reload = useCallback(
+    async (current: () => boolean) => {
+      setLoading(true);
+      setError('');
+      try {
+        const note = await api.note(roomId);
+        if (!current()) return;
+        setRemote(note);
+        setDraft(note.content ?? '');
+        setConflict(false);
+        setSaved(false);
+      } catch {
+        if (current()) setError(t('noteLoadFailed'));
+      } finally {
+        if (current()) setLoading(false);
+      }
+    },
+    [api, roomId],
   );
+  const latest = useRef({ remote, draft, saving });
+  const deferred = useRef(false);
+  useLayoutEffect(() => {
+    latest.current = { remote, draft, saving };
+  }, [remote, draft, saving]);
+  const eventRefresh = useCallback(
+    async (current: () => boolean) => {
+      if (latest.current.saving) {
+        deferred.current = true;
+        return;
+      }
+      try {
+        const next = await api.note(roomId);
+        if (!current()) return;
+        const old = latest.current;
+        if (old.remote && old.remote.version === next.version) return;
+        if (old.remote && old.draft !== (old.remote.content ?? '')) {
+          setConflict(true);
+          setError(t('noteConflict'));
+          return;
+        }
+        setRemote(next);
+        setDraft(next.content ?? '');
+        setConflict(false);
+        setError('');
+      } catch {
+        if (current()) setError(t('noteLoadFailed'));
+      } finally {
+        if (current()) setLoading(false);
+      }
+    },
+    [api, roomId],
+  );
+  const fence = useFocusedLive(eventRefresh, 'learning');
+  useEffect(() => {
+    if (!saving && deferred.current) {
+      deferred.current = false;
+      void eventRefresh(fence());
+    }
+  }, [saving, eventRefresh, fence]);
 
   async function save(content = draft) {
     if (!remote || saving) return;
+    const current = fence();
     setSaving(true);
+    latest.current.saving = true;
     setError('');
     setSaved(false);
     try {
       const next = await api.saveNote(roomId, content, remote.version);
+      if (!current()) return;
       setRemote(next);
       setDraft(next.content ?? '');
       setConflict(false);
       setSaved(true);
     } catch (cause) {
+      if (!current()) return;
       if (cause instanceof RoomApiError && cause.status === 409) {
         setConflict(true);
         setError(t('noteConflict'));
@@ -85,7 +129,7 @@ export function NoteScreen({ roomId }: { roomId: string }) {
           <Text accessibilityRole="alert" style={styles.error}>
             {error}
           </Text>
-          <TouchableOpacity accessibilityRole="button" onPress={() => void reload()}>
+          <TouchableOpacity accessibilityRole="button" onPress={() => void reload(fence())}>
             <Text style={styles.link}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
@@ -112,7 +156,7 @@ export function NoteScreen({ roomId }: { roomId: string }) {
           ) : null}
           {saved ? <Text style={styles.saved}>{t('noteSaved')}</Text> : null}
           {conflict ? (
-            <TouchableOpacity accessibilityRole="button" onPress={() => void reload()}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => void reload(fence())}>
               <Text style={styles.link}>{t('noteLoadLatest')}</Text>
             </TouchableOpacity>
           ) : null}

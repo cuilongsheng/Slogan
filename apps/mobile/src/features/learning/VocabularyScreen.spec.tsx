@@ -1,3 +1,4 @@
+jest.mock('../live-updates', () => jest.requireActual('../../../test/live-updates'));
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { useAuth } from '../auth';
@@ -54,5 +55,5 @@ test('resets server cursor when switching filters', async () => {
   const page = await render(<VocabularyScreen />);
   await waitFor(() => expect(page.getByText('itinerary')).toBeTruthy());
   await fireEvent.press(page.getByRole('button', { name: 'Favorites' }));
-  await waitFor(() => expect(list).toHaveBeenLastCalledWith({ favorite: true }));
+  await waitFor(() => expect(list).toHaveBeenLastCalledWith({ favorite: true }, undefined));
 });

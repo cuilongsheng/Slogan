@@ -1,3 +1,4 @@
+jest.mock('../live-updates', () => jest.requireActual('../../../test/live-updates'));
 import { fireEvent, render } from '@testing-library/react-native';
 
 import { RoomDetailScreen } from './RoomDetailScreen';

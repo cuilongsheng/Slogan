@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText as Text } from '../../components/ui/AppText';
 import { RoomHeader, RoomPage } from '../../components/ui/RoomPage';
-import { useFocusedPolling } from '../../hooks/useFocusedPolling';
+import { useFocusedLive } from '../live-updates';
 import { LatestRequestQueue } from '../../services/latestRequestQueue';
 import { t, useLanguage, type MessageKey } from '../../services/locale';
 import { tokens } from '../../styles/tokens';
@@ -86,7 +86,7 @@ export function MyReportsScreen() {
     },
     [load],
   );
-  useFocusedPolling(poll, 5000);
+  useFocusedLive(poll, 'reports');
   const time = (value: string) =>
     new Date(value).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US');
   return (

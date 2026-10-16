@@ -1,3 +1,4 @@
+import { useForegroundLive } from '../live-updates';
 import { largeAction } from '../../components/ui/largeAction';
 import { AppText as Text } from '../../components/ui/AppText';
 import { roomLevelLabel } from '../room-discovery/presentation';
@@ -935,12 +936,17 @@ export function VoiceRoomScreen({
     if (snapshot.phase === 'left' || snapshot.phase === 'ended') router.replace('/rooms');
   }, [snapshot.phase, router]);
 
+  const stateChanged = useCallback(async () => {
+    await session.refresh();
+  }, [session]);
+  const safetyChanged = useCallback(async () => {
+    await session.refreshSafetyAlerts();
+  }, [session]);
+  useForegroundLive(stateChanged, 'room-state', snapshot.phase === 'active', roomId, false);
+  useForegroundLive(safetyChanged, 'room-safety', snapshot.phase === 'active', roomId, false);
   useEffect(() => {
     if (snapshot.phase !== 'active') return;
     let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
-    const interval = setInterval(() => {
-      if (foreground) void session.refresh();
-    }, 15_000);
     const subscription = AppState.addEventListener('change', (state) => {
       const wasForeground = foreground;
       foreground = state === 'active';
@@ -958,7 +964,6 @@ export function VoiceRoomScreen({
       }
     });
     return () => {
-      clearInterval(interval);
       subscription.remove();
     };
   }, [session, snapshot.phase]);

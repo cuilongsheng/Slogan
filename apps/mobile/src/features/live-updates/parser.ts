@@ -1,3 +1,6 @@
+import type { SloganApiPaths } from '@slogan/api-client';
+export type LiveEvent =
+  SloganApiPaths['/v1/me/live-updates']['get']['responses'][200]['content']['text/event-stream'];
 /** Incremental SSE parser: a partial UTF-8/codepoint or CRLF boundary is never a message. */
 export class EventStreamParser {
   private buffer = '';
@@ -26,4 +29,21 @@ export class EventStreamParser {
     }
     if (this.buffer.length > 16384) throw new Error('Live frame exceeds limit');
   }
+}
+
+export function liveEnvelope(value: unknown): LiveEvent {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('scope' in value) ||
+    typeof value.scope !== 'string' ||
+    !value.scope ||
+    value.scope.length > 64 ||
+    ('resourceId' in value &&
+      (typeof value.resourceId !== 'string' ||
+        !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value.resourceId))) ||
+    ('kind' in value && (typeof value.kind !== 'string' || !value.kind || value.kind.length > 24))
+  )
+    throw new Error('Live event unavailable');
+  return value as LiveEvent;
 }

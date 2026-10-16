@@ -1,5 +1,6 @@
+import { useFocusedLive } from '../live-updates';
 import { roomLevelLabel } from '../room-discovery/presentation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
@@ -29,34 +30,22 @@ export function AppointmentDetailScreen({ roomId }: { roomId: string }) {
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState(false);
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      setRoom(await api.scheduledDetail(roomId));
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, roomId]);
-  useEffect(() => {
-    let active = true;
-    void api
-      .scheduledDetail(roomId)
-      .then((value) => {
-        if (active) setRoom(value);
-      })
-      .catch(() => {
-        if (active) setError(true);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api, roomId]);
+  const load = useCallback(
+    async (current: () => boolean = () => true) => {
+      setLoading(true);
+      setError(false);
+      try {
+        const value = await api.scheduledDetail(roomId);
+        if (current()) setRoom(value);
+      } catch {
+        if (current()) setError(true);
+      } finally {
+        if (current()) setLoading(false);
+      }
+    },
+    [api, roomId],
+  );
+  const fence = useFocusedLive(load, 'rooms');
   async function cancelRoom() {
     if (cancelBusy) return;
     setCancelBusy(true);
@@ -79,7 +68,7 @@ export function AppointmentDetailScreen({ roomId }: { roomId: string }) {
       ) : error || !room ? (
         <View style={styles.center}>
           <Text style={styles.helper}>{t('roomsLoadFailed')}</Text>
-          <TouchableOpacity onPress={() => void load()}>
+          <TouchableOpacity onPress={() => void load(fence())}>
             <Text style={styles.retry}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>

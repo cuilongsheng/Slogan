@@ -1,3 +1,4 @@
+jest.mock('../live-updates', () => jest.requireActual('../../../test/live-updates'));
 import type * as ReactTypes from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { AppState, Text, TouchableOpacity, type AppStateStatus } from 'react-native';
