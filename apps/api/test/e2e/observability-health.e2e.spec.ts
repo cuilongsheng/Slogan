@@ -1,24 +1,23 @@
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { INestApplication } from '@nestjs/common';
-import { HealthModule } from '../../src/modules/health/health.module.js';
+import { AppModule } from '../../src/app.module.js';
 import { HealthService } from '../../src/modules/health/health.service.js';
 import { ConfigService } from '@nestjs/config';
-import { StructuredLogger } from '../../src/infrastructure/observability/structured-logger.service.js';
 import { configureApiApp } from '../../src/bootstrap/create-api-app.js';
-import { testEnvironment } from '../fixtures/environment.js';
+import { installTestEnvironment, testEnvironment } from '../fixtures/environment.js';
 
 describe('anonymous health contract', () => {
   let app: INestApplication;
   let ready = true;
+  const originalEnvironment = { ...process.env };
   beforeAll(async () => {
+    installTestEnvironment();
     const module = await Test.createTestingModule({
-      imports: [HealthModule],
-      providers: [
-        { provide: ConfigService, useValue: new ConfigService(testEnvironment()) },
-        StructuredLogger,
-      ],
+      imports: [AppModule],
     })
+      .overrideProvider(ConfigService)
+      .useValue(new ConfigService(testEnvironment()))
       .overrideProvider(HealthService)
       .useValue({ ready: async () => ready })
       .compile();
@@ -28,6 +27,7 @@ describe('anonymous health contract', () => {
   });
   afterAll(async () => {
     await app.close();
+    process.env = originalEnvironment;
   });
   it('distinguishes a live process from unavailable persistence without diagnostic leakage', async () => {
     const live = await request(app.getHttpServer()).get('/v1/health/live').expect(200);
@@ -38,6 +38,10 @@ describe('anonymous health contract', () => {
     const result = await request(app.getHttpServer()).get('/v1/health/ready').expect(503);
     expect(result.body).toEqual({ status: 'not_ready' });
     expect(result.headers['cache-control']).toBe('no-store');
+  });
+  it('keeps normal API routes protected by the real global access guard', async () => {
+    const result = await request(app.getHttpServer()).get('/v1/me').expect(401);
+    expect(result.body.code).toBe('ACCESS_TOKEN_INVALID');
   });
   it('isolates concurrent request identifiers and exposes only generated or legal correlation', async () => {
     const identifiers = [

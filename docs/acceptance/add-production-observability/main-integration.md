@@ -19,3 +19,15 @@ Admin 12、Mobile 66 suites / 249、shared 11、api-client 3 tests 通过；Page
 实际 Vercel fixture 编译的 6 个入口都保留：index、api/realtime、api/maintenance、api/maintenance-seed、api/live-updates、api/observability。该 fixture 无账号/部署动作；发布、数据库和外部监控的真实结果须另记。
 
 Android 真机验收由用户执行，清单见 ../../runbooks/observability-device-acceptance.md。没有用模拟测试替代设备证据；OpenSpec 未完成任务保持未完成。
+
+## 干净检出与云端预检补充
+
+CI 发现共享包只 typecheck 不产生 dist，已在两条检查流水线先构建 shared；Vercel 自动 Preview 单独执行 API build，API build 也显式构建 shared。在没有 shared/dist 的条件下 API 构建通过。新增 seed regression 的 ESM mock 类型及 response fixture 已随完整 typecheck 修正，API unit 为 54 suites / 287 tests。
+
+真实 Preview `49dea1b` 发现健康路径缺少 Public 标记，被全局 AccessTokenGuard 返回 401。健康 HTTP 测试改为完整 AppModule，修复前 2 tests 正确失败；修复只标记最小 HealthController 的 live/ready 为匿名，并验证 /v1/me 仍返回 401。未调整后台详细健康信息的权限。
+
+2026-10-16 已按用户授权使用 Better Stack Free：五个外部检查（API ready、Admin/Mobile 网站及各自同源 ready），3 分钟检查/故障确认/恢复；独立 monitor 60 秒 + 180 秒宽限、realtime recovery 300 秒 + 720 秒宽限。正式 ready/heartbeats 在新部署前暂停，网站外部检查 Up。两条 heartbeat URL 作为 Vercel Production sensitive 变量保存，值不进入证据。没有添加支付方式或启用付费功能。
+
+独立验收心跳 510022 发生真实 missing-heartbeat incident 1032744726，2026-10-16 02:55 UTC 自动恢复，持续 37 秒；当前账号 Gmail 已确认故障、恢复两封邮件，验收心跳已暂停。实际 Sentry sink adapter 在 test 环境发送固定技术 component OBSERVABILITY_ACCEPTANCE 的 OPEN/RESOLVED 事件，两次 ingest 均 2xx；云端 issue 153988134（OPERATIONAL_ALERT）及 153988137（OPERATIONAL_RECOVERY）已出现，邮件 SLOGAN-API-8 同时包含两者。这证明外部通知与 sink 送达，尚不替代生产 DB/outbox/调度链验收。
+
+截图只保存本机 `/Users/cls/.codex/observability-evidence/2026-10-16/`，不提交含邮箱或邮件登录链接的材料。生产迁移、guarded deployment 与无人请求时的持续扫描结果仍待记录。

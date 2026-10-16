@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../common/errors/error-response.dto.js';
 import type { Response } from 'express';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { HealthService } from './health.service.js';
 import { HealthRateLimitGuard } from './health-rate-limit.guard.js';
 
@@ -20,6 +21,7 @@ class ReadyResponse {
 
 @ApiTags('health')
 @ApiTooManyRequestsResponse({ type: ErrorResponseDto })
+@Public()
 @Controller('health')
 @UseGuards(HealthRateLimitGuard)
 export class HealthController {
