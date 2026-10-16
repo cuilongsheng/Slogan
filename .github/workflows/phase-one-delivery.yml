@@ -54,6 +54,8 @@ jobs:
         run: |
           pnpm --filter @slogan/api db:generate
           pnpm --filter @slogan/api db:migrate:deploy
+      - name: Build shared workspace exports
+        run: pnpm --filter @slogan/shared build
       - name: Check formatting, boundaries, lint, and types
         run: |
           pnpm format:check

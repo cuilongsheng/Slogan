@@ -1,6 +1,8 @@
 const jest = import.meta.jest;
 const send = jest.fn(async (..._args: unknown[]) => ({ messageId: 'fixture' }));
-jest.unstable_mockModule('@vercel/queue', () => ({
+(
+  jest as typeof jest & { unstable_mockModule(name: string, factory: () => unknown): void }
+).unstable_mockModule('@vercel/queue', () => ({
   QueueClient: class {
     send = send;
   },
@@ -23,7 +25,7 @@ async function invoke(authorized = true) {
   const response = {
     writeHead: jest.fn((value: number) => {
       status = value;
-      return response;
+      return { end: jest.fn() };
     }),
     end: jest.fn(),
   };
