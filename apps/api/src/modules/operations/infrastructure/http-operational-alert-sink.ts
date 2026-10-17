@@ -6,6 +6,19 @@ import type { Environment } from '../../../config/environment.js';
 import type { OperationalAlertSink } from '../domain/ports/incidents.repository.js';
 import { readSentryConfiguration } from '../../../config/sentry.js';
 
+function assertAcceptedStatus(status: number | undefined): void {
+  if (status && status >= 200 && status < 300) return;
+  const code =
+    status === 429
+      ? 'ALERT_SINK_RATE_LIMITED'
+      : status === 401 || status === 403
+        ? 'ALERT_SINK_AUTH_REJECTED'
+        : status === 400 || status === 422
+          ? 'ALERT_SINK_PAYLOAD_REJECTED'
+          : 'ALERT_SINK_REJECTED';
+  throw new Error(code);
+}
+
 @Injectable()
 export class HttpOperationalAlertSink implements OperationalAlertSink {
   constructor(private readonly config: ConfigService<Environment, true>) {}
@@ -80,8 +93,7 @@ export class HttpOperationalAlertSink implements OperationalAlertSink {
           { event_id: event.event_id, sent_at: new Date().toISOString() },
           [[{ type: 'event' }, event]],
         ]);
-        if (!result.statusCode || result.statusCode < 200 || result.statusCode >= 300)
-          throw new Error('ALERT_SINK_REJECTED');
+        assertAcceptedStatus(result.statusCode);
         return;
       }
       const response = await fetch(url!, {
@@ -91,7 +103,7 @@ export class HttpOperationalAlertSink implements OperationalAlertSink {
         signal: controller.signal,
       });
       await response.body?.cancel();
-      if (!response.ok) throw new Error('ALERT_SINK_REJECTED');
+      assertAcceptedStatus(response.status);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError')
         throw new Error('ALERT_SINK_TIMEOUT', { cause: error });

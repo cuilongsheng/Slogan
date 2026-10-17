@@ -10,7 +10,7 @@ No checkbox below is automatically marked complete because a later build passed.
 | `add-email-password-auth`                           | 5/6               | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit.                                |
 | `add-partner-discovery-direct-conversations`        | 7/18              | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit.                                |
 | `add-preview-experience-accounts`                   | 16/24             | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit.                                |
-| `add-production-observability`                      | 30/37             | Active closeout: monitored production release, browser source location, native monitoring-specific gap, shared pause/reseed and external operations.                                                |
+| `add-production-observability`                      | 31/37             | Active closeout: monitored production release, browser source location, native monitoring-specific gap, shared pause/reseed and external operations.                                                |
 | `add-public-trial-accounts`                         | 8/11              | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit.                                |
 | `compact-me-page-layout`                            | 2/3               | Implementation released or revised; current web/build evidence and owner-reported device acceptance must be reconciled against each remaining criterion. Do not invent per-scenario device results. |
 | `compact-social-list-layout`                        | 2/3               | Implementation released or revised; current web/build evidence and owner-reported device acceptance must be reconciled against each remaining criterion. Do not invent per-scenario device results. |
@@ -32,7 +32,7 @@ No checkbox below is automatically marked complete because a later build passed.
 | `simplify-direct-room-entry`                        | 9/10              | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit.                                |
 | `simplify-room-and-mobile-experience`               | 17/28             | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit.                                |
 
-Inventory: 25 active changes, 462 task records, 69 unchecked tasks. These totals are a documentation inventory, not a claim that every unchecked task is a V1 blocker.
+Inventory: 25 active changes, 462 task records, 68 unchecked tasks. These totals are a documentation inventory, not a claim that every unchecked task is a V1 blocker.
 
 Host-controls backend was reconciled and archived on2026-10-17 after the actual Cloud business receipt. Redis monthly-quota exhaustion is now an owner-accepted release blocker, not a code-completion shortcut; affected auth/streaming/provider tasks remain open.
 

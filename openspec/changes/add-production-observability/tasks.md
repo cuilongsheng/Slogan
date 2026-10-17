@@ -44,7 +44,7 @@
 ## 7. 授权目标环境与真实验收
 
 - [ ] 7.1 在远程配置/资源操作前确认目标环境、账号/项目、数据区域/保留、访问人员、预算、通知接收人和私有凭证来源，完成启用记录；验证目标与实际部署 SHA/消费者列表对应，未取得远程操作授权或所需输入时仅记录 BLOCKED，不购买服务或修改远端。
-- [ ] 7.2 在授权隔离目标部署 additive 迁移、健康接口、独立消费者及外部探活/心跳，按顺序启用并播种；验证 API 与两个 Pages 同源 ready 可探测、私有消费者不公开、检查周期与宽限符合实际计划、自动治理仍为原设置。
+- [x] 7.2 Deploy the additive migration, health endpoints and independent consumers to the authorized acceptance target; configure external checks/heartbeats, enable and seed in order. Verify API and both Pages same-origin ready responses, private consumer routing, actual check/grace periods and unchanged automatic-governance settings. Evidence: `docs/acceptance/v1-closeout/target-configuration-audit.json` and `monitor-pause-recovery.json`; notification delivery remains separate under7.5.
 - [ ] 7.3 使用实际 Admin/Mobile Web 与 API/消费者发布产物触发无内容故障，验证 Sentry 展示匹配版本的源码位置、预期错误过滤和接收人真实通知；保存去敏事件链接/截图和发布标识，验证公开 source maps 不可下载。
 - [ ] 7.4 在 Android 真机 release 验证 JS/结构化原生崩溃及重启补报、离线缓存 canary、真实断网/重连/主动离房；记录设备、build、原生符号与观测结果，验证不以 Expo Go、debug 包、模拟器或 Web fixture 替代真机验收，iOS 若实际启用则完成同等证据。
 - [ ] 7.5 在停止所有用户请求后验证独立扫描与 realtime recovery 持续运行，并受控停止扫描/制造积压/恢复 sink；验证外部通知真实送达、达到阈值的故障去重与恢复、完成 heartbeat 不伪报、受控 reseed 成功，且上报超时/额度拒绝不改变语音、已提交离房或业务队列重试。

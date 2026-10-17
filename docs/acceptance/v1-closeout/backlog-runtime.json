@@ -1,0 +1,113 @@
+{
+  "result": "PARTIAL",
+  "scope": "Actual production monitor observing one owned terminal FAILED command with real database creation time; no user HTTP traffic, global worker disable or provider room",
+  "harnessResult": {
+    "startedAt": "2026-10-17T14:22:41.088Z",
+    "result": "FAILED",
+    "strategy": "One owned terminal FAILED command. No long transaction, row lock or global worker disable. Actual database time and monitor schedule.",
+    "createdAt": "2026-10-17T14:22:45.846Z",
+    "nextAttemptAt": "2026-10-17T14:22:45.846Z",
+    "errorType": "Error",
+    "errorCode": null,
+    "check": "PRIVATE_DETAILS_RETAINED",
+    "ownedFixtureCleanup": {
+      "users": 0,
+      "rooms": 0,
+      "commands": 0,
+      "result": "SUCCEEDED"
+    }
+  },
+  "persistedLifecycleVerification": {
+    "checkedAt": "2026-10-17T14:29:53.547Z",
+    "incidents": [
+      {
+        "component": "REALTIME_COMMAND",
+        "category": "READINESS",
+        "status": "RESOLVED",
+        "occurrence": 1,
+        "observationCount": 2,
+        "reasonCode": "COMMAND_BACKLOG",
+        "firstObservedAt": "2026-10-17T14:27:01.425Z",
+        "lastObservedAt": "2026-10-17T14:29:01.199Z",
+        "resolvedAt": "2026-10-17T14:29:01.199Z",
+        "deliveryStatus": "FAILED",
+        "deliveredAt": null
+      }
+    ],
+    "states": [
+      {
+        "monitorKey": "SCAN",
+        "consecutiveFailures": 0,
+        "lastCompletedAt": "2026-10-17T14:29:01.393Z"
+      },
+      {
+        "monitorKey": "READINESS:REDIS",
+        "consecutiveFailures": 293,
+        "lastCompletedAt": "2026-10-17T14:29:01.067Z"
+      },
+      {
+        "monitorKey": "BACKLOG:REALTIME_COMMAND",
+        "consecutiveFailures": 0,
+        "lastCompletedAt": "2026-10-17T14:29:01.199Z"
+      }
+    ]
+  },
+  "earlierPreparationCleanup": {
+    "checkedAt": "2026-10-17T14:21:37.663Z",
+    "scope": "Exact privately recorded owned fixture identifiers only",
+    "users": 0,
+    "rooms": 0,
+    "commands": 0,
+    "result": "SUCCEEDED"
+  },
+  "localSinkControl": {
+    "checkedAt": "2026-10-17T14:31:12.927Z",
+    "scope": "One no-content controlled recovery notification using actual compiled sink and approved API ingest configuration",
+    "outcome": "ACCEPTED",
+    "response": {
+      "status": 200,
+      "retryAfter": null,
+      "rateLimits": null,
+      "errorHint": null
+    }
+  },
+  "assertions": {
+    "thresholdReached": true,
+    "singleOccurrenceWithRepeatedObservations": true,
+    "automaticRecoveryAfterOwnedFixtureCleanup": true,
+    "notificationDelivered": true,
+    "faultEmailForThisBacklogOccurrenceVerified": false
+  },
+  "boundaries": [
+    "Preparation attempts failed a fixture start/end constraint, an early worker-claim race and a client connection; exact owned fixture cleanup was verified. No real user room or command was altered.",
+    "The final harness also failed on a database client read and cleaned its fixture; it is not a whole-run PASS. Persisted monitor/incident facts were subsequently read independently.",
+    "The command was manufactured in terminal FAILED state and removed during cleanup. This does not establish real provider failure or business queue recovery.",
+    "Shared monitor CONTROL and business flags remain unchanged. Existing incident/outbox facts are preserved.",
+    "The recovery delivery initially failed with ALERT_SINK_REJECTED; its fifth attempt was DELIVERED at14:34:01.357Z, before any new code or configuration deployment. No private credential or provider plan was changed.",
+    "The whole harness remains FAILED because of its database client read. Its independently verified lifecycle/retry facts do not replace missing real-business timeout noninterference or OPEN-mail proof."
+  ],
+  "latestDeliveryVerification": {
+    "checkedAt": "2026-10-17T14:41:55.157Z",
+    "rows": [
+      {
+        "component": "REALTIME_COMMAND",
+        "status": "RESOLVED",
+        "observationCount": 2,
+        "resolvedAt": "2026-10-17T14:29:01.199Z",
+        "deliveryStatus": "DELIVERED",
+        "attempts": 5,
+        "lastError": null,
+        "nextAttemptAt": "2026-10-17T14:33:41.323Z",
+        "deliveredAt": "2026-10-17T14:34:01.357Z"
+      }
+    ]
+  },
+  "recoveryEmail": {
+    "receivedAt": "2026-10-17T14:35:49Z",
+    "recipient": "owner account",
+    "messageIncluded": "OPERATIONAL_RECOVERY",
+    "issue": "https://tonycui.sentry.io/issues/154287963/",
+    "digestWindow": "2026-10-17T14:31Z through2026-10-17T14:34Z",
+    "boundary": "Actual mailbox proof for a recovery message; the local controlled recovery also used the same fixed fingerprint. No separate OPEN notification or unique egress-event mapping is inferred."
+  }
+}

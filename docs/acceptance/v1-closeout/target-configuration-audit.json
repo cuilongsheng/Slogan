@@ -1,0 +1,89 @@
+{
+  "deployedCommit": "c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+  "vercelProject": "cuilongshengs-projects/slogan-api",
+  "ready": [
+    {
+      "service": "api",
+      "status": 200,
+      "bodyStatus": "ready",
+      "cacheControl": "no-store"
+    },
+    {
+      "service": "admin",
+      "status": 200,
+      "bodyStatus": "ready",
+      "cacheControl": "private, no-store"
+    },
+    {
+      "service": "mobile",
+      "status": 200,
+      "bodyStatus": "ready",
+      "cacheControl": "private, no-store"
+    }
+  ],
+  "privateEntrypoints": [
+    {
+      "path": "/api/observability",
+      "unauthenticatedGetStatus": 404
+    },
+    {
+      "path": "/api/realtime",
+      "unauthenticatedGetStatus": 404
+    },
+    {
+      "path": "/api/maintenance-seed",
+      "unauthenticatedGetStatus": 401
+    }
+  ],
+  "externalMonitors": {
+    "activeCount": 5,
+    "allUp": true,
+    "checkIntervalSeconds": 180,
+    "mobileSameOriginReady": {
+      "keyword": "\"status\":\"ready\"",
+      "method": "GET",
+      "confirmationSeconds": 180,
+      "recoverySeconds": 180,
+      "timeoutSeconds": 30,
+      "followRedirects": false,
+      "sslVerification": true,
+      "email": true
+    }
+  },
+  "heartbeats": {
+    "monitor": {
+      "up": true,
+      "periodSeconds": 60,
+      "graceSeconds": 180,
+      "email": true,
+      "configuredPeriodPlusGraceSeconds": 240
+    },
+    "realtime": {
+      "up": true,
+      "periodSeconds": 300,
+      "graceSeconds": 720,
+      "configuredPeriodPlusGraceSeconds": 1020
+    }
+  },
+  "governance": {
+    "privateConfigSnapshotEnabled": false,
+    "providerMetadataUnchangedSinceInitialConfiguration": true,
+    "noSettingsMutated": true
+  },
+  "sentry": {
+    "plan": "Business Plan Trial",
+    "trialDaysLeft": 11,
+    "paymentMethodOnFile": false,
+    "additionalSpendUSD": 0,
+    "logsUsageBytes": 0,
+    "applicationMetricsUsageBytes": 0,
+    "ownerRoleCount": 1,
+    "retentionBoundary": "No custom retention or paid extension was configured. Exact retained-error/span windows and post-trial entitlement still need plan-specific confirmation; task7.1 remains open."
+  },
+  "boundaries": [
+    "Public ready covers PostgreSQL and does not mean Redis quota recovery.",
+    "Anonymous rejection plus prior actual compiler/topic evidence establish private consumer routing; no unsigned callback was injected.",
+    "Task7.2 deployment/external checks do not certify notification delivery; task7.5 remains open because the new controlled notification was rejected."
+  ],
+  "checkedOn": "2026-10-17"
+}
