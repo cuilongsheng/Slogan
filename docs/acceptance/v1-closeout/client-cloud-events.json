@@ -1,0 +1,295 @@
+{
+  "checkedAt": "2026-10-17T09:23:05.438Z",
+  "scope": "actual published clients, browser-only API request abort, fresh unauthenticated context, no injected error or fabricated stack",
+  "results": [
+    {
+      "service": "mobile",
+      "publishedCommit": "5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40",
+      "eventObserved": true,
+      "events": [
+        {
+          "eventId": "c7144d304361461fb1e7454b6dbd9a8b",
+          "release": "slogan-mobile@5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40",
+          "dist": "5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40",
+          "message": "NETWORK_UNAVAILABLE",
+          "service": "mobile",
+          "resultCode": "NETWORK_UNAVAILABLE",
+          "sourceFrames": [
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 863,
+              "colno": 1444
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 867,
+              "colno": 2726
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 865,
+              "colno": 373
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 873,
+              "colno": 523
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1166,
+              "colno": 1479
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1144,
+              "colno": 1527
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1126,
+              "colno": 1212
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1126,
+              "colno": 497
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1166,
+              "colno": 1490
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1166,
+              "colno": 7452
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1166,
+              "colno": 1716
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1167,
+              "colno": 253
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 1166,
+              "colno": 1721
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 873,
+              "colno": 927
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 865,
+              "colno": 409
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 869,
+              "colno": 286
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 865,
+              "colno": 432
+            },
+            {
+              "filename": "app:///entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js",
+              "lineno": 868,
+              "colno": 418
+            }
+          ],
+          "debugIds": ["d917d2f4-1b32-4a26-9507-3c0fcc078252"]
+        }
+      ]
+    },
+    {
+      "service": "admin",
+      "publishedCommit": "5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40",
+      "eventObserved": true,
+      "events": [
+        {
+          "eventId": "107cf97811284815a0fcc05148b8eaeb",
+          "release": "slogan-admin@5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40",
+          "dist": "5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40",
+          "message": "BACKOFFICE_INTERNAL_ERROR",
+          "service": "admin",
+          "resultCode": "BACKOFFICE_INTERNAL_ERROR",
+          "sourceFrames": [],
+          "debugIds": []
+        }
+      ]
+    }
+  ],
+  "cloudVerification": {
+    "mobile": {
+      "issue": "https://tonycui.sentry.io/issues/154243022/",
+      "eventId": "c7144d304361461fb1e7454b6dbd9a8b",
+      "source": "apps/mobile/src/api/boundedFetch.ts",
+      "line": 12,
+      "column": 28,
+      "originalSourceDisplayed": true
+    },
+    "admin": {
+      "boundary": "Protected backoffice errors intentionally retain no source frames or Debug IDs; source-map presence is a build/upload proof, not a disclosed protected stack."
+    }
+  },
+  "publicMaps": {
+    "checkedAt": "2026-10-17T09:25:03.413Z",
+    "rows": [
+      {
+        "service": "admin",
+        "path": "/assets/index-CStg2TU_.js.map",
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "sourceMapPublic": false
+      },
+      {
+        "service": "mobile",
+        "path": "/_expo/static/js/web/entry-d1b47cf4ab4391b5acfd08e5bd5ccfc2.js.map",
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "sourceMapPublic": false
+      }
+    ]
+  },
+  "currentPublishedClientCapture": {
+    "checkedAt": "2026-10-17T09:37:48.893Z",
+    "scope": "actual published clients, normal unauthenticated requests, no network faults or injected errors",
+    "results": [
+      {
+        "service": "mobile",
+        "publishedCommit": "c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+        "expectedRejections": [],
+        "eventObserved": true,
+        "events": [
+          {
+            "eventId": "179f3fb9e1d340a28f2b2b832d18e2af",
+            "release": "slogan-mobile@c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+            "dist": "c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+            "message": "HTTP_SERVER_ERROR",
+            "service": "mobile",
+            "resultCode": "HTTP_SERVER_ERROR",
+            "sourceFrames": [
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 863,
+                "colno": 1444
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 867,
+                "colno": 2720
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 873,
+                "colno": 515
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 873,
+                "colno": 921
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 869,
+                "colno": 312
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 869,
+                "colno": 1415
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 1577,
+                "colno": 4396
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 1144,
+                "colno": 1549
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 1126,
+                "colno": 1212
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 1126,
+                "colno": 497
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 1577,
+                "colno": 4412
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 869,
+                "colno": 1651
+              },
+              {
+                "filename": "app:///entry-8a966f89a3b537b4df72536ce99ced72.js",
+                "lineno": 1176,
+                "colno": 1887
+              }
+            ],
+            "debugIds": ["305803d4-5f4b-4bd8-bc12-25d07dedd5e5"]
+          }
+        ]
+      },
+      {
+        "service": "admin",
+        "publishedCommit": "c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+        "expectedRejections": [],
+        "eventObserved": true,
+        "events": [
+          {
+            "eventId": "d26028242eb548cc80bbdac042c73871",
+            "release": "slogan-admin@c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+            "dist": "c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+            "message": "BACKOFFICE_INTERNAL_ERROR",
+            "service": "admin",
+            "resultCode": "BACKOFFICE_INTERNAL_ERROR",
+            "sourceFrames": [],
+            "debugIds": []
+          }
+        ]
+      }
+    ]
+  },
+  "expected4xxRuntimeFilter": {
+    "result": "BLOCKED",
+    "reason": "Production requests fail 503 in Redis-dependent rate limiting before the expected 401; local filter tests are separate evidence."
+  },
+  "currentPublishedSourceBoundary": "The c631 events were observed at SDK egress. Original-source cloud UI proof above is for 5cd; no separate c631 cloud UI proof is claimed.",
+  "currentPublicMaps": {
+    "checkedAt": "2026-10-17T09:56:15.015Z",
+    "rows": [
+      {
+        "service": "admin",
+        "path": "/assets/index-BCHsJNAj.js.map",
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "sourceMapPublic": false
+      },
+      {
+        "service": "mobile",
+        "path": "/_expo/static/js/web/entry-8a966f89a3b537b4df72536ce99ced72.js.map",
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "sourceMapPublic": false
+      }
+    ]
+  }
+}

@@ -32,8 +32,12 @@ Release must allow join/appointment/worker that understands reservation space to
 
 Final `pnpm verify:api` PASS: 102 unit tests, 81 integration tests, 46 HTTP E2E, a total of 229; lint, typecheck, build, and OpenAPI drift all passed. `pnpm format:check`, `pnpm deps:check` (180 modules / 583 dependencies) passed strict verification with OpenSpec. The directed test fixture had fixes for ESM mock references, historical participantIdentity required values, and reporting error formats; these are not considered product behavior changes.
 
-## Unfinished boundary
+## Historical unfinished boundary (2026-09-13)
 
 LiveKit Cloud configuration not provided, retaining real media at user discretion verification not completed. Google/WeChat provider verification still uses prefix records. Front-end, dual-device real voice, network disconnection recognition delay, product acceptance and production deployment are not completed, PASS will not be recorded.
 
 "Online" comes from a trusted presence with a valid identity/session; actual network disconnection requires provider observation for delivery. End of immediate revocation of new platform qualifications, media disconnection still relies on asynchronous provider cleanup; local fake-provider verification must not be described as real audio or Cloud verification passed.
+
+## Cloud completion — 2026-10-17
+
+Task4.4 is now complete. Actual Cloud admission, signed backend webhooks and bidirectional synthetic audio passed, followed by real five-minute host absence takeover, empty-room completion at its persisted five-minute boundary, and scheduled deadline cleanup without extra grace. See `v1-closeout/appointment-cloud.json` for timestamps, the corrected harness assertion and successful owned-fixture cleanup. No business clock/deadline was changed. This backend evidence does not establish human/native audibility or password-login recovery. The owner stopped further agent device testing; Redis free-quota exhaustion remains an explicitly accepted release blocker.

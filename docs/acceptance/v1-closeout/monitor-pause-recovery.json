@@ -1,0 +1,113 @@
+{
+  "pausedAt": "2026-10-17T09:20:56.843Z",
+  "environment": "production",
+  "currentDeployment": "dpl_HsSXFkbh2xQWGnRRn3BMYR7fWFRi",
+  "currentCommit": "5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40",
+  "retiredMonitorDeployment": "dpl_HEPFQsMFQVK4eTYoXrTp3313G5ui",
+  "activeAliasesOnRetiredDeployment": 0,
+  "retirement": "CONFIRMED",
+  "before": {
+    "completedWindow": "29870480",
+    "lastCompletedAt": "2026-10-17T09:20:01.293Z"
+  },
+  "decision": "Pause only independent observability scans; preserve realtime and maintenance facts and consumers.",
+  "resumedAt": "2026-10-17T09:25:47.003Z",
+  "stayedPaused": true,
+  "scanBeforeResume": {
+    "completedWindow": "29870481",
+    "lastCompletedAt": "2026-10-17T09:21:01.033Z"
+  },
+  "maintenanceBeforeResume": {
+    "key": "managed-maintenance",
+    "lastCompletedAt": "2026-10-17T09:25:40.318Z",
+    "lastSucceededAt": "2026-10-17T08:42:04.745Z"
+  },
+  "externalMonitorDownObserved": true,
+  "externalRealtimeHeartbeatUpObserved": true,
+  "sharedControlResume": true,
+  "platformCronReseedExit": 0,
+  "recoveredSnapshot": {
+    "checkedAt": "2026-10-17T09:26:40.542Z",
+    "rows": [
+      {
+        "monitorKey": "CONTROL",
+        "enabled": true,
+        "completedWindow": "-1",
+        "lastCompletedAt": null
+      },
+      {
+        "monitorKey": "SCAN",
+        "enabled": true,
+        "completedWindow": "29870486",
+        "lastCompletedAt": "2026-10-17T09:26:01.321Z"
+      }
+    ]
+  },
+  "externalHeartbeatRecovered": true,
+  "notification": {
+    "incident": "https://incidents.betterstack.com/team/t616003/incidents/1033316855",
+    "faultEmailReceivedAt": "2026-10-17T09:24:44Z",
+    "recoveryEmailReceivedAt": "2026-10-17T09:25:56Z",
+    "recipient": "owner account",
+    "verifiedFromActualMailbox": true
+  },
+  "boundaries": [
+    "One previously acquired legacy scan completed during retirement; the later quiescent window stayed fixed throughout pause.",
+    "Realtime heartbeat stayed UP. Maintenance attempts continued, but successful Redis-dependent maintenance remains degraded by the owner-accepted monthly quota.",
+    "The production shared control is enabled again. No business facts, incident/outbox records or realtime consumers were deleted."
+  ],
+  "subsequentOwnerRollover": {
+    "commit": "c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+    "pausedAt": "2026-10-17T09:36:14.435Z",
+    "reason": "Drain gate-aware previous monitor continuations so the quota-aware probe owns subsequent windows; preserve rollback deployment and all business consumers.",
+    "resumedAt": "2026-10-17T09:37:37.787Z",
+    "reseedExit": 0
+  },
+  "currentQuotaAwareOwner": {
+    "checkedAt": "2026-10-17T09:46:21.440Z",
+    "states": [
+      {
+        "monitorKey": "CONTROL",
+        "enabled": true,
+        "consecutiveFailures": 0,
+        "lastCompletedAt": null
+      },
+      {
+        "monitorKey": "READINESS:REDIS",
+        "enabled": true,
+        "consecutiveFailures": 10,
+        "lastCompletedAt": "2026-10-17T09:46:00.957Z"
+      },
+      {
+        "monitorKey": "SCAN",
+        "enabled": true,
+        "consecutiveFailures": 0,
+        "lastCompletedAt": "2026-10-17T09:46:01.180Z"
+      }
+    ],
+    "incidents": [
+      {
+        "component": "REDIS",
+        "category": "READINESS",
+        "status": "OPEN",
+        "reasonCode": "REDIS_UNAVAILABLE",
+        "observationCount": 8,
+        "firstObservedAt": "2026-10-17T09:39:01.648Z",
+        "deliveryStatus": "DELIVERED",
+        "deliveredAt": "2026-10-17T09:39:01.905Z"
+      }
+    ],
+    "monitorConsumerRequestsInThreeMinutes": {
+      "dpl_92pq5GqgD547YhKRiQEXBKsD6RKt": 3
+    }
+  },
+  "sentryMailDelivery": {
+    "rule": "Slogan errors and recovery email",
+    "ruleUrl": "https://tonycui.sentry.io/monitors/alerts/1371862/",
+    "faultEmailReceivedAt": "2026-10-17T09:02:26Z",
+    "recoveryEmailReceivedAt": "2026-10-17T09:11:39Z",
+    "recipient": "owner account",
+    "verifiedFromActualMailbox": true,
+    "boundary": "Actual OPERATIONAL_ALERT/OPERATIONAL_RECOVERY messages prove notification delivery. Earlier PING-based readiness recovery is not Redis write/coordination recovery; the new Lua-aware incident remains OPEN."
+  }
+}

@@ -34,6 +34,8 @@
 
 ## 6. Dependence on delivery and acceptance
 
-- [ ] 6.1 Execute opt-in smoke in the isolated LiveKit Cloud environment, verify the two-identity connection, minimum grants, old token rejection after online/offline identity revocation, DeleteRoom disconnection and signature webhook; write the real results to the acceptance record, record BLOCKED when there is no certificate and leave this item unfinished
+- [x] 6.1 Execute opt-in smoke in the isolated LiveKit Cloud environment, verify the two-identity connection, minimum grants, old token rejection after online/offline identity revocation, DeleteRoom disconnection and signature webhook; write the real results to the acceptance record, record BLOCKED when there is no certificate and leave this item unfinished
 - [x] 6.2 Record in `docs/acceptance/implement-livekit-voice-session-backend.md` the actual public API/transaction, event field, audit/outbox, identity history, queue and end entry for reuse by host-controls, and check them one by one by linking to the implementation and directed tests; clarify the pre-Cloud restrictions and host-controls/front-end/device acceptance, and the release state does not pretend to have been deployed
 - [x] 6.3 After completing all implementations of this change, run `pnpm verify:api`, `pnpm format:check` and `pnpm deps:check` once, record Node, command and PASS/FAIL/BLOCKED; compare current voice-session/basic-safety-reporting with this delta to establish a scope matrix, management scenarios are classified under the next change, and unrun items are not marked PASS
+
+Cloud completion2026-10-17: `docs/acceptance/v1-closeout/livekit-provider-cloud.json` and `livekit-business-cloud.json` jointly establish two actual Cloud identities, minimum grants, online/offline credential revocation, DeleteRoom disconnect and signed public webhook delivery. Password-exchange Redis quota and appointment deadline acceptance remain separate.

@@ -1,0 +1,35 @@
+{
+  "checkedAt": "2026-10-17",
+  "scope": "Actual production snapshot; restore is isolated PostgreSQL 17, not production cutover",
+  "guardedRun": 39018956922,
+  "job": 117358751471,
+  "backupArtifact": {
+    "id": 12095769968,
+    "bytes": 483633,
+    "encrypted": true,
+    "retentionDays": 14
+  },
+  "restoreStartedAt": "2026-10-17T09:04:52.2234Z",
+  "restorePassedAt": "2026-10-17T09:04:52.7574Z",
+  "invariantsPassedAt": "2026-10-17T09:04:53.9200Z",
+  "migrationCount": 34,
+  "invariantGroupsPassed": 12,
+  "boundedRestoreUpgradeInvariantElapsedSeconds": 1.7,
+  "latestMainBackup": {
+    "run": 39020693138,
+    "artifactId": 12096507681,
+    "bytes": 484005
+  },
+  "latestScheduledRecovery": {
+    "run": 39007201944,
+    "createdAt": "2026-10-17T05:41:46Z",
+    "result": "SUCCESS"
+  },
+  "configuredObjectives": {
+    "scheduleUtc": "01:23 daily; GitHub scheduling may be delayed",
+    "rpoSeconds": 86400,
+    "rtoSeconds": 3600,
+    "retentionDays": 14
+  },
+  "boundary": "Measured restore time is for this small snapshot and excludes download, provisioning and production cutover; it is not a production RTO guarantee or complete governance acceptance."
+}
