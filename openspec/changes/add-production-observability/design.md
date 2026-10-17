@@ -77,13 +77,13 @@ HTTP/heartbeat 使用独立 SaaS；优先候选 Better Stack，最终账号计�
 
 初始配置建议（实施时固化为可校验默认值，目标账号不支持时调整并记录实际检测窗口）：
 
-| 信号 | 检查与告警 | 恢复 |
-| --- | --- | --- |
-| API/Pages/同源代理不可用 | 外部每 3 分钟检查，连续 2 次失败通知 | 连续 2 次成功后通知 |
-| 独立监控扫描停止 | 60 秒扫描，180 秒 heartbeat 宽限 | 一次完整扫描并续接成功后恢复 |
-| realtime recovery 停止 | 完整扫描及续接后发送专用 heartbeat，空闲可为 300 秒，初始宽限 720 秒 | 后续完整扫描及续接成功 |
-| 启用依赖不可用 | 复用配置阈值，默认 3 个不同成功执行窗口的失败观察 | 成功探测关闭当前 occurrence |
-| 持久命令/关键作业超期 | 使用既有业务 deadline；没有 deadline 的实时清理初始 120 秒，按类别聚合 | 超期数量归零后恢复 |
+| 信号                     | 检查与告警                                                             | 恢复                         |
+| ------------------------ | ---------------------------------------------------------------------- | ---------------------------- |
+| API/Pages/同源代理不可用 | 外部每 3 分钟检查，连续 2 次失败通知                                   | 连续 2 次成功后通知          |
+| 独立监控扫描停止         | 60 秒扫描，180 秒 heartbeat 宽限                                       | 一次完整扫描并续接成功后恢复 |
+| realtime recovery 停止   | 完整扫描及续接后发送专用 heartbeat，空闲可为 300 秒，初始宽限 720 秒   | 后续完整扫描及续接成功       |
+| 启用依赖不可用           | 复用配置阈值，默认 3 个不同成功执行窗口的失败观察                      | 成功探测关闭当前 occurrence  |
+| 持久命令/关键作业超期    | 使用既有业务 deadline；没有 deadline 的实时清理初始 120 秒，按类别聚合 | 超期数量归零后恢复           |
 
 低流量不使用百分比告警；正常成员移除、离房、短暂重连不触发高优先级通知。故障类别和环境作为稳定指纹，默认至少 5 分钟冷却；通知只带固定服务/组件/类别、版本、时间与稳定码，不带用户/房间/命令 ID。外部 heartbeat 发送失败不让成功业务任务重试；若监控 heartbeat 失败，外部最终报丢失，不再用同一 sink 递归通知自身失败。DB 完全不可用时不能依赖 DB incident/outbox，靠外部 ready/heartbeat 通知。
 
@@ -126,6 +126,14 @@ Admin 在实际 `build:pages:admin` 的 Vite 路径生成 hidden source maps、�
 - 外部：真实通知送达接收人、实际检测窗口、队列 no-traffic 运行与停链/恢复、Sentry 限流或断网对业务无影响。验收文档与发布记录分开保存；所需验收可在授权的隔离目标环境完成，不要求生产部署才能归档。
 
 ## Open Questions
+
+### V1 closeout: shared monitor pause and monitored clients (2026-10-17)
+
+The owner authorized completing monitor stop/recovery and client release acceptance. Static environment flags on a new Vercel deployment cannot stop older recurring consumers. Add an `enabled` boolean to the existing monitor state table; a per-environment `CONTROL` row is read before seeding/claiming and before continuation/heartbeat. Missing control rows preserve current behavior. An operator pause drains queued callbacks without deleting incidents, delivery/outbox rows, leases or business facts. Resume requires an explicit idempotent reseed. The private CLI verifies the database target fingerprint and requires an environment-specific mutation confirmation; no public control endpoint or new role is introduced.
+
+This is an additive migration with default true. Deploy the migration before the compatible workers. Older binaries do not understand the shared gate and must be explicitly retired, protecting active aliases and using a gate-aware rollback revision. A pause does not cancel business realtime recovery. Rollback retains the column and data; resuming the shared gate alone does not restart a drained chain. Database failure rejects the scan without a false successful heartbeat. Target-environment pause/recovery and actual receiver notification remain acceptance requirements.
+
+The protected main Android build receives mobile-only upload credentials in the Production environment, binds JS/native release and build to its actual source SHA, uploads Hermes maps and applicable Java mappings through the official Expo/Sentry hooks, and verifies packaged public configuration and absence of the upload token. PR builds receive no upload secret. Native collection remains structured Java only; NDK collection, native source uploads, source-context capture, Logs, Profiling and Application Metrics remain disabled. Pages use their existing per-app upload/build paths with protected build secrets; no upload token enters a frontend public variable or runtime.
 
 ## Approved sampled tracing continuation
 

@@ -46,7 +46,11 @@ export class ObservabilityMonitorService {
     await this.scheduler.schedule(environment, this.interval(), window);
   }
   async seed(): Promise<void> {
-    if (this.enabled()) await this.schedule(this.currentWindow());
+    if (
+      this.enabled() &&
+      (await this.repository.enabled(this.config.get('OBSERVABILITY_ENVIRONMENT', { infer: true })))
+    )
+      await this.schedule(this.currentWindow());
   }
   async process(job: MonitorJob, managed = process.env.VERCEL === '1'): Promise<void> {
     if (!this.enabled()) return;
@@ -58,6 +62,7 @@ export class ObservabilityMonitorService {
     )
       throw new Error('INVALID_MONITOR_WINDOW');
     const environment = this.config.get('OBSERVABILITY_ENVIRONMENT', { infer: true });
+    if (!(await this.repository.enabled(environment))) return;
     const scan = await this.repository.claim(
       environment,
       job.window,
@@ -106,9 +111,10 @@ export class ObservabilityMonitorService {
       for (let count = 0; count < 5; count++)
         if (!(await this.incidents.dispatchOne()).handled) break;
       const next = Math.max(job.window + 1, this.currentWindow() + 1);
-      if (managed) await this.schedule(next);
+      const continuing = await this.repository.enabled(environment);
+      if (managed && continuing) await this.schedule(next);
       await this.repository.complete(claim, next, new Date());
-      await this.heartbeat.completed('monitor');
+      if (continuing) await this.heartbeat.completed('monitor');
     } catch (error) {
       await this.repository.release(claim).catch(() => undefined);
       throw error;

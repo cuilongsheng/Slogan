@@ -27,6 +27,7 @@ export function RoomPage({
   dark = false,
   direct = false,
   hidePreviewIndicator = false,
+  compactStatus = false,
 }: {
   children: ReactNode;
   ambient?: boolean;
@@ -34,6 +35,7 @@ export function RoomPage({
   dark?: boolean;
   direct?: boolean;
   hidePreviewIndicator?: boolean;
+  compactStatus?: boolean;
 }) {
   useEffect(() => installRoomAudioGestures(), []);
   const content = (
@@ -49,7 +51,10 @@ export function RoomPage({
       <StatusBar style={dark ? 'light' : 'dark'} />
       {ambient && <View pointerEvents="none" style={styles.ambient} />}
       {Platform.OS === 'web' && (
-        <View style={styles.previewStatus} accessibilityElementsHidden>
+        <View
+          style={[styles.previewStatus, compactStatus && { height: 37 }]}
+          accessibilityElementsHidden
+        >
           <Text
             style={[
               styles.previewTime,

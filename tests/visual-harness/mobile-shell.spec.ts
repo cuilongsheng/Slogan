@@ -74,3 +74,32 @@ test('room topic stays aligned with the back arrow in the same 40px row', async 
   );
   await capture(page, 'room-header');
 });
+
+test('Me retained report and Android update entries have icons and working actions', async ({
+  page,
+}) => {
+  await page.goto('/?screen=me&updates=1');
+  const reports = page.getByRole('button', { name: '我的投诉', exact: true });
+  const update = page.getByRole('button', { name: '检查更新', exact: true });
+  await expect(reports).toBeVisible();
+  await expect(update).toBeVisible();
+  await expect(reports.locator('img')).toHaveCount(2);
+  await expect(update.locator('img')).toHaveCount(2);
+  await update.click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (globalThis as typeof globalThis & { __updateChecks?: number }).__updateChecks,
+      ),
+    )
+    .toBe(1);
+  await page.screenshot({ path: 'docs/acceptance/v1-closeout/me-runtime-zh.png' });
+  await reports.click();
+  await expect(page).toHaveURL('/me/reports');
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/?screen=me&updates=1&language=en');
+  await expect(page.getByRole('button', { name: 'Log out', exact: true })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+    .toBe(true);
+});

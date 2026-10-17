@@ -11,4 +11,6 @@
 
 ## 3. Acceptance and release
 - [x] 3.1 Run affected checks and two-session browser flows once after implementation, compare final runtime images against source/approved deltas, and record device limits and all results.
-- [ ] 3.2 Publish the verified change through PR/main guarded workflows, verify live API/Pages/APK commit identity and download hash, and save a release receipt.
+- [x] 3.2 Publish the verified change through PR/main guarded workflows, verify live API/Pages/APK commit identity and download hash, and save a release receipt.
+
+Closeout2026-10-17: the release-only checkbox was stale. The guarded dd0289139e4aaaa4769acdb7de70f612aca4a943 release includes this implementation; API and both Pages matched, Android0.0.127/code1127 was published, and public bytes/signature/hash were verified. See `docs/releases/2026-10-17-unified-mobile-events.md` and `docs/acceptance/unified-mobile-events/release-verification.json`. All seven delta requirement blocks already match current main specs. This reconciliation adds no device or provider claim.

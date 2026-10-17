@@ -107,6 +107,7 @@ export default {
         )
           return mock;
         if (source === '../auth') return mock;
+        if (importer?.endsWith('/MeScreen.tsx') && source === '../app-updates') return mock;
         if (
           importer?.endsWith('/RoomExitProvider.tsx') &&
           source === '../../services/roomExitStorage'

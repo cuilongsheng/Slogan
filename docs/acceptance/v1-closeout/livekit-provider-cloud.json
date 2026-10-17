@@ -1,0 +1,24 @@
+{
+  "receipt": [
+    {
+      "checkedAt": "2026-10-17T08:26:59.265Z",
+      "release": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+      "evidence": "actual Cloud with two Chromium clients and synthetic audio; no microphone capture",
+      "checks": [
+        "minimum-grants",
+        "two-independent-cloud-clients",
+        "bidirectional-synthetic-audio-energy",
+        "online-revocation-rejects-old-token",
+        "offline-revocation-rejects-old-token",
+        "fresh-identity-connects-after-revocation",
+        "delete-room-disconnects-clients"
+      ],
+      "webhook": "not verified by this provider-only probe",
+      "businessLifecycle": "not verified by this provider-only probe"
+    },
+    {
+      "ownedProviderRoomCleanup": "SUCCEEDED"
+    }
+  ],
+  "earlierAttempts": "Four incomplete probes failed audio measurement before the harness attached a muted playback sink. Every owned room was cleaned up. Only the final probe establishes the listed PASS checks."
+}

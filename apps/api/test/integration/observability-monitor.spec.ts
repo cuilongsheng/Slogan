@@ -58,6 +58,24 @@ describe('persistent monitor windows and fencing', () => {
     if (result.kind !== 'claimed') throw new Error('Expected claim');
     return result.claim;
   };
+  it('shares pause/resume across independent workers and retains scan/incident facts', async () => {
+    const first = await createRepository();
+    const second = await createRepository();
+    expect(await first.enabled('test')).toBe(true);
+    await prisma.observabilityMonitorState.create({
+      data: { environment: 'test', monitorKey: 'CONTROL', enabled: false },
+    });
+    expect(await first.enabled('test')).toBe(false);
+    expect(await second.enabled('test')).toBe(false);
+    expect(await second.enabled('preview')).toBe(true);
+    await prisma.observabilityMonitorState.update({
+      where: { environment_monitorKey: { environment: 'test', monitorKey: 'CONTROL' } },
+      data: { enabled: true },
+    });
+    expect(await first.enabled('test')).toBe(true);
+    expect(await second.enabled('test')).toBe(true);
+    expect(await prisma.observabilityMonitorState.count()).toBe(1);
+  });
   it('survives separate executions, counts each window once and recovers after restart', async () => {
     for (let window = 1; window <= 3; window++) {
       const claim = await claimAt(window);

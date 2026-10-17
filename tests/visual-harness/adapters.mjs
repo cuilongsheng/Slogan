@@ -245,3 +245,11 @@ export const usePrivateRecorder = () => ({ start, stop, discard, elapsedSeconds:
 export const ImageManipulator = {};
 export const SaveFormat = { PNG: 'png' };
 export const launchImageLibraryAsync = async () => ({ canceled: true });
+
+export const useAppUpdates = () => ({
+  supported: new URL(location.href).searchParams.has('updates'),
+  checking: false,
+  check: () => {
+    globalThis.__updateChecks = (globalThis.__updateChecks ?? 0) + 1;
+  },
+});

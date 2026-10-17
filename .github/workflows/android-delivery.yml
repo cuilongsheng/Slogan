@@ -13,6 +13,7 @@ concurrency:
 jobs:
   build:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -44,6 +45,17 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build shared workspace exports
         run: pnpm --filter @slogan/shared build
+      - name: Prepare monitored main release
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          EXPO_PUBLIC_OBSERVABILITY_ENABLED: 'true'
+          EXPO_PUBLIC_OBSERVABILITY_ENVIRONMENT: production
+          EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: '0.1'
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_MOBILE_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_MOBILE_AUTH_TOKEN }}
+          SENTRY_ORG: tonycui
+          SENTRY_PROJECT: slogan-mobile
+        run: node scripts/release/prepare-android-observability.mjs
       - name: Check delivery and mobile code
         run: |
           node --test scripts/tests/release-delivery.test.mjs scripts/tests/pages-proxy.test.mjs
@@ -62,8 +74,12 @@ jobs:
           cache-provider: basic
       - name: Build arm64 release variant
         working-directory: apps/mobile/android
+        env:
+          SENTRY_AUTH_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.SENTRY_MOBILE_AUTH_TOKEN || '' }}
         run: ./gradlew assembleRelease --stacktrace --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a
       - name: Verify actual APK and generate metadata
+        env:
+          SENTRY_AUTH_TOKEN: ${{ github.ref == 'refs/heads/main' && secrets.SENTRY_MOBILE_AUTH_TOKEN || '' }}
         run: node scripts/release/verify-android.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

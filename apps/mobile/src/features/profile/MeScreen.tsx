@@ -3,6 +3,8 @@ import defaultAvatar from '../../../assets/profile/default-avatar.png';
 import vocabularyIcon from '../../../assets/profile/me-vocabulary.png';
 import restrictionsIcon from '../../../assets/profile/me-restrictions.png';
 import profileIcon from '../../../assets/profile/me-profile.png';
+import reportsIcon from '../../../assets/profile/me-reports.png';
+import updatesIcon from '../../../assets/profile/me-updates.png';
 import chevronIcon from '../../../assets/profile/me-chevron.png';
 import { AppText as Text } from '../../components/ui/AppText';
 import { useState } from 'react';
@@ -31,7 +33,7 @@ export function MeScreen() {
   };
   const [busy, setBusy] = useState(false);
   return (
-    <RoomPage direct ambient hidePreviewIndicator>
+    <RoomPage direct ambient hidePreviewIndicator compactStatus>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.settings}>
           <View style={styles.profile}>
@@ -95,8 +97,10 @@ export function MeScreen() {
             onPress={() => router.push('/me/vocabulary')}
           >
             <Image source={vocabularyIcon} style={styles.itemIcon} />
-            <Text style={styles.title}>{t('meVocabulary')}</Text>
-            <Image source={chevronIcon} style={styles.chevron} />
+            <View style={styles.itemBody}>
+              <Text style={styles.title}>{t('meVocabulary')}</Text>
+              <Image source={chevronIcon} style={styles.chevron} />
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
@@ -104,22 +108,32 @@ export function MeScreen() {
             onPress={() => router.push('/me/restrictions')}
           >
             <Image source={restrictionsIcon} style={styles.itemIcon} />
-            <Text style={styles.title}>{t('meRestrictions')}</Text>
-            <Image source={chevronIcon} style={styles.chevron} />
+            <View style={styles.itemBody}>
+              <Text style={styles.title}>{t('meRestrictions')}</Text>
+              <Image source={chevronIcon} style={styles.chevron} />
+            </View>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" style={styles.item} onPress={editProfile}>
             <Image source={profileIcon} style={styles.itemIcon} />
-            <Text style={styles.title}>{t('editProfile')}</Text>
-            <Image source={chevronIcon} style={styles.chevron} />
+            <View style={styles.itemBody}>
+              <Text style={styles.title}>{t('editProfile')}</Text>
+              <Image source={chevronIcon} style={styles.chevron} />
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.item}
             onPress={() => router.push('/me/reports')}
           >
-            <View style={styles.itemIcon} />
-            <Text style={styles.title}>{t('myReports')}</Text>
-            <Image source={chevronIcon} style={styles.chevron} />
+            <Image
+              source={reportsIcon}
+              style={styles.itemIcon}
+              tintColor={tokens.profile.color.menuInk}
+            />
+            <View style={[styles.itemBody, !updates.supported && styles.lastItemBody]}>
+              <Text style={styles.title}>{t('myReports')}</Text>
+              <Image source={chevronIcon} style={styles.chevron} />
+            </View>
           </TouchableOpacity>
           {updates.supported && (
             <TouchableOpacity
@@ -128,11 +142,17 @@ export function MeScreen() {
               disabled={updates.checking}
               onPress={updates.check}
             >
-              <View style={styles.itemIcon} />
-              <Text style={styles.title}>
-                {t(updates.checking ? 'updateChecking' : 'updateCheck')}
-              </Text>
-              <Image source={chevronIcon} style={styles.chevron} />
+              <Image
+                source={updatesIcon}
+                style={styles.itemIcon}
+                tintColor={tokens.profile.color.menuInk}
+              />
+              <View style={[styles.itemBody, styles.lastItemBody]}>
+                <Text style={styles.title}>
+                  {t(updates.checking ? 'updateChecking' : 'updateCheck')}
+                </Text>
+                <Image source={chevronIcon} style={styles.chevron} />
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -157,10 +177,9 @@ export function MeScreen() {
 }
 const styles = StyleSheet.create({
   settings: {
-    marginTop: -5,
     paddingHorizontal: 14,
-    paddingTop: 25,
-    paddingBottom: 25,
+    paddingTop: 41,
+    paddingBottom: 20,
     backgroundColor: tokens.color.panel,
   },
   profile: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
@@ -180,25 +199,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 18,
-    backgroundColor: tokens.color.purpleSoft,
+    backgroundColor: tokens.profile.color.optionSurface,
   },
   languageText: { color: tokens.color.purple, fontSize: 12, fontWeight: '500', lineHeight: 20 },
   list: {
-    marginLeft: 23,
-    marginRight: 17,
-    paddingTop: 14,
-    borderColor: tokens.color.divider,
+    marginTop: 10,
+    paddingLeft: 19,
+    paddingRight: 20,
+    paddingTop: 5,
+    paddingBottom: 8,
+    backgroundColor: tokens.color.panel,
   },
   logoutArea: { paddingHorizontal: 24, paddingBottom: 16 },
   item: {
+    minHeight: 43,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+  },
+  itemBody: {
+    flex: 1,
+    minWidth: 0,
     minHeight: 43,
     borderBottomWidth: 1,
     borderColor: tokens.color.divider,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 8,
     paddingVertical: 8,
   },
+  lastItemBody: { borderBottomWidth: 0 },
   itemIcon: { width: 24, height: 24 },
   chevron: { width: 24, height: 24, marginLeft: 'auto' },
   title: {

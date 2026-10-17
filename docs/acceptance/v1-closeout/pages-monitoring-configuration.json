@@ -1,0 +1,49 @@
+{
+  "configuredAt": "2026-10-17T08:30:11.259Z",
+  "receipts": [
+    {
+      "project": "slogan-preview-admin",
+      "environment": "production",
+      "configuredKeys": [
+        "VITE_OBSERVABILITY_ENABLED",
+        "VITE_OBSERVABILITY_ENVIRONMENT",
+        "VITE_SENTRY_DSN",
+        "VITE_SENTRY_TRACES_SAMPLE_RATE",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT",
+        "SENTRY_LOG_LEVEL",
+        "SENTRY_DISABLE_TELEMETRY"
+      ],
+      "previewKeys": [
+        "API_UPSTREAM_ORIGIN",
+        "VITE_API_BASE_URL",
+        "VITE_GOOGLE_WEB_CLIENT_ID"
+      ],
+      "privateTokenType": "secret_text",
+      "functionsAvailability": "Platform binding is available at build and runtime; owner explicitly approved this scope."
+    },
+    {
+      "project": "slogan-preview-mobile",
+      "environment": "production",
+      "configuredKeys": [
+        "EXPO_PUBLIC_OBSERVABILITY_ENABLED",
+        "EXPO_PUBLIC_OBSERVABILITY_ENVIRONMENT",
+        "EXPO_PUBLIC_SENTRY_DSN",
+        "EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT",
+        "SENTRY_LOG_LEVEL",
+        "SENTRY_DISABLE_TELEMETRY"
+      ],
+      "previewKeys": [
+        "API_UPSTREAM_ORIGIN",
+        "EXPO_PUBLIC_API_BASE_URL",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID"
+      ],
+      "privateTokenType": "secret_text",
+      "functionsAvailability": "Platform binding is available at build and runtime; owner explicitly approved this scope."
+    }
+  ]
+}

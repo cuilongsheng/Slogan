@@ -1,6 +1,7 @@
 model ObservabilityMonitorState {
   environment         String   @db.VarChar(16)
   monitorKey          String   @db.VarChar(64)
+  enabled             Boolean  @default(true)
   completedWindow     BigInt   @default(-1)
   nextWindow          BigInt?
   consecutiveFailures Int      @default(0)

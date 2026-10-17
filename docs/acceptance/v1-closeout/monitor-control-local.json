@@ -1,0 +1,37 @@
+{
+  "evidence": "owned loopback database and actual private CLI; not production",
+  "checkedAt": "2026-10-17T08:26:24.105Z",
+  "operations": [
+    {
+      "environment": "test",
+      "enabled": true,
+      "operation": "status",
+      "reseedRequired": false
+    },
+    {
+      "environment": "test",
+      "enabled": false,
+      "operation": "pause",
+      "reseedRequired": false
+    },
+    {
+      "environment": "test",
+      "enabled": false,
+      "operation": "status",
+      "reseedRequired": false
+    },
+    {
+      "environment": "test",
+      "enabled": true,
+      "operation": "resume",
+      "reseedRequired": true
+    },
+    {
+      "environment": "test",
+      "enabled": true,
+      "operation": "status",
+      "reseedRequired": false
+    }
+  ],
+  "wrongTargetRejected": true
+}

@@ -14,6 +14,8 @@ File `56nIowZmvBhb0QJvOlDQdU`, page `102:2766` / 02 UI, frame `152:1467` / Me / 
 
 ## Risks and Rollback
 
+2026-10-17 owner correction: use the current white profile/card surfaces,41px profile top padding within the123px identity surface,10px section gap, text-inset menu dividers and #F6F7FB language options. Retained My reports and Check for updates also receive original Foundations audit/refresh icons. Language option dimensions remain80×24. The original remains immutable. Restore the37px Web status preview for this screen only; native safe-area chrome remains platform owned. Existing action handlers, main navigation and logout are retained. The owner now authorizes affected checks and device/release acceptance.
+
 Small visible language controls need larger hit areas. Long names and English menu labels need bounded rows. Additional retained entries require scrolling on short screens; logout remains outside the scrolling list. Reverting MeScreen styles restores the previous layout; no data migration, provider or credential change.
 
 ## Evidence
