@@ -2,7 +2,7 @@
 
 ## 2026-10-17 closeout update (authoritative current status)
 
-Current tasks:30/37; change remains active. See [V1 closeout](v1-closeout/README.md) and [release receipt](../releases/2026-10-17-v1-closeout.md). API and both Pages now run c631c709. Actual Android0.0.135 Hermes upload/unpacked artifact checks passed, but production login/streaming fails because Redis free quota is exhausted, so the new APK was not published. Owner chose to remain free; published APK remains0.0.127.
+Current tasks: 31/37; change remains active. The follow-up target configuration audit completed 7.2, but the new controlled backlog notification initially failed and then recovered on its fifth attempt; rejection-classification source changes are queued, not deployed. See `v1-closeout/backlog-runtime.json`. See [V1 closeout](v1-closeout/README.md) and [release receipt](../releases/2026-10-17-v1-closeout.md). API and both Pages now run c631c709. Actual Android0.0.135 Hermes upload/unpacked artifact checks passed, but production login/streaming fails because Redis free quota is exhausted, so the new APK was not published. Owner chose to remain free; published APK remains0.0.127.
 
 Actual shared monitor pause/quiescence, private reseed, fault/recovery emails and Mobile Web original-source Sentry location are verified. Current monitor uses bounded keyless Lua instead of PING and correctly keeps Redis READINESS open. Native monitoring canaries/cache/restart, expected401 remote filtering, the full remote fault matrix and per-service shutdown remain incomplete. Owner stopped further device work. Earlier sections below retain their dated evidence and do not override this update.
 

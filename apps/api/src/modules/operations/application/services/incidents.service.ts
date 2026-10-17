@@ -109,6 +109,9 @@ export class IncidentsService {
       const code = [
         'ALERT_SINK_NOT_CONFIGURED',
         'ALERT_SINK_REJECTED',
+        'ALERT_SINK_RATE_LIMITED',
+        'ALERT_SINK_AUTH_REJECTED',
+        'ALERT_SINK_PAYLOAD_REJECTED',
         'ALERT_SINK_TIMEOUT',
       ].includes(candidate)
         ? candidate

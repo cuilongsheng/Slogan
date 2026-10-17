@@ -94,4 +94,20 @@ describe('operational incident delivery and aggregate privacy', () => {
       expect.any(Date),
     );
   });
+
+  it.each(['ALERT_SINK_RATE_LIMITED', 'ALERT_SINK_AUTH_REJECTED', 'ALERT_SINK_PAYLOAD_REJECTED'])(
+    'preserves %s without completing or changing delivery retries',
+    async (code) => {
+      const { repository, send, service } = fixture();
+      send.mockRejectedValueOnce(new Error(code));
+      const now = new Date('2026-09-22T00:00:00Z');
+      await expect(service.dispatchOne(now)).resolves.toEqual({ handled: true, delivered: false });
+      expect(repository.completeDelivery).not.toHaveBeenCalled();
+      expect(repository.failDelivery).toHaveBeenCalledWith(
+        claim,
+        code,
+        new Date(now.getTime() + 40_000),
+      );
+    },
+  );
 });
