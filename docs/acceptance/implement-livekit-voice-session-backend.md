@@ -6,8 +6,8 @@
 - Date: 2026-09-12; Node.js 24.21.0, pnpm 12.3.4.
 - Delivery scope: real-time credentials, current member query, signed webhooks, persistent presence/identity history, auditing/outbox, expiration end and recoverable queue.
 - Local verification: The final complete verification results are shown in the table below; it does not represent CI, Cloud or device acceptance.
-- **Cloud smoke: BLOCKED / not executed**。 LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET are not configured locally. The product owner has chosen to complete local verification first and the Cloud item remains outstanding.
-- Release status: **not deployed**; public network Webhook is not configured, production room is not created, and change is not archived.
+- Cloud backend smoke: PASS on2026-10-17 for the exact cases below; earlier local-only reservations are superseded only for these verified cases.
+- Released runtime dd0289139e4aaaa4769acdb7de70f612aca4a943 was verified with disposable owned Cloud fixtures and its public signed webhook. Backend tasks are22/22; archive state is recorded independently of the next release.
 - Room host leave/transfer/remove/reinvite/end and 60-second window are implemented by subsequent `implement-host-controls-backend`; this change does not declare that the entire voice room product has been completed.
 
 ## Local verification
@@ -104,3 +104,9 @@ The application rollback first stops the issuance of certificates, then retains 
 After configuring the isolated Cloud project and the public network signed Webhook, you still need to use two temporary test identities to verify the connection/microphone permissions, reject the old token reconnection of the online and offline identities, DeleteRoom disconnection and the real signed Webhook. Existing fake providers or parameter checks cannot replace these evidences. The credentials only write the local environment configuration and do not enter the chat, repository or logs.
 
 Refer to the current official boundaries: [Participant management](https://docs.livekit.io/intro/basics/rooms-participants-tracks/participants/), [Tokens and grants](https://docs.livekit.io/frontends/reference/tokens-grants/), [RemoveParticipantOptions](https://docs.livekit.io/reference/server-sdk-js/types/RemoveParticipantOptions.html). Implementation uses explicit undo cutoff and covers same-second nbf boundaries; Cloud behavior and clock premises must still be verified in practice.
+
+## Cloud completion —2026-10-17
+
+The [provider receipt](./v1-closeout/livekit-provider-cloud.json) verifies two actual Cloud clients, minimum token grants, online/offline old-token rejection and DeleteRoom disconnect. The [application receipt](./v1-closeout/livekit-business-cloud.json) adds real signed public webhook delivery, application-issued room credentials, bidirectional synthetic audio and durable backend/provider cleanup. The missing Cloud webhook endpoint was configured with the existing project signing key before the public delivery check. All owned fixtures were cleaned; no microphone capture or audio recording was performed.
+
+Fresh disposable user sessions were issued with the actual SessionService, because normal password exchange was independently blocked by Redis monthly quota. This is not login, native-device, human audibility or appointment-deadline acceptance. Those boundaries remain explicit in the closeout ledger. The later host-controls backend receipt independently covers host removal/re-invitation, succession and actual sixty-second timeout. Historical local verification above remains historical; current closeout verification is recorded in its own ledger.

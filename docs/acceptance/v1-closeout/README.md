@@ -1,78 +1,42 @@
 # V1 closeout — 2026-10-17
 
-Owner scope: revised Me styling and icons for My reports / Check for updates; local branch preservation and alignment; task/evidence reconciliation; monitor disable/recovery and operations acceptance; real voice acceptance; client Sentry; Android physical-device verification.
-
-Base: d532f7fa09e1f79f6e0c88b2739944bc68826cb9. Released runtime before this work: dd0289139e4aaaa4769acdb7de70f612aca4a943, Android 0.0.127.
+Code is integrated on main. API and both production Pages run `c631c709b407f96b024aacd9f6d5d9a562d4b5e4`. The complete release is **blocked by exhausted Redis free quota**, with the owner's explicit decision to remain free. Android 0.0.135 built successfully but was not published; the public APK remains0.0.127. Do not classify the whole V1 release as accepted or fully healthy.
 
 ## Work ledger
 
-- [x] Revised Me UI and source/runtime comparison.
-- [ ] Client monitored release pipeline and actual source/symbol upload. Local candidate artifact/upload PASS; protected main configuration and published artifact remain pending.
-- [ ] Actual browser Sentry events and symbolication.
-- [ ] Monitor disable/reseed, failure/recovery and operations evidence.
-- [x] Real Cloud provider/media and host lifecycle acceptance. Appointment deadline Cloud cases remain separate.
-- [x] Owner-reported Android verification; no further agent device debugging is authorized. See the boundary below.
-- [x] Preserve old develop workspace; align local branches without discarding work.
-- [ ] Reconcile completed tasks and archive only eligible changes.
-- [ ] Affected verification, guarded release and exact artifact receipt.
+| Scope                   | Result and evidence                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Me UI                   | Added report/update icons; revised white identity/menu surfaces, inset dividers, language options and spacing. Original Desktop Bridge frame 152:1467,390×844; `me-original.png` and `me-runtime-zh.png`. Retained five actions and main navigation are approved differences. Published Web includes the change; new native package is held.                                                      |
+| Branch cleanup          | Preserved 164 modified/untracked entries from old develop 6605470 in local stash 0ee8c9de10d6e73499034ac48e59f66219bc82b4. Clean local branches are aligned with main. Fully merged, unattached branches were pruned; unmerged branches and other chats' worktrees retained.                                                                                                                      |
+| Tasks and documents     | Five eligible changes reconciled and archived: shared-SSE chat history, invitation report feedback, host controls, LiveKit voice session and appointment backend. Current inventory: 25 active changes, 462 task records, 69 unchecked; counts are not a missing-code or V1-blocker count. See `change-inventory.md`.                                                                             |
+| Monitor pause/recovery  | Actual shared pause, quiescent scan window, external Down, realtime heartbeat staying Up, private cron reseed and external recovery passed. Both fault and recovery emails reached the owner. Legacy unaliased pre-gate deployment retired; only current c631 monitor owner observed. See `monitor-pause-recovery.json`.                                                                          |
+| Operations              | Actual encrypted production snapshot, isolated PostgreSQL 17 restore,34 migrations and 12 invariant groups passed. Daily scheduled recovery run also succeeded. See `operations-recovery.json`. This does not complete every governance/retention/provider criterion.                                                                                                                             |
+| Real Cloud voice        | Provider grants, bidirectional synthetic media, signed production webhooks, removal/old-token rejection, fresh re-invitation, explicit/default host succession, actual 60-second reconnect window, five-minute appointment takeover/vacancy and scheduled-end cleanup passed. Owned fixtures cleaned. See `livekit-provider-cloud.json`, `livekit-business-cloud.json`, `appointment-cloud.json`. |
+| Client Sentry           | GitHub Production and both Pages Production configurations saved within owner-approved scope. Actual Web events and Mobile original-source cloud location verified; maps are not publicly downloadable. Actual Android Hermes upload and unpacked artifact checks passed. See `client-cloud-events.json`, `android-main-artifact.json`, `pages-monitoring-configuration.json`.                    |
+| Android physical device | Owner reports existing device verification complete and explicitly stopped agent device debugging. No further device interaction. This does not prove native Sentry canaries/cache/restart behavior on the new package.                                                                                                                                                                           |
 
-## Visual source
+## Verification
 
-Desktop Bridge: Slogan / 02 UI / Me V3 152:1467,390×844. The original is unchanged. The owner requests two additional icons for retained report/update actions; use Foundations audit106:1375 and refresh105:1177. White identity/card surfaces, text-inset dividers, #F6F7FB language options and source spacing follow the current original. Main navigation and the additional report/update entries remain approved differences.
+Local API final full suite: 133 suites /671 tests passed, one opt-in suite/test skipped. API build/lint/typecheck, Mobile lint/typecheck/unit suite, dependency/format checks and official build/trace checks passed. The Redis probe correction separately passed seven provider tests and API lint/typecheck/build.
 
-## Device acceptance boundary
+Final full component-browser run passed 54/54 with one worker. Earlier two-worker run was 53 passed/one long-chat incoming-update anchor failure; its isolated reruns and final full suite passed without hiding the initial failure.
 
-On2026-10-17 the owner stated that physical-device verification was already completed and explicitly instructed the agent to stop device debugging. No further ADB/device interaction is performed. This is owner-reported acceptance of the tested application, not agent evidence of new Sentry-enabled native canaries, cache inspection, or source/symbol upload. Those monitoring-specific release checks remain separate and must not be marked as device PASS by inference.
+Both main commits 5cdcc4e and c631c709 passed Phase-one verification and Android builds. Current main workflow 39020693138 deployed the API after snapshot/restore/invariants/migration checks, then **failed** authenticated streaming on login503. Android workflow 39020693236 correctly blocked publication because that gate failed. These are recorded failures, not a fully green production release.
 
-## Local branch preservation
+Final documentation checks: root `pnpm format:check`, `git diff --check` and `openspec validate --all --strict` passed (69/69: 44 main specs and25 active changes). Informational duplicate-ADDED archive hints on other historical changes remain; those changes were not archived. No application test/build rerun was needed for the final documentation-only commit.
 
-The primary checkout had164 modified/untracked entries on develop6605470. They were preserved in an owner-only local stash0ee8c9de10d6e73499034ac48e59f66219bc82b4 before a clean fast-forward to origin/main d532f7f. Ignored runtime/private files were retained. Nothing from the old workspace was pushed or discarded. Other chats' worktrees remain untouched.
+## Evidence and privacy boundaries
 
-## Verification so far
+- Actual Cloud sessions used disposable fixtures and synthetic audio, with no microphone recording or human/native audibility claim. Fresh fixture sessions used the real SessionService; this is not password-login acceptance.
+- Current c631 Web SDK egress events are recorded. Original-source Sentry UI proof is from the previous 5cd build; protected Admin events intentionally omit stacks. Expected401 runtime filtering is blocked by upstream503; local tests do not replace this remote case.
+- Android 0.0.135 contains structured Java collection only, NDK disabled and no ProGuard mapping because minification is off. Hermes upload completed, server processing was pending at the build receipt, and deviceVerified is false.
+- Sentry uses Error Monitoring + 0.1 sampled Tracing only. Logs, Profiling, Application Metrics and Replay remain disabled. Credentials are private and excluded from source and evidence; approved Cloudflare Functions binding availability is documented separately.
+- Monitor heartbeat Up proves scan completion, not Redis coordination health. The corrected keyless Lua probe has a persistent OPEN Redis incident with delivered notification. Previous PING-based recovery and actual recovery-email delivery do not prove Redis quota recovery.
 
-- Mobile lint, typecheck and full unit suite passed.
-- Android monitoring configuration and existing release-delivery checks:6 passed.
-- API monitor unit8, PostgreSQL integration6 and additive-upgrade1 passed against an owned loopback database.
-- Me browser actions, icons and narrow layout:2 passed; source/runtime images are in this directory.
-- Full component-browser run:53 passed,1 failed in existing long-chat incoming-update anchor preservation. The failed case subsequently passed twice in isolation without a code change. The initial run remains a recorded failure; no whole-suite green claim is made from retries alone.
-- Full API suite:133 suites /671 tests passed; one existing opt-in suite/test skipped. API build and strict main-spec validation passed.
-- Final full component-browser run:54/54 passed with one worker. The earlier two-worker anchor failure remains recorded above; it is not hidden by the successful final run.
-- Official source-map/build/trace checks:7 passed.
+## Remaining limits
 
-## Archive reconciliation
+Redis is the current release blocker: actual keyless Lua requests are rejected at 500,000/500,000, login503 persists, authenticated streaming is not accepted and new APK publication remains held. The owner chose free service; no paid upgrade, payment method, quota bypass or replacement database was introduced. See `redis-quota-blocker.json`.
 
-`paginate-chat-history-over-shared-sse` is archived with28/28 tasks, all13 delta requirement blocks identical to the three current main specs, and the final hosted/API/Pages/APK receipt. The owner device statement above does not fabricate previously missing provider-specific evidence for other changes.
+Native Sentry crash/offline-cache/restart canaries remain unverified because further device work was stopped. The full remote backlog/sink-failure/SDK-timeout and per-service rollback matrix is incomplete; the monitor pause/reseed and actual notification cases above are complete. Provider-disabled email/SMS/WeChat/STT/AI features remain as previously reviewed. These limits retain their applicable OpenSpec unchecked tasks.
 
-## Local monitored artifacts
-
-Clean candidate b36035724b7c1efdab54c18aecce86008b2d1377 built an arm64 Android release successfully in5m48s. The official React Native Gradle hook uploaded the actual Hermes bundle/map pair with Debug ID ba0c25f8-c4b2-471e-8760-67ad8f0c2f53, matching commit-bound release/dist. Upload completed; server processing was pending at the build receipt. Android release minification is off, so no ProGuard mapping exists for this variant; native collection remains structured Java only and NDK collection/symbol upload is off.
-
-The actual APK passed signature continuity, non-debuggable/package/ABI/API/version/permissions,15 launcher-resource checks, embedded monitoring release/build/environment and private-token absence checks against unpacked bytes. See `android-monitored-artifact.json`. It was not published or installed. The owner's existing application device acceptance does not prove new monitoring canaries on this candidate.
-
-Both Admin and Mobile Web monitored Pages builds also completed from the same clean candidate with actual source-map uploads and public map removal. These are local build artifacts with real Sentry upload, not Cloudflare runtime or cloud symbolication acceptance.
-
-## Production configuration authorization
-
-On2026-10-17 the owner explicitly approved saving the existing upload token and mobile DSN as `SENTRY_MOBILE_AUTH_TOKEN` / `SENTRY_MOBILE_DSN` in GitHub Production, restricted to main Android build/verification steps. Both secret names were confirmed in the authenticated environment UI; existing main-only protection remains. No value is recorded here.
-
-The owner separately approved the existing Sentry upload token and each DSN in Cloudflare Production for slogan-preview-admin and slogan-preview-mobile, acknowledging that Pages also exposes these bindings to its Functions runtime. Both production configurations were saved and read back as the expected key/type inventory; the token and DSNs use secret_text. Preview configuration was not changed. See `pages-monitoring-configuration.json`. No plan upgrade or payment method was added.
-
-## Cloud provider acceptance
-
-The actual released LiveKit adapter and official browser SDK passed minimum grants, two independent Cloud clients, bidirectional synthetic audio energy, online/offline old-token rejection, a fresh identity and DeleteRoom disconnect. The final owned room cleanup succeeded. See `livekit-provider-cloud.json`. The probe captures no microphone or audio recording. Earlier incomplete probes are retained privately and are not classified as PASS. Public webhook delivery, host business lifecycle/deadline cases and human/native audio remain separate evidence boundaries.
-
-## Main integration and Cloud business acceptance
-
-PR38 merged as5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40. Both PR verification and Android build passed. The main Phase-one verification subsequently passed; its guarded release remains separately tracked.
-
-The missing LiveKit production webhook was created using the existing signing key and public endpoint. Actual signed join/leave events reached the backend, not a test receiver. See `livekit-business-cloud.json` for real application credentials, bidirectional synthetic media, removal/old-token rejection, fresh re-invitation, explicit/default host succession, in-window reconnection, actual sixty-second timeout without early transfer and durable end cleanup. Fresh disposable sessions used the actual SessionService; this is not password-login acceptance. All owned fixtures were cleaned. The host-controls backend change is archived with21/21 tasks after syncing its two delta blocks and preserving unrelated current requirements.
-
-## Owner-accepted release blocker
-
-Upstash reported the500,000-command monthly free allowance exhausted on2026-10-17. Actual Redis Lua write rejection and production password-exchange503 were observed, while PING and missing-key GET remained available. The owner explicitly chose to retain the free plan and record a release blocker. No upgrade, payment method or replacement database was created. See `redis-quota-blocker.json`. Dependency recovery, authenticated streaming and quota-dependent operations cannot be marked PASS until the allowance is restored.
-
-The dependency readiness correction uses bounded keyless read-only Lua rather than PING, retaining the fixed error code and failed-connection reset. Its two regression cases plus the existing five provider-readiness cases passed; API lint, typecheck and build passed. This correction has no public health-contract, auth decision, schema or data change.
-
-## Notification evidence
-
-The owner mailbox received actual Sentry API fault alerts at08:45 and08:51 UTC on2026-10-17. Sentry issue154238137 restored the released `redis-email-quota.ts:81:13` source with release/dist dd0289139e4aaaa4769acdb7de70f612aca4a943. Better Stack incident1032971226 records a failure email sent and loaded, followed by automatic resolution; this historical explicit-failure test does not replace the current shared pause/reseed and recovery-email acceptance. Five external monitors and both production heartbeats were UP when checked today.
+After Redis allowance is restored, verify Lua readiness and real login, then rerun guarded authenticated streaming before releasing a new Android artifact from its exact source SHA. Do not bypass gates or silently publish the held package. See `../../releases/2026-10-17-v1-closeout.md` for deployment and rollback identifiers.

@@ -1,5 +1,11 @@
 # add-production-observability：实施与验收记录
 
+## 2026-10-17 closeout update (authoritative current status)
+
+Current tasks:30/37; change remains active. See [V1 closeout](v1-closeout/README.md) and [release receipt](../releases/2026-10-17-v1-closeout.md). API and both Pages now run c631c709. Actual Android0.0.135 Hermes upload/unpacked artifact checks passed, but production login/streaming fails because Redis free quota is exhausted, so the new APK was not published. Owner chose to remain free; published APK remains0.0.127.
+
+Actual shared monitor pause/quiescence, private reseed, fault/recovery emails and Mobile Web original-source Sentry location are verified. Current monitor uses bounded keyless Lua instead of PING and correctly keeps Redis READINESS open. Native monitoring canaries/cache/restart, expected401 remote filtering, the full remote fault matrix and per-service shutdown remain incomplete. Owner stopped further device work. Earlier sections below retain their dated evidence and do not override this update.
+
 更新：2026-10-15。代码与 Sentry 账号配置已完成本轮续作，真实源码上传和实际错误邮件已验证；完整 change 保持未归档。当前任务完成 29/37。当前状态及证据如下；文末保留 2026-10-14 的历史本地验证记录，历史阻塞不代表当前状态。
 
 ## 当前交付

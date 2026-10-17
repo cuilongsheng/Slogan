@@ -32,7 +32,7 @@
 ## 5. 定位产物与发布构建
 
 - [x] 5.1 在 Admin/Mobile Web 的实际 Pages 构建路径生成、匹配、上传并删除 source maps；用构建产物检查和受控上传测试验证 release/debug ID 正确、所有公开 map 与源码档案排除、上传凭证未进入 bundle、worker 或构建日志。
-- [ ] 5.2 为 Nest dist、Vercel 独立函数与 Android release 配置匹配的 maps/原生符号上传，明确不同编译器与 build 的定位清单；用产物 smoke 验证每个目标的文件与版本匹配，不将本地 dist 或 Expo export 当作其他目标的发布符号。
+- [x] 5.2 为 Nest dist、Vercel 独立函数与 Android release 配置匹配的 maps/原生符号上传，明确不同编译器与 build 的定位清单；用产物 smoke 验证每个目标的文件与版本匹配，不将本地 dist 或 Expo export 当作其他目标的发布符号。
 - [x] 5.3 增加启用监控的 release 上传失败门禁、私有构建凭证注入和逐服务关闭路径；用构建/配置检查验证缺少上传配置时拒绝受监控发布、监控关闭的本地构建仍可执行，客户端关闭需要重建且不能靠服务端开关控制旧安装包。
 
 ## 6. 本地集成证据与运行手册

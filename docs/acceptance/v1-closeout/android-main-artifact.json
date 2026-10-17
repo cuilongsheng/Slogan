@@ -1,0 +1,51 @@
+{
+  "workflowRun": 39020693236,
+  "buildJob": 117361734920,
+  "buildResult": "SUCCESS",
+  "metadata": {
+    "commit": "c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+    "version": "0.0.135",
+    "versionCode": 1135,
+    "package": "com.slogan.mobile",
+    "apiOrigin": "https://slogan-api-pi.vercel.app",
+    "sha256": "dd6ea40904ce5440bdd170cbfb23eeded19cb15692506592a666d2b8e15d7303",
+    "bytes": 88507154,
+    "abi": ["arm64-v8a"],
+    "signing": "controlled-debug",
+    "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c",
+    "launcherResources": 15,
+    "roomUiRevision": "direct-entry-v2",
+    "updaterRevision": "controlled-apk-v1",
+    "observability": {
+      "enabled": true,
+      "release": "slogan-mobile@c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+      "build": "c631c709b407f96b024aacd9f6d5d9a562d4b5e4",
+      "nativeCollection": "structured-java-only"
+    },
+    "builtAt": "2026-10-17T09:34:55.557Z",
+    "deviceVerified": false
+  },
+  "sourceMap": {
+    "uploader": "official Sentry React Native Gradle hook",
+    "artifact": "actual release Hermes bundle and composed map",
+    "debugId": "a805e40b-2493-4394-8e52-aa62fe8070fb",
+    "upload": "COMPLETE",
+    "serverProcessingAtBuildReceipt": "PENDING",
+    "proguardMapping": "Not generated: minification disabled",
+    "nativeCollection": "Structured Java only; NDK disabled"
+  },
+  "actualUnpackedArtifactChecks": "PASS: package/version/ABI/signature/resources/release binding and absence of private upload token",
+  "published": false,
+  "publishGate": {
+    "job": 117364632510,
+    "result": "BLOCKED",
+    "reason": "Guarded production API failed authenticated streaming because Redis free quota is exhausted"
+  },
+  "retainedPublished": {
+    "version": "0.0.127",
+    "versionCode": 1127,
+    "commit": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+    "sha256": "e0abfc051a7016010fb18c88471533c0b630ea31210b9baf0ace10de7a8355a1"
+  },
+  "deviceBoundary": "Owner reported previous device verification and stopped further agent device work. This new monitoring build has no native canary/device/cache verification."
+}

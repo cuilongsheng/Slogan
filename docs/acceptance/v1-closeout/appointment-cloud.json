@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-10-17T09:49:27.808Z",
+  "result": "PASS",
+  "scope": "Owned isolated production fixtures using actual application sessions, LiveKit Cloud SDK and signed production webhooks; synthetic bidirectional media; real wall-clock waits.",
+  "checks": [
+    {
+      "check": "actual-appointment-admission-signed-webhooks-and-bidirectional-synthetic-audio",
+      "checkedAt": "2026-10-17T09:34:07.151Z"
+    },
+    {
+      "check": "actual-scheduled-deadline-end-without-extra-grace",
+      "checkedAt": "2026-10-17T09:35:17.296Z",
+      "deadline": "2026-10-17T09:35:13.244Z"
+    },
+    {
+      "check": "actual-five-minute-host-absence-earliest-online-member-takeover",
+      "checkedAt": "2026-10-17T09:38:43.370Z",
+      "deadline": "2026-10-17T09:38:43.244Z"
+    },
+    {
+      "check": "actual-scheduled-end-after-takeover-cloud-cleanup",
+      "checkedAt": "2026-10-17T09:39:28.188Z"
+    }
+  ],
+  "emptyFiveMinuteWindow": {
+    "result": "PASS",
+    "checkedAt": "2026-10-17T09:49:27.808Z",
+    "case": "actual-empty-five-minute-window-end-without-provider-room",
+    "startsAt": "2026-10-17T09:44:24.549Z",
+    "initialHostDeadline": "2026-10-17T09:49:24.549Z",
+    "endedAt": "2026-10-17T09:49:24.600Z",
+    "endedReason": "EMPTY_AFTER_START_WINDOW",
+    "authoritativeWindowDurationMs": 300051,
+    "boundary": "Assertions use persisted server deadline/endedAt, not a sub-millisecond comparison against another machine clock. No clock or deadline was modified.",
+    "ownedFixtureCleanup": "SUCCEEDED"
+  },
+  "boundaries": [
+    "The first probe completed its four listed checks but failed a local Date.now deadline assertion; it is not recorded as a whole-probe PASS. The isolated repeat compares authoritative persisted deadline/endedAt and passed without changing either clock or deadline.",
+    "The first cleanup hit RoomReservation RESTRICT; owned reservations were subsequently removed before parent fixtures. All six original users/three rooms and the isolated repeat fixture were cleaned.",
+    "No password-login, human audibility, microphone recording or native-device acceptance is inferred. Redis quota remains a separate authentication/release blocker."
+  ]
+}
