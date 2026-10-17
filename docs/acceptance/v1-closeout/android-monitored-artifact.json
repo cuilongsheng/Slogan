@@ -1,0 +1,34 @@
+{
+  "commit": "b36035724b7c1efdab54c18aecce86008b2d1377",
+  "version": "0.0.128-local",
+  "versionCode": 1128,
+  "package": "com.slogan.mobile",
+  "apiOrigin": "https://slogan-api-pi.vercel.app",
+  "sha256": "4c58bee44193240a88302f30ed5e8d3cb59b4d0c751cf683795a6ede7a0dd4d3",
+  "bytes": 88507122,
+  "abi": [
+    "arm64-v8a"
+  ],
+  "signing": "controlled-debug",
+  "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c",
+  "launcherResources": 15,
+  "roomUiRevision": "direct-entry-v2",
+  "updaterRevision": "controlled-apk-v1",
+  "observability": {
+    "enabled": true,
+    "release": "slogan-mobile@b36035724b7c1efdab54c18aecce86008b2d1377",
+    "build": "b36035724b7c1efdab54c18aecce86008b2d1377",
+    "nativeCollection": "structured-java-only"
+  },
+  "builtAt": "2026-10-17T08:21:17.565Z",
+  "deviceVerified": false,
+  "sourceMapUpload": {
+    "status": "uploaded-processing-pending-at-build",
+    "debugId": "ba0c25f8-c4b2-471e-8760-67ad8f0c2f53",
+    "files": [
+      "index.android.bundle",
+      "index.android.bundle.map"
+    ]
+  },
+  "deviceBoundary": "Not installed or device tested by the agent; the owner stopped further device debugging."
+}

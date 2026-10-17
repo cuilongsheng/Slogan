@@ -7,7 +7,7 @@ Base: d532f7fa09e1f79f6e0c88b2739944bc68826cb9. Released runtime before this wor
 ## Work ledger
 
 - [x] Revised Me UI and source/runtime comparison.
-- [ ] Client monitored release pipeline and actual source/symbol upload.
+- [ ] Client monitored release pipeline and actual source/symbol upload. Local candidate artifact/upload PASS; protected main configuration and published artifact remain pending.
 - [ ] Actual browser Sentry events and symbolication.
 - [ ] Monitor disable/reseed, failure/recovery and operations evidence.
 - [ ] Real Cloud voice lifecycle and media acceptance.
@@ -42,3 +42,21 @@ The primary checkout had164 modified/untracked entries on develop6605470. They w
 ## Archive reconciliation
 
 `paginate-chat-history-over-shared-sse` is archived with28/28 tasks, all13 delta requirement blocks identical to the three current main specs, and the final hosted/API/Pages/APK receipt. The owner device statement above does not fabricate previously missing provider-specific evidence for other changes.
+
+## Local monitored artifacts
+
+Clean candidate b36035724b7c1efdab54c18aecce86008b2d1377 built an arm64 Android release successfully in5m48s. The official React Native Gradle hook uploaded the actual Hermes bundle/map pair with Debug ID ba0c25f8-c4b2-471e-8760-67ad8f0c2f53, matching commit-bound release/dist. Upload completed; server processing was pending at the build receipt. Android release minification is off, so no ProGuard mapping exists for this variant; native collection remains structured Java only and NDK collection/symbol upload is off.
+
+The actual APK passed signature continuity, non-debuggable/package/ABI/API/version/permissions,15 launcher-resource checks, embedded monitoring release/build/environment and private-token absence checks against unpacked bytes. See `android-monitored-artifact.json`. It was not published or installed. The owner's existing application device acceptance does not prove new monitoring canaries on this candidate.
+
+Both Admin and Mobile Web monitored Pages builds also completed from the same clean candidate with actual source-map uploads and public map removal. These are local build artifacts with real Sentry upload, not Cloudflare runtime or cloud symbolication acceptance.
+
+## Production configuration authorization
+
+On2026-10-17 the owner explicitly approved saving the existing upload token and mobile DSN as `SENTRY_MOBILE_AUTH_TOKEN` / `SENTRY_MOBILE_DSN` in GitHub Production, restricted to main Android build/verification steps. Both secret names were confirmed in the authenticated environment UI; existing main-only protection remains. No value is recorded here.
+
+The owner separately approved the existing Sentry upload token and each DSN in Cloudflare Production for slogan-preview-admin and slogan-preview-mobile, acknowledging that Pages also exposes these bindings to its Functions runtime. Both production configurations were saved and read back as the expected key/type inventory; the token and DSNs use secret_text. Preview configuration was not changed. See `pages-monitoring-configuration.json`. No plan upgrade or payment method was added.
+
+## Cloud provider acceptance
+
+The actual released LiveKit adapter and official browser SDK passed minimum grants, two independent Cloud clients, bidirectional synthetic audio energy, online/offline old-token rejection, a fresh identity and DeleteRoom disconnect. The final owned room cleanup succeeded. See `livekit-provider-cloud.json`. The probe captures no microphone or audio recording. Earlier incomplete probes are retained privately and are not classified as PASS. Public webhook delivery, host business lifecycle/deadline cases and human/native audio remain separate evidence boundaries.
