@@ -52,3 +52,11 @@ Android 使用 `pnpm build:observability:android` 固定实际 Git SHA、执行 
 真实验收必须确认接收人收到通知、发布事件能定位源码、停扫描后窗口内报警、恢复/reseed 正常、监控 timeout/拒绝不影响已提交业务及任务重试，并完成 Android 真机崩溃/缓存/重启/重连。证据和待验证项保存在 `docs/acceptance/add-production-observability.md`；真实发布另记 `docs/releases/`。
 
 关闭先停独立监控续接/consumer 或常驻 monitor，再关闭 SDK 外传配置并重发 Web/native 构建。旧安装包需要 ingest 侧禁用/限流以停止发送。保留技术状态表、原 incident/outbox、realtime 主题和待处理业务命令；不执行 down migration，不重置治理 flag、不删除业务事实。恢复时使用受控幂等 reseed。
+
+## Redis quota failure —2026-10-17
+
+The owner keeps the free Upstash plan. Its500,000 monthly command quota is exhausted; do not add payment details, upgrade, create replacement resources to bypass the quota, or classify this as a successful release. The provider email, actual Lua write rejection and password-exchange503 are recorded in `docs/acceptance/v1-closeout/redis-quota-blocker.json`.
+
+PING can remain successful while quota-bearing commands fail. Dependency readiness now executes one bounded `EVAL 'return 1' 0` without keys or writes instead of PING. It verifies the Lua command capability required by auth and coordination, reports only REDIS_UNAVAILABLE on failure, and discards a failed connection. At one scan per minute this probe contributes about43,200 commands per thirty days for one owner, in addition to application traffic. Verify active deployment consumers before estimating a full budget; do not assume idle queue/listener traffic is free.
+
+This change does not bypass auth quotas, relax login security or automatically retry a quota-consuming login. PostgreSQL-only public readiness remains scoped to PostgreSQL. After the monthly allowance resets or the owner separately changes the plan, verify password exchange, authenticated streaming and worker recovery before declaring the dependency restored. Rollback of this probe is code-only; it does not require a migration or remove persisted incidents/outbox records.

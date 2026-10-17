@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-10-17T08:58:19.982Z",
+  "runtimeCommit": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+  "result": "PASS",
+  "scope": "Two independent Chromium clients, actual production API and signed LiveKit Cloud webhooks, synthetic audio only",
+  "checks": [
+    {
+      "acceptedBusinessCheck": "normal-api-create-join-and-signed-cloud-webhooks",
+      "checkedAt": "2026-10-17T08:56:37.239Z"
+    },
+    {
+      "acceptedBusinessCheck": "application-credentials-bidirectional-cloud-audio",
+      "checkedAt": "2026-10-17T08:56:38.277Z"
+    },
+    {
+      "acceptedBusinessCheck": "host-remove-old-token-denied-reinvite-fresh-identity",
+      "checkedAt": "2026-10-17T08:56:45.879Z"
+    },
+    {
+      "acceptedBusinessCheck": "explicit-host-successor-and-former-host-denial",
+      "checkedAt": "2026-10-17T08:56:48.582Z"
+    },
+    {
+      "acceptedBusinessCheck": "host-end-durable-worker-cleanup-and-cloud-disconnect",
+      "checkedAt": "2026-10-17T08:56:54.883Z"
+    },
+    {
+      "acceptedBusinessCheck": "default-successor-from-online-members",
+      "checkedAt": "2026-10-17T08:57:02.210Z"
+    },
+    {
+      "acceptedBusinessCheck": "actual-host-reconnect-within-sixty-second-window",
+      "checkedAt": "2026-10-17T08:57:10.343Z"
+    },
+    {
+      "acceptedBusinessCheck": "actual-sixty-second-timeout-durable-worker-takeover-no-early-transfer",
+      "checkedAt": "2026-10-17T08:58:12.771Z"
+    }
+  ],
+  "ownedRoomAndUserCleanup": "SUCCEEDED",
+  "authenticationBoundary": "Fresh disposable users and sessions were created with the actual SessionService. The password exchange path remains BLOCKED by Redis monthly quota; this is not login acceptance.",
+  "remaining": [
+    "Appointment five-minute takeover, empty-window and scheduled-end Cloud acceptance",
+    "Human or native audio acceptance; no further device debugging is authorized"
+  ],
+  "earlierProbeBoundary": "An earlier business probe reached end but a transient provider-read failure interrupted its final observation. The final run passed every listed assertion and cleanup."
+}

@@ -1,6 +1,6 @@
 # Active change reconciliation —2026-10-17
 
-This inventory separates remaining task records from missing product code. Source baseline d532f7f and released runtime dd02891/Android0.0.127 were checked before this closeout. Two completed changes were archived after exact spec/release comparison. The owner reported physical-device testing complete and stopped all further agent device debugging; that is owner evidence, not fabricated automated checks or new native Sentry canaries.
+This inventory separates remaining task records from missing product code. Source baseline d532f7f and released runtime dd02891/Android0.0.127 were checked before this closeout. Three completed changes were archived after exact spec/release comparison. The owner reported physical-device testing complete and stopped all further agent device debugging; that is owner evidence, not fabricated automated checks or new native Sentry canaries.
 
 No checkbox below is automatically marked complete because a later build passed. Provider-disabled email/SMS/WeChat/STT/AI capabilities remain as previously reviewed. The frozen historical PRD is unchanged.
 
@@ -18,7 +18,6 @@ No checkbox below is automatically marked complete because a later build passed.
 | `implement-account-access-lifecycle-backend` | 46/47 | Provider/feature acceptance remains deferred under the previously approved disabled V1 configuration. |
 | `implement-appointment-room-backend` | 16/17 | Cloud provider checks now have partial new evidence; public webhook/business deadline acceptance remains distinct. |
 | `implement-email-password-auth-backend` | 17/18 | Provider/feature acceptance remains deferred under the previously approved disabled V1 configuration. |
-| `implement-host-controls-backend` | 20/21 | Cloud provider checks now have partial new evidence; public webhook/business deadline acceptance remains distinct. |
 | `implement-livekit-voice-session-backend` | 21/22 | Cloud provider checks now have partial new evidence; public webhook/business deadline acceptance remains distinct. |
 | `implement-mobile-auth-profile` | 14/15 | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit. |
 | `implement-mobile-expression-assistance` | 5/6 | Provider/feature acceptance remains deferred under the previously approved disabled V1 configuration. |
@@ -35,4 +34,6 @@ No checkbox below is automatically marked complete because a later build passed.
 | `simplify-direct-room-entry` | 9/10 | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit. |
 | `simplify-room-and-mobile-experience` | 17/28 | Historical change with remaining cross-change acceptance/release reconciliation; retain until every applicable criterion has evidence or an explicit accepted limit. |
 
-Inventory: 28 active changes, 522 task records, 73 unchecked tasks. These totals are a documentation inventory, not a claim that every unchecked task is a V1 blocker.
+Inventory: 27 active changes, 501 task records, 72 unchecked tasks. These totals are a documentation inventory, not a claim that every unchecked task is a V1 blocker.
+
+Host-controls backend was reconciled and archived on2026-10-17 after the actual Cloud business receipt. Redis monthly-quota exhaustion is now an owner-accepted release blocker, not a code-completion shortcut; affected auth/streaming/provider tasks remain open.

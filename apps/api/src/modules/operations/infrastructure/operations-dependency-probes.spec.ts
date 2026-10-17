@@ -39,3 +39,45 @@ it.each([200, 401, 403, 404, 503])(
     }
   },
 );
+
+it.each([true, false])(
+  'reports Redis Lua command readiness instead of PING: %s',
+  async (available) => {
+    const tx = { $executeRaw: async () => 0, $queryRaw: async () => [] };
+    const prisma = {
+      $transaction: async (callback: (transaction: typeof tx) => Promise<unknown>) => callback(tx),
+    };
+    let pingCalls = 0;
+    let disconnectCalls = 0;
+    const client = {
+      status: 'ready',
+      ping: async () => {
+        pingCalls += 1;
+        return 'PONG';
+      },
+      eval: async () => {
+        if (!available) throw new Error('PRIVATE_PROVIDER_QUOTA_DETAIL');
+        return 1;
+      },
+      disconnect: () => {
+        disconnectCalls += 1;
+      },
+    };
+    const probes = new NetworkOperationsDependencyProbes(
+      new ConfigService(testEnvironment({ REDIS_URL: 'redis://127.0.0.1:1' })),
+      prisma as never,
+    );
+    Object.defineProperty(probes, 'redis', { value: client, writable: true });
+    try {
+      const redis = (await probes.check()).find((probe) => probe.component === 'REDIS');
+      expect(redis?.enabled).toBe(true);
+      expect(redis?.ready).toBe(available);
+      expect(redis?.reasonCode).toBe(available ? undefined : 'REDIS_UNAVAILABLE');
+      expect(JSON.stringify(redis)).not.toContain('PRIVATE_PROVIDER_QUOTA_DETAIL');
+      expect(pingCalls).toBe(0);
+      if (!available) expect(disconnectCalls).toBe(1);
+    } finally {
+      await probes.onModuleDestroy();
+    }
+  },
+);
