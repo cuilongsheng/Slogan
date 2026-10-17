@@ -1,6 +1,6 @@
 # Unified mobile events and chat history
 
-Acceptance updated2026-10-16. Change: paginate-chat-history-over-shared-sse. Backend PR32 is deployed; client PR33 has passed final local verification and Phase-one CI. Client PR33 is merged as0f9fcde910f4f2c8acfc4d95ee934696184210e1. Guarded publication and expanded Cloud audience acceptance are pending. Android physical-device acceptance is explicitly deferred by the owner for this change. The later sections record the final native and Cloud results; earlier sections preserve intermediate verification history.
+Acceptance updated2026-10-17. Change: paginate-chat-history-over-shared-sse. Final runtime source is dd0289139e4aaaa4769acdb7de70f612aca4a943. Full verification and hosted protocol2/v1/audience/paging/recovery/renewal acceptance passed. APK0.0.127 publication and actual public-byte/hash/signature/source verification passed. Android physical-device acceptance remains explicitly deferred by the owner for this change. Earlier sections preserve intermediate evidence and failed attempts, not the final release status.
 
 ## Timer inventory and acceptance boundaries
 
@@ -79,3 +79,30 @@ Main0f9fcde passed all verification, backup/restore/migration and API runtime id
 Source inspection found one database permission query for every protocol2 notification, including hundreds of duplicate projections produced by the bulk history fixture. This is a plausible Cloud latency/backlog cause and an unnecessary query amplification independently of the probe failure. The fix retains only each last identical scope/resource/kind notification within the bounded read before permission checks, preserves replay order and current authorization, and keeps v1 unchanged. Four focused tests passed, including a90-event burst with four distinct permission checks, distinct resources/kinds, replay positions, fresh permissions on a later read and exact legacy duplicate delivery. Expanded HTTP integration and new candidate/main CI follow.
 
 Android0.0.121/code1121 built at0f9fcde with SHA-25621acddad4e4a7b7279de47addc8beff5264e4abbcc00cf8e777014e4038eddb6, but publication was correctly blocked by the failed admin Pages check. It was not published as the latest release.
+
+
+## Hosted terminal-membership diagnosis, 2026-10-17
+
+Current main dd0289139e4aaaa4769acdb7de70f612aca4a943 passed the full Phase-one verification:132 API suites/667 tests,68 mobile suites/259 tests,29 routed-browser and53 component-browser cases plus required lint/types/boundaries/contracts/migrations/builds. API and both Pages provider checks succeeded. Guarded API job117266917248 then passed the initial and successor-host cases but failed REMOVED_MEMBERSHIP after30010ms with an open stream and only partners/rooms/learning scopes. Fixture cleanup succeeded; Android build passed but publication correctly remained blocked.
+
+A new actual-HTTP assertion opens protocol2 before removing its actor, then requires the room-state resource and membership kind. It and all14 PostgreSQL/Redis SSE integration cases passed locally (49.427s), so the source path was not bypassed or permission checks relaxed.
+
+A bounded production request-log sample requested for01:04–01:08UTC identified15 deployment IDs executing maintenance/realtime jobs, including10 predecessors of the protocol2 backend. Source inspection of these old dispatchers confirms they select only scope/owner, publish without resource/kind, then delete the shared outbox rows. Vercel push queues retain deployment partitioning, and these recurring jobs reschedule themselves rather than naturally draining after promotion. Database maintenance leases do not fence application-version compatibility. This is an observed mixed-version deployment hazard that explains losing the terminal envelope even while learning/public scopes arrive.
+
+The10 observed incompatible superseded deployments were removed by exact IDs with active-alias protection; current and protocol2-compatible rollback deployments remain. No business records, Redis data, queues or secrets were deleted. [Retirement receipt](legacy-worker-retirement.json) and [release runbook](../../deployment/phase-one-guarded-release.md) record the operational correction. A23-request post-retirement sample contained zero executions from removed deployments. Four other historical deployments were identified as predating the live-updates store entirely; source inspection confirmed they have no outbox dispatcher, so they were left untouched. Guarded job117270919662 is rerunning the unchanged dd02891 source; hosted terminal/renewal and APK publication are still pending at this entry.
+
+
+## Final hosted verification
+
+After incompatible worker retirement, guarded API run38988292048 attempt2/job117270919662 passed encrypted backup, isolated restore, all33 migration/invariant checks, production migration and exact dd02891 deployment identity. The unchanged source passed all16 hosted streaming checks, including current-host role transfer, removed-member terminal-only delivery, denial of subsequent room text, unrelated-room/third-account isolation, protocol2/v1 coexistence, latest20/older20/delta20, cursor isolation, session revocation, reset/cancel and full lease renewal. Owned fixture cleanup succeeded. [Cloud receipt](cloud-verification.json) records the exact check list and timings.
+
+In this smoke run, removed-member notification arrived after2261ms, API text after906ms, Pages text after901ms, and the Pages lease renewed after240171ms. These are individual owned-fixture measurements, not general performance guarantees. No source permission relaxation or protocol fallback was used. Retiring the incompatible old dispatchers resolved the previously failing hosted path.
+
+Android run38988292062 build and publication both passed. The reused verified build is0.0.127/code1127 at dd02891; no rebuild was required for deployment retirement. Public APK hash/signature/source verification is recorded separately from this successful workflow publication.
+
+
+## Final public artifact verification
+
+At2026-10-17T01:27:23.781Z, public API, admin Pages and mobile Pages all returned source dd0289139e4aaaa4769acdb7de70f612aca4a943. The actual APK was downloaded through the public Pages download URL:87,572,993 bytes, SHA-256 e0abfc051a7016010fb18c88471533c0b630ea31210b9baf0ace10de7a8355a1, version0.0.127/code1127. Android apksigner verified the existing controlled installation certificate; aapt2 confirmed com.slogan.mobile, arm64-v8a, required microphone/installation permissions and a non-debuggable release application. Embedded app config matched the source commit, production API and metadata versions. [Public release receipt](release-verification.json) contains the exact identities. This is artifact verification; Android physical-device acceptance remains the explicitly accepted follow-up.
+
+All28 implementation/acceptance tasks are complete under that current-scope device deferral. Notification delivery shares one foreground SSE; initial/manual/pagination reads, writes and outbound presence/call leases remain ordinary HTTP operations. Source-only evidence/test closure after this runtime commit does not change the released application.

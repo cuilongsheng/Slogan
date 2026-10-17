@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-10-17T01:27:23.781Z",
+  "status": "SUCCEEDED",
+  "commit": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+  "runtime": [
+    {
+      "name": "api",
+      "commit": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+      "status": 200
+    },
+    {
+      "name": "mobile",
+      "commit": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+      "status": 200
+    },
+    {
+      "name": "admin",
+      "commit": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+      "status": 200
+    }
+  ],
+  "apk": {
+    "commit": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+    "version": "0.0.127",
+    "versionCode": 1127,
+    "package": "com.slogan.mobile",
+    "apiOrigin": "https://slogan-api-pi.vercel.app",
+    "sha256": "e0abfc051a7016010fb18c88471533c0b630ea31210b9baf0ace10de7a8355a1",
+    "bytes": 87572993,
+    "abi": ["arm64-v8a"],
+    "signing": "controlled-debug",
+    "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c",
+    "launcherResources": 15,
+    "roomUiRevision": "direct-entry-v2",
+    "updaterRevision": "controlled-apk-v1",
+    "builtAt": "2026-10-17T01:07:18.197Z",
+    "deviceVerified": false
+  },
+  "downloadedApkSha256": "e0abfc051a7016010fb18c88471533c0b630ea31210b9baf0ace10de7a8355a1",
+  "downloadedApkBytes": 87572993,
+  "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c",
+  "packageVerified": true,
+  "permissionsVerified": true,
+  "sourceConfigVerified": true,
+  "androidPhysicalDeviceAccepted": false,
+  "androidPhysicalDeviceDeferral": "Explicit owner acceptance for this change on2026-10-16"
+}

@@ -47,6 +47,14 @@ Keep `ASSISTANCE_ENABLED`, room speech processing, email registration and WeChat
 
 Authentication exchange/refresh quotas are atomic in Redis across API instances and fail closed with 503 when shared storage is unavailable. Vercel supplies the overwritten trusted source-IP header. Through Pages, this identifies the forwarding proxy rather than an individual visitor, so visitors sharing that proxy share a source quota. Arbitrary visitor headers are not trusted as authentication identities.
 
+## Outbox upgrades and retained queue consumers
+
+[Vercel Queue push topics are partitioned by deployment ID](https://vercel.com/docs/queues#deployments-and-versioning). A previous deployment can continue consuming its own delayed jobs after promotion. The minute maintenance and realtime recovery continuations do not naturally drain while they keep scheduling successors. Their database leases prevent overlapping claims; they do not select a compatible application version.
+
+Before accepting an outbox-envelope upgrade, inspect bounded production runtime logs for old maintenance/realtime deployment IDs. Verify each source revision against the schema/envelope it can publish. An old dispatcher that selects only scope/owner can consume and delete a newer resource/kind row while discarding those fields. A successful new API deployment alone does not retire that worker.
+
+Retire only explicitly identified incompatible, superseded deployments using deployment IDs and `vercel remove --safe`; preserve the active alias and a schema-compatible rollback deployment. Record IDs, source commits, observation window and outcome. Do not delete queue/business data, purge Redis or disable permission checks. Rerun the guarded owned-fixture stream probe, including host transfer and the removed actor's terminal membership event, before APK publication. Subsequent rollback must use a publisher compatible with every retained outbox envelope. See [the 2026-10-17 retirement receipt](../acceptance/unified-mobile-events/legacy-worker-retirement.json).
+
 ## Rollback and acceptance
 
 Retain additive tables and private content. If new functionality fails, deploy the preceding compatible API/client and stop exposing its entrances; do not drop message, call, avatar or report tables to roll back. Investigate failed migrations before rerunning rather than resetting migration history.
