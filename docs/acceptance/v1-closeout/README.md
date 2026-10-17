@@ -35,7 +35,9 @@ The primary checkout had164 modified/untracked entries on develop6605470. They w
 - API monitor unit8, PostgreSQL integration6 and additive-upgrade1 passed against an owned loopback database.
 - Me browser actions, icons and narrow layout:2 passed; source/runtime images are in this directory.
 - Full component-browser run:53 passed,1 failed in existing long-chat incoming-update anchor preservation. The failed case subsequently passed twice in isolation without a code change. The initial run remains a recorded failure; no whole-suite green claim is made from retries alone.
-- Full API run is pending completion.
+- Full API suite:133 suites /671 tests passed; one existing opt-in suite/test skipped. API build and strict main-spec validation passed.
+- Final full component-browser run:54/54 passed with one worker. The earlier two-worker anchor failure remains recorded above; it is not hidden by the successful final run.
+- Official source-map/build/trace checks:7 passed.
 
 ## Archive reconciliation
 
