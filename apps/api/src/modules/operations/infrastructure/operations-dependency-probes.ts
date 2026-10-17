@@ -83,7 +83,9 @@ export class NetworkOperationsDependencyProbes
         commandTimeout: 2_000,
       });
       if (['wait', 'end'].includes(this.redis.status)) await this.redis.connect();
-      await this.redis.ping();
+      // PING can remain available after a provider rejects quota-bearing commands.
+      // Auth and coordination require Lua; this bounded probe touches no keys or data.
+      await this.redis.eval('return 1', 0);
       return { component: 'REDIS', enabled: true, ready: true };
     } catch {
       this.redis?.disconnect();

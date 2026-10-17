@@ -156,3 +156,7 @@ The protected main Android build receives mobile-only upload credentials in the 
 - [Sentry 价格](https://sentry.io/pricing/) 与 [Better Stack 价格](https://betterstack.com/pricing)：只作为启用前的计划核对入口，不固定长期免费承诺。
 
 2026-10-15 后续授权补充：用户单独批准创建 org:ci 构建 token，并要求可直接完成 Sentry 配置。三项目、邮件与默认脱敏/IP 丢弃已经配置；token 只保存在仓库外私有文件，未升级付费计划。后续真实上传和源码定位使用隔离提交产物，验收状态以记录为准。
+
+## Quota-aware Redis readiness correction
+
+Actual production acceptance on2026-10-17 found Upstash monthly command exhaustion while PING still succeeded. The dependency probe uses bounded, keyless read-only Lua evaluation so provider command rejection cannot be presented as healthy coordination. It changes no auth decision, state, schema or public health contract. One command per scan is included in the free-tier budget; failure retains the existing fixed reason code and reconnect behavior. Rollback restores the earlier probe implementation without data deletion. The owner explicitly retains the free plan and accepts the quota as a release blocker; this decision is not dependency-recovery evidence.

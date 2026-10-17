@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-10-17",
+  "result": "BLOCKED",
+  "dependency": "Upstash Redis Free",
+  "quota": "500000 commands per month",
+  "providerEmailReceivedAt": "2026-10-17T08:46:18Z",
+  "evidence": [
+    "Production password exchange returned 503 EMAIL_AUTH_UNAVAILABLE",
+    "Sentry restored the released TypeScript position redis-email-quota.ts:81:13",
+    "The owner account received a provider monthly-quota exhaustion email",
+    "A disposable namespaced SET through Lua with a sixty-second TTL was rejected with a limit error",
+    "PING and a missing-key GET succeeded; connectivity is not write or coordination readiness"
+  ],
+  "decision": "Owner explicitly chose to remain on the free plan and record an onboarding/release blocker. No payment method, paid upgrade, quota bypass or replacement database was created.",
+  "impact": [
+    "Password exchange and Redis-dependent writes/coordination are not accepted",
+    "Authenticated streaming release verification may fail until quota resets or the owner separately changes the plan"
+  ],
+  "source": "https://upstash.com/pricing/redis",
+  "noPrivateValuesRecorded": true
+}

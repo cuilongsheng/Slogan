@@ -2,8 +2,8 @@
 
 ## Scope and Dependencies
 
-- Change: implement-host-controls-backend; local implementation completed (20/21), not archived, not deployed.
-- The prefix [LiveKit local acceptance](./implement-livekit-voice-session-backend.md) has completed 123 tests; the real Cloud smoke retains BLOCKED according to the user's choice, and it cannot be claimed that the online old token revocation has been verified.
+- Change: implement-host-controls-backend; implementation and backend acceptance completed (21/21); released runtime dd0289139e4aaaa4769acdb7de70f612aca4a943 was verified on2026-10-17. Archive and deployment remain separate.
+- The prefix [LiveKit local acceptance](./implement-livekit-voice-session-backend.md) has completed 123 tests; the later provider and business Cloud receipts below supersede its old Cloud reservation for the cases actually exercised.
 - Reuse the authorization, presence, identity history, public end transaction of RoomRealtimeService in [rooms public entrance](../../apps/api/src/modules/rooms/index.ts), and [Prisma Room line lock/outbox](../../apps/api/src/modules/rooms/infrastructure/prisma-room-realtime.repository.ts).
 - Reuse the revoke/delete dispatcher of [VoiceService](../../apps/api/src/modules/voice/application/services/voice.service.ts), [RealtimeRunner](../../apps/api/src/modules/voice/infrastructure/realtime-runner.service.ts) and the original BullMQ queue; there is no new provider, event table or queue.
 - The management controller and use case are owned by rooms; VoiceModule accesses the existing dispatcher through ROOM_COMMAND_DELIVERY in the combination phase to avoid rooms application importing voice implementation.
@@ -78,8 +78,10 @@ Stable error override ROOM_HOST_REQUIRED, ROOM_MEMBER_NOT_ACTIVE, ROOM_INVITATIO
 
 Release should be migrated first, and then new authorizations and workers should be deployed in the same batch. Old certification programs that do not understand lifecycle cannot be mixed. Before rolling back, join/token/management must be closed at the portal, and the provider session cancellation and termination must be completed; when the provider is unavailable, keep the portal closed and retain workers, waiting for recovery or forward fix. The database retains the newly added fields and history, and does not perform destructive down migration. The above release rollback steps of ingress isolation and Cloud cleanup are operational requirements and have not been practiced in a real deployment environment; local transaction rollback testing cannot replace it.
 
-## Cloud and product acceptance reservations
+## Cloud completion —2026-10-17
 
-Cloud management service smoke remains BLOCKED/not executed: online/offline old token rejection after removal, new identity re-invitation, designated/default takeover, 60-second recovery/timeout and host end actual disconnection. Inheriting the user's choice of "Complete local verification first, leaving Cloud unfinished"; the real provider key is not read or written.
+[Actual Cloud business receipt](./v1-closeout/livekit-business-cloud.json) records two independent Chromium clients using normal room API operations and real signed LiveKit webhooks. Both directions transported synthetic audio energy; no microphone audio was captured or recorded. Removal disconnected the member and rejected the old credential, re-invitation issued a fresh identity, explicit and default host succession worked, and the former host was denied termination. An actual sixty-second disconnection deadline retained authority before expiry, restored it after an in-window reconnect, and let the durable worker transfer authority only after the later real timeout. Host termination completed provider cleanup and disconnection. All script-owned rooms, sessions and users were removed.
 
-Front-end pages, selectors, dual-device voice, microphone permissions, product acceptance, CI results and production deployment do not record PASS; change remains unarchived. The test uses fake LiveKit provider, only PostgreSQL/Redis/HTTP is run locally.
+The source runtime was dd0289139e4aaaa4769acdb7de70f612aca4a943. The missing production webhook endpoint was configured using the existing signing key before acceptance. Disposable sessions were issued with the actual SessionService after ordinary password exchange encountered the independent Redis monthly-quota blocker. This verifies room authorization and provider lifecycle; it does not classify password login as accepted.
+
+The earlier local verification table remains historical evidence. The current closeout additionally passed133 API suites/671 tests, API build/lint/typecheck and the complete component-browser suite54/54. Frontend selectors and human/native audio are outside this backend change; owner-reported device acceptance and stopped agent device debugging remain recorded separately. Scheduled appointment windows are owned by the appointment change and remain open there.

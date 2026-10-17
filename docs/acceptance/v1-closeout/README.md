@@ -10,7 +10,7 @@ Base: d532f7fa09e1f79f6e0c88b2739944bc68826cb9. Released runtime before this wor
 - [ ] Client monitored release pipeline and actual source/symbol upload. Local candidate artifact/upload PASS; protected main configuration and published artifact remain pending.
 - [ ] Actual browser Sentry events and symbolication.
 - [ ] Monitor disable/reseed, failure/recovery and operations evidence.
-- [ ] Real Cloud voice lifecycle and media acceptance.
+- [x] Real Cloud provider/media and host lifecycle acceptance. Appointment deadline Cloud cases remain separate.
 - [x] Owner-reported Android verification; no further agent device debugging is authorized. See the boundary below.
 - [x] Preserve old develop workspace; align local branches without discarding work.
 - [ ] Reconcile completed tasks and archive only eligible changes.
@@ -60,3 +60,19 @@ The owner separately approved the existing Sentry upload token and each DSN in C
 ## Cloud provider acceptance
 
 The actual released LiveKit adapter and official browser SDK passed minimum grants, two independent Cloud clients, bidirectional synthetic audio energy, online/offline old-token rejection, a fresh identity and DeleteRoom disconnect. The final owned room cleanup succeeded. See `livekit-provider-cloud.json`. The probe captures no microphone or audio recording. Earlier incomplete probes are retained privately and are not classified as PASS. Public webhook delivery, host business lifecycle/deadline cases and human/native audio remain separate evidence boundaries.
+
+## Main integration and Cloud business acceptance
+
+PR38 merged as5cdcc4e9b42cff7836d1ca38bd4aba874ea0ab40. Both PR verification and Android build passed. The main Phase-one verification subsequently passed; its guarded release remains separately tracked.
+
+The missing LiveKit production webhook was created using the existing signing key and public endpoint. Actual signed join/leave events reached the backend, not a test receiver. See `livekit-business-cloud.json` for real application credentials, bidirectional synthetic media, removal/old-token rejection, fresh re-invitation, explicit/default host succession, in-window reconnection, actual sixty-second timeout without early transfer and durable end cleanup. Fresh disposable sessions used the actual SessionService; this is not password-login acceptance. All owned fixtures were cleaned. The host-controls backend change is archived with21/21 tasks after syncing its two delta blocks and preserving unrelated current requirements.
+
+## Owner-accepted release blocker
+
+Upstash reported the500,000-command monthly free allowance exhausted on2026-10-17. Actual Redis Lua write rejection and production password-exchange503 were observed, while PING and missing-key GET remained available. The owner explicitly chose to retain the free plan and record a release blocker. No upgrade, payment method or replacement database was created. See `redis-quota-blocker.json`. Dependency recovery, authenticated streaming and quota-dependent operations cannot be marked PASS until the allowance is restored.
+
+The dependency readiness correction uses bounded keyless read-only Lua rather than PING, retaining the fixed error code and failed-connection reset. Its two regression cases plus the existing five provider-readiness cases passed; API lint, typecheck and build passed. This correction has no public health-contract, auth decision, schema or data change.
+
+## Notification evidence
+
+The owner mailbox received actual Sentry API fault alerts at08:45 and08:51 UTC on2026-10-17. Sentry issue154238137 restored the released `redis-email-quota.ts:81:13` source with release/dist dd0289139e4aaaa4769acdb7de70f612aca4a943. Better Stack incident1032971226 records a failure email sent and loaded, followed by automatic resolution; this historical explicit-failure test does not replace the current shared pause/reseed and recovery-email acceptance. Five external monitors and both production heartbeats were UP when checked today.
