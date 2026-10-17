@@ -1,6 +1,6 @@
 # Unified mobile events release
 
-Date:2026-10-17 (Asia/Shanghai). Status: ready for the guarded current-main verification and release; final production acceptance is pending.
+Date:2026-10-17 (Asia/Shanghai). Status: deployed and verified. Runtime source dd0289139e4aaaa4769acdb7de70f612aca4a943; Android0.0.127/code1127. Android physical-device acceptance is explicitly deferred by the owner for this change.
 
 ## Source and behavior
 
@@ -30,3 +30,20 @@ The final workflow must verify the exact new main/API/both Pages/APK identity, c
 ## Rollback
 
 Default/v1 streams retain the released vocabulary and legacy message/call cursor semantics. A client rollback can preserve all business history and the additive schema. Repair publishers forward if needed; do not delete business data or reverse deployed migrations to manufacture rollback evidence. No production rollback was performed.
+
+
+## Final release receipt
+
+Final source dd0289139e4aaaa4769acdb7de70f612aca4a943 passed132 API suites/667 tests,68 mobile suites/259 tests,29 routed-browser and53 component-browser cases plus required lint/types/boundaries/contracts/migrations/builds. The new actual-HTTP terminal-membership assertion and all14 PostgreSQL/Redis SSE integration cases also passed locally.
+
+The first final-main hosted probe identified a missing removed-member terminal event and correctly blocked APK publication. Runtime logs and source inspection found10 superseded pre-protocol2 deployments still running recurring queue workers against the shared outbox. Their dispatchers discarded resource/kind fields before deleting rows. Exact incompatible deployment IDs were retired with active-alias protection, retaining current and protocol2-compatible rollback deployments. No business/Redis/queue data was deleted and no permission check was weakened. See [retirement receipt](../acceptance/unified-mobile-events/legacy-worker-retirement.json) and the updated [guarded runbook](../deployment/phase-one-guarded-release.md).
+
+Guarded run38988292048 attempt2/job117270919662 then passed encrypted backup, isolated restore,33 migration/invariant checks, production migration, API runtime identity and all16 hosted SSE checks. Current/successor-host delivery, removed-member terminal-only delivery, subsequent text denial, unrelated-account isolation, protocol2/v1 coexistence, latest20/older20/delta20, session revocation, reset/cancel and full lease renewal passed; script-owned fixture cleanup succeeded. The removed actor's terminal notification arrived in2261ms and Pages lease renewal in240171ms in this single smoke sample. [Cloud receipt](../acceptance/unified-mobile-events/cloud-verification.json).
+
+Android run38988292062 build and publication succeeded. At2026-10-17T01:27:23.781Z, live API and both Pages matched dd02891. Actual public APK verification passed for0.0.127/code1127:87,572,993 bytes; SHA-256 e0abfc051a7016010fb18c88471533c0b630ea31210b9baf0ace10de7a8355a1. The signature matched the existing controlled certificate; package, ABI, permissions, release flags and embedded source/API/version config matched metadata. [Artifact receipt](../acceptance/unified-mobile-events/release-verification.json).
+
+- Mobile: https://slogan-preview-mobile.pages.dev
+- Admin: https://slogan-preview-admin.pages.dev
+- APK: https://slogan-preview-mobile.pages.dev/downloads/android.apk
+
+The following evidence/test-only closure is intentionally excluded from redeployment. The released application remains dd02891. Current Android device deferral and additive rollback boundaries remain explicit; no Android physical-device or new production latency guarantee is claimed.

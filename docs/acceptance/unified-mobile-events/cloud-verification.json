@@ -1,0 +1,91 @@
+{
+  "checkedAt": "2026-10-17T01:26:43.036Z",
+  "workflowRun": 38988292048,
+  "workflowAttempt": 2,
+  "productionJob": 117270919662,
+  "verificationJob": 117270919081,
+  "backupAndIsolatedRestore": "SUCCEEDED",
+  "migrations": 33,
+  "productionMigration": "SUCCEEDED",
+  "smoke": {
+    "status": "SUCCEEDED",
+    "commit": "dd0289139e4aaaa4769acdb7de70f612aca4a943",
+    "checks": [
+      "protocol2-progressive",
+      "legacy-coexistence",
+      "protocol-cursor-isolation",
+      "latest20-older20-delta20",
+      "api-progressive",
+      "pages-progressive",
+      "private-participants",
+      "current-host-role-transfer",
+      "removed-member-terminal-only",
+      "room-outsider-isolation",
+      "third-account-isolation",
+      "foreign-cursor",
+      "session-revocation",
+      "reset-recovery",
+      "client-abort",
+      "bounded-lease-renewal"
+    ],
+    "timings": [
+      {
+        "path": "api",
+        "resetMs": 1475
+      },
+      {
+        "path": "pages",
+        "resetMs": 545
+      },
+      {
+        "path": "pages",
+        "resetMs": 633
+      },
+      {
+        "path": "api",
+        "resetMs": 322
+      },
+      {
+        "path": "pages",
+        "resetMs": 385
+      },
+      {
+        "path": "pages",
+        "resetMs": 377
+      },
+      {
+        "apiMessageMs": 906,
+        "pagesMessageMs": 901
+      },
+      {
+        "roomStage": "INITIAL_HOST",
+        "delayMs": 2158
+      },
+      {
+        "roomStage": "SUCCESSOR_HOST",
+        "delayMs": 3762
+      },
+      {
+        "roomStage": "REMOVED_MEMBERSHIP",
+        "delayMs": 2261
+      },
+      {
+        "roomStage": "REMAINING_MEMBER_TEXT",
+        "delayMs": 1856
+      },
+      {
+        "pagesLeaseMs": 240171
+      },
+      {
+        "path": "pages",
+        "resetMs": 357
+      },
+      {
+        "path": "pages",
+        "resetMs": 4678
+      }
+    ]
+  },
+  "ownedFixtureCleanup": "SUCCEEDED",
+  "scope": "Script-owned fixtures only. No claim of Android physical-device acceptance or general latency SLA."
+}

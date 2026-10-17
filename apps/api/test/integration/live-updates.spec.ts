@@ -193,6 +193,7 @@ describe('real PostgreSQL/Redis authenticated SSE', () => {
     const change = { index: 1, id: '1-0', scope: 'room-safety' as const, resourceId: room.id };
     expect(await store.canReceive(actor.id, change)).toBe(true);
     expect(await store.canReceive(outsider.id, change)).toBe(false);
+    const stream = await open(actor, undefined, base, 2);
     await prisma.roomMembership.updateMany({
       where: { roomId: room.id, userId: actor.id },
       data: { role: 'MEMBER', lifecycle: 'REMOVED', removedAt: new Date() },
@@ -202,7 +203,11 @@ describe('real PostgreSQL/Redis authenticated SSE', () => {
     expect(
       await store.canReceive(actor.id, { ...change, scope: 'room-state', kind: 'membership' }),
     ).toBe(true);
-  });
+    await app.get(LiveUpdatesService).recover();
+    const terminal = await readUntil(stream.reader, 'room-state');
+    expect(terminal).toContain(`"resourceId":"${room.id}"`);
+    expect(terminal).toContain('"kind":"membership"');
+  }, 15000);
   test('transactional publishers isolate invitations, room text, private learning and report progress; rollback and job churn stay silent', async () => {
     const [host, member, outsider] = actors;
     const room = await prisma.room.create({

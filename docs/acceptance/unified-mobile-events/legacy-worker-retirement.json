@@ -1,0 +1,97 @@
+{
+  "retire": [
+    {
+      "id": "dpl_7vb9HvNLMiyVT79h8Y2srGLZn7kr",
+      "url": "slogan-54zp21ylv-cuilongshengs-projects.vercel.app",
+      "commit": "3834e032a12263dc90476e64d07aca630f3c83b1"
+    },
+    {
+      "id": "dpl_9c6CBjnWRjSbVcc8tYAUeL2LZ4gA",
+      "url": "slogan-6usg55eey-cuilongshengs-projects.vercel.app",
+      "commit": "7cbbab734d26a4011538bc08647ea5bd93cea511"
+    },
+    {
+      "id": "dpl_EeKsQMHdYV2F9gDGCT9CKp1V3cnh",
+      "url": "slogan-hyh69h449-cuilongshengs-projects.vercel.app",
+      "commit": "2ddd42f6142d266dd56e8331251065b329e7d47a"
+    },
+    {
+      "id": "dpl_G33ss7kuxSEw8BxEHnE7A7qtXgAm",
+      "url": "slogan-210mbve0i-cuilongshengs-projects.vercel.app",
+      "commit": "73fd86baa4194b00ee6b7ed4aa3e637694489d48"
+    },
+    {
+      "id": "dpl_F2BdzgZMRSEPvmdJ8YW7nm2YwZ1G",
+      "url": "slogan-2e103u4lr-cuilongshengs-projects.vercel.app",
+      "commit": "fce96eea0e4f198141a3ea6f3e79187d63874489"
+    },
+    {
+      "id": "dpl_46HoWM65cxwAFnpEQZ3d6Aqh7ct7",
+      "url": "slogan-frbzoimjp-cuilongshengs-projects.vercel.app",
+      "commit": "894985bd60c64be9fa5ebd961780288afc996b00"
+    },
+    {
+      "id": "dpl_A9eQiomGaxKJ95reUT1zdqJd3Lyg",
+      "url": "slogan-lcm66dgxq-cuilongshengs-projects.vercel.app",
+      "commit": "7a8522b4819a7c3ba547a2fe0781f495c7d022d2"
+    },
+    {
+      "id": "dpl_65wGdPmAAKDJ6RTmFXy7ouzLwvut",
+      "url": "slogan-n31a2h1yb-cuilongshengs-projects.vercel.app",
+      "commit": "248b12378ba3ce9210af2fd73077ff9651fa8720"
+    },
+    {
+      "id": "dpl_C65y1ogH9svekiVfb1BSZFMjdoyi",
+      "url": "slogan-blm4du854-cuilongshengs-projects.vercel.app",
+      "commit": "1b40fea9a332a377840848b0794aff275180a887"
+    },
+    {
+      "id": "dpl_APWpeWU3qNxy5ukrahWrneVEndNH",
+      "url": "slogan-gzvcpx5f5-cuilongshengs-projects.vercel.app",
+      "commit": "f176ca6601965b68f15d9247990dd03dfc7ef463"
+    }
+  ],
+  "keepCurrent": "dpl_C9q2PNVwxrpLPaKnBT1BWo5RGAbZ",
+  "keepCompatibleRollback": "dpl_CfGXhVASKiUPZYU4UWqwWU6dwyAc",
+  "project": "slogan-api",
+  "method": "vercel remove explicit-deployment-ids --safe --yes",
+  "outcome": "10 obsolete deployments removed; active-alias deployments protected",
+  "boundary": "Only observed pre-protocol2 production deployments were retired; no database, Redis, business records or secrets were removed. Current and compatible protocol2 rollback deployments retained.",
+  "retiredDateUtc": "2026-10-17",
+  "receiptCheckedAtUtc": "2026-10-17T01:20:06.809464+00:00",
+  "postRetirementSample": {
+    "requests": 23,
+    "removedDeploymentExecutions": 0,
+    "observedFromUtc": "2026-10-17T01:19:00Z",
+    "preLiveUpdatesDeploymentsLeftUntouched": [
+      "7b9075bac741eae78d033f9d11bd3775cd0ec65d",
+      "d5e0b8dc15ff9f5acfe15bfc5a0a094eda17f44b",
+      "46aee8a81f590e23f14ac5b5013f3c8adeef8c2e"
+    ],
+    "boundary": "Bounded returned sample; not a complete audit of every request in the requested window.",
+    "returnedRequests": 23,
+    "firstReturnedAtUtc": "2026-10-17T01:19:00.585000+00:00",
+    "lastReturnedAtUtc": "2026-10-17T01:20:05.902000+00:00"
+  },
+  "expandedHistoricalAudit": {
+    "fromUtc": "2026-10-17T01:00:00Z",
+    "toUtc": "2026-10-17T01:18:00Z",
+    "requests": 50,
+    "maintenanceRealtimeDeploymentIds": 15,
+    "additionalIncompatibleDispatchers": 0,
+    "returnedRequests": 50,
+    "firstReturnedAtUtc": "2026-10-17T01:16:50.200000+00:00",
+    "lastReturnedAtUtc": "2026-10-17T01:17:59.971000+00:00",
+    "boundary": "Bounded returned sample; not a complete audit of every request in the requested window."
+  },
+  "requestedWindowUtc": {
+    "from": "2026-10-17T01:04:00Z",
+    "to": "2026-10-17T01:08:00Z"
+  },
+  "observedWindowUtc": {
+    "returnedRequests": 50,
+    "firstReturnedAtUtc": "2026-10-17T01:06:58.880000+00:00",
+    "lastReturnedAtUtc": "2026-10-17T01:07:59.427000+00:00",
+    "boundary": "Bounded returned sample; not a complete audit of every request in the requested window."
+  }
+}
