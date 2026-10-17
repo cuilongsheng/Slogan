@@ -102,6 +102,23 @@ for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
 const bundle = execFileSync('unzip', ['-p', apk, 'assets/index.android.bundle'], {
   maxBuffer: 32 * 1024 * 1024,
 });
+const observability = JSON.parse(
+  execFileSync('unzip', ['-p', apk, 'assets/slogan.observability.json'], { encoding: 'utf8' }),
+);
+const monitored = process.env.EXPO_PUBLIC_OBSERVABILITY_ENABLED === 'true';
+assert.equal(observability.enabled, monitored, 'Packaged monitoring flag differs from build');
+if (monitored) {
+  assert.equal(observability.release, `slogan-mobile@${sha}`);
+  assert.equal(observability.build, process.env.EXPO_PUBLIC_OBSERVABILITY_BUILD);
+  assert.equal(observability.environment, 'production');
+  assert(bundle.includes(Buffer.from(observability.release)), 'JS monitoring release mismatch');
+  assert(bundle.includes(Buffer.from(observability.build)), 'JS monitoring build mismatch');
+  const token = process.env.SENTRY_AUTH_TOKEN;
+  assert(token, 'Monitored artifact credential-leak check requires private build context');
+  const unpacked = execFileSync('unzip', ['-p', apk], { maxBuffer: 512 * 1024 * 1024 });
+  assert(!unpacked.includes(Buffer.from(token)), 'Private credential in APK');
+  assert(!bundle.includes(Buffer.from(token)), 'Private credential in JavaScript');
+}
 assert(bundle.includes(Buffer.from(API_ORIGIN)), 'APK bundle API does not match production');
 assert(
   bundle.includes(Buffer.from('voice-room-direct-entry-v2')),
@@ -123,6 +140,11 @@ const metadata = {
   launcherResources,
   roomUiRevision: 'direct-entry-v2',
   updaterRevision: 'controlled-apk-v1',
+  observability: {
+    enabled: monitored,
+    ...(monitored ? { release: observability.release, build: observability.build } : {}),
+    nativeCollection: monitored ? 'structured-java-only' : 'disabled',
+  },
   builtAt: new Date().toISOString(),
   deviceVerified: false,
 };

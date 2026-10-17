@@ -60,3 +60,15 @@ Retire only explicitly identified incompatible, superseded deployments using dep
 Retain additive tables and private content. If new functionality fails, deploy the preceding compatible API/client and stop exposing its entrances; do not drop message, call, avatar or report tables to roll back. Investigate failed migrations before rerunning rather than resetting migration history.
 
 Record: candidate and main SHA, verification/production/recovery runs, encrypted backup receipt, isolated upgrade evidence, all live commit descriptors, Google onboarding, Redis failure behavior, queued cleanup reaching its terminal state, alert delivery, and APK hash/signing identity. Keep device keyboard, permission, audio isolation and interruption checks separate from browser evidence.
+
+## Client monitoring release configuration
+
+Protected main Android builds require `SENTRY_MOBILE_DSN` and `SENTRY_MOBILE_AUTH_TOKEN` in the existing GitHub Production environment. The upload credential is used only by main build/verification steps; it is never written to GITHUB_ENV, APK metadata or a public artifact. Pull-request and branch builds do not receive it. Android monitoring uses the existing slogan-mobile project, production environment, commit-bound release/build and0.1 tracing. Logs, profiling, replay, NDK dumps and arbitrary attachments remain disabled. The upload gate deliberately fails closed if the configuration is missing.
+
+The existing API-only `SENTRY_AUTH_TOKEN` and `SENTRY_API_DSN` authorization is not silently reused as a new client secret grant. Configure the two mobile entries through the approved private credential channel before merging the monitored workflow. Actual source-map upload and native device canaries have separate acceptance records; compilation alone is not symbolication evidence.
+
+## Shared monitoring pause
+
+After migration20261017080000_observability_monitor_control, gate-aware monitor workers also check the environment-scoped CONTROL row. Use the private `apps/api/scripts/monitor-control.mjs status|pause|resume` CLI with `DATABASE_URL`, `OBSERVABILITY_CONTROL_ENVIRONMENT` and the approved `EXPECTED_DATABASE_FINGERPRINT`. Mutations additionally require `CONFIRM_MONITOR_CONTROL` matching the environment. Never print the connection string. Resume requires the existing authenticated seed path to restart the continuation chain.
+
+Pause stops monitor probes, continuation scheduling and completion heartbeats; it does not disable realtime cleanup, delete incident/outbox facts or alter business queues. Already acquired scans can finish their durable result. Older binaries ignore the new shared gate: retire only identified superseded monitor consumers after preserving the active deployment and a gate-aware rollback. Until that retirement and a target pause/reseed observation succeed, do not claim that all production monitoring has stopped.

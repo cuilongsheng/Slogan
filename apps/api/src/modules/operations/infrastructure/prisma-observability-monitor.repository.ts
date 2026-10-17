@@ -57,6 +57,13 @@ export class PrismaObservabilityMonitorRepository implements ObservabilityMonito
   private key(environment: string, monitorKey = 'SCAN') {
     return { environment_monitorKey: { environment, monitorKey } };
   }
+  async enabled(environment: string): Promise<boolean> {
+    const control = await this.prisma.observabilityMonitorState.findUnique({
+      where: this.key(environment, 'CONTROL'),
+      select: { enabled: true },
+    });
+    return control?.enabled ?? true;
+  }
   async claim(
     environment: string,
     window: number,

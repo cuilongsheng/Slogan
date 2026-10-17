@@ -33,7 +33,7 @@ export const tokens = {
     },
   },
   profile: {
-    color: { menuInk: '#6D6975' },
+    color: { menuInk: '#6D6975', optionSurface: '#F6F7FB' },
   },
   // Original Rooms / Pilot V2 colors; kept separate from older screen accents.
   connection: {

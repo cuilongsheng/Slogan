@@ -12,6 +12,7 @@ import type { ObservabilityHeartbeat } from '../../src/infrastructure/observabil
 function setup(enabled = true) {
   const claim = { environment: 'test', window: 10, leaseId: 'test-lease', generation: 1 };
   const repository = {
+    enabled: fn<ObservabilityMonitorRepository['enabled']>().mockResolvedValue(true),
     claim: fn<ObservabilityMonitorRepository['claim']>().mockResolvedValue({
       kind: 'claimed',
       claim,
@@ -55,6 +56,24 @@ function setup(enabled = true) {
   return { service, repository, probes, incidents, heartbeat, schedule };
 }
 describe('isolated monitoring lifecycle', () => {
+  it('honors a shared pause before seeding, probing or continuing a completed window', async () => {
+    const { service, repository, probes, schedule, heartbeat } = setup();
+    repository.enabled.mockResolvedValue(false);
+    await service.seed();
+    await service.process({ kind: 'monitor', window: 10 }, true);
+    expect(repository.claim).not.toHaveBeenCalled();
+    expect(probes.check).not.toHaveBeenCalled();
+    expect(schedule).not.toHaveBeenCalled();
+    expect(heartbeat.completed).not.toHaveBeenCalled();
+  });
+  it('finishes an acquired scan without scheduling or heartbeating after an operator pause', async () => {
+    const { service, repository, schedule, heartbeat } = setup();
+    repository.enabled.mockResolvedValueOnce(true).mockResolvedValue(false);
+    await service.process({ kind: 'monitor', window: 10 }, true);
+    expect(repository.complete).toHaveBeenCalled();
+    expect(schedule).not.toHaveBeenCalled();
+    expect(heartbeat.completed).not.toHaveBeenCalled();
+  });
   it('does nothing while disabled', async () => {
     const { service, probes, heartbeat } = setup(false);
     await service.process({ kind: 'monitor', window: 10 }, true);

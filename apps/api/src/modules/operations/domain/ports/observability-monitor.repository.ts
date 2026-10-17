@@ -16,6 +16,7 @@ export type MonitorScan =
   { kind: 'claimed'; claim: MonitorClaim } | { kind: 'completed'; nextWindow: number | null };
 export const OBSERVABILITY_MONITOR_REPOSITORY = Symbol('OBSERVABILITY_MONITOR_REPOSITORY');
 export interface ObservabilityMonitorRepository {
+  enabled(environment: string): Promise<boolean>;
   claim(environment: string, window: number, now: Date, leaseSeconds: number): Promise<MonitorScan>;
   record(
     claim: MonitorClaim,
