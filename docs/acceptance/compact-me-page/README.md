@@ -8,13 +8,13 @@ Change: `compact-me-page-layout`. Route: `/me`, authenticated mobile user. API o
 
 Desktop Bridge file `56nIowZmvBhb0QJvOlDQdU`, page `102:2766` / 02 UI, original frame `152:1467` / Me / 精简个人中心 · V3, 390x844. Source [capture](figma/me-original.png) was exported after the owner's latest edits and before code changes. The original design was not mutated during implementation.
 
-| Region | Source evidence | Component mapping |
-| --- | --- | --- |
-| Heading | Removed by owner | Remove MainPageTitle from MeScreen |
-| Profile | Avatar x23/y47, 52x52; name x83/y66, 18/27 bold | settings/profile/photo/profileName; authenticated avatar/name, bounded text |
-| Language | x20/y113; 102x27 and112x27; gap8; 14/20 medium; original row height42 | languages/language/languageText; expanded hitSlop, existing persistent selection |
-| Menu | x20, width350; 1px #EFEFF3 dividers; labels x26, 14/20 medium; approx44px rows | list/item/title; responsive margins and divider token |
-| Logout | 342x46, radius14 | Shared largeAction dimensions, local radius override |
+| Region   | Source evidence                                                                | Component mapping                                                                |
+| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Heading  | Removed by owner                                                               | Remove MainPageTitle from MeScreen                                               |
+| Profile  | Avatar x23/y47, 52x52; name x83/y66, 18/27 bold                                | settings/profile/photo/profileName; authenticated avatar/name, bounded text      |
+| Language | x20/y113; 102x27 and112x27; gap8; 14/20 medium; original row height42          | languages/language/languageText; expanded hitSlop, existing persistent selection |
+| Menu     | x20, width350; 1px #EFEFF3 dividers; labels x26, 14/20 medium; approx44px rows | list/item/title; responsive margins and divider token                            |
+| Logout   | 342x46, radius14                                                               | Shared largeAction dimensions, local radius override                             |
 
 ## Retained behavior and evidence boundary
 
@@ -23,7 +23,6 @@ The three illustrated entries appear first: vocabulary, restrictions/appeals, ed
 Web RoomPage uses 49px simulated system chrome versus the source's profile y47; physical native safe-area chrome varies by device. Profile/content geometry is implemented in normal responsive flow, not hard-coded absolute coordinates from the screenshot. Long names truncate within the row; small visual language pills use larger touch hit areas. Short screens scroll the menu while keeping logout/navigation outside the scroll area.
 
 Source and diff were inspected. No lint, typecheck, tests, build, browser/Android runtime capture or deployment was run. Final affected checks and source-to-runtime comparison remain in the OpenSpec task list.
-
 
 ## Menu visual correction — 2026-10-16
 
@@ -36,3 +35,13 @@ Asset mapping: vocabulary `I230:3555;106:1370`, restrictions `I230:3564;105:1181
 Tests, lint, typecheck, build, runtime visual comparison and deployment were explicitly deferred by the owner. Source/diff review does not establish runtime, device or 1:1 visual acceptance. Delivery commits use `[skip ci]` to defer the repository's automatic test and deployment workflows until a later release.
 
 The API Vercel configuration also disables native Git deployment for the exact delivery branch `codex/merge-reviewed-v1-20261016`; the existing `main` Git-deployment exclusion remains. This prevents a PR preview deployment independently of GitHub Actions and does not disable later workflow-driven releases.
+
+## Release verification — 2026-10-17
+
+The owner asked the later deployment task to include these source-only changes. Desktop Bridge was probed successfully against the original Slogan file and the390×844 Me V3 frame152:1467 was re-discovered and exported read-only on2026-10-17. [Runtime capture](me-release-2026-10-17.png) is the actual `/me` application router at390×844, with a deterministic authenticated Preview A fixture.
+
+Profile draft/edit tests passed9 cases; the affected application-router set passed5 cases, including menu navigation, profile save/cancel, persistent language controls, report progress and logout. A first invocation selected a nonexistent MeScreen.spec.tsx and ran zero tests; it is not counted as a pass. The actual profile test files and real router flows above supply the evidence.
+
+Region comparison: the white identity surface,52px avatar box,18/27 name,80×24 language options, original menu icon/chevron assets, menu divider geometry and #6D6975 labels are present in the running page. The fixture avatar differs from the original person's image by design; it displays authenticated data. Existing report navigation,342×46 logout and the main navigation remain visible as previously approved product additions. Web simulated system chrome and font rasterization differ from native/Figma; this capture establishes the current web runtime and functioning actions, without claiming a new physical-device or whole-screen1:1 acceptance. Native SSE lifecycle evidence remains in the unified-mobile-events acceptance record; Android physical-device acceptance is still the owner's explicitly accepted follow-up for that change.
+
+Full current-main CI, guarded API/Pages streaming and actual APK release verification follow in the release record.
