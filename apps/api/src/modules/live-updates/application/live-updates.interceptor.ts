@@ -15,8 +15,12 @@ export class LiveUpdatesInterceptor implements NestInterceptor {
     private readonly logger: StructuredLogger,
   ) {}
   intercept(context: ExecutionContext, next: CallHandler) {
-    const request = context.switchToHttp().getRequest<{ method: string }>();
-    if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return next.handle();
+    const request = context.switchToHttp().getRequest<{ method: string; path?: string }>();
+    if (
+      ['GET', 'HEAD', 'OPTIONS'].includes(request.method) ||
+      request.path === '/v1/me/presence/heartbeat'
+    )
+      return next.handle();
     return next.handle().pipe(
       concatMap(async (value: unknown) => {
         try {

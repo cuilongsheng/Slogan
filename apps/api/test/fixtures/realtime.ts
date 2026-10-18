@@ -83,6 +83,7 @@ export async function seedAdult(prisma: PrismaService, name = 'Test member') {
   });
 }
 export async function clearRealtimeFixtures(prisma: PrismaService) {
+  await prisma.publicTrialAccount.deleteMany();
   await prisma.previewAccountProvisioning.deleteMany();
   await prisma.emailDelivery.deleteMany();
   await prisma.emailChallenge.deleteMany();

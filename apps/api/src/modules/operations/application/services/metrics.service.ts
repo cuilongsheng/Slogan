@@ -35,7 +35,16 @@ export class MetricsService {
       window,
       this.config.get('OPERATIONS_METRIC_DEFINITION_VERSION', { infer: true }),
       this.config.get('OPERATIONS_METRIC_LEASE_SECONDS', { infer: true }),
+      now,
     );
+    if (claim.cached)
+      return {
+        runId: claim.runId,
+        grain,
+        windowStart: window.start,
+        windowEnd: window.end,
+        snapshotCount: claim.snapshotCount ?? 0,
+      };
     try {
       const facts = await this.repository.compute(window, now);
       await this.repository.commit(claim, facts, now);

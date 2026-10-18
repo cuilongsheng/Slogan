@@ -11,6 +11,10 @@ export const METRICS_REPOSITORY = Symbol('METRICS_REPOSITORY');
 
 export interface MetricRunClaim {
   runId: string;
+  sourceVersion?: bigint;
+  maturityComplete?: boolean;
+  cached?: boolean;
+  snapshotCount?: number;
   leaseId: string;
   generation: number;
   window: MetricWindow;
@@ -22,6 +26,7 @@ export interface MetricsRepository {
     window: MetricWindow,
     definitionVersion: string,
     leaseSeconds: number,
+    now?: Date,
   ): Promise<MetricRunClaim>;
   compute(window: MetricWindow, now: Date): Promise<MetricFact[]>;
   commit(claim: MetricRunClaim, facts: MetricFact[], dataThroughAt: Date): Promise<void>;

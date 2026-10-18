@@ -15,7 +15,22 @@ export async function loadLockedRealtimeRoom(
   const members = await tx.roomMembership.findMany({
     where: { roomId },
     orderBy: { joinOrder: 'asc' },
-    include: { user: { include: { profile: true } } },
+    include: {
+      user: {
+        select: {
+          status: true,
+          profile: {
+            select: {
+              displayName: true,
+              avatarUrl: true,
+              genderCode: true,
+              nationalityCode: true,
+              cefrLevel: true,
+            },
+          },
+        },
+      },
+    },
   });
   const identities = await tx.realtimeIdentity.findMany({ where: { roomId } });
   const context: LockedRealtimeRoom = {

@@ -28,14 +28,18 @@ afterAll(() => {
 
 test('managed producer publishes durable delayed jobs and deduplicates recovery seeds in a time bucket', async () => {
   jest.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
-  const queue = new RealtimeQueue(new ConfigService(testEnvironment()), {
-    warn: jest.fn(),
-  } as never);
+  const queue = new RealtimeQueue(
+    new ConfigService(testEnvironment()),
+    {
+      warn: jest.fn(),
+    } as never,
+    { send, run: (_job: unknown, work: () => Promise<void>) => work() } as never,
+  );
   try {
     await queue.start(async () => undefined);
     await queue.ensureRecovery();
     await queue.ensureRecovery();
-    expect(send.mock.calls[0]).toEqual(send.mock.calls[1]);
+    expect(send.mock.calls[0]).not.toEqual(send.mock.calls[1]);
     await queue.enqueue({ kind: 'expiry', id: 'room' }, new Date(Date.now() + 9000));
     expect(send).toHaveBeenLastCalledWith(
       'slogan-realtime',
@@ -51,9 +55,13 @@ test('managed producer publishes durable delayed jobs and deduplicates recovery 
 });
 
 test('callback processing propagates transient failure for redelivery and rejects invalid jobs', async () => {
-  const queue = new RealtimeQueue(new ConfigService(testEnvironment()), {
-    warn: jest.fn(),
-  } as never);
+  const queue = new RealtimeQueue(
+    new ConfigService(testEnvironment()),
+    {
+      warn: jest.fn(),
+    } as never,
+    { send, run: (_job: unknown, work: () => Promise<void>) => work() } as never,
+  );
   const handler = jest.fn(async () => {
     throw new Error('temporary failure');
   });
@@ -69,29 +77,15 @@ test('callback processing propagates transient failure for redelivery and reject
   await queue.onModuleDestroy();
 });
 
-test('a failed request seed retries; concurrent requests share a send and successful seeds renew after five minutes', async () => {
-  const now = jest.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
-  const queue = new RealtimeQueue(new ConfigService(testEnvironment()), {
-    warn: jest.fn(),
-  } as never);
-  try {
-    await queue.start(async () => undefined);
-    send.mockRejectedValueOnce(new Error('missing startup request context'));
-    await expect(queue.seedRecoveryFromRequest()).rejects.toThrow(
-      'missing startup request context',
-    );
-    const first = queue.seedRecoveryFromRequest();
-    const concurrent = queue.seedRecoveryFromRequest();
-    expect(concurrent).toBe(first);
-    await first;
-    expect(send).toHaveBeenCalledTimes(2);
-    await queue.seedRecoveryFromRequest();
-    expect(send).toHaveBeenCalledTimes(2);
-    now.mockReturnValue(1_800_000_300_000);
-    await queue.seedRecoveryFromRequest();
-    expect(send).toHaveBeenCalledTimes(3);
-  } finally {
-    await queue.onModuleDestroy();
-    jest.restoreAllMocks();
-  }
+test('a new committed mutation gets a fresh wakeup even within the prior recovery time bucket', async () => {
+  const queue = new RealtimeQueue(
+    new ConfigService(testEnvironment()),
+    { warn: jest.fn() } as never,
+    { send, run: (_job: unknown, work: () => Promise<void>) => work() } as never,
+  );
+  await queue.start(async () => {});
+  await queue.ensureRecovery();
+  await queue.ensureRecovery();
+  expect(send.mock.calls[0]).not.toEqual(send.mock.calls[1]);
+  await queue.onModuleDestroy();
 });

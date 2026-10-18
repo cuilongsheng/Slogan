@@ -13,6 +13,7 @@ import { RealtimeQueue } from '../../../../infrastructure/redis/realtime-queue.s
 
 @Injectable()
 export class VoiceService {
+  private readonly reconciled = new Map<string, string>();
   constructor(
     private readonly rooms: RoomRealtimeService,
     @Inject(REALTIME_PROVIDER) private readonly provider: RealtimeProvider,
@@ -113,6 +114,20 @@ export class VoiceService {
     }
   }
   async reconcile(roomId: string) {
+    const head = await this.rooms.reconciliationHead?.(roomId);
+    if (head && head.status !== 'OPEN') return;
+    if (head && head.endsAt <= new Date()) {
+      await this.expire(roomId);
+      return;
+    }
+    if (head && !head.providerRoomSid) return;
+    // Provider observations are the only reason to refresh an unchanged durable snapshot.
+    const earlyRemote = head ? await this.provider.participants(roomId) : undefined;
+    const fingerprint =
+      head && earlyRemote
+        ? `${head.version}:${earlyRemote.roomSid}:${JSON.stringify(earlyRemote.participants.map((p) => [p.identity, p.sessionSid]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))))}`
+        : undefined;
+    if (fingerprint && this.reconciled.get(roomId) === fingerprint) return;
     const snapshot = await this.rooms.snapshot(roomId);
     if (!snapshot || snapshot.room.status !== 'OPEN') return;
     if (snapshot.room.endsAt <= new Date()) {
@@ -120,9 +135,9 @@ export class VoiceService {
       return;
     }
     if (!snapshot.room.providerRoomSid) return;
-    // Timestamp BEFORE provider I/O: a newer webhook wins against a stale observation.
-    const observedAt = snapshot.observedAt;
-    const remote = await this.provider.participants(roomId);
+    if (head && head.providerRoomSid !== snapshot.room.providerRoomSid) return;
+    const observedAt = head?.observedAt ?? snapshot.observedAt;
+    const remote = earlyRemote ?? (await this.provider.participants(roomId));
     if (!remote.roomSid || remote.roomSid !== snapshot.room.providerRoomSid) {
       await this.rooms.applySignal({
         id: randomUUID(),
@@ -163,6 +178,10 @@ export class VoiceService {
         )
       )
         await this.provider.revoke(roomId, participant.identity);
+    }
+    if (fingerprint) {
+      if (this.reconciled.size >= 128) this.reconciled.delete(this.reconciled.keys().next().value!);
+      this.reconciled.set(roomId, fingerprint);
     }
   }
   private assertEnabled() {

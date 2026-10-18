@@ -1,3 +1,6 @@
+import type { VerifiedAccessContext } from '../../auth/index.js';
+import type { Request } from 'express';
+import { Req } from '@nestjs/common';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -172,8 +175,13 @@ export class SocialController {
   async heartbeat(
     @CurrentIdentity() identity: CurrentAccessIdentity,
     @Body() _body: PresenceHeartbeatDto,
+    @Req() request: Request & { verifiedAccess?: VerifiedAccessContext },
   ) {
-    const result = await this.social.heartbeat(identity.userId);
+    const result = await this.social.heartbeat(
+      identity.userId,
+      new Date(),
+      request.verifiedAccess?.eligible,
+    );
     return { ...result, expiresAt: result.expiresAt.toISOString() };
   }
 

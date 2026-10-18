@@ -1,0 +1,71 @@
+{
+  "evidence": "Local PostgreSQL/Redis with real owner/application paths; Vercel Queue transport and LiveKit simulated. SQL includes transactions. redis is SDK sends; redisIncludingLua adds actual MONITOR script commands, synchronized by ECHO barriers. Quota planning conservatively uses redisIncludingLua; no Upstash billing delta or global replication was measured. queued means delayed jobs remaining.",
+  "counts": {
+    "heartbeat-first": {
+      "sql": 2,
+      "redis": 1,
+      "redisIncludingLua": 7,
+      "queued": 1
+    },
+    "heartbeat-steady": {
+      "sql": 1,
+      "redis": 1,
+      "redisIncludingLua": 5,
+      "queued": 0
+    },
+    "join-foreground-and-immediate-workers": {
+      "sql": 53,
+      "redis": 6,
+      "redisIncludingLua": 30,
+      "queued": 2
+    },
+    "credential-first": {
+      "sql": 85,
+      "redis": 6,
+      "redisIncludingLua": 30,
+      "queued": 0
+    },
+    "credential-unchanged-SID": {
+      "sql": 80,
+      "redis": 0,
+      "redisIncludingLua": 0,
+      "queued": 0
+    },
+    "SSE-outbox-single-publication": {
+      "sql": 6,
+      "redis": 1,
+      "redisIncludingLua": 5,
+      "queued": 0
+    },
+    "leave-foreground-and-immediate-workers": {
+      "sql": 69,
+      "redis": 11,
+      "redisIncludingLua": 55,
+      "queued": 2
+    },
+    "refresh-steady": {
+      "sql": 18,
+      "redis": 1,
+      "redisIncludingLua": 3,
+      "queued": 0
+    },
+    "empty-owner-fallback": {
+      "sql": 3,
+      "redis": 3,
+      "redisIncludingLua": 5,
+      "queued": 1
+    },
+    "stale-generation-callback": {
+      "sql": 1,
+      "redis": 0,
+      "redisIncludingLua": 0,
+      "queued": 0
+    },
+    "legacy-unstamped-callback": {
+      "sql": 0,
+      "redis": 0,
+      "redisIncludingLua": 0,
+      "queued": 0
+    }
+  }
+}

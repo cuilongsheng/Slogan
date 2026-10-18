@@ -36,7 +36,8 @@ export class ObservabilityMonitorService {
     return this.config.get('OBSERVABILITY_MONITOR_ENABLED', { infer: true });
   }
   private interval() {
-    return this.config.get('OBSERVABILITY_MONITOR_INTERVAL_SECONDS', { infer: true });
+    const interval = this.config.get('OBSERVABILITY_MONITOR_INTERVAL_SECONDS', { infer: true });
+    return process.env.VERCEL === '1' ? Math.max(900, interval) : interval;
   }
   currentWindow(now = new Date()) {
     return Math.floor(now.getTime() / (this.interval() * 1000));

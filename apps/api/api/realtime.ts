@@ -1,4 +1,5 @@
 import '../src/infrastructure/observability/instrument-realtime.js';
+import { localDelivery } from '../src/infrastructure/managed/worker-owner.service.js';
 import { NestFactory } from '@nestjs/core';
 import { QueueClient } from '@vercel/queue';
 import { AppModule } from '../src/app.module.js';
@@ -29,9 +30,9 @@ export default queue.handleNodeCallback<RealtimeJob>(
   (job) =>
     withErrorReportingScope(async () => {
       try {
+        if (!localDelivery(job)) return;
         const services = await consumer();
-        await services.realtime.process(job);
-        await services.live.recover();
+        await services.realtime.process(job, () => services.live.recover());
       } catch (error) {
         reportError(error, { code: 'QUEUE_TASK_FAILED', stage: 'worker' });
         throw error;

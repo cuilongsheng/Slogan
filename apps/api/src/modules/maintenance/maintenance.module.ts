@@ -7,6 +7,7 @@ import { AssistanceModule } from '../assistance/index.js';
 import { RedisModule } from '../../infrastructure/redis/redis.module.js';
 import { ObservabilityModule } from '../../infrastructure/observability/observability.module.js';
 import { MaintenanceLease } from '../../infrastructure/managed/maintenance-lease.service.js';
+import { WorkHintsService } from './work-hints.service.js';
 import { MaintenanceService } from './maintenance.service.js';
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { MaintenanceService } from './maintenance.service.js';
     RedisModule,
     ObservabilityModule,
   ],
-  providers: [MaintenanceLease, MaintenanceService],
+  providers: [MaintenanceLease, WorkHintsService, MaintenanceService],
   exports: [MaintenanceService],
 })
 export class MaintenanceModule {}

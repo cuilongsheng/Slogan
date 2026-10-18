@@ -1,13 +1,15 @@
-import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { Injectable, Optional, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { QueueClient } from '@vercel/queue';
+import { WorkerOwner, type FencedJob } from '../managed/worker-owner.service.js';
 import { reportError } from '../observability/error-reporting.js';
 import type { Environment } from '../../config/environment.js';
 import { StructuredLogger } from '../observability/structured-logger.service.js';
 
-export interface RealtimeJob {
+export interface RealtimeJob extends FencedJob {
   kind:
     | 'expiry'
     | 'command'
@@ -25,14 +27,13 @@ export class RealtimeQueue implements OnModuleDestroy {
   private consumer: Redis | undefined;
   private vercel: QueueClient | undefined;
   private handler: ((job: RealtimeJob) => Promise<void>) | undefined;
-  private recoverySeed: Promise<void> | undefined;
-  private recoverySeededAt: number | undefined;
   get managed() {
     return process.env.VERCEL === '1';
   }
   constructor(
     private readonly config: ConfigService<Environment, true>,
     private readonly logger: StructuredLogger,
+    @Optional() private readonly owner?: WorkerOwner,
   ) {}
   async start(handler: (job: RealtimeJob) => Promise<void>) {
     this.handler = handler;
@@ -64,13 +65,12 @@ export class RealtimeQueue implements OnModuleDestroy {
     // Connectivity recovery is asynchronous; durable PostgreSQL state remains the scheduling source.
   }
   async enqueue(job: RealtimeJob, runAt = new Date()) {
-    if (this.managed && process.env.VERCEL_ENV !== 'production') return;
     if (this.vercel) {
       const delaySeconds = Math.max(
         0,
         Math.min(604799, Math.ceil((runAt.getTime() - Date.now()) / 1000)),
       );
-      await this.vercel.send('slogan-realtime', job, {
+      await this.owner!.send('slogan-realtime', job, {
         retentionSeconds: 604800,
         delaySeconds,
         idempotencyKey: `${job.kind}-${job.id}-${job.kind === 'recovery' ? Math.floor(runAt.getTime() / 30000) : runAt.getTime()}`,
@@ -90,8 +90,7 @@ export class RealtimeQueue implements OnModuleDestroy {
       removeOnFail: 100,
     });
   }
-  async process(job: RealtimeJob) {
-    if (this.managed && process.env.VERCEL_ENV !== 'production') return;
+  async process(job: RealtimeJob, afterProcessed?: () => Promise<void>) {
     if (!this.handler) throw new Error('Realtime queue not initialized');
     if (
       !job ||
@@ -106,30 +105,21 @@ export class RealtimeQueue implements OnModuleDestroy {
       typeof job.id !== 'string'
     )
       throw new Error('Invalid realtime queue job');
+    if (this.managed)
+      return this.owner!.run(job, async () => {
+        await this.handler!(job);
+        await afterProcessed?.();
+        return true;
+      });
     await this.handler(job);
+    return true;
   }
   async ensureRecovery(delaySeconds = 0) {
     if (!this.managed) return;
     await this.enqueue(
-      { kind: 'recovery', id: 'scan' },
+      { kind: 'recovery', id: randomUUID() },
       new Date(Date.now() + delaySeconds * 1000),
     );
-  }
-  seedRecoveryFromRequest(): Promise<void> {
-    if (!this.managed) return Promise.resolve();
-    if (this.recoverySeed) return this.recoverySeed;
-    if (this.recoverySeededAt !== undefined && Date.now() - this.recoverySeededAt < 300_000)
-      return Promise.resolve();
-    // Queue OIDC credentials belong to the active Vercel request context.
-    // Only a successful send starts the cooldown; a failed seed is retried by the next request.
-    this.recoverySeed = this.ensureRecovery()
-      .then(() => {
-        this.recoverySeededAt = Date.now();
-      })
-      .finally(() => {
-        this.recoverySeed = undefined;
-      });
-    return this.recoverySeed;
   }
   async onModuleDestroy() {
     await this.worker?.close();

@@ -1,3 +1,4 @@
+const jest = import.meta.jest;
 import { randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -69,6 +70,19 @@ describe('realtime PostgreSQL state and recovery', () => {
   async function releaseIssuance() {
     await prisma.realtimeIssuance.deleteMany();
   }
+  it('issues fresh credentials without writing the same provider SID or adding outbox notifications', async () => {
+    await voice.credentials(roomId, hostId);
+    await prisma.liveUpdateOutbox.deleteMany();
+    const before = await prisma.room.findUniqueOrThrow({ where: { id: roomId } });
+    const result = await voice.credentials(roomId, hostId);
+    expect(result.participantToken).toBeTruthy();
+    expect(provider.tokenCalls).toBe(2);
+    expect(await prisma.realtimeIssuance.count()).toBe(0);
+    expect(await prisma.liveUpdateOutbox.count()).toBe(0);
+    const after = await prisma.room.findUniqueOrThrow({ where: { id: roomId } });
+    expect(after.updatedAt).toEqual(before.updatedAt);
+    expect(after.providerRoomSid).toBe('RM_test');
+  });
   it('rejects a changed reservation and durably repairs stale provider time metadata', async () => {
     await ready();
     const reservation = await issued();
@@ -368,5 +382,32 @@ describe('realtime PostgreSQL state and recovery', () => {
     await voice.dispatchPending();
     await voice.dispatchPending();
     expect((await prisma.room.findUniqueOrThrow({ where: { id: roomId } })).status).toBe('ENDED');
+  });
+  test('unchanged media state reuses a narrow active-member snapshot and refreshes on a version change', async () => {
+    await prisma.room.update({ where: { id: roomId }, data: { providerRoomSid: 'RM_fixture' } });
+    provider.participants = async () => ({ roomSid: 'RM_fixture', participants: [] });
+    const snapshot = jest.spyOn(realtime, 'snapshot');
+    const lock = jest.spyOn(repository, 'withRoom');
+    const profiles = jest.spyOn(prisma.userProfile, 'findUnique');
+    try {
+      await voice.reconcile(roomId);
+      await voice.reconcile(roomId);
+      expect(snapshot).toHaveBeenCalledTimes(1);
+      expect(lock).not.toHaveBeenCalled();
+      expect(profiles).not.toHaveBeenCalled();
+      await prisma.room.update({ where: { id: roomId }, data: { stateVersion: { increment: 1 } } });
+      await voice.reconcile(roomId);
+      expect(snapshot).toHaveBeenCalledTimes(2);
+      await prisma.roomMembership.update({
+        where: { roomId_userId: { roomId, userId: memberId } },
+        data: { lifecycle: 'LEFT' },
+      });
+      const data = await realtime.snapshot(roomId);
+      expect(data?.members.map((m) => m.userId)).toEqual([hostId]);
+    } finally {
+      snapshot.mockRestore();
+      lock.mockRestore();
+      profiles.mockRestore();
+    }
   });
 });

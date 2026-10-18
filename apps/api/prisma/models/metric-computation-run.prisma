@@ -8,6 +8,8 @@ model MetricComputationRun {
   generation        Int             @default(0)
   leaseId           String?         @db.Uuid
   lockedUntil       DateTime?       @db.Timestamptz(3)
+  sourceVersion     BigInt?
+  maturityComplete  Boolean @default(false)
   watermark         DateTime?       @db.Timestamptz(3)
   errorCode         String?         @db.VarChar(64)
   startedAt         DateTime?       @db.Timestamptz(3)

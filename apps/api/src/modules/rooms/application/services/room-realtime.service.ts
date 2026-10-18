@@ -126,7 +126,7 @@ export class RoomRealtimeService {
         await this.endLocked(ctx, 'PROVIDER_ROOM_REPLACED');
         return false;
       }
-      await ctx.saveRoom({ providerRoomSid: roomSid });
+      if (ctx.room.providerRoomSid !== roomSid) await ctx.saveRoom({ providerRoomSid: roomSid });
       return {
         lifecycle: member.lifecycle,
         role: member.role,
@@ -368,7 +368,11 @@ export class RoomRealtimeService {
   async operationStatus(roomId: string) {
     return this.repository.operationStatus(roomId);
   }
+  reconciliationHead(roomId: string) {
+    return this.repository.reconciliationHead?.(roomId);
+  }
   async snapshot(roomId: string) {
+    if (this.repository.mediaSnapshot) return this.repository.mediaSnapshot(roomId);
     return this.repository.withRoom(roomId, async (ctx) => ({
       room: ctx.room,
       members: ctx.members,
@@ -381,6 +385,9 @@ export class RoomRealtimeService {
   }
   scheduledHostTimeouts() {
     return this.repository.scheduledHostTimeouts();
+  }
+  pendingSchedules(input: { roomId?: string; commandId?: string }) {
+    return this.repository.pendingSchedules?.(input) ?? Promise.resolve([]);
   }
   pendingCommands(roomId?: string) {
     return this.repository.pendingCommands(roomId);

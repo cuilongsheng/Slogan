@@ -5,7 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
 import type { Environment } from '../../../../config/environment.js';
-import type { AccessIdentity, TokenPair } from '../../domain/entities/auth-session.js';
+import type {
+  AccessIdentity,
+  TokenPair,
+  VerifiedAccessContext,
+} from '../../domain/entities/auth-session.js';
 import { AuthError } from '../../domain/errors/auth.error.js';
 import { AUTH_REPOSITORY, type AuthRepository } from '../../domain/ports/auth.repository.js';
 
@@ -67,17 +71,34 @@ export class SessionService {
     return (await this.repository.isPublicTrialViewer?.(userId)) ?? false;
   }
 
-  async streamIdentity(token: string): Promise<AccessIdentity & { expiresAt: number }> {
-    const identity = await this.verifyAccessToken(token);
-    const claims = this.jwt.decode<{ exp?: number }>(token);
-    if (!claims || typeof claims.exp !== 'number')
-      throw new AuthError('ACCESS_TOKEN_INVALID', 'Access token is invalid');
-    return { ...identity, expiresAt: claims.exp * 1000 };
+  async streamIdentity(
+    token: string,
+    verified?: VerifiedAccessContext,
+  ): Promise<VerifiedAccessContext> {
+    return verified ?? this.verifyAccessContext(token);
   }
-
-  async verifyAccessToken(token: string, now = new Date()): Promise<AccessIdentity> {
+  async recheckAccessContext(
+    identity: VerifiedAccessContext,
+    now = new Date(),
+  ): Promise<VerifiedAccessContext> {
+    if (identity.expiresAt <= now.getTime())
+      throw new AuthError('ACCESS_TOKEN_INVALID', 'Access token is invalid');
+    if (this.repository.authorizationState) {
+      const state = await this.repository.authorizationState(
+        identity.userId,
+        identity.sessionId,
+        now,
+      );
+      if (!state.active) throw new AuthError('ACCESS_TOKEN_INVALID', 'Access token is invalid');
+      return { ...identity, trial: state.trial, eligible: state.eligible };
+    }
+    if (!(await this.repository.isSessionActive(identity.userId, identity.sessionId, now)))
+      throw new AuthError('ACCESS_TOKEN_INVALID', 'Access token is invalid');
+    return { ...identity, trial: await this.isPublicTrialViewer(identity.userId) };
+  }
+  async verifyAccessContext(token: string, now = new Date()): Promise<VerifiedAccessContext> {
     try {
-      const claims = await this.jwt.verifyAsync<AccessClaims>(token, {
+      const claims = await this.jwt.verifyAsync<AccessClaims & { exp: number }>(token, {
         secret: this.config.get('JWT_ACCESS_SECRET', { infer: true }),
         issuer: this.config.get('JWT_ISSUER', { infer: true }),
         audience: this.config.get('JWT_AUDIENCE', { infer: true }),
@@ -85,15 +106,21 @@ export class SessionService {
       if (
         typeof claims.sub !== 'string' ||
         typeof claims.sid !== 'string' ||
-        !(await this.repository.isSessionActive(claims.sub, claims.sid, now))
-      ) {
+        typeof claims.exp !== 'number'
+      )
         throw new AuthError('ACCESS_TOKEN_INVALID', 'Access token is invalid');
-      }
-      return { userId: claims.sub, sessionId: claims.sid };
+      return await this.recheckAccessContext(
+        { userId: claims.sub, sessionId: claims.sid, expiresAt: claims.exp * 1000 },
+        now,
+      );
     } catch (error) {
       if (error instanceof AuthError) throw error;
       throw new AuthError('ACCESS_TOKEN_INVALID', 'Access token is invalid');
     }
+  }
+  async verifyAccessToken(token: string, now = new Date()): Promise<AccessIdentity> {
+    const { userId, sessionId } = await this.verifyAccessContext(token, now);
+    return { userId, sessionId };
   }
 
   private async tokenPair(

@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../../../config/environment.js';
 import { AppError } from '../../../common/errors/app-error.js';
-import { SessionService } from '../../auth/index.js';
+import { SessionService, type VerifiedAccessContext } from '../../auth/index.js';
 import { SocialService, SocialError } from '../../social/index.js';
 import {
   LIVE_UPDATES_STORE,
@@ -23,13 +23,15 @@ export type LiveFrame = {
 export class LiveUpdatesService {
   private publishing: Promise<void> | undefined;
   private pending = false;
-  private recoveredAt = 0;
   constructor(
     @Inject(LIVE_UPDATES_STORE) private readonly store: LiveUpdatesStore,
     private readonly sessions: SessionService,
     private readonly social: SocialService,
     private readonly config: ConfigService<Environment, true>,
   ) {}
+  async sweepPresence() {
+    return this.store.sweepPresence?.();
+  }
   reconcileRelease() {
     return this.store.reconcileRelease();
   }
@@ -41,13 +43,17 @@ export class LiveUpdatesService {
         while (this.pending) {
           this.pending = false;
           await this.store.dispatch();
-          this.recoveredAt = Date.now();
         }
       })
       .finally(() => {
         this.publishing = undefined;
       });
     return this.publishing;
+  }
+  async presenceExpiry(owner: string, generation: string) {
+    if (this.store.presenceExpiry) return this.store.presenceExpiry(owner, generation);
+    const ttl = await this.store.expirePresence(owner, generation);
+    return { ttl, expiresAt: Date.now() + ttl };
   }
   expirePresence(owner: string, generation?: string) {
     return this.store.expirePresence(owner, generation);
@@ -97,14 +103,24 @@ export class LiveUpdatesService {
       throw error;
     }
   }
-  async open(token: string, cursor: string | undefined, signal: AbortSignal, protocol = 1) {
+  async open(
+    token: string,
+    cursor: string | undefined,
+    signal: AbortSignal,
+    protocol = 1,
+    verified?: VerifiedAccessContext,
+  ) {
     if (protocol !== 1 && protocol !== 2)
       throw new AppError('LIVE_PROTOCOL_INVALID', 'Unsupported live protocol', 400);
-    const identity = await this.sessions.streamIdentity(token);
-    if (await this.sessions.isPublicTrialViewer(identity.userId))
+    const identity = await this.sessions.streamIdentity(token, verified);
+    if (identity.trial ?? (await this.sessions.isPublicTrialViewer(identity.userId)))
       throw new AppError('LIVE_ACCESS_DENIED', 'Live updates unavailable', 403);
-    if (protocol === 1) await this.social.assertEligible(identity.userId);
+    const initialEligible = identity.eligible ?? (await this.eligible(identity.userId));
+    if (protocol === 1 && !initialEligible)
+      throw new SocialError('SOCIAL_ACCESS_RESTRICTED', 'Social access is restricted');
     const requested = this.decode(identity.userId, cursor, protocol);
+    // One bounded preflight on connection entry establishes replay bounds after prior commits.
+    // No periodic global recovery is performed by an open stream.
     try {
       await this.recover();
     } catch {
@@ -124,27 +140,35 @@ export class LiveUpdatesService {
     const reader = await this.store.reader(identity.userId, signal).catch(() => {
       throw new AppError('LIVE_UPDATES_UNAVAILABLE', 'Live updates temporarily unavailable', 503);
     });
-    const deadline = Math.min(Date.now() + 240000, identity.expiresAt - 1000);
+    // Align checkpoints and bounded renewals across subscribers sharing one reader.
+    // Otherwise staggered per-user deadlines turn one reader into N idle wakeups.
+    const deadline = Math.min(
+      (Math.floor(Date.now() / 240000) + 1) * 240000,
+      identity.expiresAt - 1000,
+    );
     const frames = async function* (this: LiveUpdatesService): AsyncGenerator<LiveFrame> {
-      let checkedAt = Date.now();
+      let checkedAt = Math.floor(Date.now() / 15000) * 15000;
       try {
-        let eligible = await this.eligible(identity.userId);
+        let eligible = initialEligible;
         // Reset also requests a fresh snapshot for a retained/replayed cursor. It is duplicate-safe.
         yield {
           scope: protocol === 2 && replay ? 'ready' : 'reset',
           id: this.encode(identity.userId, positions, protocol),
         };
         while (!signal.aborted && Date.now() < deadline) {
-          if (Date.now() - this.recoveredAt >= 15000) await this.recover();
-          const changes = await reader.read(positions);
-          if (signal.aborted) break;
+          const changes = await reader.read(positions, Math.min(deadline, checkedAt + 15000));
+          if (signal.aborted || Date.now() >= deadline) break;
           if (changes.length || Date.now() - checkedAt >= 15000) {
-            const fresh = await this.sessions.verifyAccessToken(token);
+            const fresh = this.sessions.recheckAccessContext
+              ? await this.sessions.recheckAccessContext(identity)
+              : await this.sessions.verifyAccessToken(token);
             if (fresh.userId !== identity.userId || fresh.sessionId !== identity.sessionId) break;
-            if (await this.sessions.isPublicTrialViewer(identity.userId)) break;
-            if (protocol === 1) await this.social.assertEligible(identity.userId);
-            eligible = await this.eligible(identity.userId);
-            checkedAt = Date.now();
+            const state = fresh as VerifiedAccessContext;
+            if (state.trial ?? (await this.sessions.isPublicTrialViewer(identity.userId))) break;
+            eligible = state.eligible ?? (await this.eligible(identity.userId));
+            if (protocol === 1 && !eligible)
+              throw new SocialError('SOCIAL_ACCESS_RESTRICTED', 'Social access is restricted');
+            checkedAt = Math.floor(Date.now() / 15000) * 15000;
             if (!changes.length) yield { scope: 'heartbeat' };
           }
           // These are snapshot invalidations. Keep the last identical notification in this

@@ -9,7 +9,13 @@ import type { Environment } from '../../config/environment.js';
 export class PrismaService extends PrismaClient implements OnModuleDestroy {
   constructor(config: ConfigService<Environment, true>) {
     super({
-      adapter: new PrismaPg({ connectionString: config.get('DATABASE_URL', { infer: true }) }),
+      adapter: new PrismaPg({
+        connectionString: config.get('DATABASE_URL', { infer: true }),
+        max: config.get('DATABASE_POOL_MAX', { infer: true }),
+        idleTimeoutMillis: config.get('DATABASE_POOL_IDLE_TIMEOUT_MS', { infer: true }),
+        connectionTimeoutMillis: 5000,
+        allowExitOnIdle: true,
+      }),
     });
   }
 

@@ -13,6 +13,8 @@ import { reportError } from '../../../infrastructure/observability/error-reporti
 export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setInterval> | undefined;
   private running: Promise<void> | undefined;
+  private managedRecovery: Promise<void> | undefined;
+  private recoveryPending = false;
   constructor(
     private readonly config: ConfigService<Environment, true>,
     private readonly queue: RealtimeQueue,
@@ -24,21 +26,36 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     await this.queue.start(async (job) => {
       if (job.kind === 'recovery') {
-        await this.recover();
-        const active =
-          (await this.rooms.recoverableRooms()).length > 0 ||
-          (await this.rooms.pendingCommands()).length > 0;
-        await this.queue.ensureRecovery(active ? 30 : 300);
-        await this.heartbeat?.completed('realtime');
+        // Fluid instances can receive overlapping deliveries. All callers await
+        // the same scan and continuation, including any failure for redelivery.
+        this.recoveryPending = true;
+        this.managedRecovery ??= Promise.resolve()
+          .then(async () => {
+            while (this.recoveryPending) {
+              this.recoveryPending = false;
+              await this.recover();
+              await this.heartbeat?.completed('realtime');
+            }
+          })
+          .finally(() => {
+            this.managedRecovery = undefined;
+          });
+        await this.managedRecovery;
         return;
       }
       if (job.kind === 'appointment-open' || job.kind === 'appointment-start-window') {
         await this.rooms.settleAppointment(job.id);
+        await this.recover();
         return;
       }
       if (!this.config.get('REALTIME_ENABLED', { infer: true })) return;
       if (job.kind === 'expiry') await this.voice.expire(job.id);
       else await this.voice.dispatch(job.id);
+      // Only actual pending commands get a bounded retry, never a global recovery chain.
+      for (const pending of (await this.rooms.pendingSchedules?.(
+        job.kind === 'expiry' ? { roomId: job.id } : { commandId: job.id },
+      )) ?? [])
+        await this.queue.enqueue({ kind: 'command', id: pending.id }, pending.runAt);
     });
     if (this.queue.managed) return;
     this.tick();
@@ -59,8 +76,11 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
   }
   async recover() {
     const mediaEnabled = this.config.get('REALTIME_ENABLED', { infer: true });
-    for (const room of await this.rooms.recoverableRooms()) {
+    const rooms = await this.rooms.recoverableRooms();
+    let settledAppointment = false;
+    for (const room of rooms) {
       if (room.kind !== 'APPOINTMENT') continue;
+      settledAppointment = true;
       try {
         await this.rooms.settleAppointment(room.id);
         if (room.startedAt! > new Date())
@@ -76,7 +96,8 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
       }
     }
     const pendingCommands = await this.rooms.pendingCommands();
-    if (!mediaEnabled) return;
+    const active = rooms.length > 0 || pendingCommands.length > 0;
+    if (!mediaEnabled) return active;
     for (const timer of await this.rooms.scheduledHostTimeouts()) {
       try {
         await this.queue.enqueue({ kind: 'host-timeout', id: timer.id }, timer.runAt);
@@ -85,7 +106,9 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
         this.logger.warn('host_timeout_scheduling_pending');
       }
     }
-    for (const room of await this.rooms.recoverableRooms()) {
+    // Appointment settlement can open/cancel rooms. Ordinary empty scans do
+    // not need to query the same list again.
+    for (const room of settledAppointment ? await this.rooms.recoverableRooms() : rooms) {
       try {
         if (room.status === 'OPEN') {
           if (room.endsAt <= new Date()) await this.voice.expire(room.id);
@@ -107,9 +130,11 @@ export class RealtimeRunner implements OnModuleInit, OnModuleDestroy {
         this.logger.warn('realtime_command_scheduling_pending');
       }
     }
+    return active;
   }
   async onModuleDestroy() {
     if (this.timer) clearInterval(this.timer);
     await this.running;
+    await this.managedRecovery;
   }
 }

@@ -27,6 +27,8 @@ export function testEnvironment(overrides: Partial<Environment> = {}): Environme
     OBSERVABILITY_MONITOR_LEASE_SECONDS: 45,
     OBSERVABILITY_COMMAND_DEADLINE_SECONDS: 120,
     OBSERVABILITY_HEARTBEAT_TIMEOUT_MS: 2000,
+    DATABASE_POOL_MAX: 10,
+    DATABASE_POOL_IDLE_TIMEOUT_MS: 60000,
     DATABASE_URL: databaseUrl ?? 'postgresql://slogan:slogan@127.0.0.1:54329/slogan_test',
     CORS_ALLOWED_ORIGINS: ['http://localhost:5173'],
     JWT_ACCESS_SECRET: 'test-access-secret-with-at-least-32-characters',

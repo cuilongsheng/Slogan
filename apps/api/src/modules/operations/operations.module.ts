@@ -1,3 +1,4 @@
+import { WorkerOwner } from '../../infrastructure/managed/worker-owner.service.js';
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { BackofficeModule } from '../backoffice/index.js';
@@ -29,7 +30,11 @@ import { VercelMonitorScheduler } from './infrastructure/vercel-monitor-schedule
   imports: [AuthModule, BackofficeModule],
   controllers: [OperationsController],
   providers: [
-    { provide: MONITOR_SCHEDULER, useFactory: () => new VercelMonitorScheduler() },
+    {
+      provide: MONITOR_SCHEDULER,
+      useFactory: (owner: WorkerOwner) => new VercelMonitorScheduler(undefined, owner),
+      inject: [WorkerOwner],
+    },
     ObservabilityMonitorService,
     PrismaObservabilityMonitorRepository,
     {

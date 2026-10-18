@@ -1,3 +1,4 @@
+import type { VerifiedAccessContext } from '../../auth/index.js';
 import { Controller, Get, Headers, Query, Req, Res } from '@nestjs/common';
 import {
   ApiExtraModels,
@@ -62,7 +63,7 @@ export class LiveUpdatesController {
   async stream(
     @Headers('last-event-id') cursor: string | undefined,
     @Query() query: LiveProtocolQueryDto,
-    @Req() request: Request,
+    @Req() request: Request & { verifiedAccess?: VerifiedAccessContext },
     @Res() response: Response,
   ) {
     const abort = new AbortController();
@@ -74,6 +75,7 @@ export class LiveUpdatesController {
         cursor,
         abort.signal,
         query.protocol ?? 1,
+        request.verifiedAccess,
       );
       response.status(200).set({
         'Content-Type': 'text/event-stream; charset=utf-8',

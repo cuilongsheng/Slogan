@@ -1,4 +1,8 @@
 import '../src/infrastructure/observability/instrument-operations.js';
+import {
+  localDelivery,
+  type FencedJob,
+} from '../src/infrastructure/managed/worker-owner.service.js';
 import { NestFactory } from '@nestjs/core';
 import { QueueClient } from '@vercel/queue';
 import { AppModule } from '../src/app.module.js';
@@ -18,10 +22,11 @@ function consumer() {
     });
   return context;
 }
-export default new QueueClient().handleNodeCallback<{ kind: string }>(
+export default new QueueClient().handleNodeCallback<FencedJob & { kind: string }>(
   (job) =>
     withErrorReportingScope(async () => {
       try {
+        if (!localDelivery(job)) return;
         await (await consumer()).process(job);
       } catch (error) {
         reportError(error, { code: 'WORKER_FAILED', stage: 'worker' });
