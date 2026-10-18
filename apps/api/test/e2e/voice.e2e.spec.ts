@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import type { Redis } from 'ioredis';
+const jest = import.meta.jest;
 import request from 'supertest';
 import { AppModule } from '../../src/app.module.js';
 import { configureApiApp } from '../../src/bootstrap/create-api-app.js';
@@ -10,6 +12,7 @@ import { SessionService } from '../../src/modules/auth/index.js';
 import { RoomsService } from '../../src/modules/rooms/index.js';
 import { REALTIME_PROVIDER } from '../../src/modules/voice/index.js';
 import { RealtimeRunner } from '../../src/modules/voice/testing.js';
+import { RedisLiveUpdatesStore } from '../../src/modules/live-updates/infrastructure/redis-live-updates.store.js';
 import { installTestEnvironment } from '../fixtures/environment.js';
 import {
   realtimeEnvironment,
@@ -47,6 +50,7 @@ describe('realtime HTTP API', () => {
   });
   beforeEach(async () => {
     await clearRealtimeFixtures(prisma);
+    await prisma.liveUpdateOutbox.deleteMany();
     provider.fail = false;
     provider.revoked = [];
     provider.deleted = [];
@@ -65,6 +69,21 @@ describe('realtime HTTP API', () => {
     request(app.getHttpServer())
       .post(`/v1/rooms/${roomId}/realtime-credentials`)
       .set('authorization', `Bearer ${token}`);
+  it('repeated credential HTTP requests skip Redis publication and recovery scans', async () => {
+    await credential().expect(200);
+    expect(await prisma.liveUpdateOutbox.count()).toBe(0);
+    const store = app.get(RedisLiveUpdatesStore) as unknown as { client: Redis };
+    const commands = jest.spyOn(store.client, 'sendCommand');
+    const issuedBefore = provider.tokenCalls;
+    try {
+      await credential().expect(200);
+      expect(provider.tokenCalls).toBe(issuedBefore + 1);
+      expect(commands).not.toHaveBeenCalled();
+      expect(await prisma.liveUpdateOutbox.count()).toBe(0);
+    } finally {
+      commands.mockRestore();
+    }
+  });
   it('requires authentication and current room membership', async () => {
     await request(app.getHttpServer()).post(`/v1/rooms/${roomId}/realtime-credentials`).expect(401);
     const rejected = await request(app.getHttpServer())

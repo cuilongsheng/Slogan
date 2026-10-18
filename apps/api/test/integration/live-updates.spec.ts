@@ -1,9 +1,11 @@
+import type { Environment } from '../../src/config/environment.js';
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
+const jest = import.meta.jest;
 import { AppModule } from '../../src/app.module.js';
 import { configureApiApp } from '../../src/bootstrap/create-api-app.js';
 import { PrismaService } from '../../src/infrastructure/database/prisma.service.js';
@@ -11,12 +13,17 @@ import {
   LIVE_PUBLIC,
   LIVE_EXPIRIES,
   liveOwner,
+  dueLivePresence,
 } from '../../src/infrastructure/redis/live-stream.scripts.js';
+import { SocialPresenceStore } from '../../src/infrastructure/redis/social-presence.service.js';
+import { RedisLiveUpdatesStore } from '../../src/modules/live-updates/infrastructure/redis-live-updates.store.js';
 import { SessionService } from '../../src/modules/auth/index.js';
 import { SocialService } from '../../src/modules/social/index.js';
 import { DirectService } from '../../src/modules/direct/index.js';
+import { RoomRealtimeService } from '../../src/modules/rooms/index.js';
+import { RealtimeRunner } from '../../src/modules/voice/testing.js';
 import { LiveUpdatesService } from '../../src/modules/live-updates/index.js';
-import { installTestEnvironment } from '../fixtures/environment.js';
+import { installTestEnvironment, testEnvironment } from '../fixtures/environment.js';
 import { clearRealtimeFixtures, seedAdult } from '../fixtures/realtime.js';
 
 describe('real PostgreSQL/Redis authenticated SSE', () => {
@@ -114,6 +121,197 @@ describe('real PostgreSQL/Redis authenticated SSE', () => {
     }
     return value;
   }
+  test('empty outbox scans avoid transactions and a later insert still publishes', async () => {
+    const live = app.get(LiveUpdatesService);
+    await live.recover();
+    const transaction = jest.spyOn(prisma, '$transaction');
+    try {
+      await live.recover();
+      expect(transaction).not.toHaveBeenCalled();
+      await prisma.liveUpdateOutbox.create({ data: { scope: 'rooms' } });
+      await live.recover();
+      expect(transaction).toHaveBeenCalledTimes(1);
+      expect(await prisma.liveUpdateOutbox.count()).toBe(0);
+      const events = await redis.xrange(LIVE_PUBLIC, '-', '+');
+      expect(events.some(([, fields]) => fields.includes('rooms'))).toBe(true);
+    } finally {
+      transaction.mockRestore();
+    }
+  });
+  test('a multi-batch committed outbox drains without a periodic recovery clock', async () => {
+    await prisma.liveUpdateOutbox.deleteMany();
+    await prisma.liveUpdateOutbox.createMany({
+      data: Array.from({ length: 250 }, () => ({ scope: 'account', ownerId: actors[0]!.id })),
+    });
+    await app.get(LiveUpdatesService).recover();
+    expect(await prisma.liveUpdateOutbox.count()).toBe(0);
+  });
+  test('an empty explicit realtime recovery uses five database operations without a self-chain', async () => {
+    let handler!: (job: { kind: string; id: string }) => Promise<void>;
+    const queue = {
+      managed: true,
+      start: async (consume: typeof handler) => {
+        handler = consume;
+      },
+      ensureRecovery: jest.fn(async () => {}),
+      enqueue: jest.fn(async () => {}),
+    };
+    const runner = new RealtimeRunner(
+      new ConfigService(testEnvironment({ REALTIME_ENABLED: true })),
+      queue as never,
+      app.get(RoomRealtimeService),
+      {} as never,
+      { warn: jest.fn() } as never,
+    );
+    const rooms = jest.spyOn(prisma.room, 'findMany');
+    const text = jest.spyOn(prisma.roomTextMessage, 'deleteMany');
+    const issuances = jest.spyOn(prisma.realtimeIssuance, 'deleteMany');
+    const commands = jest.spyOn(prisma.realtimeCommand, 'findMany');
+    try {
+      await runner.onModuleInit();
+      await handler({ kind: 'recovery', id: 'scan' });
+      expect(rooms).toHaveBeenCalledTimes(1);
+      expect(text).toHaveBeenCalledTimes(1);
+      expect(issuances).toHaveBeenCalledTimes(1);
+      expect(commands).toHaveBeenCalledTimes(2);
+      expect(queue.ensureRecovery).not.toHaveBeenCalled();
+      expect(queue.enqueue).not.toHaveBeenCalled();
+    } finally {
+      rooms.mockRestore();
+      text.mockRestore();
+      issuances.mockRestore();
+      commands.mockRestore();
+      await runner.onModuleDestroy();
+    }
+  });
+  test('heartbeat retains a 90s lease and 45s advice without a global recovery scan', async () => {
+    await app.get(LiveUpdatesService).sweepPresence();
+    const presence = app.get(SocialPresenceStore) as unknown as { client: Redis };
+    const store = app.get(RedisLiveUpdatesStore) as unknown as { client: Redis };
+    const renew = jest.spyOn(presence.client, 'eval');
+    const scan = jest.spyOn(store.client, 'eval');
+    try {
+      const response = await fetch(`${base}/v1/me/presence/heartbeat`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${actors[0]!.token}` },
+      });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ refreshAfterSeconds: 45 });
+      expect(renew).toHaveBeenCalledTimes(1);
+      expect(scan).not.toHaveBeenCalled();
+      expect(await redis.ttl(`social:presence:${actors[0]!.id}`)).toBeGreaterThanOrEqual(88);
+    } finally {
+      renew.mockRestore();
+      scan.mockRestore();
+    }
+  });
+  test('HTTP heartbeat reuses one narrow guard query without loading credential/profile relations twice', async () => {
+    const query = jest.spyOn(prisma, '$queryRaw');
+    const user = jest.spyOn(prisma.user, 'findUnique');
+    const session = jest.spyOn(prisma.authSession, 'count');
+    try {
+      const response = await fetch(`${base}/v1/me/presence/heartbeat`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${actors[0]!.token}` },
+      });
+      expect(response.status).toBe(200);
+      expect(query).toHaveBeenCalledTimes(1);
+      expect(user).not.toHaveBeenCalled();
+      expect(session).not.toHaveBeenCalled();
+    } finally {
+      query.mockRestore();
+      user.mockRestore();
+      session.mockRestore();
+    }
+  });
+  test('managed heartbeat uses one Redis command and takeover re-arms expiry without duplicate offline events', async () => {
+    const previous = process.env.VERCEL;
+    const send = jest.fn(async () => true);
+    const config = new ConfigService<Environment, true>(
+      testEnvironment({
+        REDIS_URL: process.env.SLOGAN_TEST_REDIS_URL ?? 'redis://127.0.0.1:56379',
+      }),
+    );
+    const presence = new SocialPresenceStore(
+      config,
+      { warn: jest.fn() } as never,
+      { send } as never,
+    );
+    const repair = new RedisLiveUpdatesStore(config, prisma, { send } as never);
+    const user = actors[0]!.id;
+    const client = (presence as unknown as { client: Redis }).client;
+    const renew = jest.spyOn(client, 'eval');
+    try {
+      process.env.VERCEL = '1';
+      await redis.del(`slogan:live:presence-chain:${user}`);
+      await presence.refresh(user);
+      await presence.refresh(user);
+      expect(renew).toHaveBeenCalledTimes(2);
+      expect(send).toHaveBeenCalledTimes(1);
+      const old = await redis.get(`slogan:live:presence-chain:${user}`);
+      await repair.sweepPresence();
+      const generation = await redis.get(`slogan:live:presence-chain:${user}`);
+      expect(generation).not.toBe(old);
+      expect(await repair.expirePresence(user, old!)).toBe(-1);
+      const count = await redis.xlen(LIVE_PUBLIC);
+      await redis.pexpire(`social:presence:${user}`, 5);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(await repair.expirePresence(user, generation!)).toBe(0);
+      expect(await repair.expirePresence(user, generation!)).toBe(-1);
+      expect(await redis.xlen(LIVE_PUBLIC)).toBe(count + 1);
+    } finally {
+      if (previous === undefined) delete process.env.VERCEL;
+      else process.env.VERCEL = previous;
+      renew.mockRestore();
+      await presence.onModuleDestroy();
+      repair.onModuleDestroy();
+    }
+  });
+  test('the single scan uses Redis time, bounds the batch and preserves renewed expiry entries', async () => {
+    const key = `test:redis-idle:${randomUUID()}`;
+    try {
+      const [seconds, micros] = await redis.time();
+      const now = Number(seconds) * 1000 + Math.floor(Number(micros) / 1000);
+      await redis.zadd(key, now - 1, 'due', now + 60000, 'future');
+      expect(await redis.eval(dueLivePresence, 1, key)).toEqual(['due']);
+      await redis.zadd(key, now + 60000, 'due');
+      expect(await redis.eval(dueLivePresence, 1, key)).toEqual([]);
+      for (let i = 0; i < 101; i++) await redis.zadd(key, now - 1, `expired-${i}`);
+      expect(await redis.eval(dueLivePresence, 1, key)).toHaveLength(100);
+    } finally {
+      await redis.del(key);
+    }
+  });
+  test('an idle reader wakes immediately for an existing or newly subscribed private stream', async () => {
+    const store = app.get(RedisLiveUpdatesStore),
+      a = new AbortController(),
+      b = new AbortController();
+    const firstOwner = randomUUID(),
+      secondOwner = randomUUID();
+    const publicPosition = (await store.bounds(firstOwner)).last[0];
+    const first = await store.reader(firstOwner, a.signal);
+    const initial = first.read([publicPosition, '0-0'], Date.now() + 15000);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const second = await store.reader(secondOwner, b.signal);
+    const next = second.read([publicPosition, '0-0'], Date.now() + 15000);
+    const started = Date.now();
+    try {
+      await redis.xadd(liveOwner(secondOwner), '*', 'scope', 'account');
+      expect(await next).toMatchObject([{ scope: 'account' }]);
+      expect(await initial).toEqual([]);
+      expect(Date.now() - started).toBeLessThan(1000);
+      const again = first.read([publicPosition, '0-0']);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      await redis.xadd(liveOwner(firstOwner), '*', 'scope', 'account');
+      expect(await again).toMatchObject([{ scope: 'account' }]);
+    } finally {
+      a.abort();
+      b.abort();
+      first.close();
+      second.close();
+      await redis.del(liveOwner(firstOwner), liveOwner(secondOwner));
+    }
+  }, 5000);
   test('protocol2 targets chat content separately from reads and preserves the legacy parser vocabulary', async () => {
     const alice = actors[0]!,
       bob = actors[1]!,
@@ -617,8 +815,17 @@ describe('real PostgreSQL/Redis authenticated SSE', () => {
   test('revoking a live session closes its stream within the authorization lease and prevents reentry', async () => {
     const actor = actors[0]!,
       stream = await open(actor);
+    const revokedAt = Date.now();
     await sessions.revoke({ userId: actor.id, sessionId: actor.sessionId });
-    const event = await readUntil(stream.reader, 'unavailable');
+    let event = '';
+    for (;;) {
+      const chunk = await stream.reader.read();
+      if (chunk.done) break;
+      event += new TextDecoder().decode(chunk.value);
+    }
+    expect(Date.now() - revokedAt).toBeLessThan(16000);
+    // A shared renewal boundary may close sooner than the next authorization checkpoint.
+    expect(event).toMatch(/"scope":"(?:renew|unavailable)"/);
     expect(event).not.toContain(actor.token);
     expect(
       (

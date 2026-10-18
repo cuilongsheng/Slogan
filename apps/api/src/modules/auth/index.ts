@@ -33,3 +33,5 @@ export type {
 export { PublicTrialService } from './application/services/public-trial.service.js';
 
 export { assertNewPassword } from './domain/policies/email-password.policy.js';
+
+export type { VerifiedAccessContext } from './domain/entities/auth-session.js';

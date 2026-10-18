@@ -1,0 +1,5 @@
+// One insert per source-mutating transaction; visible atomically with its facts.
+// Append-only: removing revisions would invalidate the monotonic count watermark.
+model MetricSourceVersion {
+  transactionId BigInt @id
+}

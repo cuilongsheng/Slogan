@@ -37,7 +37,8 @@ describe('operations and governance HTTP RBAC', () => {
       .compile();
     app = ref.createNestApplication();
     configureApiApp(app);
-    await app.init();
+    // Keep one listener for the suite; avoid ephemeral server close/reopen races with Node keep-alive.
+    await app.listen(0, '127.0.0.1');
     prisma = ref.get(PrismaService);
     sessions = ref.get(SessionService);
     backoffice = ref.get(BackofficeService);

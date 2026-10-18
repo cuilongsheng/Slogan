@@ -1,3 +1,4 @@
+import { isAdultProfile } from '../../profiles/index.js';
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, Optional } from '@nestjs/common';
@@ -229,23 +230,52 @@ export class PrismaAuthRepository implements AuthRepository {
     }));
   }
 
+  async authorizationState(userId: string, sessionId: string, now: Date) {
+    const enabled =
+      this.config?.get('PREVIEW_ACCOUNTS_ENABLED', { infer: true }) === true &&
+      this.config?.get('EMAIL_PASSWORD_AUTH_ENABLED', { infer: true }) === true;
+    const environment = this.config?.get('PREVIEW_ENVIRONMENT_ID', { infer: true }) ?? '';
+    const [row] = await this.prisma.$queryRaw<
+      Array<{
+        active: boolean;
+        scoped: boolean;
+        trial: boolean;
+        profile: boolean;
+        birthYear: number | null;
+        birthMonth: number | null;
+        adultConfirmedAt: Date | null;
+        restricted: boolean;
+      }>
+    >`SELECT
+      (u.status='ACTIVE' AND s."revokedAt" IS NULL AND s."expiresAt">${now}) AS active,
+      CASE WHEN t."userId" IS NOT NULL OR p."userId" IS NOT NULL OR c.origin IN ('PUBLIC_TRIAL_PROVISIONED','PREVIEW_PROVISIONED') THEN
+        COALESCE(c."passwordHash" IS NOT NULL AND c."passwordHash"<>'' AND CASE
+          WHEN c.origin='PUBLIC_TRIAL_PROVISIONED' THEN c."verifiedAt" IS NULL AND p."userId" IS NULL AND t."userId" IS NOT NULL
+            AND t."disabledAt" IS NULL AND ${enabled} AND t."environmentId"=${environment}
+          WHEN c.origin='PREVIEW_PROVISIONED' THEN c."verifiedAt" IS NULL AND p."userId" IS NOT NULL
+            AND p."retiredAt" IS NULL AND ${enabled} AND p."environmentId"=${environment}
+          WHEN c.origin='EMAIL_VERIFIED' THEN c."verifiedAt" IS NOT NULL AND p."userId" IS NULL
+          ELSE false END,false)
+        ELSE true END AS scoped,
+      COALESCE(t.username='demo_m1',false) AS trial,
+      f."userId" IS NOT NULL AS profile, f."birthYear",f."birthMonth",f."adultConfirmedAt",
+      EXISTS(SELECT 1 FROM "SafetyRestriction" r WHERE r."userId"=u.id AND r.kind='TEMPORARY' AND r.status='ACTIVE'
+        AND r."liftedAt" IS NULL AND r."startsAt"<=${now} AND r."endsAt">${now}) AS restricted
+      FROM "AuthSession" s JOIN "User" u ON u.id=s."userId"
+      LEFT JOIN "EmailCredential" c ON c."userId"=u.id
+      LEFT JOIN "PreviewAccountProvisioning" p ON p."userId"=u.id
+      LEFT JOIN "PublicTrialAccount" t ON t."userId"=u.id
+      LEFT JOIN "UserProfile" f ON f."userId"=u.id
+      WHERE s.id=${sessionId}::uuid AND s."userId"=${userId}::uuid`;
+    const active = !!row?.active && row.scoped;
+    return {
+      active,
+      trial: row?.trial ?? false,
+      eligible: active && !!row?.profile && isAdultProfile(row, now) && !row.restricted,
+    };
+  }
   async isSessionActive(userId: string, sessionId: string, now: Date): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { emailCredential: true, previewAccount: true, publicTrialAccount: true },
-    });
-    if (!previewUserAllowed(user, this.config)) return false;
-    return (
-      (await this.prisma.authSession.count({
-        where: {
-          id: sessionId,
-          userId,
-          revokedAt: null,
-          expiresAt: { gt: now },
-          user: { status: 'ACTIVE' },
-        },
-      })) === 1
-    );
+    return (await this.authorizationState(userId, sessionId, now)).active;
   }
 
   async findProviderForUser(userId: string): Promise<OAuthProviderName | null> {

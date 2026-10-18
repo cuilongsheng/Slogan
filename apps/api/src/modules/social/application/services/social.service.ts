@@ -1,3 +1,4 @@
+import { SocialError } from '../../domain/errors/social.error.js';
 import { Inject, Injectable } from '@nestjs/common';
 
 import type { FriendRequestAction } from '../../domain/entities/social.js';
@@ -126,8 +127,10 @@ export class SocialService {
     };
   }
 
-  async heartbeat(userId: string, now = new Date()) {
-    await this.social.assertActorEligible(userId, now);
+  async heartbeat(userId: string, now = new Date(), verifiedEligible?: boolean) {
+    if (verifiedEligible === false)
+      throw new SocialError('SOCIAL_ACCESS_RESTRICTED', 'Social access is restricted');
+    if (verifiedEligible === undefined) await this.social.assertActorEligible(userId, now);
     return this.presence.refresh(userId);
   }
 

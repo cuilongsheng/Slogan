@@ -49,13 +49,13 @@ describe('Vercel request recovery seed', () => {
         token === RealtimeQueue
           ? queue
           : token === MaintenanceService
-            ? { seed: async () => {} }
+            ? { seed: queue.seedRecoveryFromRequest }
             : logger,
       use: (handler: express.RequestHandler) => server.use(handler),
     } as unknown as INestApplication);
-    server.get('/probe', (_req, res) => res.json({ ok: true }));
+    server.post('/probe', (_req, res) => res.json({ ok: true }));
     try {
-      await request(server).get('/probe').expect(200, { ok: true });
+      await request(server).post('/probe').expect(200, { ok: true });
       expect(marker).toBe('fixture-request');
       expect(pending).toHaveLength(1);
       expect(logger.warn).not.toHaveBeenCalled();
@@ -89,14 +89,14 @@ describe('Vercel request recovery seed', () => {
         token === RealtimeQueue
           ? queue
           : token === MaintenanceService
-            ? { seed: async () => {} }
+            ? { seed: queue.seedRecoveryFromRequest }
             : token === StructuredLogger
               ? logger
               : undefined,
       use: (handler: express.RequestHandler) => server.use(handler),
     } as unknown as INestApplication);
-    server.get('/probe', (_req, res) => res.sendStatus(200));
-    await request(server).get('/probe').expect(200);
+    server.post('/probe', (_req, res) => res.sendStatus(200));
+    await request(server).post('/probe').expect(200);
     await Promise.all(pending);
     expect(logger.warn).toHaveBeenCalledWith({
       event: 'realtime_managed_recovery_seed_pending',
@@ -139,7 +139,7 @@ it('tracks durable exit cleanup after HTTP completion without waiting for queue 
       token === RealtimeQueue
         ? queue
         : token === MaintenanceService
-          ? { seed: async () => {} }
+          ? { seed: queue.seedRecoveryFromRequest }
           : token === StructuredLogger
             ? logger
             : rooms,
@@ -152,7 +152,7 @@ it('tracks durable exit cleanup after HTTP completion without waiting for queue 
       .expect(200, { roomStatus: 'ENDING' });
     expect(rooms.pendingCommands).toHaveBeenCalledWith('8f296d17-4c82-47bb-8b29-e131079234de');
     expect(queue.enqueue).toHaveBeenCalledWith({ kind: 'command', id: 'command-a' });
-    expect(pending).toHaveLength(2);
+    expect(pending).toHaveLength(1);
     expect(logger.warn).not.toHaveBeenCalled();
   } finally {
     release();

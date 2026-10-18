@@ -66,6 +66,29 @@ export interface RealtimeCommand {
   leaseId: string | null;
   attempts: number;
 }
+export interface MediaSnapshot {
+  room: RealtimeRoomRecord;
+  members: Array<
+    Pick<
+      RealtimeMember,
+      | 'id'
+      | 'userId'
+      | 'participantIdentity'
+      | 'accountActive'
+      | 'lifecycle'
+      | 'presence'
+      | 'providerSessionSid'
+    >
+  >;
+  observedAt: Date;
+}
+export interface ReconciliationHead {
+  version: string;
+  status: RoomStatus;
+  endsAt: Date;
+  providerRoomSid: string | null;
+  observedAt: Date;
+}
 export interface LockedRealtimeRoom {
   room: RealtimeRoomRecord;
   members: RealtimeMember[];
@@ -126,8 +149,14 @@ export interface RoomRealtimeRepository {
   ): Promise<{ roomStatus: RoomStatus; providerStatus: 'COMPLETED' | 'PENDING' | 'UNAVAILABLE' }>;
   finishIssuance(id: string): Promise<void>;
   recordIgnoredEvent(event: RealtimeEvent): Promise<void>;
+  mediaSnapshot?(roomId: string): Promise<MediaSnapshot | null>;
+  reconciliationHead?(roomId: string): Promise<ReconciliationHead | null>;
   recoverableRooms(): Promise<RealtimeRoomRecord[]>;
   scheduledHostTimeouts(): Promise<Array<{ id: string; runAt: Date }>>;
+  pendingSchedules?(input: {
+    roomId?: string;
+    commandId?: string;
+  }): Promise<Array<{ id: string; runAt: Date }>>;
   pendingCommands(roomId?: string): Promise<string[]>;
   claimCommand(id: string): Promise<RealtimeCommand | null>;
   completeCommand(command: RealtimeCommand): Promise<void>;

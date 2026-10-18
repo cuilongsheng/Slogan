@@ -441,7 +441,10 @@ export class PrismaSocialRepository implements SocialRepository {
   private async userEligible(tx: Tx, userId: string, now: Date): Promise<boolean> {
     const user = await tx.user.findUnique({
       where: { id: userId },
-      include: { profile: true },
+      select: {
+        status: true,
+        profile: { select: { birthYear: true, birthMonth: true, adultConfirmedAt: true } },
+      },
     });
     return (
       user?.status === 'ACTIVE' &&

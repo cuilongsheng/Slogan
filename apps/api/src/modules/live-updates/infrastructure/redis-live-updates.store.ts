@@ -1,4 +1,6 @@
-import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { WorkerOwner } from '../../../infrastructure/managed/worker-owner.service.js';
+import { Injectable, Optional, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import type { Environment } from '../../../config/environment.js';
@@ -9,6 +11,8 @@ import {
   liveOwner,
   publishLive,
   expireLivePresence,
+  dueLivePresence,
+  repairLivePresence,
 } from '../../../infrastructure/redis/live-stream.scripts.js';
 import { LIVE_SCOPES } from '../domain/live-updates.port.js';
 import type {
@@ -23,11 +27,15 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
   private client?: Redis;
   private blocking: Redis | undefined;
   private reading = false;
+  private activeRead:
+    | { client: Redis; cancelled: boolean; positions: Map<string, string>; until: number }
+    | undefined;
   private readonly subscribers = new Set<Subscriber>();
   private connecting: Promise<void> | undefined;
   constructor(
     private readonly config: ConfigService<Environment, true>,
     private readonly prisma: PrismaService,
+    @Optional() private readonly owner?: WorkerOwner,
   ) {}
   private async redis() {
     const url = this.config.get('REDIS_URL', { infer: true });
@@ -35,6 +43,7 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
     if (!this.client) {
       this.client = new Redis(url, {
         lazyConnect: true,
+        disableClientInfo: true,
         enableOfflineQueue: false,
         maxRetriesPerRequest: 1,
         connectTimeout: 2000,
@@ -49,18 +58,39 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
     }
     return this.client;
   }
-  async dispatch() {
+  async sweepPresence() {
     const redis = await this.redis();
-    const time = await redis.time();
-    const due = await redis.zrangebyscore(
-      LIVE_EXPIRIES,
-      '-inf',
-      Number(time[0]) * 1000 + Math.floor(Number(time[1]) / 1000),
-      'LIMIT',
-      0,
-      100,
-    );
+    if (process.env.VERCEL === '1') {
+      const [remaining, repairs] = (await redis.eval(
+        repairLivePresence,
+        2,
+        LIVE_EXPIRIES,
+        LIVE_PUBLIC,
+        randomUUID(),
+      )) as [number, string[]];
+      for (let i = 0; i < repairs.length; i += 3) {
+        if (
+          !(await this.owner!.send(
+            'slogan-maintenance',
+            { kind: 'presence-expiry', userId: repairs[i]!, generation: repairs[i + 2]! },
+            {
+              delaySeconds: Math.max(1, Math.ceil(Number(repairs[i + 1]) / 1000)),
+              retentionSeconds: 604800,
+            },
+          ))
+        )
+          throw new Error('Presence owner unavailable');
+      }
+      return remaining > 0;
+    }
+    const due = (await redis.eval(dueLivePresence, 1, LIVE_EXPIRIES)) as string[];
     for (const owner of due) await this.expirePresence(owner);
+  }
+  async dispatch() {
+    // Most recovery scans are empty. Keep new rows durable for the next scan,
+    // without paying BEGIN/COMMIT (and their instrumentation) on every checkpoint.
+    if (!(await this.prisma.liveUpdateOutbox.findFirst({ select: { id: true } }))) return;
+    const redis = await this.redis();
     const deadline = Date.now() + 5000;
     for (let batch = 0; batch < 10 && Date.now() < deadline; batch++) {
       const count = await this.prisma.$transaction(
@@ -97,8 +127,14 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
         },
         { timeout: 10000 },
       );
-      if (count < 100) break;
+      if (count < 100) return;
     }
+    if (process.env.VERCEL === '1')
+      await this.owner!.send(
+        'slogan-maintenance',
+        { kind: 'maintenance' },
+        { retentionSeconds: 604800 },
+      );
   }
   async reconcileRelease() {
     const redis = await this.redis();
@@ -115,6 +151,7 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
     // Commit the durable notification before recording progress; retries can duplicate, never lose it.
     await this.prisma.liveUpdateOutbox.create({ data: { scope: 'release' } });
     await redis.set('slogan:live:release-version', String(value.versionCode));
+    return true;
   }
   async canReceive(owner: string, change: StreamChange) {
     const { scope, resourceId, kind } = change;
@@ -153,6 +190,23 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
     if (scope === 'room-text') return ['OPEN', 'ENDING'].includes(membership.room.status);
     return scope === 'room-state';
   }
+  async presenceExpiry(owner: string, generation: string) {
+    const redis = await this.redis();
+    const result = await redis.eval(
+      expireLivePresence,
+      4,
+      `social:presence:${owner}`,
+      LIVE_PUBLIC,
+      LIVE_EXPIRIES,
+      `slogan:live:presence-chain:${owner}`,
+      owner,
+      generation,
+      'deadline',
+    );
+    return Array.isArray(result)
+      ? { ttl: Number(result[0]), expiresAt: Number(result[1]) }
+      : { ttl: Number(result), expiresAt: 0 };
+  }
   async expirePresence(owner: string, generation?: string) {
     const redis = await this.redis();
     return Number(
@@ -183,13 +237,14 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
     await this.redis();
     if (signal.aborted || this.subscribers.size >= 128)
       throw new Error('Stream capacity unavailable');
-    const subscriber: Subscriber = { owner, pending: undefined };
+    const subscriber: Subscriber = { owner, pending: undefined, backlog: [], overflow: false };
     this.subscribers.add(subscriber);
     const close = () => {
       signal.removeEventListener('abort', close);
-      this.subscribers.delete(subscriber);
+      if (!this.subscribers.delete(subscriber)) return;
       subscriber.pending?.reject(new Error('Stream cancelled'));
       subscriber.pending = undefined;
+      this.interruptRead();
       if (!this.subscribers.size) {
         this.blocking?.disconnect();
         this.blocking = undefined;
@@ -197,17 +252,48 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
     };
     signal.addEventListener('abort', close, { once: true });
     return {
-      read: (positions: StreamPositions) =>
+      read: (positions: StreamPositions, waitUntil = Date.now() + 15000) =>
         new Promise<StreamChange[]>((resolve, reject) => {
-          if (signal.aborted || !this.subscribers.has(subscriber) || subscriber.pending) {
+          if (
+            signal.aborted ||
+            !this.subscribers.has(subscriber) ||
+            subscriber.pending ||
+            subscriber.overflow
+          ) {
             reject(new Error('Stream cancelled'));
             return;
           }
-          subscriber.pending = { positions: [...positions], resolve, reject };
+          const buffered = subscriber.backlog.filter(
+            (event) => compare(event.id, positions[event.index]!) > 0,
+          );
+          subscriber.backlog = [];
+          if (buffered.length) {
+            resolve(buffered);
+            return;
+          }
+          subscriber.positions = [...positions];
+          subscriber.pending = { positions: [...positions], waitUntil, resolve, reject };
+          const active = this.activeRead;
+          if (
+            active &&
+            (waitUntil < active.until ||
+              [LIVE_PUBLIC, liveOwner(owner)].some(
+                (key, index) =>
+                  !active.positions.has(key) ||
+                  compare(positions[index]!, active.positions.get(key)!) < 0,
+              ))
+          )
+            this.interruptRead();
           void this.pump();
         }),
       close,
     };
+  }
+  private interruptRead() {
+    if (!this.activeRead) return;
+    this.activeRead.cancelled = true;
+    this.activeRead.client.disconnect();
+    if (this.blocking === this.activeRead.client) this.blocking = undefined;
   }
   /** One bounded blocking reader per API instance; private keys fan out only to their owner. */
   private async pump() {
@@ -215,10 +301,11 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
     this.reading = true;
     try {
       for (;;) {
-        const requests = [...this.subscribers].flatMap((s) =>
+        let requests = [...this.subscribers].flatMap((s) =>
           s.pending ? [{ subscriber: s, pending: s.pending }] : [],
         );
         if (!requests.length) break;
+        let active: NonNullable<RedisLiveUpdatesStore['activeRead']> | undefined;
         try {
           if (!this.blocking) {
             this.blocking = (await this.redis()).duplicate({ lazyConnect: true });
@@ -230,59 +317,93 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
             this.blocking = undefined;
             break;
           }
+          // Subscribers can change while the blocking connection is connecting.
+          requests = [...this.subscribers].flatMap((s) =>
+            s.pending ? [{ subscriber: s, pending: s.pending }] : [],
+          );
+          if (!requests.length) break;
           const positions = new Map<string, string>();
-          for (const { subscriber, pending } of requests) {
+          for (const subscriber of this.subscribers) {
+            if (!subscriber.positions || subscriber.overflow) continue;
             for (const [i, key] of [LIVE_PUBLIC, liveOwner(subscriber.owner)].entries()) {
-              const next = pending.positions[i]!;
+              const next = subscriber.positions[i]!;
               const prior = positions.get(key);
               if (!prior || compare(next, prior) < 0) positions.set(key, next);
             }
           }
           const keys = [...positions.keys()];
-          const result = (await this.blocking.xread(
+          const block = Math.max(
+            1,
+            Math.min(15000, ...requests.map(({ pending }) => pending.waitUntil - Date.now())),
+          );
+          active = {
+            client: this.blocking!,
+            cancelled: false,
+            positions,
+            until: Math.min(...requests.map(({ pending }) => pending.waitUntil)),
+          };
+          this.activeRead = active;
+          const result = (await active.client.xread(
             'COUNT',
             100,
             'BLOCK',
-            1000,
+            block,
             'STREAMS',
             ...keys,
             ...positions.values(),
           )) as Array<[string, Array<[string, string[]]>]> | null;
-          for (const { subscriber, pending } of requests) {
-            if (subscriber.pending !== pending) continue;
-            subscriber.pending = undefined;
+          this.activeRead = undefined;
+          if (active.cancelled) continue;
+          for (const subscriber of this.subscribers) {
+            if (!subscriber.positions || subscriber.overflow) continue;
             const ownKeys = [LIVE_PUBLIC, liveOwner(subscriber.owner)];
-            pending.resolve(
-              (result ?? []).flatMap(([key, entries]) => {
-                const index = ownKeys.indexOf(key);
-                if (index < 0) return [];
-                return entries.flatMap(([id, fields]) => {
-                  const field = (name: string) => {
-                    const index = fields.indexOf(name);
-                    return index < 0 ? undefined : fields[index + 1];
-                  };
-                  const scope = field('scope') as LiveScope;
-                  const resourceId = field('resourceId');
-                  const kind = field('kind');
-                  const publicScope = ['rooms', 'partners', 'release'].includes(scope);
-                  return compare(id, pending.positions[index]!) > 0 &&
-                    LIVE_SCOPES.includes(scope) &&
-                    ((index === 0 && publicScope && !resourceId) || (index === 1 && !publicScope))
-                    ? [
-                        {
-                          index,
-                          id,
-                          scope,
-                          ...(resourceId ? { resourceId } : {}),
-                          ...(kind === 'membership' || kind === 'visibility' ? { kind } : {}),
-                        },
-                      ]
-                    : [];
-                });
-              }),
-            );
+            const changes = (result ?? []).flatMap(([key, entries]) => {
+              const index = ownKeys.indexOf(key);
+              if (index < 0) return [];
+              return entries.flatMap(([id, fields]) => {
+                const field = (name: string) => {
+                  const at = fields.indexOf(name);
+                  return at < 0 ? undefined : fields[at + 1];
+                };
+                const scope = field('scope') as LiveScope,
+                  resourceId = field('resourceId'),
+                  kind = field('kind');
+                const publicScope = ['rooms', 'partners', 'release'].includes(scope);
+                return compare(id, subscriber.positions![index]!) > 0 &&
+                  LIVE_SCOPES.includes(scope) &&
+                  ((index === 0 && publicScope && !resourceId) || (index === 1 && !publicScope))
+                  ? [
+                      {
+                        index,
+                        id,
+                        scope,
+                        ...(resourceId ? { resourceId } : {}),
+                        ...(kind === 'membership' || kind === 'visibility'
+                          ? { kind: kind as 'membership' | 'visibility' }
+                          : {}),
+                      },
+                    ]
+                  : [];
+              });
+            });
+            for (const event of changes) subscriber.positions[event.index] = event.id;
+            if (subscriber.pending) {
+              const pending = subscriber.pending;
+              subscriber.pending = undefined;
+              pending.resolve(
+                [...subscriber.backlog, ...changes].filter(
+                  (event) => compare(event.id, pending.positions[event.index]!) > 0,
+                ),
+              );
+              subscriber.backlog = [];
+            } else if (subscriber.backlog.length + changes.length > 200) {
+              subscriber.backlog = [];
+              subscriber.overflow = true;
+            } else subscriber.backlog.push(...changes);
           }
         } catch (error) {
+          if (this.activeRead === active) this.activeRead = undefined;
+          if (active?.cancelled) continue;
           this.blocking?.disconnect();
           this.blocking = undefined;
           for (const { subscriber, pending } of requests) {
@@ -297,6 +418,7 @@ export class RedisLiveUpdatesStore implements LiveUpdatesStore, OnModuleDestroy 
     }
   }
   onModuleDestroy() {
+    this.interruptRead();
     this.blocking?.disconnect();
     for (const subscriber of this.subscribers)
       subscriber.pending?.reject(new Error('Stream closed'));
@@ -308,9 +430,13 @@ const ignore = () => {};
 
 interface Subscriber {
   owner: string;
+  positions?: StreamPositions;
+  backlog: StreamChange[];
+  overflow: boolean;
   pending:
     | {
         positions: StreamPositions;
+        waitUntil: number;
         resolve: (changes: StreamChange[]) => void;
         reject: (error: unknown) => void;
       }

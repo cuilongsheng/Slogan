@@ -12,6 +12,7 @@ import type {
   RoomRealtimeRepository,
   RealtimeCommand,
   RealtimeEvent,
+  ReconciliationHead,
 } from '../domain/ports/room-realtime.repository.js';
 import { runRoomTransactionWithRetry } from './transaction-retry.js';
 
@@ -73,6 +74,56 @@ export class PrismaRoomRealtimeRepository implements RoomRealtimeRepository {
       skipDuplicates: true,
     });
   }
+  async reconciliationHead(roomId: string) {
+    const [head] = await this.prisma.$queryRaw<
+      ReconciliationHead[]
+    >`SELECT r.status,r."endsAt",r."providerRoomSid",clock_timestamp() AS "observedAt",
+      md5(concat_ws(':',r."stateVersion",r."providerRoomSid",r."endsAt",COALESCE((SELECT string_agg(concat_ws(':',m.id,m."participantIdentity",m.presence,m."providerSessionSid",u.status),'|' ORDER BY m.id)
+        FROM "RoomMembership" m JOIN "User" u ON u.id=m."userId" WHERE m."roomId"=r.id AND m.lifecycle='ACTIVE'),''))) AS version
+      FROM "Room" r WHERE r.id=${roomId}::uuid`;
+    return head ?? null;
+  }
+  async mediaSnapshot(roomId: string) {
+    const [time] = await this.prisma.$queryRaw<
+      Array<{ now: Date }>
+    >`SELECT clock_timestamp() AS now`;
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+      select: {
+        id: true,
+        hostUserId: true,
+        kind: true,
+        startedAt: true,
+        initialHostDeadline: true,
+        initialHostResolved: true,
+        hostDisconnectedAt: true,
+        hostReconnectDeadline: true,
+        hostReconnectVersion: true,
+        status: true,
+        stateVersion: true,
+        extensionCount: true,
+        capacity: true,
+        endsAt: true,
+        providerRoomSid: true,
+        endedAt: true,
+        endedReason: true,
+      },
+    });
+    if (!room) return null;
+    const members = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        userId: string;
+        participantIdentity: string;
+        accountActive: boolean;
+        lifecycle: 'ACTIVE';
+        presence: 'CONNECTED' | 'DISCONNECTED';
+        providerSessionSid: string | null;
+      }>
+    >`SELECT m.id,m."userId",m."participantIdentity",(u.status='ACTIVE') AS "accountActive",m.lifecycle,m.presence,m."providerSessionSid"
+      FROM "RoomMembership" m JOIN "User" u ON u.id=m."userId" WHERE m."roomId"=${roomId}::uuid AND m.lifecycle='ACTIVE' ORDER BY m."joinOrder"`;
+    return { room, members, observedAt: time!.now };
+  }
   async recoverableRooms() {
     return this.prisma.room.findMany({
       where: { status: { in: ['SCHEDULED', 'OPEN', 'ENDING'] } },
@@ -86,6 +137,28 @@ export class PrismaRoomRealtimeRepository implements RoomRealtimeRepository {
     });
     return rows.map((r) => ({ id: r.id, runAt: r.nextAttemptAt }));
   }
+  async pendingSchedules(input: { roomId?: string; commandId?: string }) {
+    const rows = await this.prisma.realtimeCommand.findMany({
+      where: {
+        status: { in: ['PENDING', 'RUNNING'] },
+        ...(input.roomId ? { roomId: input.roomId } : { id: input.commandId! }),
+      },
+      select: { id: true, nextAttemptAt: true, lockedUntil: true, status: true },
+      orderBy: { nextAttemptAt: 'asc' },
+      take: 100,
+    });
+    return rows.map((row) => {
+      const deadline = row.status === 'RUNNING' ? row.lockedUntil : row.nextAttemptAt;
+      return {
+        id: row.id,
+        runAt:
+          deadline && deadline.getTime() > Date.now()
+            ? deadline
+            : new Date((Math.floor(Date.now() / 30000) + 2) * 30000),
+      };
+    });
+  }
+
   async pendingCommands(roomId?: string) {
     const now = new Date();
     await this.prisma.roomTextMessage.deleteMany({

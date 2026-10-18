@@ -1,0 +1,6 @@
+model ManagedWorkerOwner {
+  key String @id @db.VarChar(64)
+  deploymentId String @db.VarChar(128)
+  generation Int
+  activatedAt DateTime @default(now()) @db.Timestamptz(3)
+}

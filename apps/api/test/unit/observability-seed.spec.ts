@@ -7,7 +7,8 @@ const send = jest.fn(async (..._args: unknown[]) => ({ messageId: 'fixture' }));
     send = send;
   },
 }));
-const { default: seed } = await import('../../api/maintenance-seed.js');
+const { maintenanceSeed } = await import('../../api/maintenance-seed.js');
+const seed = maintenanceSeed(async () => ({ send }) as never);
 const original = { ...process.env };
 beforeEach(() => {
   send.mockClear();
@@ -48,11 +49,12 @@ test('monitor reseed shares the scheduler window key while retaining maintenance
   expect(await invoke()).toBe(200);
   expect(send).toHaveBeenCalledWith(
     'slogan-observability',
-    { kind: 'monitor', window: 30 },
+    { kind: 'monitor', window: 2 },
     {
       retentionSeconds: 604800,
-      idempotencyKey: 'monitor-production-60-30',
+      idempotencyKey: 'monitor-production-900-2',
     },
+    true,
   );
   expect(send.mock.calls.filter(([topic]) => topic === 'slogan-maintenance')).toHaveLength(2);
 });

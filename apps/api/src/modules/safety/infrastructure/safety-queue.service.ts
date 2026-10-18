@@ -1,8 +1,8 @@
-import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Optional, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
-import { QueueClient } from '@vercel/queue';
+import { WorkerOwner } from '../../../infrastructure/managed/worker-owner.service.js';
 import type { Environment } from '../../../config/environment.js';
 import { StructuredLogger } from '../../../infrastructure/observability/structured-logger.service.js';
 
@@ -21,6 +21,7 @@ export class SafetyQueue implements OnModuleDestroy {
   constructor(
     private readonly config: ConfigService<Environment, true>,
     private readonly logger: StructuredLogger,
+    @Optional() private readonly owner?: WorkerOwner,
   ) {}
 
   async start(handler: (job: SafetyJob) => Promise<void>) {
@@ -49,8 +50,7 @@ export class SafetyQueue implements OnModuleDestroy {
 
   async enqueue(job: SafetyJob, runAt = new Date()) {
     if (process.env.VERCEL === '1') {
-      if (process.env.VERCEL_ENV !== 'production') return;
-      await new QueueClient().send(
+      await this.owner!.send(
         'slogan-maintenance',
         { kind: 'maintenance' },
         {

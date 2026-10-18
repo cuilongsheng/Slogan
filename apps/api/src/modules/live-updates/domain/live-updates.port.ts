@@ -27,13 +27,15 @@ export type StreamChange = {
   kind?: 'membership' | 'visibility';
 };
 export interface LiveReader {
-  read(positions: StreamPositions): Promise<StreamChange[]>;
+  read(positions: StreamPositions, waitUntil?: number): Promise<StreamChange[]>;
   close(): void;
 }
 export interface LiveUpdatesStore {
   dispatch(): Promise<void>;
-  reconcileRelease(): Promise<void>;
+  sweepPresence?(): Promise<void | boolean>;
+  reconcileRelease(): Promise<void | boolean>;
   canReceive(owner: string, change: StreamChange): Promise<boolean>;
+  presenceExpiry?(owner: string, generation: string): Promise<{ ttl: number; expiresAt: number }>;
   expirePresence(owner: string, generation?: string): Promise<number>;
   bounds(owner: string): Promise<{ first: StreamPositions; last: StreamPositions }>;
   reader(owner: string, signal: AbortSignal): Promise<LiveReader>;

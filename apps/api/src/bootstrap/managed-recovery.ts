@@ -13,40 +13,45 @@ export function configureManagedRecovery(app: INestApplication): void {
   const logger = app.get(StructuredLogger);
   const rooms = app.get(RoomRealtimeService);
   app.use(((request, response, next) => {
+    if (
+      ['GET', 'HEAD', 'OPTIONS'].includes(request.method) ||
+      request.path === '/v1/me/presence/heartbeat'
+    ) {
+      next();
+      return;
+    }
     response.once('finish', () => {
-      const room = /^\/v1\/rooms\/([0-9a-f-]{36})\/(?:leave|end)$/.exec(request.path);
-      if (request.method !== 'POST' || response.statusCode !== 200 || !room) return;
-      // Wake durable commands promptly after commit and HTTP completion, without provider I/O here.
+      if (response.statusCode < 200 || response.statusCode >= 400) return;
+      // All domain transactions have completed. Keep OIDC context without blocking HTTP.
       waitUntil(
         (async () => {
+          await maintenance.seed(
+            (request.path.startsWith('/v1/rooms') ||
+              request.path.startsWith('/v1/appointment-rooms')) &&
+              !request.path.endsWith('/realtime-credentials'),
+          );
+          const room = /^\/v1\/rooms\/([0-9a-f-]{36})\/(?:leave|end)$/.exec(request.path);
+          if (response.statusCode !== 200 || !room) return;
           for (const id of await rooms.pendingCommands(room[1]!))
             await queue.enqueue({ kind: 'command', id });
-        })().catch(() => logger.warn({ event: 'realtime_exit_cleanup_scheduling_pending' })),
+        })().catch((error: unknown) => {
+          const names = [
+            'UnauthorizedError',
+            'ForbiddenError',
+            'BadRequestError',
+            'TooManyRequestsError',
+            'InternalServerError',
+          ];
+          const category =
+            error instanceof Error && error.message.includes('Failed to get OIDC token')
+              ? 'OIDC_UNAVAILABLE'
+              : error instanceof Error && names.includes(error.name)
+                ? error.name
+                : 'UNKNOWN';
+          logger.warn({ event: 'realtime_managed_recovery_seed_pending', category });
+        }),
       );
     });
-    // Publishing a seed runs inside the request's OIDC context. Vercel tracks it
-    // after the HTTP response; durable cleanup is still executed by the private consumer.
-    waitUntil(
-      Promise.all([
-        (async () => queue.seedRecoveryFromRequest())(),
-        (async () => maintenance.seed())(),
-      ]).catch((error: unknown) => {
-        const knownNames = [
-          'UnauthorizedError',
-          'ForbiddenError',
-          'BadRequestError',
-          'TooManyRequestsError',
-          'InternalServerError',
-        ];
-        const category =
-          error instanceof Error && error.message.includes('Failed to get OIDC token')
-            ? 'OIDC_UNAVAILABLE'
-            : error instanceof Error && knownNames.includes(error.name)
-              ? error.name
-              : 'UNKNOWN';
-        logger.warn({ event: 'realtime_managed_recovery_seed_pending', category });
-      }),
-    );
     next();
   }) as RequestHandler);
 }

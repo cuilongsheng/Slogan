@@ -64,7 +64,7 @@ describe('bounded protocol2 notification bursts', () => {
       'room-safety',
     ]);
     expect(store.canReceive).toHaveBeenCalledTimes(4);
-    expect(reader.read).toHaveBeenLastCalledWith(['0-0', '91-0']);
+    expect(reader.read).toHaveBeenLastCalledWith(['0-0', '91-0'], expect.any(Number));
     expect(reader.close).toHaveBeenCalledTimes(1);
   });
 

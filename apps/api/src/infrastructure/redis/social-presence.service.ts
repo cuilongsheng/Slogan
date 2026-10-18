@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Optional, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
-import { QueueClient } from '@vercel/queue';
+import { WorkerOwner } from '../managed/worker-owner.service.js';
 import {
   LIVE_PUBLIC,
   LIVE_EXPIRIES,
@@ -24,12 +24,14 @@ export class SocialPresenceStore implements SocialPresence, OnModuleDestroy {
   constructor(
     config: ConfigService<Environment, true>,
     private readonly logger: StructuredLogger,
+    @Optional() private readonly owner?: WorkerOwner,
   ) {
     this.ttlSeconds = config.get('SOCIAL_PRESENCE_TTL_SECONDS', { infer: true });
     const url = config.get('REDIS_URL', { infer: true });
     if (url) {
       this.client = new Redis(url, {
         lazyConnect: true,
+        disableClientInfo: true,
         maxRetriesPerRequest: 1,
         connectTimeout: 2000,
         enableOfflineQueue: false,
@@ -43,31 +45,38 @@ export class SocialPresenceStore implements SocialPresence, OnModuleDestroy {
       throw new SocialError('SOCIAL_PRESENCE_UNAVAILABLE', 'Presence is temporarily unavailable');
     try {
       await this.connect();
-      await this.client.eval(
+      const managed = process.env.VERCEL === '1';
+      const generation = randomUUID();
+      const chain = `slogan:live:presence-chain:${userId}`;
+      const renewed = await this.client.eval(
         renewLivePresence,
-        3,
+        managed ? 4 : 3,
         this.key(userId),
         LIVE_PUBLIC,
         LIVE_EXPIRIES,
+        ...(managed ? [chain] : []),
         userId,
         this.ttlSeconds,
+        ...(managed ? [generation] : []),
       );
-      if (process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production') {
-        const chain = `slogan:live:presence-chain:${userId}`;
-        const generation = randomUUID();
-        if (
-          await this.client.set(chain, generation, 'EX', Math.max(300, this.ttlSeconds * 3), 'NX')
-        ) {
-          try {
-            await new QueueClient().send(
+      if (managed && Array.isArray(renewed) && renewed[1]) {
+        try {
+          if (
+            !(await this.owner!.send(
               'slogan-maintenance',
-              { kind: 'presence-expiry', userId, generation },
+              { kind: 'presence-expiry', userId, generation, activateFallback: true },
               { delaySeconds: this.ttlSeconds, retentionSeconds: 604800 },
-            );
-          } catch (error) {
-            await this.client.del(chain);
-            throw error;
-          }
+            ))
+          )
+            throw new Error('Presence owner unavailable');
+        } catch (error) {
+          await this.client.eval(
+            "if redis.call('GET',KEYS[1])==ARGV[1] then return redis.call('DEL',KEYS[1]) end return 0",
+            1,
+            chain,
+            generation,
+          );
+          throw error;
         }
       }
       return {

@@ -59,8 +59,45 @@ export class PrismaMetricsRepository implements MetricsRepository {
     window: MetricWindow,
     definitionVersion: string,
     leaseSeconds: number,
+    now = new Date(),
   ): Promise<MetricRunClaim> {
-    const now = new Date();
+    const sourceVersion = BigInt(await this.prisma.metricSourceVersion.count());
+    const maturityComplete = now.getTime() >= window.end.getTime() + 7 * 86400000;
+    const where = {
+      grain_windowStart_windowEnd_definitionVersion: {
+        grain: window.grain,
+        windowStart: window.start,
+        windowEnd: window.end,
+        definitionVersion,
+      },
+    };
+    const cached = await this.prisma.metricComputationRun.findUnique({
+      where,
+      select: {
+        id: true,
+        status: true,
+        sourceVersion: true,
+        maturityComplete: true,
+        generation: true,
+      },
+    });
+    if (
+      cached?.status === 'COMPLETED' &&
+      cached.sourceVersion === sourceVersion &&
+      cached.maturityComplete === maturityComplete
+    ) {
+      return {
+        runId: cached.id,
+        leaseId: '',
+        generation: cached.generation,
+        window,
+        definitionVersion,
+        sourceVersion,
+        maturityComplete,
+        cached: true,
+        snapshotCount: await this.prisma.metricSnapshot.count({ where: { runId: cached.id } }),
+      };
+    }
     return this.prisma.$transaction(
       async (tx) => {
         const existing = await tx.metricComputationRun.upsert({
@@ -101,7 +138,15 @@ export class PrismaMetricsRepository implements MetricsRepository {
             errorCode: null,
           },
         });
-        return { runId: current.id, leaseId, generation, window, definitionVersion };
+        return {
+          runId: current.id,
+          leaseId,
+          generation,
+          window,
+          definitionVersion,
+          sourceVersion,
+          maturityComplete,
+        };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
@@ -334,6 +379,10 @@ export class PrismaMetricsRepository implements MetricsRepository {
           status: 'COMPLETED',
           completedAt: new Date(),
           watermark: dataThroughAt,
+          ...(claim.sourceVersion === undefined ? {} : { sourceVersion: claim.sourceVersion }),
+          ...(claim.maturityComplete === undefined
+            ? {}
+            : { maturityComplete: claim.maturityComplete }),
           lockedUntil: null,
         },
       });
